@@ -1,0 +1,31 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Frequent Itemsets &amp; Association Rules — Code Lab</title><script>(()=>{const s=localStorage.getItem('atlas-theme');const t=s||((matchMedia('(prefers-color-scheme: dark)').matches)?'dark':'light');document.documentElement.dataset.theme=t})()</script><style>:root{--bg:#fff;--text:#121417;--muted:#5d6470;--line:#dfe3e8;--soft:#f6f7f8;--blue:#155eef;--code:#0d1117;color-scheme:light}html[data-theme=dark]{--bg:#0d1117;--text:#eef2f6;--muted:#a8b0ba;--line:#2b333d;--soft:#171d24;--blue:#8fb4ff;--code:#070a0e;color-scheme:dark}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.6 Inter,system-ui,sans-serif}main{max-width:980px;margin:auto;padding:44px 22px 80px}a{color:var(--blue)}h1{font-size:42px;line-height:1.05;margin:8px 0 12px}.k{font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--blue);font-weight:800}.lead{color:var(--muted);font-size:17px}.top{display:flex;justify-content:space-between;gap:16px}button{border:1px solid var(--line);background:var(--soft);color:var(--text);border-radius:8px;padding:7px 9px;cursor:pointer}section{border-top:1px solid var(--line);padding-top:22px;margin-top:26px}pre{background:var(--code);color:#e6edf3;padding:18px;border-radius:12px;overflow:auto;font:13px/1.55 ui-monospace,monospace}.links{display:flex;gap:12px;flex-wrap:wrap;margin:18px 0}.links a{border:1px solid var(--line);border-radius:8px;padding:7px 9px;text-decoration:none;font-size:12px}@media(max-width:600px){h1{font-size:34px}.top{display:block}}</style></head><body><main><div class="top"><div><div class="k">Data, ML & AI Atlas · Runnable Lab</div><h1>Frequent Itemsets &amp; Association Rules</h1></div><button id="t">◐ Theme</button></div><p class="lead">Implement Apriori and association-rule scoring, then verify downward closure, metric identities, and transaction-order invariance.</p><div class="links"><a href="../../index.html#/lesson/association-rules">← Full lesson</a><a href="lab.py">Combined Python file</a><a href="README.md">README</a></div><section><h2>1 · Build it</h2><p>Minimal implementation with as little framework abstraction as practical.</p><pre>from itertools import combinations
+transactions=[{&#x27;bread&#x27;,&#x27;milk&#x27;,&#x27;eggs&#x27;},{&#x27;bread&#x27;,&#x27;milk&#x27;},{&#x27;bread&#x27;,&#x27;eggs&#x27;},{&#x27;milk&#x27;,&#x27;eggs&#x27;},{&#x27;bread&#x27;,&#x27;milk&#x27;,&#x27;eggs&#x27;},{&#x27;bread&#x27;,&#x27;butter&#x27;},{&#x27;milk&#x27;,&#x27;butter&#x27;},{&#x27;bread&#x27;,&#x27;milk&#x27;,&#x27;butter&#x27;}]
+def support(itemset, rows=transactions):
+    target=frozenset(itemset)
+    return sum(target &lt;= row for row in rows)/len(rows)
+def apriori(rows, min_support):
+    singletons={frozenset([item]) for row in rows for item in row}
+    level={s for s in singletons if support(s,rows)&gt;=min_support}
+    found={s:support(s,rows) for s in level}; k=2
+    while level:
+        candidates={a|b for a in level for b in level if len(a|b)==k}
+        candidates={c for c in candidates if all(frozenset(s) in level for s in combinations(c,k-1))}
+        level={c for c in candidates if support(c,rows)&gt;=min_support}
+        found.update({c:support(c,rows) for c in level}); k+=1
+    return found
+frequent=apriori(transactions,.25)</pre></section><section><h2>2 · Use it</h2><p>The same idea through a common library or practical API.</p><pre>rules=[]
+for itemset,s_xy in frequent.items():
+    if len(itemset)&lt;2: continue
+    for size in range(1,len(itemset)):
+        for parts in combinations(itemset,size):
+            x=frozenset(parts); y=itemset-x
+            conf=s_xy/frequent[x]; lift=conf/frequent[y]
+            rules.append({&#x27;antecedent&#x27;:tuple(sorted(x)),&#x27;consequent&#x27;:tuple(sorted(y)),&#x27;support&#x27;:s_xy,&#x27;confidence&#x27;:conf,&#x27;lift&#x27;:lift})
+top_rules=sorted(rules,key=lambda r:(-r[&#x27;lift&#x27;],-r[&#x27;support&#x27;],r[&#x27;antecedent&#x27;]))</pre></section><section><h2>3 · Ship it</h2><p>Version basket construction and thresholds, persist counts with scores, validate on a later window, cap and deduplicate output, protect sensitive combinations, and experiment on the action before promotion.</p></section><section><h2>4 · Verify it</h2><p>Assertions and sanity checks that catch conceptual or implementation mistakes.</p><pre>assert frequent[frozenset({&#x27;bread&#x27;,&#x27;milk&#x27;})]==.5
+assert all(frequent[sub] &gt;= value for itemset,value in frequent.items() for size in range(1,len(itemset)) for sub in map(frozenset,combinations(itemset,size)))
+for rule in rules:
+    x=frozenset(rule[&#x27;antecedent&#x27;]); y=frozenset(rule[&#x27;consequent&#x27;])
+    assert abs(rule[&#x27;confidence&#x27;]-support(x|y)/support(x))&lt;1e-12
+    assert abs(rule[&#x27;lift&#x27;]-support(x|y)/(support(x)*support(y)))&lt;1e-12
+reversed_rows=list(reversed(transactions)); original=frequent; transactions[:]=reversed_rows; reordered=apriori(transactions,.25); assert reordered==original
+assert all(0 &lt; r[&#x27;support&#x27;] &lt;= 1 and r[&#x27;confidence&#x27;] &lt;= 1 for r in rules)</pre></section></main><script>const b=document.getElementById('t');function u(){b.textContent=document.documentElement.dataset.theme==='dark'?'☀ Light':'☾ Dark'}u();b.onclick=()=>{const n=document.documentElement.dataset.theme==='dark'?'light':'dark';document.documentElement.dataset.theme=n;localStorage.setItem('atlas-theme',n);u()}</script></body></html>

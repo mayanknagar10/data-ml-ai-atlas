@@ -1,0 +1,25 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>HyperLogLog &amp; Distinct Counting — Code Lab</title><script>(()=>{const s=localStorage.getItem('atlas-theme');const t=s||((matchMedia('(prefers-color-scheme: dark)').matches)?'dark':'light');document.documentElement.dataset.theme=t})()</script><style>:root{--bg:#fff;--text:#121417;--muted:#5d6470;--line:#dfe3e8;--soft:#f6f7f8;--blue:#155eef;--code:#0d1117;color-scheme:light}html[data-theme=dark]{--bg:#0d1117;--text:#eef2f6;--muted:#a8b0ba;--line:#2b333d;--soft:#171d24;--blue:#8fb4ff;--code:#070a0e;color-scheme:dark}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.6 Inter,system-ui,sans-serif}main{max-width:980px;margin:auto;padding:44px 22px 80px}a{color:var(--blue)}h1{font-size:42px;line-height:1.05;margin:8px 0 12px}.k{font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--blue);font-weight:800}.lead{color:var(--muted);font-size:17px}.top{display:flex;justify-content:space-between;gap:16px}button{border:1px solid var(--line);background:var(--soft);color:var(--text);border-radius:8px;padding:7px 9px;cursor:pointer}section{border-top:1px solid var(--line);padding-top:22px;margin-top:26px}pre{background:var(--code);color:#e6edf3;padding:18px;border-radius:12px;overflow:auto;font:13px/1.55 ui-monospace,monospace}.links{display:flex;gap:12px;flex-wrap:wrap;margin:18px 0}.links a{border:1px solid var(--line);border-radius:8px;padding:7px 9px;text-decoration:none;font-size:12px}@media(max-width:600px){h1{font-size:34px}.top{display:block}}</style></head><body><main><div class="top"><div><div class="k">Data, ML & AI Atlas · Runnable Lab</div><h1>HyperLogLog &amp; Distinct Counting</h1></div><button id="t">◐ Theme</button></div><p class="lead">Implement a 64-bit HyperLogLog with small-range correction, then verify duplicates, accuracy and max-merge semantics.</p><div class="links"><a href="../../index.html#/lesson/hyperloglog">← Full lesson</a><a href="lab.py">Combined Python file</a><a href="README.md">README</a></div><section><h2>1 · Build it</h2><p>Minimal implementation with as little framework abstraction as practical.</p><pre>import hashlib, math, numpy as np
+class HyperLogLog:
+    def __init__(self,p=10): self.p=p; self.m=1&lt;&lt;p; self.q=64-p; self.registers=np.zeros(self.m,dtype=np.uint8)
+    def _hash64(self,value): return int.from_bytes(hashlib.blake2b(str(value).encode(),digest_size=8).digest(),&#x27;big&#x27;)
+    def add(self,value):
+        h=self._hash64(value); index=h&gt;&gt;self.q; suffix=h&amp;((1&lt;&lt;self.q)-1); rank=self.q-suffix.bit_length()+1 if suffix else self.q+1
+        if rank&gt;self.registers[index]: self.registers[index]=rank
+    def estimate(self):
+        m=self.m; alpha=.7213/(1+1.079/m); raw=alpha*m*m/np.sum(np.exp2(-self.registers.astype(float))); zeros=int(np.count_nonzero(self.registers==0))
+        return m*math.log(m/zeros) if zeros and raw&lt;=2.5*m else raw
+    def merge(self,other):
+        assert self.p==other.p
+        out=HyperLogLog(self.p); out.registers=np.maximum(self.registers,other.registers); return out
+values=[f&#x27;user-{i}&#x27; for i in range(50000)]</pre></section><section><h2>2 · Use it</h2><p>The same idea through a common library or practical API.</p><pre>left,right,whole=HyperLogLog(10),HyperLogLog(10),HyperLogLog(10)
+for value in values[:25000]: left.add(value)
+for value in values[25000:]: right.add(value)
+for value in values+values[:5000]: whole.add(value)
+combined=left.merge(right); estimate=whole.estimate(); exact=len(set(values))</pre></section><section><h2>3 · Ship it</h2><p>Freeze identity, hash and estimator versions, reject incompatible state, monitor register distributions and exact audit error, and attach uncertainty or exact confirmation to consequential thresholds.</p></section><section><h2>4 · Verify it</h2><p>Assertions and sanity checks that catch conceptual or implementation mistakes.</p><pre>assert np.array_equal(combined.registers,whole.registers)
+assert abs(estimate-exact)/exact&lt;.10
+before=whole.registers.copy(); [whole.add(v) for v in values[:1000]]; assert np.array_equal(before,whole.registers)
+empty=HyperLogLog(10); assert empty.estimate()==0.0
+small=HyperLogLog(10); [small.add(i) for i in range(100)]; assert abs(small.estimate()-100)/100&lt;.15
+try: left.merge(HyperLogLog(11))
+except AssertionError: pass
+else: raise AssertionError(&#x27;precision mismatch must not merge&#x27;)</pre></section></main><script>const b=document.getElementById('t');function u(){b.textContent=document.documentElement.dataset.theme==='dark'?'☀ Light':'☾ Dark'}u();b.onclick=()=>{const n=document.documentElement.dataset.theme==='dark'?'light':'dark';document.documentElement.dataset.theme=n;localStorage.setItem('atlas-theme',n);u()}</script></body></html>

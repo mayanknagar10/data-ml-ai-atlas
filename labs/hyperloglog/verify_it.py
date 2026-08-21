@@ -1,0 +1,31 @@
+import hashlib, math, numpy as np
+class HyperLogLog:
+    def __init__(self,p=10): self.p=p; self.m=1<<p; self.q=64-p; self.registers=np.zeros(self.m,dtype=np.uint8)
+    def _hash64(self,value): return int.from_bytes(hashlib.blake2b(str(value).encode(),digest_size=8).digest(),'big')
+    def add(self,value):
+        h=self._hash64(value); index=h>>self.q; suffix=h&((1<<self.q)-1); rank=self.q-suffix.bit_length()+1 if suffix else self.q+1
+        if rank>self.registers[index]: self.registers[index]=rank
+    def estimate(self):
+        m=self.m; alpha=.7213/(1+1.079/m); raw=alpha*m*m/np.sum(np.exp2(-self.registers.astype(float))); zeros=int(np.count_nonzero(self.registers==0))
+        return m*math.log(m/zeros) if zeros and raw<=2.5*m else raw
+    def merge(self,other):
+        assert self.p==other.p
+        out=HyperLogLog(self.p); out.registers=np.maximum(self.registers,other.registers); return out
+values=[f'user-{i}' for i in range(50000)]
+
+# ---- Use it ----
+left,right,whole=HyperLogLog(10),HyperLogLog(10),HyperLogLog(10)
+for value in values[:25000]: left.add(value)
+for value in values[25000:]: right.add(value)
+for value in values+values[:5000]: whole.add(value)
+combined=left.merge(right); estimate=whole.estimate(); exact=len(set(values))
+
+# ---- Verify it ----
+assert np.array_equal(combined.registers,whole.registers)
+assert abs(estimate-exact)/exact<.10
+before=whole.registers.copy(); [whole.add(v) for v in values[:1000]]; assert np.array_equal(before,whole.registers)
+empty=HyperLogLog(10); assert empty.estimate()==0.0
+small=HyperLogLog(10); [small.add(i) for i in range(100)]; assert abs(small.estimate()-100)/100<.15
+try: left.merge(HyperLogLog(11))
+except AssertionError: pass
+else: raise AssertionError('precision mismatch must not merge')
