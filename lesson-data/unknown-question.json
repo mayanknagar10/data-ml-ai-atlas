@@ -6,33 +6,57 @@
   "roles": [
     "all"
   ],
-  "interviewAnswer": "Do not bluff. State what you know, identify the uncertain part, reason from first principles, and describe how you would verify it. A structured partial answer is usually stronger than confident guessing.",
+  "interviewAnswer": "When I do not know an answer, I do not bluff. I first classify the gap: unfamiliar term, forgotten fact, ambiguous requirement, derivation I can reconstruct, or implementation detail that needs documentation. I state the boundary precisely—what I know and what I do not—then ask one high-information clarification if needed. If the interviewer wants reasoning, I declare assumptions, reduce the problem to known principles, work through a small example and check invariants, units, edge cases and counterexamples aloud. I label tentative inferences and revise them when evidence conflicts. If an external fact is required, I explain which authoritative source or experiment I would use and how I would validate it. I close with a concise current conclusion and uncertainty. Honest calibration plus a productive recovery process is stronger than confident fabrication.",
   "keyPoints": [
-    "Separate facts from assumptions",
-    "Ask one clarifying question only when necessary",
-    "Reason aloud concisely",
-    "Never invent metrics or implementation details"
+    "Separate missing vocabulary, recall, specification, derivation and external-fact gaps because they need different recovery actions.",
+    "State the knowledge boundary precisely rather than saying only 'I don't know' or improvising certainty.",
+    "Clarify the objective and assumptions, reason from first principles and test invariants and edge cases.",
+    "Label hypotheses, evidence and confidence so the interviewer can distinguish fact from exploration.",
+    "Know when to stop deriving and specify an authoritative lookup, experiment or escalation plan."
   ],
   "resources": [
+    "google-technical-writing",
+    "nasa-systems-engineering-handbook",
     "stanford-cs329s"
   ],
   "featured": false,
-  "why": "Interviewers do not expect perfect recall, but they do evaluate honesty, composure and whether you can reason from fundamentals when knowledge is incomplete.",
-  "intuition": "Separate “I do not remember the exact fact” from “I have no idea.” State the boundary, explain what you do know, and reason forward without inventing details.",
-  "deepDive": "A useful pattern is: clarify the question → state the known part → identify the uncertain part → reason from first principles → suggest how you would verify it. If the interviewer corrects you, incorporate the correction rather than defending a guess. For implementation questions, describe a debugging or research plan. For resume claims, never fabricate details you cannot defend.",
-  "workedExample": "“I have not used SageMaker professionally, so I would not claim hands-on depth. I have built ADF/SQL ETL pipelines and understand ingestion, orchestration, monitoring and failure recovery; I would map those concepts to the AWS services and verify the service-specific behavior in the docs.”",
+  "why": "Technical work routinely reaches uncertain territory: an unfamiliar API, a forgotten theorem condition, a production symptom with incomplete telemetry or a design question missing scale. Interviews can test how someone behaves there. Bluffing creates incorrect premises that compound through the answer. Immediate surrender hides reasoning that could be useful. A disciplined recovery makes uncertainty observable and safe. It shows epistemic honesty, decomposition, debugging, communication and judgment about verification. The aim is not to perform ignorance gracefully; it is to make the best warranted progress without converting a guess into a fact.",
+  "intuition": "A pilot encountering an unfamiliar warning does not invent its meaning or abandon the aircraft. They identify what is observed, use known instruments and procedures, test safe hypotheses, communicate uncertainty and consult the authoritative checklist when required. Technical reasoning under uncertainty follows the same pattern. Draw a bright line around known facts, then expand it through questions, derivation or evidence while protecting against confident error.",
+  "deepDive": "Handling an unknown question is calibrated problem solving. The process diagnoses the kind of gap, exposes assumptions, asks efficient clarifications, derives from known mechanisms, verifies with invariants and decides when authoritative information is required. It values correct updates over performance of certainty.",
+  "workedExample": "Asked to explain a database isolation level you cannot recall exactly: say which properties you do remember and that you do not want to invent the prohibited-anomaly table. Clarify whether the interviewer wants intuition or precise standard behavior. Derive a concurrent read/write schedule, label the uncertain claim, and test it against atomicity and visibility. If exact vendor behavior matters, say you would verify official documentation and reproduce the schedule in a transaction test. Do not confidently merge snapshot isolation and serializability.",
   "commonMistakes": [
-    "Bluffing with confident but false terminology.",
-    "Saying only “I don’t know” when you can still reason usefully.",
-    "Talking indefinitely instead of clearly stating the uncertainty."
+    {
+      "misconception": "Never say you do not know.",
+      "correction": "Precise uncertainty protects correctness and creates room for useful reasoning."
+    },
+    {
+      "misconception": "Say 'I don't know' and stop immediately.",
+      "correction": "Classify the gap and offer clarification, derivation, experiment or source when appropriate."
+    },
+    {
+      "misconception": "Think aloud without signposting confidence.",
+      "correction": "Separate known facts, assumptions, hypotheses and checks so exploration is interpretable."
+    },
+    {
+      "misconception": "Keep deriving implementation-specific facts.",
+      "correction": "Arbitrary or fast-changing behavior should be verified in authoritative documentation or a safe test."
+    }
   ],
   "followUps": [
-    "What would you check first?",
-    "Which part are you confident about?",
-    "How would you verify your assumption?",
-    "Can you derive the answer from a simpler case?"
+    {
+      "question": "What if I realize my earlier claim was wrong?",
+      "answer": "Correct it explicitly, explain which check exposed the error and continue from the updated premise."
+    },
+    {
+      "question": "How many clarification questions should I ask?",
+      "answer": "Ask the highest-impact questions, then state reasonable assumptions; avoid making the interviewer specify the whole solution."
+    },
+    {
+      "question": "When should I decline to guess?",
+      "answer": "When the fact is arbitrary, current, high-stakes, security-sensitive or would authorize a destructive action without verification."
+    }
   ],
-  "production": "The same behavior matters in engineering: acknowledge uncertainty, make assumptions explicit, test them cheaply, and use logs/docs/experiments instead of guessing in production.",
+  "production": "Use the same protocol in real work: record observation, known facts, unknowns, hypotheses, assumptions, checks, confidence, decision and verification owner. Prefer official docs, standards and primary artifacts for external facts. Create minimal reproducible experiments in safe environments and define rollback before consequential tests. During incidents, timestamp hypothesis changes and preserve evidence. Review postmortems for where uncertainty was hidden or escalation was late. Maintain runbooks for high-risk stop conditions. Reward corrections and calibrated confidence in team reviews so people are not pushed toward bluffing.",
   "visual": {
     "type": "concept-map",
     "title": "How to Handle a Question You Do Not Know",
@@ -45,6 +69,126 @@
     "caption": "A compact concept map for the most important ideas in this lesson."
   },
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "math": "A clarification has value when it separates plausible problem interpretations that imply different solutions. Informally, prefer a question with high expected information gain: it should reduce uncertainty over requirements, scale, data or failure consequences. During derivation, maintain an assumption set A={a1,…,ak} and conclusion C(A). Sensitivity asks which ai changes C. Confidence should follow evidence: direct knowledge or verified derivation ranks above analogy, and memory fragments remain hypotheses. A numerical estimate should include units, order of magnitude and bounds; Fermi decomposition multiplies or adds auditable factors rather than producing an unsupported point.",
+  "description": "Unknown questions reveal how a candidate manages uncertainty, not simply the size of memory. This chapter classifies knowledge gaps into terminology, recall, ambiguous specification, derivable mechanism, empirical unknown and implementation-specific fact. It presents a recovery loop: pause, state the boundary, clarify the goal, declare assumptions, decompose, reason from known principles, test with examples and invariants, summarize and identify verification. It covers whiteboard derivations, coding problems, system design, estimation questions, debugging and fast-moving APIs. Techniques include dimensional analysis, conservation laws, base cases, counterexamples, complexity bounds, falsifiable hypotheses and binary-search-style clarifications. The chapter explains confidence language, how to correct yourself, when analogy helps and when it misleads, and how to distinguish an interview hint from evidence. It also defines stop conditions for facts that must be looked up, high-stakes domains, security claims and destructive operational actions. The lab models hypotheses with assumptions and checks, audits unsupported conclusions and ranks clarifications by how many candidate interpretations they separate. Production guidance turns the same skill into incident notes, decision logs, documentation checks and escalation practice. The objective is safe, transparent progress—not theatrical certainty or passive refusal.",
+  "prerequisites": [
+    "tell-me-about-yourself"
+  ],
+  "learningObjectives": [
+    "Diagnose the type of knowledge gap and select clarification, derivation, experiment or lookup accordingly.",
+    "Communicate facts, assumptions, hypotheses and confidence as distinct categories.",
+    "Use small examples, invariants, units, bounds and counterexamples to verify reasoning aloud.",
+    "Recognize stop and escalation conditions for implementation-specific or high-stakes unknowns."
+  ],
+  "deepSections": [
+    {
+      "id": "classify-gap",
+      "title": "Classify what is unknown before choosing a recovery strategy",
+      "body": "An unfamiliar acronym may need a definition. A forgotten formula may be derivable from dimensions or a simpler identity. An ambiguous design question needs scale, consistency, latency or failure requirements. An empirical question needs measurement. A vendor-specific default or current API needs authoritative documentation. Say the boundary narrowly: 'I know how optimistic concurrency detects conflicts, but I do not remember this database's retry default.' This is more useful than a global disclaimer. If the premise itself seems wrong, restate it neutrally and test a counterexample. Ask whether reasoning from assumptions is welcome. The classification prevents wasted derivation of a fact that is arbitrary, and prevents unnecessary surrender on a mechanism that can be reconstructed."
+    },
+    {
+      "id": "clarify-assume",
+      "title": "High-information questions and explicit assumptions stabilize the problem",
+      "body": "Ask one question at a time and prefer questions that change the architecture or algorithm: data size, update pattern, error cost, consistency, label timing, user, threat model or allowed tools. Do not interrogate for every detail; if the interviewer leaves it open, choose a reasonable assumption and state it. Keep an assumption ledger visible on the whiteboard. Explain how an alternative value would change the answer. For coding, clarify input domain, duplicates, ordering, memory and error behavior. For ML, clarify prediction time, target, evaluation and leakage. For systems, clarify load, SLO, data model and failure region. Summarize the resulting problem in one sentence before solving. This demonstrates that uncertainty is being reduced rather than hidden."
+    },
+    {
+      "id": "derive-verify",
+      "title": "Reasoning earns confidence through checks, not uninterrupted fluency",
+      "body": "Decompose into known subproblems. Work a smallest nontrivial example, identify base and boundary cases, and derive the mechanism before optimizing. Use units and dimensional analysis for formulas, invariants and conservation for algorithms, state transitions for concurrency, and threat boundaries for security. Estimate orders of magnitude and bound results. Search for a counterexample to your current claim. In code, write a brute-force oracle for small inputs and compare the optimized idea. In system design, trace a request plus a failure. Label an analogy as analogy and state where it might break. If the interviewer offers a hint, incorporate it and acknowledge the update rather than pretending it was your plan. Periodically summarize confirmed facts and open questions."
+    },
+    {
+      "id": "stop-verify",
+      "title": "Some unknowns require authoritative lookup, experiment or escalation",
+      "body": "Do not derive arbitrary syntax, current prices, legal rules, medical thresholds, cryptographic guarantees or cloud-service defaults from first principles. State the source you would consult—official documentation, standard, runbook, owner or primary paper—and the version or environment needed. Design a minimal safe experiment with expected observations and rollback. In production incidents, protect data and users before exploratory changes; log hypotheses and commands. Stop when further speculation risks creating false confidence, when assumptions dominate the conclusion or when the action is destructive. Close an interview answer with the best conditional conclusion: 'Under A and B, I would choose X because Y; I am uncertain about Z and would verify it with Q.' This is a complete engineering answer, not an apology."
+    }
+  ],
+  "workedExamples": [
+    {
+      "title": "Forgotten complexity",
+      "body": "Derive operations level by level, sum the series, check a tiny input and state whether the bound is worst-case or amortized instead of guessing a memorized label."
+    },
+    {
+      "title": "Unknown cloud default",
+      "body": "Explain the mechanism and design choices, then mark the provider's current timeout as a documentation lookup and describe how configuration would be tested."
+    }
+  ],
+  "lab": {
+    "language": "python",
+    "goal": "Represent uncertain reasoning explicitly, detect unsupported conclusions and choose clarifications that separate candidate interpretations.",
+    "buildIt": "interpretations={'batch':{'needs':{'data-volume','deadline'}},'online':{'needs':{'qps','latency','consistency'}},'stream':{'needs':{'event-rate','lateness','state'}}}\nquestions={'execution-mode':{'batch','online','stream'},'latency-target':{'online','stream'},'daily-volume':{'batch','stream'}}\ndef separation(answered):\n    remaining=set(interpretations)\n    for q,allowed in answered.items(): remaining&=questions[q] if allowed else remaining-questions[q]\n    return remaining\nclaims=[{'text':'use a queue','kind':'hypothesis','assumptions':{'online'},'checks':{'load-test'}},{'text':'timeout is 30s','kind':'external-fact','assumptions':set(),'checks':set()}]\ndef unsupported(items): return [c['text'] for c in items if c['kind']!='known' and not c['checks']]",
+    "useIt": "initial=set(interpretations); after_mode=separation({'execution-mode':True}); evidence={'load-test'}; supported=[c for c in claims if c['checks']<=evidence and c['checks']]",
+    "verifyIt": "assert initial=={'batch','online','stream'}\nassert after_mode=={'batch','online','stream'}  # an unqualified broad answer does not yet separate them\nassert unsupported(claims)==['timeout is 30s']\nassert supported[0]['text']=='use a queue'\nclaims[1]['checks']={'official-docs'}; assert unsupported(claims)==[]\nassert questions['execution-mode']==set(interpretations)",
+    "shipIt": "Log facts, assumptions, hypotheses, checks and confidence separately; verify changing or high-stakes claims with authoritative sources, design safe experiments, and escalate before destructive uncertainty."
+  },
+  "exercises": [
+    {
+      "prompt": "Classify three unknowns from your field.",
+      "solution": "Label each as terminology, recall, ambiguity, derivable mechanism, empirical or implementation-specific and choose the matching recovery."
+    },
+    {
+      "prompt": "Practice correcting a false start.",
+      "solution": "Name the failed assumption, evidence that contradicted it and the revised reasoning without hiding the change."
+    },
+    {
+      "prompt": "Design a safe verification step.",
+      "solution": "State source or experiment, expected observation, isolation, success criterion and rollback."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "flow",
+      "title": "Unknown-question recovery loop",
+      "items": [
+        "Pause and classify the gap",
+        "State known boundary",
+        "Clarify objective or choose assumptions",
+        "Derive from known mechanisms",
+        "Check invariants and counterexamples",
+        "Conclude conditionally or verify externally"
+      ],
+      "caption": "The loop turns uncertainty into observable, testable progress without bluffing.",
+      "afterSection": "derive-verify"
+    },
+    {
+      "type": "compare",
+      "title": "Derive or look up",
+      "left": {
+        "title": "Reason from principles",
+        "items": [
+          "Mechanism is known",
+          "Assumptions can be stated",
+          "Checks are available",
+          "Example or proof can verify"
+        ]
+      },
+      "right": {
+        "title": "Verify externally",
+        "items": [
+          "Vendor or version default",
+          "Current or legal fact",
+          "High-stakes threshold",
+          "Security or destructive action"
+        ]
+      },
+      "caption": "Good judgment includes recognizing facts that first principles cannot determine.",
+      "afterSection": "stop-verify"
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "google-technical-writing",
+      "contribution": "Grounds audience-aware clarity, explicit terminology, concise structure and visible assumptions."
+    },
+    {
+      "resource": "nasa-systems-engineering-handbook",
+      "contribution": "Supports documenting assumptions, constraints, rationale, verification and risk in technical decisions."
+    },
+    {
+      "resource": "stanford-cs329s",
+      "contribution": "Provides systems contexts where uncertainty, failure modes, monitoring and verification are central."
+    }
+  ]
 }

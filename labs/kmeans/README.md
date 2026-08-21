@@ -1,6 +1,6 @@
 # K-means Clustering — Code Lab
 
-Implement K-means assignment/update steps and compare with sklearn.
+Implement Lloyd's k-means with repeated starts, compare with scikit-learn, and verify monotone inertia and centroid invariants.
 
 ## 1. Build it
 

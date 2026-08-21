@@ -6,31 +6,57 @@
   "roles": [
     "ds"
   ],
-  "interviewAnswer": "The default 0.5 threshold is arbitrary unless costs and class priors justify it. Choose thresholds using validation data, business costs, safety constraints or capacity targets.",
+  "interviewAnswer": "Threshold tuning converts a fixed score into an action policy. The model estimates a ranking or probability; the threshold should follow false-positive and false-negative costs, benefits, review capacity, safety constraints and abstention options. For calibrated probability p with false-positive cost C_FP and false-negative cost C_FN and no other utility terms, predict positive when p exceeds C_FP/(C_FP+C_FN). Real systems often need constraints or empirical utility instead. I select thresholds on validation or inner cross-validation predictions, lock the policy, and estimate it on untouched data; maximizing test-set F1 is leakage. I report the entire operating point—threshold, confusion counts, prevalence, queue volume, uncertainty and slice constraints—not just a metric. I also monitor score and prevalence drift because a fixed numeric threshold can produce changing workload, and I version rollback thresholds separately from the model.",
   "keyPoints": [
-    "Changing threshold changes precision/recall, not underlying ranking.",
-    "Tune after training on held-out data.",
-    "Revisit threshold when prevalence/costs shift."
+    "A threshold is a decision policy, not an intrinsic property of a classifier score.",
+    "Expected-cost thresholds require calibrated probabilities and explicit, correctly oriented costs.",
+    "Select thresholds on development predictions and estimate the locked policy on independent outcomes.",
+    "Capacity, minimum-recall and safety constraints often describe the problem better than maximizing F1.",
+    "Ties, abstention, subgroup policies, delayed labels and changing prevalence need explicit governance."
   ],
   "resources": [
-    "sklearn",
-    "google-rules-ml",
-    "google-mlcc-exercises"
+    "sklearn-threshold-guide",
+    "sklearn-model-evaluation",
+    "sklearn-calibration-guide"
   ],
   "featured": true,
-  "why": "Decision Thresholds & Cost-sensitive Classification is a recurring foundation across data science and machine learning because it affects both theoretical correctness and practical system behavior.",
-  "intuition": "Changing threshold changes precision/recall, not underlying ranking.",
-  "deepDive": "The default 0.5 threshold is arbitrary unless costs and class priors justify it. Choose thresholds using validation data, business costs, safety constraints or capacity targets. Tune after training on held-out data. Revisit threshold when prevalence/costs shift. The interview-level skill is not merely recalling the definition: explain the assumptions, what diagnostic evidence you would inspect, and what alternative you would choose when those assumptions fail.",
-  "workedExample": "Set a fraud-alert threshold to maximize captured fraud subject to analysts reviewing at most 1,000 cases/day.",
+  "why": "The default 0.5 cutoff is a software convention, not a universal business rule. A fraud team may inspect only 500 cases, a medical screen may require minimum sensitivity, and an autonomous action may need a low false-positive bound. The best ranking model can perform badly under the wrong threshold, while an attractive F1 threshold may ignore real costs and become optimistic if chosen on final-test labels. Probability miscalibration, prevalence drift and a changing review budget move the optimal policy even when model code is unchanged. Treating threshold selection as a separate, versioned optimization problem makes consequences, constraints and evidence visible.",
+  "intuition": "Lowering a threshold admits more cases into the positive queue. It usually catches more true positives but also adds false positives. The right stopping point is where the next case's expected benefit no longer exceeds its expected harm or where the queue is full. The score orders candidates; the policy decides how far down the list to act.",
+  "deepDive": "Threshold selection links calibrated risk or ranking scores to utility under constraints. Candidate thresholds need leakage-safe development predictions, stable tie rules and independent assessment. Fixed thresholds, quantile policies and multi-action bands respond differently to drift. Robust production practice versions policy separately, monitors realized workload and harm, and retains abstention or rollback paths.",
+  "workedExample": "A false alert costs 1 and a missed positive costs 10. With calibrated probability p, acting costs 1-p and not acting costs 10p. Act when 1-p<10p, so p>1/11, about 0.091.",
   "commonMistakes": [
-    "Using the concept mechanically without checking assumptions or data semantics.",
-    "Reporting one metric/result without examining uncertainty, slices or failure modes."
+    {
+      "misconception": "Probability above 0.5 is the statistically correct positive decision.",
+      "correction": "Only equal error costs and the assumed action setup yield 0.5; real constraints often imply another policy."
+    },
+    {
+      "misconception": "Maximizing test F1 finds the final threshold.",
+      "correction": "It uses final outcomes for selection and makes the reported test performance optimistic."
+    },
+    {
+      "misconception": "A fixed threshold guarantees fixed workload.",
+      "correction": "Selection volume changes when prevalence, calibration or the score distribution shifts."
+    },
+    {
+      "misconception": "Per-group thresholds are purely technical optimization.",
+      "correction": "They alter treatment across groups and require legal, fairness and operational governance."
+    }
   ],
   "followUps": [
-    "What assumptions or limitations does Decision Thresholds & Cost-sensitive Classification have?",
-    "How would you validate Decision Thresholds & Cost-sensitive Classification on a real dataset?"
+    {
+      "question": "When is a top-K policy preferable?",
+      "answer": "When review capacity is genuinely fixed and rankings are reliable, while risk and error rates are monitored as the population changes."
+    },
+    {
+      "question": "Should calibration happen before threshold tuning?",
+      "answer": "Yes when costs are interpreted through probability; both steps need separate or properly cross-fitted evidence."
+    },
+    {
+      "question": "How do you handle tied scores at capacity K?",
+      "answer": "Use a documented deterministic or randomized tie rule and evaluate the implemented policy, including any capacity overrun or exclusion."
+    }
   ],
-  "production": "In production, make assumptions explicit, validate on representative slices, compare with a simple baseline and monitor the signals that can drift.",
+  "production": "Version score and calibrator, eligibility, costs and benefits, constraints, threshold grid, tie rule, capacity, abstention and effective date. Select on held-out or inner out-of-fold predictions and lock before final assessment. Report threshold-level counts, prevalence, selection volume, precision, recall, utility and uncertainty by critical cohort. Monitor score distribution, calibration near the cutoff, queue utilization and delayed outcomes. Stress-test cost and prevalence assumptions, canary policy changes, and keep threshold, model and emergency-review rollbacks independently deployable.",
   "visual": {
     "type": "curve",
     "title": "Threshold changes the operating point",
@@ -99,6 +125,133 @@
     "yLabel": "metric"
   },
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "math": "With calibrated probability p, positive action has expected cost (1-p)C_FP and negative action has p C_FN. Choose positive when p>C_FP/(C_FP+C_FN), assuming zero correct-decision costs and constant costs. Empirical utility at threshold t is U(t)=b_TP TP(t)-c_FP FP(t)-c_FN FN(t)+b_TN TN(t), optionally divided by an exposure unit. A capacity rule may maximize TP subject to TP+FP<=K; a safety rule may minimize cost subject to recall>=r0. Quantile thresholds keep selection rate fixed but not risk or error rates.",
+  "code": "from sklearn.metrics import confusion_matrix\npred=pt>=threshold; tn,fp,fn,tp=confusion_matrix(y_test,pred,labels=[0,1]).ravel(); direct=2*tp-fp-4*fn",
+  "lab": {
+    "language": "python",
+    "goal": "Select a cost-aware threshold on validation scores, lock it, and verify utility and independent test evaluation.",
+    "buildIt": "import numpy as np\nfrom sklearn.datasets import make_classification\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.linear_model import LogisticRegression\nX,y=make_classification(n_samples=1200,n_features=10,n_informative=6,weights=[.8,.2],random_state=7)\nX_fit,X_rest,y_fit,y_rest=train_test_split(X,y,test_size=.5,stratify=y,random_state=1)\nX_val,X_test,y_val,y_test=train_test_split(X_rest,y_rest,test_size=.5,stratify=y_rest,random_state=2)\nmodel=LogisticRegression(max_iter=2000).fit(X_fit,y_fit); pv=model.predict_proba(X_val)[:,1]; pt=model.predict_proba(X_test)[:,1]\ndef utility(y,p,t,fp_cost=1,fn_cost=4,tp_value=2):\n    q=p>=t; tp=np.sum(q&(y==1)); fp=np.sum(q&(y==0)); fn=np.sum((~q)&(y==1)); return float(tp_value*tp-fp_cost*fp-fn_cost*fn)\ngrid=np.linspace(0,1,201); val_u=np.array([utility(y_val,pv,t) for t in grid]); threshold=float(grid[np.argmax(val_u)]); test_u=utility(y_test,pt,threshold)",
+    "useIt": "from sklearn.metrics import confusion_matrix\npred=pt>=threshold; tn,fp,fn,tp=confusion_matrix(y_test,pred,labels=[0,1]).ravel(); direct=2*tp-fp-4*fn",
+    "verifyIt": "assert test_u==direct\nassert threshold in grid and val_u.max()==utility(y_val,pv,threshold)\nassert len(y_val)==len(y_test)==300\nassert 0<=threshold<=1 and tp+fp+fn+tn==len(y_test)\nassert abs((1/(1+4))-.2)<1e-12",
+    "shipIt": "Persist validation predictions, objective, constraints and tie rule; lock the selected policy before test; monitor workload and mature decision outcomes with independent rollback."
+  },
+  "description": "Threshold tuning turns classifier scores into operational decisions. This chapter derives the cost-optimal cutoff for calibrated binary probabilities, generalizes to empirical utility and constrained optimization, and explains why 0.5 and maximum F1 are not default truths. It covers minimum-recall, maximum-false-positive and fixed-capacity policies; top-K selection; accept-review-reject bands; abstention; ties; per-group policies and their governance implications. It separates model fitting, probability calibration, threshold selection and final assessment so test labels never choose the reported operating point. Worked examples derive a 1/11 cutoff from asymmetric costs and show how a fixed threshold changes queue volume under drift. The lab searches thresholds on validation data, verifies the utility calculation and evaluates the locked threshold on a separate test set. Production guidance versions costs, constraints, tie rules and cohort definitions, monitors workload and threshold-level confusion counts, backfills delayed outcomes, canaries policy changes and retains independent model and policy rollback controls. It treats workload and safety limits as explicit constraints rather than after-the-fact dashboard commentary.",
+  "prerequisites": [
+    "classification-metrics",
+    "probability-calibration"
+  ],
+  "learningObjectives": [
+    "Derive probability thresholds from asymmetric costs and formulate constrained alternatives.",
+    "Select a policy from validation or inner out-of-fold predictions without test leakage.",
+    "Evaluate thresholds using counts, workload, utility, uncertainty and critical slices.",
+    "Operate fixed, capacity-based and abstaining policies under prevalence and score drift."
+  ],
+  "deepSections": [
+    {
+      "id": "decision-theory",
+      "title": "Derive the action from expected consequences",
+      "body": "For a calibrated probability, compare expected loss of each action. Under constant false-positive and false-negative costs with zero cost for correct decisions, the cutoff is C_FP divided by the sum of both error costs. If missing a positive costs ten times a false alert, the cutoff is about 0.091, not 0.5. Add benefits, intervention cost, heterogeneous exposure or downstream capacity explicitly; the simple formula then changes. Costs can depend on customer value, disease severity or time, producing an example-specific policy rather than one global threshold. If scores are not calibrated probabilities, direct cost formulas are invalid, though empirical validation can still select an operating point. Utility assumptions deserve sensitivity analysis because nominal currency values may hide safety, fairness or legal constraints that should be represented as hard limits."
+    },
+    {
+      "id": "constraints-capacity",
+      "title": "Many policies are constrained rather than unconstrained",
+      "body": "A review team with K daily slots should evaluate precision and recall among the top K or choose a score quantile, while preserving a deterministic tie rule. A medical pathway may maximize specificity subject to sensitivity above a prespecified floor. A safety system may cap false positives per million exposures. Empirical F1 assigns an implicit and prevalence-dependent trade-off and ignores true negatives, so use it only when that matches the actual objective. Multi-action systems can define accept, review and reject regions; abstention trades coverage for lower conditional risk and needs its own service-level cost. Group-specific thresholds may improve calibration or equalized metrics but can be legally or ethically sensitive, change treatment by group and create maintenance complexity. State constraints, tolerance and priority before seeing final outcomes."
+    },
+    {
+      "id": "selection-protocol",
+      "title": "Threshold search consumes label evidence",
+      "body": "Generate validation scores from a model that did not train on those outcomes. If the model is tuned, calibrated and thresholded on limited data, nest or partition these operations so each adaptive step receives legal evidence. Enumerate distinct score cutoffs or a sufficiently dense grid, compute confusion counts and objective, apply constraints, and use a deterministic tie-breaking rule such as the highest threshold among equivalent utilities. Lock the threshold before final-test scoring. Searching hundreds of thresholds and reporting the best validation utility still has selection uncertainty; show the objective curve and prefer a stable plateau. Bootstrap the entire selection process when estimating policy variability, not merely counts at a fixed optimistically chosen threshold. Repeated test-set threshold adjustment converts the test into development data."
+    },
+    {
+      "id": "evaluation-slices",
+      "title": "Report the operating point as counts and consequences",
+      "body": "A threshold value is meaningless without score version and population. Report eligibility count, prevalence, TP, FP, FN, TN, selection rate, precision, recall, specificity, utility and capacity use. Use paired independent-unit uncertainty when comparing policies. Evaluate important groups, time windows and exposure bands, but avoid declaring tiny slices safe from a zero count without an upper confidence bound. Calibration near the threshold matters more than global calibration when probabilities drive cost. Stress-test plausible prevalence and cost ranges. A threshold optimized for average utility may violate a critical recall floor; constraints must be checked after rounding, ties and deduplication exactly as implemented. Simulate downstream review acceptance, throttling and cooldown because these change which scored event becomes an action."
+    },
+    {
+      "id": "policy-operations",
+      "title": "Model and policy have separate lifecycles",
+      "body": "Version the score model, calibrator, threshold or capacity rule, cost table, constraints, tie handling, abstention band and effective date. A fixed threshold gives stable semantics when probabilities remain calibrated but workload changes with prevalence. A quantile policy stabilizes workload but allows risk and error rates to drift. Monitor both score distribution and action volume, plus mature confusion counts and realized utility by prediction cohort. Threshold changes can often be deployed and rolled back faster than model changes, but they still require approval and can alter user treatment immediately. Canary against queue and safety guardrails. Do not automatically chase short-window labels; maturation delay and intervention effects can bias observed outcomes. Preserve the last safe policy and an emergency fail-closed or human-review mode."
+    }
+  ],
+  "workedExamples": [
+    {
+      "title": "Cost-derived threshold",
+      "body": "A false alert costs 1 and a missed positive costs 10. With calibrated probability p, acting costs 1-p and not acting costs 10p. Act when 1-p<10p, so p>1/11, about 0.091."
+    },
+    {
+      "title": "Stable threshold, unstable volume",
+      "body": "A calibrated 0.2 threshold selects 5% of cases in one month. After prevalence and score distributions rise, it selects 14%. The rule is unchanged, but staffing and false-positive volume must be reassessed."
+    }
+  ],
+  "exercises": [
+    {
+      "prompt": "False-positive cost is 2 and false-negative cost is 8. What is the simple calibrated cutoff?",
+      "solution": "2/(2+8)=0.2 under the stated zero-cost correct-decision assumptions."
+    },
+    {
+      "prompt": "Why can top-K risk drift while workload stays constant?",
+      "solution": "The policy fixes count, but prevalence, ranking quality and score distribution can change the composition and error rates of those K cases."
+    },
+    {
+      "prompt": "Where should threshold selection occur in nested CV?",
+      "solution": "Within each outer training set using inner or cross-fitted predictions, before evaluating the untouched outer holdout."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "flow",
+      "title": "Score-to-action policy",
+      "items": [
+        "Fit and calibrate score",
+        "Declare cost and constraints",
+        "Generate legal validation predictions",
+        "Search threshold or capacity rule",
+        "Lock and assess independently",
+        "Monitor workload and mature outcomes"
+      ],
+      "caption": "Threshold selection is its own learned policy with a validation boundary.",
+      "afterSection": "selection-protocol"
+    },
+    {
+      "type": "compare",
+      "title": "Two stable policies",
+      "left": {
+        "title": "Fixed probability threshold",
+        "items": [
+          "Stable risk interpretation",
+          "Volume may drift",
+          "Needs calibration",
+          "Good for cost rules"
+        ]
+      },
+      "right": {
+        "title": "Fixed top-K or quantile",
+        "items": [
+          "Stable capacity",
+          "Risk may drift",
+          "Needs ranking",
+          "Good for review queues"
+        ]
+      },
+      "caption": "Choose which quantity the operation truly needs to hold stable.",
+      "afterSection": "policy-operations"
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "sklearn-threshold-guide",
+      "contribution": "Verifies the separation of probabilistic prediction from decision threshold and cross-validated tuning behavior."
+    },
+    {
+      "resource": "sklearn-model-evaluation",
+      "contribution": "Supports confusion metrics, cost-aware scorers and operating-point evaluation."
+    },
+    {
+      "resource": "sklearn-calibration-guide",
+      "contribution": "Supports the probability semantics required for cost-derived thresholds."
+    }
+  ]
 }

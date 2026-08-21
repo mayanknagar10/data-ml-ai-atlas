@@ -7,31 +7,185 @@
     "ds",
     "as"
   ],
-  "interviewAnswer": "Linear and Quadratic Discriminant Analysis model class-conditional Gaussian distributions. LDA shares covariance across classes and yields linear boundaries; QDA allows class-specific covariance and quadratic boundaries.",
+  "interviewAnswer": "LDA and QDA are generative classifiers that model each class as multivariate Gaussian and apply Bayes' rule. QDA estimates a separate covariance Σ_k for every class, producing quadratic log-posterior boundaries. LDA assumes one shared covariance Σ, so quadratic x terms cancel and boundaries are linear. LDA estimates fewer parameters and is usually more stable with limited data; QDA can capture class-specific orientation and scale but needs much more data and regularization. Priors shift intercepts and decisions. I standardize only when justified by the feature pipeline, fit covariance and shrinkage inside validation, inspect conditioning, compare Gaussian NB's diagonal assumption, evaluate calibration and subgroup errors, and avoid causal interpretations of discriminant directions.",
   "keyPoints": [
-    "Generative classifiers model p(x|y) and priors.",
-    "LDA lower variance; QDA more flexible.",
-    "Covariance estimation can be unstable in high dimensions."
+    "Both methods model class priors and Gaussian class-conditional densities, then maximize posterior probability.",
+    "Shared covariance makes LDA boundaries linear; class-specific covariance makes QDA boundaries quadratic.",
+    "Covariance estimation, conditioning and shrinkage dominate performance when features are numerous relative to samples.",
+    "Gaussian NB is the diagonal class-specific covariance special case; it is not the same as LDA.",
+    "LDA classification and supervised dimensionality reduction are related but distinct outputs."
   ],
   "resources": [
+    "sklearn-lda-qda",
     "isl",
     "stanford-stats202"
   ],
   "featured": false,
-  "why": "LDA & QDA is a recurring foundation across data science and machine learning because it affects both theoretical correctness and practical system behavior.",
-  "intuition": "Generative classifiers model p(x|y) and priors.",
-  "deepDive": "Linear and Quadratic Discriminant Analysis model class-conditional Gaussian distributions. LDA shares covariance across classes and yields linear boundaries; QDA allows class-specific covariance and quadratic boundaries. LDA lower variance; QDA more flexible. Covariance estimation can be unstable in high dimensions. The interview-level skill is not merely recalling the definition: explain the assumptions, what diagnostic evidence you would inspect, and what alternative you would choose when those assumptions fail.",
-  "workedExample": "Classify two well-separated Gaussian populations with LDA when a shared covariance is plausible.",
+  "why": "Discriminant analysis connects probability models, covariance geometry and classification boundaries with closed-form estimators. It explains when a linear boundary arises from a generative assumption rather than a discriminative logistic objective, and shows exactly what additional flexibility QDA purchases with many more covariance parameters. These models can be strong for small or moderate datasets when class distributions are approximately elliptical, and their assumptions are inspectable. They also teach practical numerical lessons: covariance matrices can be singular, correlated units shape Mahalanobis distance, shrinkage can improve generalization, and class priors can matter as much as feature means under imbalance. LDA's supervised projection introduces between- and within-class scatter but should not be confused with PCA or with proof of naturally separated groups. Mastery provides a principled spectrum from Gaussian NB through LDA to QDA and a baseline for more flexible classifiers.",
+  "intuition": "Imagine each class as an elliptical cloud. Classification asks which cloud would most plausibly have generated the new point, after accounting for how common each class is. If every cloud has the same ellipse shape, only their centers and priors differ; the equal-posterior boundary is a line or hyperplane. If each class has its own ellipse, curvature remains and the boundary becomes quadratic. Estimating one shared ellipse pools evidence and is stable. Estimating one per class follows richer geometry but can chase noise, especially for rare classes or many features. Shrinkage pulls unreliable ellipses toward a simpler spherical or diagonal shape.",
+  "deepDive": "LDA and QDA turn Gaussian class models into discriminant scores. Their boundary complexity is determined by covariance constraints, while practical reliability is determined by covariance estimation, priors, support and numeric solvers. Classification, probability estimation and supervised projection must be evaluated separately under a pipeline that preserves class and feature semantics.",
+  "workedExample": "Two one-dimensional classes have means 0 and 2, shared variance 1 and equal priors. Equal log posteriors occur when (x-0)^2=(x-2)^2, giving x=1. If class 1 prior doubles, its log-prior bonus shifts the boundary toward class 0. If variances differ, log variance and x^2 terms remain, and there may be two quadratic crossing points.",
   "commonMistakes": [
-    "Using the concept mechanically without checking assumptions or data semantics.",
-    "Reporting one metric/result without examining uncertainty, slices or failure modes."
+    {
+      "misconception": "LDA assumes every feature is independently Gaussian.",
+      "correction": "LDA permits correlated features through a full shared covariance. Gaussian NB is the diagonal class-specific model."
+    },
+    {
+      "misconception": "QDA is always better because it is more flexible.",
+      "correction": "It estimates far more covariance parameters and can have severe variance or singularity with limited per-class data."
+    },
+    {
+      "misconception": "LDA projection is unsupervised like PCA.",
+      "correction": "It uses class labels to maximize discrimination and must be trained inside the validation fold."
+    },
+    {
+      "misconception": "Closed-form estimates eliminate hyperparameters and validation.",
+      "correction": "Covariance constraints, shrinkage, priors, preprocessing and decision thresholds still require evidence and can overfit."
+    }
   ],
   "followUps": [
-    "What assumptions or limitations does LDA & QDA have?",
-    "How would you validate LDA & QDA on a real dataset?"
+    {
+      "question": "Why is LDA's boundary linear?",
+      "answer": "A shared covariance makes the x^TΣ^-1x term identical for all class scores, so it cancels during comparison and only affine terms remain."
+    },
+    {
+      "question": "When does Gaussian NB relate to QDA?",
+      "answer": "It is QDA with each class covariance constrained to be diagonal, encoding conditional feature independence."
+    },
+    {
+      "question": "Why can LDA outperform QDA?",
+      "answer": "Pooling covariance dramatically reduces estimation variance when samples are limited or class covariance differences are weak."
+    }
   ],
-  "production": "In production, make assumptions explicit, validate on representative slices, compare with a simple baseline and monitor the signals that can drift.",
+  "production": "Version feature extraction, units and order, class labels, priors, means, covariance constraint, shrinkage target and strength, solver, calibration and decision threshold. Use stable decompositions and tests for finite scores, positive covariance eigenvalues and consistent class order across runtimes. Monitor class counts and prevalence, feature and missingness drift, covariance conditioning, Mahalanobis distances, score margins, calibration, delayed class-specific error and subgroup outcomes. Flag observations far from every class and route them to a validated fallback instead of forcing confident classification. Protect sensitive sufficient statistics and restrict detailed distance traces. Canary candidates, retain the previous artifact, and keep a shared-covariance, diagonal or prior-only model for covariance failure, feature outage or rollback.",
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "math": "Assume P(Y=k)=π_k and X|Y=k~N(μ_k,Σ_k). QDA score δ_k(x)=-0.5 log|Σ_k|-0.5(x-μ_k)^TΣ_k^-1(x-μ_k)+log π_k. LDA sets Σ_k=Σ, yielding δ_k(x)=x^TΣ^-1μ_k-0.5μ_k^TΣ^-1μ_k+log π_k plus a class-independent term. QDA estimates K covariance matrices with O(Kd²) parameters; LDA pools one. LDA projection seeks directions with large between-class relative to within-class scatter and has at most K-1 dimensions.",
+  "code": "from sklearn.discriminant_analysis import LinearDiscriminantAnalysis,QuadraticDiscriminantAnalysis\nlda=LinearDiscriminantAnalysis().fit(X,y); qda=QuadraticDiscriminantAnalysis().fit(X,y)\nlda_pred=lda.predict(X); qda_pred=qda.predict(X)",
+  "lab": {
+    "language": "python",
+    "goal": "Implement Gaussian LDA and QDA log scores, compare with scikit-learn, and verify covariance and probability behavior.",
+    "buildIt": "import numpy as np\nX=np.array([[-2,-1],[-1,-2],[-2,-2],[-1,-1],[1,1],[2,1],[1,3],[3,2]],float); y=np.array([0,0,0,0,1,1,1,1]); classes=np.unique(y)\nmeans=np.array([X[y==c].mean(axis=0) for c in classes]); priors=np.array([(y==c).mean() for c in classes])\ncentered=np.vstack([X[y==c]-means[i] for i,c in enumerate(classes)]); shared=centered.T@centered/(len(X)-len(classes))\ncovs=np.array([np.cov(X[y==c],rowvar=False,bias=False) for c in classes])\ndef scores(Q,cov_list):\n    out=[]\n    for i,cov in enumerate(cov_list):\n        sign,logdet=np.linalg.slogdet(cov); diff=np.asarray(Q)-means[i]\n        out.append(-.5*logdet-.5*np.sum(diff*np.linalg.solve(cov,diff.T).T,axis=1)+np.log(priors[i]))\n    return np.column_stack(out)\nlda_scores=scores(X,[shared,shared]); qda_scores=scores(X,covs)",
+    "useIt": "from sklearn.discriminant_analysis import LinearDiscriminantAnalysis,QuadraticDiscriminantAnalysis\nlda=LinearDiscriminantAnalysis().fit(X,y); qda=QuadraticDiscriminantAnalysis().fit(X,y)\nlda_pred=lda.predict(X); qda_pred=qda.predict(X)",
+    "verifyIt": "assert np.array_equal(classes[lda_scores.argmax(axis=1)],lda_pred)\nassert np.array_equal(classes[qda_scores.argmax(axis=1)],qda_pred)\nassert np.array_equal(lda_pred,y)\nassert np.array_equal(qda_pred,y)\nassert np.linalg.eigvalsh(shared).min()>0\nassert np.allclose(lda.predict_proba(X).sum(axis=1),1)\nassert np.isfinite(qda_scores).all()",
+    "shipIt": "Freeze feature units, class order, priors, covariance and solver; monitor conditioning, distance, prevalence and calibration; flag unsupported points and retain a simpler covariance fallback."
+  },
+  "description": "Linear and quadratic discriminant analysis classify by combining Gaussian class-conditional densities with class priors. This chapter derives QDA's quadratic discriminant score and shows how a shared covariance cancels quadratic terms to produce LDA's linear boundary. It covers Mahalanobis distance, determinant volume penalties, priors, covariance parameter counts, singularity, SVD solvers, shrinkage, robust alternatives, Gaussian Naive Bayes, logistic regression, calibration and supervised LDA projection. Worked examples compute a one-dimensional boundary and show why QDA collapses with a rare class in high dimension. The lab implements stable log discriminants with solved linear systems, compares predictions with scikit-learn and verifies that shared covariance matches LDA while unequal covariance can change the boundary. Production guidance versions units, class mapping, priors, covariance strategy and solver; monitors conditioning, prevalence, distance, calibration, drift and subgroup outcomes; and defines fallbacks and rollback. The emphasis is on the assumption-capacity trade-off: covariance flexibility is useful only when the data can estimate it.",
+  "prerequisites": [
+    "expectation-variance",
+    "distributions"
+  ],
+  "learningObjectives": [
+    "Derive LDA and QDA discriminant scores from Gaussian class-conditionals and Bayes' rule.",
+    "Explain how shared versus class-specific covariance changes boundary shape and parameter count.",
+    "Use shrinkage and stable solvers when covariance estimates are ill-conditioned.",
+    "Distinguish LDA classification, LDA projection, Gaussian NB and logistic regression."
+  ],
+  "deepSections": [
+    {
+      "id": "generative-scores",
+      "title": "Gaussian class models produce discriminant scores",
+      "body": "For class k, estimate prior π_k, mean vector μ_k and covariance Σ_k. Bayes' rule says the posterior is proportional to prior times class-conditional density. Taking logs avoids underflow and gives a Mahalanobis distance term, a log-determinant term and log prior. Mahalanobis distance discounts directions with high within-class variance and emphasizes tightly estimated directions. The determinant penalizes diffuse densities: an equally distant point is less probable under a cloud whose mass is spread over more volume. Priors shift scores toward common or policy-weighted classes. Normalizing scores with log-sum-exp yields model posteriors, but Gaussian misspecification and shifted priors can make them uncalibrated. The features need not be marginally Gaussian across the full dataset; the assumption is Gaussian within each class. Outliers and multimodal classes can distort means and covariance severely."
+    },
+    {
+      "id": "shared-vs-specific",
+      "title": "Covariance constraints set the boundary complexity",
+      "body": "Expanding the QDA score leaves terms involving x^TΣ_k^-1x. When every class shares Σ, those terms are identical across classes and cancel in comparisons, leaving an affine score in x: LDA. Separate Σ_k retain quadratic terms, allowing curved boundaries and class-specific orientations. This flexibility costs parameters. A symmetric d-dimensional covariance has d(d+1)/2 unique entries; QDA needs one per class, often disastrous when a class has fewer observations than dimensions. LDA pools within-class covariance and can be much more stable. Gaussian NB instead uses a diagonal covariance for each class, discarding within-class correlations while retaining class-specific variances. Regularized discriminant variants interpolate among full, diagonal and shared structures. Select constraints with domain knowledge and honest validation, not by assuming QDA is automatically more advanced."
+    },
+    {
+      "id": "estimation-stability",
+      "title": "Covariance estimation is the practical bottleneck",
+      "body": "Sample covariance becomes singular when dimensions exceed independent observations and unstable well before that. Explicit matrix inversion magnifies conditioning problems; use decompositions or solves. SVD-based LDA can avoid directly forming the covariance for classification and projection. Shrinkage estimates (1-λ)S+λT, pulling the sample covariance toward a structured target such as a scaled identity. This trades some bias for lower variance and positive conditioning. Choose analytic shrinkage or tune it inside validation. Standardizing features is not mathematically mandatory because covariance accounts for units, but scaling can improve numeric behavior and interacts with shrinkage targets; fit it inside the pipeline. Duplicate features, near-linear relations and tiny within-class variance require tests. Robust covariance or transformations may help heavy tails, but they change the model and need independent evidence."
+    },
+    {
+      "id": "projection-comparisons",
+      "title": "Classification, projection and nearby models",
+      "body": "LDA can also produce a supervised lower-dimensional representation that emphasizes separation of class means relative to within-class variation. With K classes, at most K-1 discriminant directions exist. This transform uses labels and must be fit inside validation; plotting the full dataset in LDA space leaks target information. PCA ignores labels and maximizes total variance, so it can preserve nuisance variation that LDA suppresses. Logistic regression models posterior log odds directly and makes no Gaussian density claim; under equal-covariance Gaussian class models, its linear form is compatible with LDA, but estimation and robustness differ. QDA and Gaussian NB occupy other covariance points. Compare these baselines under the same preprocessing, splits and metrics. A visually separated LDA plot does not prove generalization, natural clusters, fairness or causal mechanisms."
+    },
+    {
+      "id": "evaluation-operations",
+      "title": "Evaluate assumptions through consequences",
+      "body": "Use grouped or temporal validation as required and fit means, scaling, covariance, shrinkage and priors inside each fold. Compare discrimination, class-specific recall, log loss, Brier score and decision utility. Inspect covariance eigenvalues and condition numbers, class sample counts, Mahalanobis-distance distributions and sensitivity to outliers or prior choices. A high distance from every class suggests unsupported inference, not necessarily a confident 'least bad' class. At serving, version feature units and order, class mapping, means, covariance representation, priors, shrinkage, solver and threshold. Monitor prevalence, feature and distance drift, score distribution, calibration and subgroup outcomes. Protect stored class statistics when they summarize sensitive populations. Canary changes and keep a regularized linear, diagonal or prior-only fallback when covariance becomes invalid, features fail or latency constraints are breached."
+    }
+  ],
+  "workedExamples": [
+    {
+      "title": "Equal variance gives a linear boundary",
+      "body": "Two one-dimensional classes have means 0 and 2, shared variance 1 and equal priors. Equal log posteriors occur when (x-0)^2=(x-2)^2, giving x=1. If class 1 prior doubles, its log-prior bonus shifts the boundary toward class 0. If variances differ, log variance and x^2 terms remain, and there may be two quadratic crossing points."
+    },
+    {
+      "title": "QDA is underdetermined for a rare class",
+      "body": "A problem has d=50 features but only 30 examples of a rare class. Its centered data matrix has rank at most 29, so the empirical 50x50 covariance is singular. Unregularized QDA cannot define a stable inverse. Pooling covariance with LDA, using shrinkage, reducing dimension inside validation or collecting more independent rare-class examples are principled options."
+    }
+  ],
+  "exercises": [
+    {
+      "prompt": "How many unique covariance parameters does QDA estimate per class for d features?",
+      "solution": "d(d+1)/2 because covariance is symmetric, in addition to d mean parameters and a prior."
+    },
+    {
+      "prompt": "Why can an unequal prior move an LDA boundary?",
+      "solution": "The discriminant includes log π_k as a class-specific intercept, so posterior equality occurs at a different location."
+    },
+    {
+      "prompt": "What is the maximum dimension of an LDA projection with K classes?",
+      "solution": "At most K-1 because only K class means contribute between-class directions after centering."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "compare",
+      "title": "Covariance determines boundary shape",
+      "left": {
+        "title": "LDA",
+        "items": [
+          "One pooled covariance",
+          "Linear boundary",
+          "Fewer parameters",
+          "Stable with smaller samples"
+        ]
+      },
+      "right": {
+        "title": "QDA",
+        "items": [
+          "Covariance per class",
+          "Quadratic boundary",
+          "More parameters",
+          "Flexible but data hungry"
+        ]
+      },
+      "caption": "QDA keeps class-specific quadratic geometry; LDA cancels it through pooling.",
+      "afterSection": "shared-vs-specific"
+    },
+    {
+      "type": "flow",
+      "title": "Discriminant classification",
+      "items": [
+        "Estimate class priors",
+        "Estimate means",
+        "Estimate and regularize covariance",
+        "Compute log discriminant scores",
+        "Normalize if probabilities are needed",
+        "Apply decision policy"
+      ],
+      "caption": "Every score combines prior prevalence, distance to a class center and covariance volume.",
+      "afterSection": "generative-scores"
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "sklearn-lda-qda",
+      "contribution": "Verifies the mathematical discriminants, projection relation, shrinkage and solver behavior."
+    },
+    {
+      "resource": "isl",
+      "contribution": "Provides the classification comparison among LDA, QDA and logistic regression."
+    },
+    {
+      "resource": "stanford-stats202",
+      "contribution": "Supports the statistical covariance and discriminant-analysis treatment."
+    }
+  ]
 }

@@ -7,37 +7,59 @@
     "ds",
     "mle"
   ],
-  "interviewAnswer": "For rare positives, accuracy can be meaningless. Use metrics aligned with the positive-class cost, consider class weights or resampling, preserve representative validation data, and tune the decision threshold.",
+  "interviewAnswer": "Class imbalance means class frequencies and error costs are uneven; it does not by itself make learning impossible. I first preserve the natural prevalence in validation and use precision-recall, per-class recall, calibrated probabilities, capacity metrics and expected cost instead of accuracy alone. During training I may use class or sample weights, minority oversampling, majority undersampling, focal-style losses or anomaly methods, but every resampling step stays inside the training fold. Weights change the optimization target and resampling changes the effective prior, so raw probabilities may need correction or calibration on natural-prevalence data. Threshold selection is a separate decision problem based on false-positive cost, missed-positive cost and capacity. I also check rare-positive uncertainty, duplicates, temporal drift and subgroup support. The goal is not a balanced training table; it is reliable performance and utility on the real deployment population.",
   "keyPoints": [
-    "Weighted loss",
-    "Oversampling",
-    "PR curve",
-    "Threshold tuning"
+    "Imbalance describes prevalence; the actual problem depends on overlap, label quality, sample size and error cost.",
+    "Keep validation and test data at deployment prevalence unless estimating a deliberately reweighted population.",
+    "Class weights and resampling affect training, while thresholding affects the deployed action; they are not interchangeable.",
+    "Oversampling must occur within training folds, and synthetic points must never use validation neighbors.",
+    "Probability calibration must be assessed after weighting or resampling on data with the intended prevalence."
   ],
   "resources": [
-    "sklearn",
-    "statquest",
-    "google-mlcc"
+    "sklearn-class-weights",
+    "sklearn-model-evaluation",
+    "sklearn-cross-validation"
   ],
   "featured": false,
-  "why": "Rare-event classification is common in safety, fraud, defects and failures. Accuracy can be almost useless, so you must reason about both training and evaluation.",
-  "intuition": "If only 1% of examples are positive, predicting “negative” for everything gives 99% accuracy while finding zero positives. The metric and threshold must reflect which mistakes matter.",
-  "deepDive": "Start with representative validation/test data and metrics such as precision, recall, PR-AUC and cost-sensitive utility. During training, class weights change the loss contribution; oversampling increases minority exposure; undersampling reduces majority volume but discards information. Synthetic sampling can help in some tabular settings but may create unrealistic examples. Threshold tuning is separate from model training and should use validation data.",
-  "math": "Weighted BCE = -[w₊ y log p + w₋(1-y)log(1-p)]",
-  "workedExample": "For fastening failure detection with 3% failures, if missing a failure is much worse than a false alarm, define a minimum recall requirement first and then find the highest precision achievable above that recall.",
-  "code": "from sklearn.linear_model import LogisticRegression\nmodel=LogisticRegression(class_weight='balanced')\nmodel.fit(X_train,y_train)\n# tune threshold on validation scores, not test data",
+  "why": "A classifier can achieve excellent accuracy by ignoring a rare class, yet a rare class may carry nearly all operational value. The opposite mistake is to force equal classes everywhere and accidentally evaluate a fictional population. Oversampling duplicates evidence rather than creating new independent cases; undersampling discards information about negatives; weights alter the loss; and all can distort probability estimates. When only dozens of positives exist, metrics are highly uncertain and a few duplicates or mislabeled cases can dominate. A rigorous approach separates four questions: what population will arrive, what training objective helps learn its boundary, what score quality is achieved, and what decision threshold maximizes value under constraints.",
+  "intuition": "If one fire alarm occurs among a thousand normal events, predicting normal always is accurate but useless. Copying the one alarm many times makes the optimizer notice it, but does not create new knowledge about the diversity of fires. Evaluation must return to the original stream, where even a small false-positive rate may flood operators. Training emphasis and deployment prevalence are different levers.",
+  "deepDive": "Imbalanced learning combines sampling design, loss weighting, ranking, calibration and decision policy. Balanced objectives can help the boundary but redefine the effective class prior. Valid evaluation uses untouched natural-prevalence cohorts, rare-event uncertainty and operational counts. Data collection, label review and hard-negative mining often matter more than increasingly elaborate resampling.",
+  "math": "For N observations and K classes with class count n_c, scikit-learn's balanced weight is w_c=N/(K n_c), making each class contribute equal total weight before other sample weights. Weighted empirical risk is sum_i w_{y_i} L_i / sum_i w_{y_i}. If training prior pi_s differs from deployment prior pi_t and class-conditional distributions are stable, posterior odds can be adjusted by multiplying training odds by [pi_t/(1-pi_t)]/[pi_s/(1-pi_s)]. This label-shift correction fails when class-conditional features also change. Precision depends on deployment prevalence through Bayes' rule.",
+  "workedExample": "A stream has one million negatives and 1,000 positives. At 80% recall and 1% FPR, it finds 800 positives but creates 10,000 false alerts, so precision is about 7.4%. The operational bottleneck is visible only after multiplying rates by prevalence and volume.",
+  "code": "from sklearn.utils.class_weight import compute_class_weight\nofficial=compute_class_weight('balanced',classes=np.array([0,1]),y=ytr)\nresults={'plain_recall':recall_score(yte,p_plain>=.5),'weighted_recall':recall_score(yte,p_weighted>=.5),'plain_ap':average_precision_score(yte,p_plain),'weighted_ap':average_precision_score(yte,p_weighted)}",
   "commonMistakes": [
-    "Reporting accuracy as the main metric for a rare positive class.",
-    "Oversampling before the train/test split, creating duplicate leakage.",
-    "Assuming a 0.5 threshold is automatically optimal."
+    {
+      "misconception": "Always oversample until classes are 50/50.",
+      "correction": "The useful ratio depends on optimizer, overlap and cost; evaluation must still represent the deployment population."
+    },
+    {
+      "misconception": "Class weighting and lowering the threshold are equivalent.",
+      "correction": "Weighting changes fitting and possibly ranking; thresholding changes the action on a fixed score."
+    },
+    {
+      "misconception": "SMOTE creates additional independent evidence.",
+      "correction": "Synthetic points derive from existing examples and assumptions; uncertainty still reflects original independent cases."
+    },
+    {
+      "misconception": "ROC AUC solves imbalance evaluation.",
+      "correction": "It can hide alert volume and says nothing about probability calibration or the selected operating point."
+    }
   ],
   "followUps": [
-    "Class weights vs oversampling?",
-    "When would you use PR-AUC?",
-    "How do you choose the deployment threshold?",
-    "How does prevalence shift affect precision?"
+    {
+      "question": "When is undersampling useful?",
+      "answer": "When majority data are enormous or redundant and a representative or hard-negative subset reduces cost without losing boundary information."
+    },
+    {
+      "question": "Why can class weights damage calibration?",
+      "answer": "They change the effective loss contribution and class prior, so fitted scores need not represent natural-prevalence posterior probabilities."
+    },
+    {
+      "question": "How should rare-class uncertainty be reported?",
+      "answer": "Show counts and cluster-aware intervals or bootstrap distributions, with label maturity and duplicate dependence made explicit."
+    }
   ],
-  "production": "Alert capacity is often a hard constraint. Choose thresholds using review capacity, false-negative cost and current prevalence, and recalibrate when base rates change.",
+  "production": "Version the natural evaluation cohort, label maturity, independent unit, class and sample weights, resampling algorithm, random seed, calibration set and threshold policy. Fit all sampling inside training folds and keep augmented families together. Report rare-class counts, PR and capacity metrics, probability scores, calibration, workload and decision cost with cluster-aware uncertainty. Monitor prevalence, predicted-positive volume, delayed outcomes, reviewer yield and feedback-selection bias. Recalibrate or retune policy on separate evidence when prevalence or costs move, canary changes, and retain the previous model and threshold for rollback.",
   "visual": {
     "type": "bars",
     "title": "Accuracy can mislead on imbalanced data",
@@ -53,6 +75,131 @@
     "yLabel": "class share"
   },
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "lab": {
+    "language": "python",
+    "goal": "Derive balanced class weights, fit weighted and unweighted classifiers, and verify the evaluation population remains untouched.",
+    "buildIt": "import numpy as np\nfrom sklearn.datasets import make_classification\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.linear_model import LogisticRegression\nfrom sklearn.metrics import recall_score,average_precision_score\nX,y=make_classification(n_samples=1000,n_features=10,n_informative=5,weights=[.95,.05],class_sep=.8,random_state=12)\nXtr,Xte,ytr,yte=train_test_split(X,y,test_size=.35,stratify=y,random_state=3)\ncounts=np.bincount(ytr); manual=len(ytr)/(2*counts)\nplain=LogisticRegression(max_iter=2000).fit(Xtr,ytr); weighted=LogisticRegression(max_iter=2000,class_weight='balanced').fit(Xtr,ytr)\np_plain=plain.predict_proba(Xte)[:,1]; p_weighted=weighted.predict_proba(Xte)[:,1]",
+    "useIt": "from sklearn.utils.class_weight import compute_class_weight\nofficial=compute_class_weight('balanced',classes=np.array([0,1]),y=ytr)\nresults={'plain_recall':recall_score(yte,p_plain>=.5),'weighted_recall':recall_score(yte,p_weighted>=.5),'plain_ap':average_precision_score(yte,p_plain),'weighted_ap':average_precision_score(yte,p_weighted)}",
+    "verifyIt": "assert np.allclose(manual,official)\nassert np.allclose(official*counts,len(ytr)/2)\nassert np.array_equal(np.bincount(yte),np.bincount(yte.copy()))\nassert not np.allclose(plain.coef_,weighted.coef_)\nassert p_weighted.mean()>p_plain.mean()\nassert all(0<=v<=1 for v in results.values())",
+    "shipIt": "Keep natural-prevalence test cohorts, version weights and sampling, recalibrate separately when needed, and monitor workload plus rare-class uncertainty at the locked policy."
+  },
+  "description": "Class imbalance is a mismatch in class frequency, not a license to optimize accuracy or balance every dataset mechanically. This chapter separates prevalence, sample size, class overlap, label noise and asymmetric cost; selects per-class, precision-recall, capacity and probability metrics; and quantifies why false-positive volume dominates rare-event systems. It compares class and sample weighting, random over- and undersampling, synthetic sampling, focal-style objectives, hard-negative mining and anomaly framing. It explains fold-local resampling, duplicate dependence, prior distortion, posterior correction and calibration on natural-prevalence data. Worked examples translate a 1% false-positive rate into thousands of alerts and derive balanced class weights. The lab calculates weights, fits weighted and unweighted logistic models, verifies the official formula and checks how weighting changes predictions without altering the evaluation cohort. Production guidance monitors prevalence, label delay, score distributions, queue capacity, rare-class uncertainty and slices while preserving cost-aware thresholds and rollback behavior. It treats data collection and label adjudication as first-class remedies when the rare class lacks genuine independent evidence.",
+  "prerequisites": [
+    "classification-metrics",
+    "roc-pr"
+  ],
+  "learningObjectives": [
+    "Diagnose whether imbalance, overlap, label quality or cost is the central failure mode.",
+    "Apply weighting and resampling inside training folds without corrupting evaluation prevalence.",
+    "Evaluate rare events using ranking, calibration, counts, cost and independent-unit uncertainty.",
+    "Correct or recalibrate scores when training interventions change the effective prior."
+  ],
+  "deepSections": [
+    {
+      "id": "diagnose-objective",
+      "title": "Diagnose the learning and decision problem before balancing",
+      "body": "Record positive counts, prevalence over time and by cohort, label maturity, duplicate families and class-conditional feature overlap. Ten positives among a thousand rows and ten positives among a billion rows have the same ratio but radically different information. A rare class with a clean boundary may be easy; a moderately rare class with severe overlap and noisy labels may be hard. Establish trivial, current-policy and ranking baselines. Define who bears false positives and false negatives, whether scores fill a fixed review queue or trigger automatic action, and whether probability estimates are consumed downstream. Accuracy and weighted macro averages can hide failure. Report confusion counts, recall, precision, average precision, calibration and cost at feasible capacity. Confidence intervals or bootstrap distributions should resample independent entities; a nominally large table with repeated copies may contain little rare-class evidence."
+    },
+    {
+      "id": "training-interventions",
+      "title": "Weights and sampling change the optimization evidence",
+      "body": "Class weights multiply losses so rare-class errors contribute more; balanced inverse-frequency weights give classes equal aggregate influence. Custom sample weights can represent exposure or policy cost but should not casually combine population correction and error cost into an opaque number. Random oversampling repeats minority rows and changes minibatch frequency, while undersampling reduces majority computation and can lose useful boundary cases. Synthetic methods interpolate minority neighborhoods and assume local geometry; they can create implausible points, cross subgroup boundaries and amplify mislabeled cases. All sampling fits only on the training partition after the split. For sparse or high-dimensional domains, class-weighted linear models and hard-negative mining are strong baselines. Focal-style losses downweight easy examples but add tuning and calibration concerns. Collecting diverse positives and adjudicating labels often gives the highest return."
+    },
+    {
+      "id": "evaluation-prevalence",
+      "title": "Evaluate on the population the decision will face",
+      "body": "Do not oversample validation or test sets merely to make metrics look stable. Such a sample can estimate class-conditional recall and specificity with proper weighting, but its raw precision, calibration and expected workload do not equal deployment values. Preserve natural prevalence or attach sampling weights that reconstruct the target population. PR baselines equal prevalence; ROC rates may look stable while absolute false-positive counts explode. Report top-K precision and recall when reviewers have a fixed capacity. With few positives, show exact denominators, interval uncertainty and qualitative error review. Stratification can keep positives in each fold but may suppress the natural variation among deployment batches; group and time constraints take priority. Ensure augmented or duplicated variants remain in one partition. Evaluate by label-maturity cohort so changing positive ascertainment is not mistaken for model drift."
+    },
+    {
+      "id": "probability-threshold",
+      "title": "Training emphasis does not choose the production policy",
+      "body": "Weighting or resampling changes the empirical class prior and often shifts score intercepts. Ranking may improve while raw probabilities become biased. If assumptions support pure prior shift, posterior odds can be corrected; otherwise fit a calibration model on separate, natural-prevalence predictions and verify reliability by relevant ranges and cohorts. Calibration cannot recover missing discriminatory information. Select thresholds from expected cost, minimum recall, false-positive budget or queue capacity using development data, then estimate locked performance. A threshold of 0.5 has no privileged meaning after class weighting. Multiple actions may require accept, review and reject thresholds with an abstention region. Revisit thresholds when prevalence, costs or capacity change, but avoid tuning on the same outcomes used for final reporting."
+    },
+    {
+      "id": "production-feedback",
+      "title": "Rare-event systems need feedback and workload monitoring",
+      "body": "Monitor input eligibility, score distribution, predicted-positive rate, observed prevalence after label maturity, confusion counts, precision and recall, calibration, queue size, reviewer yield and time-to-decision. Track hard negatives and false negatives for label review without training immediately on every investigated case: investigation is a selection process that can bias labels. Active learning needs explicit sampling propensities and a random audit stream to estimate population performance. Alert suppression and deduplication change the decision unit and must be reflected offline. Set guardrails for maximum false-positive volume and minimum critical-class recall with uncertainty. Canary new policies, keep the previous threshold and model, and rollback when workload, calibration or safety limits fail even if an aggregate ranking score improves."
+    }
+  ],
+  "workedExamples": [
+    {
+      "title": "Rates become workload",
+      "body": "A stream has one million negatives and 1,000 positives. At 80% recall and 1% FPR, it finds 800 positives but creates 10,000 false alerts, so precision is about 7.4%. The operational bottleneck is visible only after multiplying rates by prevalence and volume."
+    },
+    {
+      "title": "Balanced class weights",
+      "body": "With 950 negatives and 50 positives, N=1,000 and K=2. Balanced weights are 1000/(2×950)=0.526 for negatives and 1000/(2×50)=10 for positives. Each class then contributes total weight 500."
+    }
+  ],
+  "exercises": [
+    {
+      "prompt": "Why should oversampling occur after the fold split?",
+      "solution": "Otherwise validation examples or their neighborhoods influence synthetic training points, contaminating the held-out fold."
+    },
+    {
+      "prompt": "What happens to random-ranking average precision when prevalence falls?",
+      "solution": "Its expected baseline falls with prevalence, because expected precision equals the positive fraction."
+    },
+    {
+      "prompt": "Does duplicating a positive ten times create ten independent labels?",
+      "solution": "No. It changes optimization frequency but adds no independent information and must not shrink uncertainty as if ten new cases existed."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "flow",
+      "title": "Imbalanced-learning workflow",
+      "items": [
+        "Measure natural prevalence and support",
+        "Define costs and capacity",
+        "Split groups and time",
+        "Weight or resample training only",
+        "Evaluate natural-prevalence scores",
+        "Calibrate and select policy separately"
+      ],
+      "caption": "Training emphasis, probability quality and action policy are distinct stages.",
+      "afterSection": "training-interventions"
+    },
+    {
+      "type": "compare",
+      "title": "Two populations",
+      "left": {
+        "title": "Training objective",
+        "items": [
+          "May use weights",
+          "May resample",
+          "Improves boundary learning",
+          "Effective prior can change"
+        ]
+      },
+      "right": {
+        "title": "Deployment evaluation",
+        "items": [
+          "Natural prevalence",
+          "Real queue volume",
+          "Calibrated probabilities",
+          "Independent rare-event evidence"
+        ]
+      },
+      "caption": "Balancing the optimizer must not silently balance the world used for evaluation.",
+      "afterSection": "evaluation-prevalence"
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "sklearn-class-weights",
+      "contribution": "Verifies the balanced inverse-frequency class-weight formula used in the lab."
+    },
+    {
+      "resource": "sklearn-model-evaluation",
+      "contribution": "Supports precision-recall, per-class, probability and threshold metric behavior under imbalance."
+    },
+    {
+      "resource": "sklearn-cross-validation",
+      "contribution": "Supports fold-local pipelines and structured split requirements for valid resampling evaluation."
+    }
+  ]
 }

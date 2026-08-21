@@ -8,45 +8,67 @@
     "mle",
     "as"
   ],
-  "interviewAnswer": "PCA finds orthogonal directions of maximum variance and projects data onto the leading components. It is useful for compression, visualization and removing correlated dimensions, but components are linear combinations of original features.",
+  "interviewAnswer": "PCA finds orthogonal directions that capture maximum variance in centered data. With centered matrix X, the first loading maximizes ||Xv||² subject to ||v||=1; later loadings are orthogonal. Equivalently, PCA takes eigenvectors of the covariance matrix or right singular vectors of X. Scores are X V_q, and rank-q reconstruction is scores V_qᵀ plus the mean; truncated SVD gives the minimum Frobenius-error rank-q approximation. Scaling determines whether variance in large-unit features dominates. Explained variance is not importance, causality or guaranteed predictive signal. I fit centering and scaling only on training data, choose q from reconstruction, stability and downstream validation, inspect sign and subspace ambiguity, and monitor reconstruction error and score drift in production.",
   "keyPoints": [
-    "Center data",
-    "Variance explained",
-    "SVD connection",
-    "Not supervised"
+    "Centering is essential for ordinary PCA; standardization is a modeling choice, not a theorem requirement.",
+    "Variance maximization, covariance eigendecomposition and truncated SVD are equivalent views under the stated setup.",
+    "Components are orthogonal directions, while scores are observation coordinates and loadings are feature weights.",
+    "Signs are arbitrary and nearly tied eigenvalues make individual component directions unstable even when their subspace is stable.",
+    "High explained variance does not establish task relevance, group fairness or causal meaning."
   ],
   "resources": [
-    "stanford-cs229",
+    "sklearn-decomposition",
     "mit-linear-algebra",
-    "3b1b-linear-algebra",
-    "google-mlcc",
-    "isl"
+    "isl",
+    "stanford-cs229"
   ],
   "featured": false,
-  "why": "PCA links covariance, eigen/SVD methods, dimensionality reduction and preprocessing trade-offs.",
-  "intuition": "Rotate the coordinate system so the first axis captures the greatest variance, the second captures the greatest remaining orthogonal variance, and so on.",
-  "deepDive": "Center data, then find eigenvectors of the covariance matrix or use SVD directly on the centered data. Principal components are orthogonal linear combinations ranked by explained variance. Scaling matters when features have different units. PCA preserves variance, not labels or semantic importance, so low-variance directions can still matter for prediction.",
-  "math": "Centered X = UΣVᵀ; principal directions are columns of V; explained variance ∝ singular_value²",
-  "workedExample": "For 100 highly correlated sensor features, PCA may reduce to 10 components covering most variance, improving visualization/storage but possibly reducing interpretability.",
-  "code": "from sklearn.pipeline import make_pipeline\nfrom sklearn.preprocessing import StandardScaler\nfrom sklearn.decomposition import PCA\nm=make_pipeline(StandardScaler(),PCA(n_components=.95))",
+  "why": "PCA is the central linear dimensionality-reduction method and a bridge between covariance, eigenvectors, SVD, low-rank approximation and latent representation. It can compress features, denoise correlated measurements, visualize dominant variation and improve conditioning. It can also discard low-variance predictive or safety-critical signals, amplify batch effects, and produce unstable narratives when loadings are overinterpreted. A rigorous chapter must separate the algebraic guarantee—best reconstruction under squared error—from claims about the data-generating process. It must also account for centering, units, missing values, sparse matrices, randomized solvers and train-serving parity. Once these distinctions are clear, PCA becomes a precise component in a pipeline rather than a decorative plot or an automatic preprocessing ritual.",
+  "intuition": "Rotate the coordinate system so the first axis points along the longest spread of a centered point cloud, the second points along the greatest remaining spread at right angles, and so on. Keeping the first few coordinates preserves the cloud as well as any linear subspace of that rank under squared reconstruction error. A long direction may reflect a meaningful physical factor, a measurement unit, a batch artifact or nuisance variation. The rotation reports where the sample varies; interpretation requires evidence beyond the eigenvector.",
+  "deepDive": "PCA is an orthogonal projection chosen by a variance or reconstruction objective. The mathematical solution is a subspace, with sign and repeated-eigenvalue ambiguities. Reliable use requires fold-local preprocessing, solver and component selection appropriate to matrix structure, task-specific validation, and monitoring of both retained scores and discarded residuals.",
+  "math": "For centered X∈R^(n×d), maximize v^T X^T X v subject to ||v||=1; v is the leading eigenvector of X^T X. With SVD X=UΣV^T, loadings are columns of V, scores XV_q=U_qΣ_q, and explained variance λ_j=σ_j²/(n-1). Reconstruction X_hat=X V_q V_q^T minimizes ||X-X_hat||_F among rank-q approximations. Whitening additionally divides scores by component standard deviations, producing unit variance while amplifying low-variance directions.",
+  "workedExample": "Centered points lie along x2=x1. Covariance is proportional to [[1,1],[1,1]], whose leading eigenvector is [1,1]/√2 and second is [1,-1]/√2. The first component captures all variance; projecting and reconstructing with it is exact. Flipping the loading sign changes score signs but leaves reconstruction unchanged.",
+  "code": "from sklearn.decomposition import PCA\nmodel=PCA(n_components=1,svd_solver='full').fit(X); sk_scores=model.transform(X); sk_recon=model.inverse_transform(sk_scores)",
   "commonMistakes": [
-    "Applying PCA without centering.",
-    "Always standardizing without considering whether physical scale is meaningful.",
-    "Assuming high explained variance guarantees good supervised performance."
+    {
+      "misconception": "PCA always requires standardization.",
+      "correction": "It requires centering for the ordinary formulation. Standardization is a domain-dependent choice about units and feature weighting."
+    },
+    {
+      "misconception": "A component explaining most variance is most predictive.",
+      "correction": "PCA ignores the target. Predictive signal may lie in low-variance directions and must be evaluated downstream."
+    },
+    {
+      "misconception": "A sign-flipped loading is a different result.",
+      "correction": "Eigenvector sign is arbitrary; flipping both score and loading leaves the projection and reconstruction identical."
+    },
+    {
+      "misconception": "Stable explained variance means stable component interpretation.",
+      "correction": "Near-tied eigenvalues allow directions to rotate while the subspace and captured variance remain stable."
+    }
   ],
   "followUps": [
-    "How does PCA relate to SVD?",
-    "Why are components orthogonal?",
-    "When should you standardize?",
-    "PCA vs autoencoder?"
+    {
+      "question": "Why does PCA minimize reconstruction error?",
+      "answer": "Truncated SVD is the best rank-q Frobenius approximation, and orthogonal projection onto the leading right-singular subspace produces it."
+    },
+    {
+      "question": "PCA versus factor analysis?",
+      "answer": "PCA decomposes total sample variance for reconstruction; factor analysis models shared latent covariance plus feature-specific noise."
+    },
+    {
+      "question": "What does whitening do?",
+      "answer": "It rotates to component coordinates and rescales them to unit variance, discarding original variance scale and potentially amplifying weak noisy directions."
+    }
   ],
-  "production": "Persist the fitted centering/scaling/components with the model. Refit changes component meaning, so version transformations alongside downstream artifacts.",
+  "production": "Version feature schema, units, imputation, mean, scale, solver, loadings, component count, whitening and numeric dtype. Test centered training-score means, orthogonality, reconstruction fixtures and cross-runtime parity. Benchmark transform latency and memory. Monitor feature health, component scores, reconstruction error, discarded-residual structure and subgroup distributions. Investigate both score drift and residual drift; one reflects movement within the old subspace and the other new directions. Restrict sensitive score and reconstruction logs. Compare refits using projection matrices or principal angles rather than raw signs, canary new bases, retain the prior artifact and keep an unprojected or simpler-feature fallback.",
   "lab": {
-    "goal": "Derive PCA from covariance eigenvectors and compare with sklearn.",
     "language": "python",
-    "buildIt": "import numpy as np\nrng=np.random.default_rng(2); x=rng.normal(size=300); X=np.c_[x,2*x+rng.normal(0,.2,300)]\nXc=X-X.mean(0); cov=Xc.T@Xc/(len(X)-1)\nvals,vecs=np.linalg.eigh(cov); order=np.argsort(vals)[::-1]\nW=vecs[:,order[:1]]; Z=Xc@W\nprint('variance ratio',vals[order[0]]/vals.sum())\n",
-    "useIt": "from sklearn.decomposition import PCA\np=PCA(n_components=1).fit(X)\nprint(p.explained_variance_ratio_)\n",
-    "verifyIt": "assert vals[order[0]]/vals.sum()>.95\n"
+    "goal": "Implement PCA with SVD, compare with scikit-learn, and verify orthogonality, reconstruction and sign-invariant subspaces.",
+    "buildIt": "import numpy as np\nX=np.array([[1,1.1],[2,1.9],[3,3.2],[4,3.9],[5,5.1]],float); mean=X.mean(axis=0); C=X-mean\nU,S,Vt=np.linalg.svd(C,full_matrices=False); q=1; loadings=Vt[:q].T; scores=C@loadings; recon=scores@loadings.T+mean\nexplained=(S**2)/(len(X)-1); ratio=explained/explained.sum()",
+    "useIt": "from sklearn.decomposition import PCA\nmodel=PCA(n_components=1,svd_solver='full').fit(X); sk_scores=model.transform(X); sk_recon=model.inverse_transform(sk_scores)",
+    "verifyIt": "assert np.allclose(C.mean(axis=0),0)\nassert np.allclose(loadings.T@loadings,np.eye(q))\nassert np.allclose(recon,sk_recon,atol=1e-10)\nassert np.allclose(loadings@loadings.T,model.components_.T@model.components_,atol=1e-10)\nassert abs(ratio.sum()-1)<1e-12\nassert np.mean((X-recon)**2)<np.mean((X-X.mean(axis=0))**2)",
+    "shipIt": "Freeze feature units, centering, scaling, loadings and q; compare refits by subspace; monitor scores and reconstruction residuals; retain the prior projection and unprojected fallback."
   },
   "visual": {
     "type": "scatter",
@@ -112,6 +134,124 @@
     "yLabel": "feature 2"
   },
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "Principal component analysis rotates centered data into orthogonal directions ordered by captured variance. This chapter derives PCA from a constrained variance problem, covariance eigenvectors and singular value decomposition, then proves the rank-q reconstruction guarantee. It distinguishes loadings, scores, eigenvalues, explained-variance ratios, reconstruction residuals and whitening. Practical sections cover centering, standardization, units, missing values, outliers, sparse truncated SVD, randomized solvers, component selection, sign ambiguity, repeated eigenvalues, subspace stability, visualization leakage and downstream predictive validation. Worked examples calculate a two-feature principal direction and show how unit conversion changes the result. The lab implements PCA with NumPy SVD, compares it with scikit-learn, and verifies centering, orthogonality, reconstruction and sign-invariant subspaces. Production guidance versions transforms and loadings, monitors score and residual drift, tests parity and supports rollback. PCA is presented as optimal linear compression for one declared loss—not as automatic discovery of meaningful latent causes. You will also learn how sparse truncated SVD differs from centered PCA, why nearly tied eigenvalues destabilize component stories, and when residual monitoring reveals new variation outside the deployed subspace.",
+  "prerequisites": [
+    "eigen-svd",
+    "projections-least-squares",
+    "expectation-variance"
+  ],
+  "learningObjectives": [
+    "Derive PCA through variance maximization, covariance eigendecomposition and SVD.",
+    "Compute scores, loadings, explained variance and rank-q reconstruction.",
+    "Handle scaling, signs, tied eigenvalues, sparse data and leakage correctly.",
+    "Select and deploy a PCA subspace using reconstruction, stability and downstream evidence."
+  ],
+  "deepSections": [
+    {
+      "id": "center-geometry",
+      "title": "Center before finding a variance direction",
+      "body": "Ordinary PCA describes variation around the sample mean. Without centering, the leading direction may point toward the origin rather than along covariance. For a unit vector v, projected scores are Xv and their sum of squares is v^T X^T Xv. Maximizing this Rayleigh quotient yields the leading eigenvector. Subsequent directions maximize remaining variance under orthogonality, giving a rotation. Standardizing features before PCA performs PCA on correlation-like geometry and can stop large-unit variables from dominating, but it also elevates noisy low-variance measurements. Robust scaling or robust PCA addresses different problems and changes the objective. Missing-value imputation must be fit before PCA within each training fold. Sample weights and grouped dependence alter the effective covariance and uncertainty."
+    },
+    {
+      "id": "svd-reconstruction",
+      "title": "SVD gives scores, loadings and the best linear reconstruction",
+      "body": "For centered X=UΣV^T, right singular vectors V are loading directions and UΣ are scores. Retaining q components gives X_hat=U_qΣ_qV_q^T=X V_qV_q^T. The Eckart-Young result makes this the best rank-q approximation in Frobenius norm. Reconstruction error equals the sum of squared discarded singular values. This guarantee is in the scaled feature space; it does not weight business-critical variables unless the representation does. Forming covariance explicitly can square conditioning and be inefficient, while direct or randomized SVD is often preferable. For sparse matrices, subtracting a dense mean destroys sparsity, so TruncatedSVD commonly omits centering and is not identical to PCA. Document the exact solver and centering behavior."
+    },
+    {
+      "id": "selection-stability",
+      "title": "Choose a subspace, not a pretty scree plot",
+      "body": "Explained-variance ratio reports sample variance captured, and cumulative curves help quantify compression. A threshold such as 95 percent is not universal: a low-variance feature can predict a rare critical event, while high-variance nuisance can dominate. Choose q using reconstruction tolerances, downstream validation, storage and latency budgets, and stability across resamples or time. Parallel analysis or noise models add assumptions. Eigenvector sign is arbitrary; compare |dot products| or projection matrices. If eigenvalues are close, individual loadings can rotate dramatically with little change in the spanned subspace. Evaluate principal angles or subspace projections instead of naming unstable components. Never select q or interpret plots using test outcomes that will later be reported as independent performance."
+    },
+    {
+      "id": "interpretation-boundaries",
+      "title": "Loadings describe association with a sample direction",
+      "body": "A large loading means a feature contributes strongly in the current scaled coordinate system. It is not a causal effect, and correlated features can rotate or share loadings. Component signs may flip without changing scores-and-loadings reconstruction. Biplots mix observation scores and feature directions under a chosen scaling and can be misleading. PCA maximizes total variance, not separation of labels, temporal predictability, independence or non-Gaussian structure. LDA, factor analysis and ICA optimize different objectives. Low-dimensional PCA scatterplots can hide overlap or suggest clusters through projection and sampling. Validate any cluster or subgroup story in original space and with external evidence. Inspect discarded residuals for systematic cohort or time structure before declaring denoising successful."
+    },
+    {
+      "id": "pipeline-operations",
+      "title": "Deploy a fixed projection and watch both sides",
+      "body": "Persist feature order, units, imputation, centering means, scales, loadings, selected q and whitening settings. Test transform and inverse-transform parity across runtimes and account for sign changes only during refits, not within one artifact. Monitor raw feature health, component-score distributions, explained variance under new data, reconstruction error and residual patterns by cohort. A score shift can reflect real population change or upstream scaling drift. A residual increase signals that new variation lies outside the retained subspace. Avoid logging sensitive raw reconstructions unnecessarily. Canary a new basis and align its subspace to the old one for comparison. Retain the previous projection and an unprojected or reduced-feature fallback when transforms fail or residual thresholds are exceeded."
+    }
+  ],
+  "workedExamples": [
+    {
+      "title": "Perfectly correlated measurements",
+      "body": "Centered points lie along x2=x1. Covariance is proportional to [[1,1],[1,1]], whose leading eigenvector is [1,1]/√2 and second is [1,-1]/√2. The first component captures all variance; projecting and reconstructing with it is exact. Flipping the loading sign changes score signs but leaves reconstruction unchanged."
+    },
+    {
+      "title": "Changing units changes the principal component",
+      "body": "Height in meters varies near 0.1 while weight in grams varies by thousands. Covariance PCA on raw units is almost entirely the weight axis. Converting grams to kilograms changes the numeric geometry. Standardization gives equal marginal variance but encodes another choice. The team selects units from the measurement and downstream reconstruction cost, not visual preference."
+    }
+  ],
+  "exercises": [
+    {
+      "prompt": "Why is the first loading an eigenvector of X^T X?",
+      "solution": "Projected variance is v^T X^T X v; maximizing this Rayleigh quotient over unit vectors gives the leading eigenvector."
+    },
+    {
+      "prompt": "Two leading eigenvalues are nearly equal. What should you compare across samples?",
+      "solution": "Compare their joint subspace using projection matrices or principal angles rather than assigning meaning to either unstable individual direction."
+    },
+    {
+      "prompt": "Why can PCA hurt a classifier after retaining 99 percent variance?",
+      "solution": "The discarded one percent may contain target signal; PCA optimizes unsupervised reconstruction, not classification loss."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "flow",
+      "title": "PCA transformation",
+      "items": [
+        "Fit imputation and centering",
+        "Compute SVD",
+        "Select a leading subspace",
+        "Project observations to scores",
+        "Optionally reconstruct",
+        "Validate retained and residual behavior"
+      ],
+      "caption": "PCA is a fitted projection pipeline, not only an eigenvector calculation.",
+      "afterSection": "svd-reconstruction"
+    },
+    {
+      "type": "compare",
+      "title": "PCA and whitening",
+      "left": {
+        "title": "PCA scores",
+        "items": [
+          "Orthogonal coordinates",
+          "Variance remains ordered",
+          "Preserves component scale",
+          "Compression and reconstruction"
+        ]
+      },
+      "right": {
+        "title": "Whitened scores",
+        "items": [
+          "Divide by component spread",
+          "Unit variance coordinates",
+          "Amplifies weak directions",
+          "Changes distance geometry"
+        ]
+      },
+      "caption": "Whitening adds a scale transformation beyond PCA rotation.",
+      "afterSection": "interpretation-boundaries"
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "sklearn-decomposition",
+      "contribution": "Verifies current PCA, solver, whitening and sparse-decomposition behavior."
+    },
+    {
+      "resource": "mit-linear-algebra",
+      "contribution": "Grounds eigenvector, SVD, projection and low-rank approximation mathematics."
+    },
+    {
+      "resource": "isl",
+      "contribution": "Supports component interpretation, variance accounting and practical use."
+    }
+  ]
 }

@@ -9,33 +9,223 @@
     "ds",
     "as"
   ],
-  "interviewAnswer": "LSH intentionally hashes similar items into the same buckets with high probability, reducing candidates for approximate similarity or nearest-neighbor search.",
+  "interviewAnswer": "Locality-sensitive hashing is a candidate-generation framework in which nearby objects collide more often than far objects. For MinHash signatures, divide k=br rows into b bands of r rows; a pair is a candidate if every row matches in at least one band. If row agreement is s and independence is a useful approximation, candidate probability is 1−(1−s^r)^b. Larger r demands stronger within-band agreement and improves precision; more bands create more chances and improve recall. The S-curve is not a hard threshold, and candidates still require full scoring or exact verification. I tune b and r on labeled pairs, report candidate recall and candidate volume separately from final ranking metrics, version the hash family, handle hot buckets, and never describe LSH as universally optimal across metrics.",
   "keyPoints": [
-    "Approximate search",
-    "Hash family",
-    "Candidate generation",
-    "Recall-speed trade-off"
+    "An LSH family is metric-specific: close pairs have higher collision probability than far pairs.",
+    "MinHash banding performs an OR over bands of ANDs within a band.",
+    "The probability 1−(1−s^r)^b produces a soft S-curve, not deterministic thresholding.",
+    "LSH generates candidates; a second stage computes or learns the final similarity and decision.",
+    "Measure candidate recall, bucket skew, memory and latency before downstream ranking quality."
   ],
   "resources": [
-    "stanford-cs246"
+    "stanford-cs246",
+    "indyk-motwani-lsh-paper",
+    "broder-minhash-paper"
   ],
   "featured": false,
-  "why": "LSH explains scalable approximate search before modern graph indexes such as HNSW.",
-  "intuition": "Normal hashing separates inputs; LSH wants similar inputs to collide.",
-  "deepDive": "Different LSH families match different similarity measures; banding/concatenation tunes collision probability.",
-  "math": "",
+  "why": "Even a compact signature does not solve quadratic search: comparing every pair among n objects still needs Θ(n²) comparisons, and querying against all n still needs linear work. LSH spends extra memory to index randomized collisions so that likely neighbors are examined and most far objects are skipped. It is valuable when exact indexing structures deteriorate in high dimensions and approximation is acceptable. The deeper lesson is system decomposition: a recall-oriented retrieval stage deliberately admits false positives, then a more expensive scorer restores precision. Understanding the probability curve, independence assumptions and bucket distribution is essential because poor parameters can either miss true neighbors or recreate an all-pairs workload through giant buckets.",
+  "intuition": "Suppose each MinHash row agrees with probability s. Requiring r rows in one band to all agree has probability s^r—an AND that suppresses weak pairs. Giving the pair b independent bands creates b chances—an OR that rescues strong pairs. It fails to become a candidate only if every band fails, giving (1−s^r)^b, so success is one minus that. For s near zero the probability stays low; near one it rises sharply. Changing r and b moves and sharpens this transition, but no finite setting turns it into a perfect step.",
+  "deepDive": "LSH organizes approximate retrieval around collision probabilities rather than exact metric partitions. MinHash banding illustrates amplification through AND and OR operations, while other metrics need other families. Correct evaluation separates the candidate generator from the downstream scorer and treats index versioning, hot buckets, updates and adversarial inputs as first-class concerns.",
+  "math": "A family H is (R,cR,p1,p2)-sensitive for a distance when points at distance at most R collide with probability at least p1 and points beyond cR collide with probability at most p2, with p1>p2. Concatenating r hashes maps collision p to p^r; using b independent tables maps it to 1−(1−p^r)^b. For MinHash p=s=Jaccard. A rough transition location solves s^r≈1/b, so s≈(1/b)^(1/r), but operating characteristics must use the full curve. Classical query exponents are summarized by ρ=log(1/p1)/log(1/p2) under framework assumptions.",
   "code": "",
   "commonMistakes": [
-    "Assuming exact nearest-neighbor guarantees.",
-    "Using a hash family for the wrong metric."
+    {
+      "misconception": "LSH returns the nearest neighbor exactly.",
+      "correction": "It probabilistically generates candidates and may miss neighbors; score candidates and quantify recall."
+    },
+    {
+      "misconception": "The S-curve threshold is deterministic.",
+      "correction": "Every similarity has a nonzero candidate probability except special endpoints; the curve is soft."
+    },
+    {
+      "misconception": "Any hash family works for any similarity.",
+      "correction": "Collision behavior must correspond to the chosen geometry."
+    },
+    {
+      "misconception": "Final ranking precision is enough to evaluate the index.",
+      "correction": "Measure candidate recall and volume separately because missed candidates cannot be repaired downstream."
+    }
   ],
   "followUps": [
-    "LSH vs HNSW?",
-    "How do bands affect recall?"
+    {
+      "question": "What do more bands do?",
+      "answer": "They increase the number of chances for a collision, raising recall and candidate volume."
+    },
+    {
+      "question": "What do more rows per band do?",
+      "answer": "They require stronger agreement within each band, reducing false candidates but also recall."
+    },
+    {
+      "question": "Why exact-score candidates after LSH?",
+      "answer": "Bucket collisions are deliberately noisy; exact or richer scoring restores ordering and supports calibrated decisions."
+    }
   ],
-  "production": "Benchmark recall, latency and memory together.",
-  "workedExample": "Near-duplicate documents can be bucketed by MinHash signatures before exact checking.",
+  "production": "Freeze representation, signature and band schemas into an index version. Build immutable snapshots or dual-write compatible online indexes, validate counts and checksums, and promote through canary queries. Tune from labeled candidate recall versus unique candidates, bytes, latency and memory—not from the S-curve alone. Track bucket-size quantiles, hot partitions, duplicate candidates, empty queries, write lag, deletion debt and fallback use. Cap or split hot buckets with measured recall impact. Exact-score or rerank candidates, and preserve a brute-force audit slice. Protect index writes and query rates against collision flooding; restrict access to signatures and membership. Keep previous snapshots and routing configuration so index, threshold and reranker can be rolled back independently.",
+  "workedExample": "With b=20 bands and r=5 rows, similarity 0.8 yields candidate probability 1−(1−0.8^5)^20≈0.9996, while similarity 0.3 yields about 0.047. This looks attractive, yet a corpus with a billion unrelated pairs can still create many candidates, and correlated signature rows or template-heavy documents distort the calculation. The expected candidate volume and empirical labeled recall matter more than the apparent threshold alone.",
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "Locality-sensitive hashing is a family of randomized indexes for approximate near-neighbor retrieval. This chapter defines locality sensitivity through collision probabilities, explains why an LSH family must match the target distance or similarity, and derives MinHash banding as an OR-of-AND amplification scheme. It works through the candidate probability 1−(1−s^r)^b, the resulting S-curve, the effects of bands and rows, and the difference between an approximate transition and a guaranteed threshold. It connects the construction to the Indyk–Motwani near-neighbor framework and distinguishes MinHash LSH for Jaccard from random-hyperplane hashing for angular similarity and p-stable methods for certain Lp distances. The chapter treats multi-probe lookup, multiple tables, candidate deduplication, exact rescoring, recall–latency trade-offs and the limitations of correlated hashes. The lab builds band buckets over deterministic MinHash signatures, verifies theoretical monotonicity and retrieves similar sets while excluding a disjoint set. Production guidance covers labeled tuning, candidate recall, bucket skew, memory, hot keys, online updates, backfills, hash versioning, adversarial flooding, privacy and rollback. LSH is positioned as a retrieval component, not a final similarity metric or universal nearest-neighbor solution.",
+  "prerequisites": [
+    "minhash-jaccard",
+    "ann-search",
+    "probability-basics"
+  ],
+  "learningObjectives": [
+    "Derive MinHash banding's candidate probability and explain the roles of b and r.",
+    "Match an LSH family to Jaccard, angular or Lp geometry without conflating their collision laws.",
+    "Tune and evaluate candidate generation independently from exact scoring or downstream ranking.",
+    "Design a versioned, observable index that handles hot buckets, updates, abuse and rollback."
+  ],
+  "deepSections": [
+    {
+      "id": "lsh-family",
+      "title": "Locality sensitivity is a probabilistic property tied to a geometry",
+      "body": "An ordinary hash tries to distribute keys uniformly and makes similar inputs unrelated. An LSH family deliberately gives near objects a higher collision probability. The definition is relative to a distance, near radius R, approximation factor c and probabilities p1>p2. MinHash supplies collision probability equal to Jaccard similarity. Random hyperplanes produce a collision law related to the angle between vectors, making them suitable for cosine or angular search. P-stable projections support certain Lp distances. Binary Hamming distance has bit-sampling constructions. Using the wrong family destroys the proximity promise even if the code still returns buckets. Feature normalization and representation determine the geometry before indexing. LSH is most compelling where exact scans are too costly and approximate misses are acceptable; low-dimensional trees, graph indexes, inverted indexes or product quantization may be better under other workloads."
+    },
+    {
+      "id": "banding",
+      "title": "Banding amplifies a modest row collision gap into an S-curve",
+      "body": "Arrange a k-row MinHash signature into b bands of r rows, k=br. Hash each complete band tuple into a bucket. Two objects become candidates when at least one band tuple matches. Under independent rows, one band matches with probability s^r and all b bands fail with probability (1−s^r)^b. Increasing r is a stricter AND: it lowers candidate probability, especially for moderate similarities. Increasing b is a broader OR: it raises probability at every nonzero similarity. Holding k fixed forces a trade-off rather than allowing both improvements. The popular approximation (1/b)^(1/r) locates the bend but is not a guarantee. Hash rows can be correlated, finite-hash collisions add noise, and objects with templated shingles violate simple corpus assumptions, so empirical curves are necessary."
+    },
+    {
+      "id": "retrieval-evaluation",
+      "title": "Candidate recall and candidate volume expose retrieval-stage quality",
+      "body": "Offline evaluation starts with labeled or exact-computed relevant neighbors for representative queries. Candidate recall is the fraction that appear anywhere in the union of buckets. Candidates per query, unique bucket probes, bytes read and tail latency measure cost. The downstream exact Jaccard or learned reranker then has its own precision, recall, NDCG and decision threshold. Reporting only final precision hides relevant pairs that the candidate stage made impossible to recover; reporting only theoretical collision probability hides corpus skew. Tune b, r, table count and multi-probe radius against the complete recall–cost curve. Include short and long sets, languages, templates, new items and sparse segments. Compare with a brute-force subset during monitoring. A gray zone can probe extra buckets or use a fallback index for high-value queries."
+    },
+    {
+      "id": "index-operations",
+      "title": "Index mechanics and failure behavior determine production reliability",
+      "body": "Persist the preprocessing version, hash family, row order, band layout and bucket encoding. A changed seed requires a parallel index or rebuild; mixing versions silently eliminates legitimate collisions. Online insertion writes every band, while deletion needs reverse mappings, tombstones or compaction. Deduplicate candidates returned by multiple bands and cap pathological buckets, but measure the recall lost by caps. Common shingles can create hot buckets that overload partitions; salting, stop-shingle policy, frequency-aware filtering and secondary partitioning trade recall for stability. Adversaries may craft collisions or flood popular bands, so authenticate writes, rate-limit queries and use keyed or robust hashes where the threat model warrants it. Snapshot manifests, checksums and canary queries support atomic promotion and rollback. Signatures and shared buckets can leak similarity or membership, requiring access control and retention policy."
+    }
+  ],
+  "workedExamples": [
+    {
+      "title": "Parameter trade-off at fixed signature size",
+      "body": "For 120 rows, 30×4 banding is recall-heavy, while 12×10 is precision-heavy. Both consume the same signature rows but yield radically different candidate curves."
+    },
+    {
+      "title": "Hot-template bucket",
+      "body": "A legal footer contributes many identical shingles across otherwise unrelated pages. Buckets explode, so boilerplate removal or frequency-aware shingles may improve both cost and relevance."
+    }
+  ],
+  "lab": {
+    "language": "python",
+    "goal": "Build a banded MinHash index, derive its collision curve, and verify candidate retrieval on similar and disjoint sets.",
+    "buildIt": "import numpy as np\nfrom collections import defaultdict\nrng=np.random.default_rng(17); prime=4294967311; bands,rows_per_band=30,4; k=bands*rows_per_band\na=rng.integers(1,prime,size=k,dtype=np.uint64); b=rng.integers(0,prime,size=k,dtype=np.uint64)\ndef signature(values):\n    vals=np.asarray(sorted(set(values)),dtype=np.uint64)\n    return np.min((a[:,None]*vals[None,:]+b[:,None])%prime,axis=1)\ndef candidate_probability(s,bands=bands,r=rows_per_band): return 1-(1-s**r)**bands\ndef band_keys(sig): return [(band,tuple(sig[band*rows_per_band:(band+1)*rows_per_band])) for band in range(bands)]\ndocs={'base':set(range(200)),'near':set(range(40,220)),'far':set(range(1000,1200)),'medium':set(range(140,340))}\nsigs={name:signature(values) for name,values in docs.items()}",
+    "useIt": "index=defaultdict(set)\nfor name,sig in sigs.items():\n    for key in band_keys(sig): index[key].add(name)\ndef candidates(query):\n    return set().union(*(index.get(key,set()) for key in band_keys(signature(query))))\nretrieved=candidates(docs['base'])-{'base'}",
+    "verifyIt": "def jac(x,y): return len(x&y)/len(x|y)\nassert jac(docs['base'],docs['near'])==160/220\nassert 'near' in retrieved and 'far' not in retrieved\ngrid=np.linspace(0,1,101); probs=np.array([candidate_probability(float(s)) for s in grid]); assert np.all(np.diff(probs)>=0)\nassert candidate_probability(.8)>.99 and candidate_probability(.1)<.01\nassert candidate_probability(.6,bands=40,r=4)>candidate_probability(.6,bands=10,r=4)\nassert candidate_probability(.6,bands=20,r=8)<candidate_probability(.6,bands=20,r=4)\nassert all(len(key[1])==rows_per_band for key in band_keys(sigs['base']))",
+    "shipIt": "Tune banding on labeled candidate recall and cost, version every hash and preprocessing choice, monitor bucket skew and misses, exact-score candidates, and retain atomic index rollback."
+  },
+  "exercises": [
+    {
+      "prompt": "Derive 1−(1−s^r)^b.",
+      "solution": "A band matches with s^r; all independent bands fail with (1−s^r)^b; take the complement."
+    },
+    {
+      "prompt": "At fixed k=br, why can you not independently maximize b and r?",
+      "solution": "Increasing one reduces the other, moving the recall–precision curve while storage stays fixed."
+    },
+    {
+      "prompt": "What metric would reveal an overly broad candidate generator?",
+      "solution": "Candidate count or fraction of corpus per query, considered alongside candidate recall and tail latency."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "curve",
+      "title": "Banded LSH candidate probability",
+      "series": [
+        {
+          "label": "Recall-heavy bands",
+          "points": [
+            [
+              0,
+              0
+            ],
+            [
+              0.25,
+              0.08
+            ],
+            [
+              0.45,
+              0.46
+            ],
+            [
+              0.62,
+              0.9
+            ],
+            [
+              0.8,
+              0.995
+            ],
+            [
+              1,
+              1
+            ]
+          ]
+        },
+        {
+          "label": "Precision-heavy bands",
+          "points": [
+            [
+              0,
+              0
+            ],
+            [
+              0.25,
+              0.01
+            ],
+            [
+              0.45,
+              0.08
+            ],
+            [
+              0.62,
+              0.4
+            ],
+            [
+              0.8,
+              0.9
+            ],
+            [
+              1,
+              1
+            ]
+          ]
+        }
+      ],
+      "caption": "Conceptual normalized curves: parameters shift a soft transition rather than defining a hard cutoff.",
+      "afterSection": "banding"
+    },
+    {
+      "type": "flow",
+      "title": "Two-stage approximate retrieval",
+      "items": [
+        "Encode query with frozen schema",
+        "Probe band buckets",
+        "Union and deduplicate candidates",
+        "Cap or expand with policy",
+        "Compute exact or learned scores",
+        "Return results and log recall probes"
+      ],
+      "caption": "LSH is a recall-oriented gate; downstream scoring supplies precision and ranking.",
+      "afterSection": "retrieval-evaluation"
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "indyk-motwani-lsh-paper",
+      "contribution": "Grounds the locality-sensitive hashing framework and approximate near-neighbor motivation."
+    },
+    {
+      "resource": "broder-minhash-paper",
+      "contribution": "Provides the MinHash collision construction used by the banding example."
+    },
+    {
+      "resource": "stanford-cs246",
+      "contribution": "Supports the practical banding derivation, S-curve interpretation and large-scale similarity-search pipeline."
+    }
+  ]
 }

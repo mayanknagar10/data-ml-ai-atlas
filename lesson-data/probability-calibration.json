@@ -6,37 +6,64 @@
   "roles": [
     "ds"
   ],
-  "interviewAnswer": "A classifier is calibrated when predictions of 0.8 correspond to about 80% positive outcomes among comparable cases. Ranking metrics can be strong while probabilities are badly calibrated.",
+  "interviewAnswer": "A probabilistic classifier is calibrated when predictions near p are positive about p of the time in the target population. Calibration is distinct from discrimination: a monotonic transform preserves ranking and AUC while changing probability meaning. I evaluate probabilities on untouched natural-prevalence data using reliability diagrams plus proper scores such as log loss and Brier score, remembering that those scores also reflect resolution and prevalence, not calibration alone. Post-hoc Platt scaling fits a logistic mapping and is data-efficient but shape-restricted; isotonic regression is flexible and monotone but can overfit small calibration sets. Calibration must be fitted on predictions from data not used to fit the base model, using a separate split or cross-fitting. I then choose action thresholds from cost on separate evidence when necessary, monitor calibration by probability range and cohort with uncertainty, and recalibrate only after confirming label maturity and population shift.",
   "keyPoints": [
-    "Reliability diagrams visualize calibration.",
-    "Brier/log loss evaluate probabilistic quality.",
-    "Platt/isotonic calibration need held-out data."
+    "Calibration asks whether probability values match frequencies; discrimination asks whether scores rank cases.",
+    "Reliability diagrams depend on binning and need counts and uncertainty, especially in high-risk tails.",
+    "Brier and log loss are proper scores but mix calibration with sharpness, resolution and base-rate difficulty.",
+    "Fit calibrators on held-out or out-of-fold predictions, never on the base model's in-sample predictions.",
+    "Class weighting, resampling, prior shift and subgroup mixture can all change probability meaning."
   ],
   "resources": [
-    "sklearn",
-    "isl"
+    "sklearn-calibration-guide",
+    "sklearn-model-evaluation",
+    "sklearn-cross-validation"
   ],
   "featured": true,
-  "why": "Probability Calibration is a recurring foundation across data science and machine learning because it affects both theoretical correctness and practical system behavior.",
-  "intuition": "Reliability diagrams visualize calibration.",
-  "deepDive": "A classifier is calibrated when predictions of 0.8 correspond to about 80% positive outcomes among comparable cases. Ranking metrics can be strong while probabilities are badly calibrated. Brier/log loss evaluate probabilistic quality. Platt/isotonic calibration need held-out data. The interview-level skill is not merely recalling the definition: explain the assumptions, what diagnostic evidence you would inspect, and what alternative you would choose when those assumptions fail.",
-  "workedExample": "Risk scores used for pricing or triage require meaningful probabilities, not only high AUC.",
+  "why": "Probabilities drive expected cost, prioritization, pricing, resource allocation and communication of risk. A score that ranks well but says 0.9 when events occur 0.6 of the time can make systematically harmful decisions. Calibration is easy to assess badly: wide equal-width bins may be empty, equal-frequency bins hide narrow high-risk regions, and a smooth-looking curve from few cases suggests false certainty. Lower Brier score may come from better ranking rather than better reliability. Calibrating on training predictions learns the base model's overfit pattern, while balancing the calibration sample changes prevalence. A credible workflow isolates base fitting, calibration fitting and final assessment, preserves the operational population and reports both forecast quality and downstream utility.",
+  "intuition": "Collect every case assigned roughly 70% risk. If about seven in ten eventually become positive, that region is calibrated. This does not mean the model separates positives well: predicting the prevalence to everyone can be calibrated but uninformative. Conversely, sorting every case correctly does not tell us whether the numeric scores are 0.6 or 0.99. Ranking and probability scale are separate axes.",
+  "deepDive": "Calibration analysis combines conditional frequency estimation, proper scoring rules, binning uncertainty and post-hoc monotone mappings. Valid assessment separates model, calibrator and test evidence, preserves prevalence and label maturity, and focuses resolution on decision-relevant probability ranges. Calibration can drift without ranking drift and may differ across cohorts even when global reliability appears good.",
+  "workedExample": "Transform every logit z into 3z+1 and apply the sigmoid. Ordering and ROC AUC are unchanged because the transform is increasing, but probabilities become much more extreme and shifted. A sigmoid calibrator can learn an approximate inverse on separate data.",
   "commonMistakes": [
-    "Using the concept mechanically without checking assumptions or data semantics.",
-    "Reporting one metric/result without examining uncertainty, slices or failure modes."
+    {
+      "misconception": "High AUC means probabilities are calibrated.",
+      "correction": "AUC depends only on ranking and is unchanged by many probability-distorting monotonic transformations."
+    },
+    {
+      "misconception": "A reliability curve on training data is valid.",
+      "correction": "In-sample predictions reflect fitted noise; use held-out or out-of-fold predictions."
+    },
+    {
+      "misconception": "Lower ECE proves globally better probabilities.",
+      "correction": "ECE depends on bins and is not a proper score; inspect counts, signed gaps, proper scores and decision regions."
+    },
+    {
+      "misconception": "Calibration always improves the model.",
+      "correction": "It can overfit, change useful ranking through ties, or fail under shift; validate both probability and decision outcomes."
+    }
   ],
   "followUps": [
-    "What assumptions or limitations does Probability Calibration have?",
-    "How would you validate Probability Calibration on a real dataset?"
+    {
+      "question": "When would you choose isotonic over Platt scaling?",
+      "answer": "With ample representative calibration data and evidence of a monotone but non-sigmoid distortion, validated on separate evidence."
+    },
+    {
+      "question": "Can a model be calibrated within every subgroup?",
+      "answer": "It can be evaluated or calibrated by subgroup, but sparse data, changing mixtures and fairness trade-offs require careful uncertainty and governance."
+    },
+    {
+      "question": "Why is Brier score not a pure calibration metric?",
+      "answer": "It reflects reliability, resolution and outcome uncertainty, so improvement can arise from better discrimination as well as better calibration."
+    }
   ],
-  "production": "In production, make assumptions explicit, validate on representative slices, compare with a simple baseline and monitor the signals that can drift.",
+  "production": "Version base model, calibrator, fitting cohorts, sampling weights, probability clipping, bin definitions, label maturity and downstream threshold. Fit calibration only from held-out or out-of-fold base scores at intended prevalence. Report Brier and log loss, ranking, calibration intercept and slope, reliability bins with counts and uncertainty, and decision utility in critical ranges and cohorts. Monitor prevalence, score support and delayed outcomes by prediction cohort. Validate recalibration triggers and mappings on separate evidence, canary resulting action volumes, and retain prior calibrator and thresholds for rollback.",
   "lab": {
-    "goal": "Measure and improve probability calibration.",
     "language": "python",
-    "buildIt": "from sklearn.datasets import make_classification\nfrom sklearn.model_selection import train_test_split\nX,y=make_classification(n_samples=1200,n_features=12,n_informative=5,class_sep=.8,random_state=0)\nXtr,Xte,ytr,yte=train_test_split(X,y,test_size=.3,random_state=0,stratify=y)\n",
-    "useIt": "from sklearn.svm import LinearSVC\nfrom sklearn.calibration import CalibratedClassifierCV\nfrom sklearn.metrics import brier_score_loss\nm=CalibratedClassifierCV(LinearSVC(),method='sigmoid',cv=4).fit(Xtr,ytr)\np=m.predict_proba(Xte)[:,1]\nprint('Brier',brier_score_loss(yte,p))\n",
-    "verifyIt": "assert ((p>=0)&(p<=1)).all()\n",
-    "shipIt": "Calibrate using held-out/CV predictions, re-check calibration after prevalence shift, and do not confuse calibration with ranking performance."
+    "goal": "Distort a well-ranked score, fit sigmoid calibration on separate data, and verify held-out probability improvement without ranking change.",
+    "buildIt": "import numpy as np\nfrom sklearn.datasets import make_classification\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.linear_model import LogisticRegression\nfrom sklearn.metrics import brier_score_loss,roc_auc_score\nX,y=make_classification(n_samples=1400,n_features=10,n_informative=6,class_sep=.8,random_state=6)\nX_fit,X_rest,y_fit,y_rest=train_test_split(X,y,test_size=.5,stratify=y,random_state=1)\nX_cal,X_test,y_cal,y_test=train_test_split(X_rest,y_rest,test_size=.5,stratify=y_rest,random_state=2)\nbase=LogisticRegression(max_iter=2000).fit(X_fit,y_fit)\ndef sigmoid(z): return 1/(1+np.exp(-z))\nz_cal=3*base.decision_function(X_cal)+1; z_test=3*base.decision_function(X_test)+1\np_bad=sigmoid(z_test); calibrator=LogisticRegression(C=1e6,max_iter=2000).fit(z_cal[:,None],y_cal)\np_cal=calibrator.predict_proba(z_test[:,None])[:,1]",
+    "useIt": "bad_brier=brier_score_loss(y_test,p_bad); calibrated_brier=brier_score_loss(y_test,p_cal)\nbad_auc=roc_auc_score(y_test,p_bad); calibrated_auc=roc_auc_score(y_test,p_cal)\nbins=np.linspace(0,1,6); ids=np.clip(np.digitize(p_cal,bins)-1,0,4); reliability=[(int((ids==b).sum()),float(p_cal[ids==b].mean()),float(y_test[ids==b].mean())) for b in range(5) if (ids==b).any()]",
+    "verifyIt": "assert calibrated_brier<bad_brier\nassert abs(calibrated_auc-bad_auc)<1e-12\nassert np.all((p_cal>=0)&(p_cal<=1))\nassert sum(row[0] for row in reliability)==len(y_test)\nassert set(np.arange(len(X_fit))).isdisjoint(np.arange(len(X_fit),len(X_fit)+len(X_cal)))",
+    "shipIt": "Separate base fit, calibration and assessment cohorts; publish reliability counts and proper scores; monitor probability ranges and label maturity before versioned recalibration."
   },
   "visual": {
     "type": "curve",
@@ -90,6 +117,125 @@
     "yLabel": "observed frequency"
   },
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "math": "Perfect calibration satisfies P(Y=1 | P_hat=p)=p in a population-level sense. Brier loss is mean(P_hat-Y)^2; log loss is -mean[Y log P_hat+(1-Y)log(1-P_hat)]. Both are minimized in expectation by the true conditional probability. A reliability bin B reports mean predicted probability versus empirical positive rate among i in B. Expected calibration error is a weighted average of absolute bin gaps, but it depends strongly on bins and is not a proper score. Platt scaling fits sigmoid(a s+b); isotonic fits a nondecreasing piecewise-constant mapping.",
+  "code": "bad_brier=brier_score_loss(y_test,p_bad); calibrated_brier=brier_score_loss(y_test,p_cal)\nbad_auc=roc_auc_score(y_test,p_bad); calibrated_auc=roc_auc_score(y_test,p_cal)\nbins=np.linspace(0,1,6); ids=np.clip(np.digitize(p_cal,bins)-1,0,4); reliability=[(int((ids==b).sum()),float(p_cal[ids==b].mean()),float(y_test[ids==b].mean())) for b in range(5) if (ids==b).any()]",
+  "description": "Probability calibration gives classifier scores an empirical risk meaning. This chapter separates calibration from discrimination and sharpness, defines population calibration, and explains why perfect ranking, perfect calibration and useful decisions are different properties. It builds reliability diagrams with equal-width and equal-frequency bins, includes counts and uncertainty, and warns that expected calibration error is bin-dependent. It derives Brier and log loss as proper scoring rules while explaining their dependence on resolution and prevalence. It compares Platt scaling, isotonic regression, cross-validated calibration and prior-shift adjustment, with strict separation between base-training, calibration and final-test data. Worked examples show a monotonic score transform preserving AUC while damaging probabilities and a constant-prevalence forecast that is calibrated but uninformative. The lab intentionally distorts logits, fits a sigmoid calibrator on a separate split and verifies improved held-out Brier loss without changing ranking. Production guidance monitors probability-range support, delayed labels, cohort reliability, decision value and recalibration governance. Special attention goes to sparse high-risk regions where a smooth global average can conceal the decisions with greatest consequence.",
+  "prerequisites": [
+    "classification-metrics",
+    "roc-pr"
+  ],
+  "learningObjectives": [
+    "Distinguish probability calibration, discrimination, sharpness and downstream decision utility.",
+    "Construct and critique reliability diagrams and bin-based calibration summaries.",
+    "Fit sigmoid or isotonic calibration without reusing base-training or final-test outcomes.",
+    "Monitor probability semantics across prevalence, cohort, label delay and policy changes."
+  ],
+  "deepSections": [
+    {
+      "id": "meaning-diagnostics",
+      "title": "Calibration gives numerical scores a frequency meaning",
+      "body": "A model is calibrated when groups assigned probability p experience the event at rate p, with formal definitions handling continuous predictions through conditional expectations. Calibration is population-specific: mixing two individually miscalibrated subgroups can appear globally calibrated, and a prevalence shift can move reliability. Start with a reliability diagram plotting mean score against observed rate in bins. Add the identity line, bin counts and uncertainty. Equal-width bins reveal which probability ranges are populated but may leave the tail sparse; quantile bins balance counts but vary in width and can hide local structure. Adaptive smoothers add assumptions. Expected calibration error compresses bin gaps but can be changed by bin boundaries and may reward uninformative predictions. Inspect signed gaps, maximum or decision-weighted errors and critical cohorts rather than treating one ECE as truth."
+    },
+    {
+      "id": "proper-scores",
+      "title": "Proper scores evaluate the full probability forecast",
+      "body": "Log loss and Brier loss are proper: truthful conditional probabilities minimize expected score. Log loss penalizes confident wrong predictions without bound and requires clipping only for numerical computation, with the clipping rule documented. Brier loss is bounded for binary outcomes and has a squared-error interpretation. Their values combine reliability, discrimination or resolution, and irreducible uncertainty; comparing Brier values alone does not isolate calibration. A constant forecast equal to prevalence can be perfectly calibrated but has no resolution. A highly discriminative model may have a better proper score even with a visible local reliability defect. Report ranking metrics, proper scores and reliability evidence together. Evaluate the probability range that affects decisions: overall averages can ignore a small but safety-critical high-risk tail. Use paired bootstrap over independent units for model differences."
+    },
+    {
+      "id": "fit-calibrator",
+      "title": "Calibrators need predictions that are out of sample for the base model",
+      "body": "Platt scaling fits a sigmoid of the base score, estimating slope and intercept. It works well with limited data and corrects common over- or under-confidence shapes but cannot represent arbitrary monotone curves. Isotonic regression fits a flexible monotone step function and can capture non-sigmoid distortion, but it needs more calibration examples and can create extreme plateaus. The calibration data must not be the rows used to fit the underlying model; otherwise the mapping sees overly optimistic in-sample scores. Use a dedicated calibration split or cross-fitting that produces out-of-fold base scores. Hyperparameters and calibration method must be selected within development evidence, leaving a final test untouched. Preserve natural prevalence and sampling weights. Multiclass calibration additionally needs probabilities that satisfy simplex constraints and careful one-vs-rest handling."
+    },
+    {
+      "id": "shift-decisions",
+      "title": "Calibration connects population shift to decisions",
+      "body": "Class weighting and oversampling alter the effective training prior and often the intercept, so a ranking model may need calibration on natural-prevalence data. Under pure label shift with stable class-conditional score distributions, posterior odds can be corrected for a new prior; real covariate and concept shifts violate that shortcut. Recalibration can repair probability scale but cannot restore lost ranking information or correct invalid labels. Choose decision thresholds by expected cost or constraints after calibration when probabilities are inputs to utility. If threshold and calibrator are both tuned, allocate separate or nested evidence to prevent optimism. Calibration-in-the-large compares average predicted and observed prevalence, while calibration slope diagnoses extremeness; these summaries complement local reliability plots. Evaluate whether a recalibrated model actually improves the downstream action."
+    },
+    {
+      "id": "production-monitoring",
+      "title": "Monitor probability semantics by cohort and maturity",
+      "body": "Log prediction probabilities, model and calibrator versions, eligibility and action without storing unnecessary sensitive features. As labels mature, backfill Brier, log loss, calibration intercept and slope, reliability bins and decision outcomes by prediction cohort. Track counts in every bin; empty high-risk bins are not evidence of good calibration. Separate changes in prevalence, score distribution, label process and policy, since all affect observed reliability. Slice by clinically or operationally meaningful groups with sufficient support and uncertainty. Recalibration needs a versioned window, weighting, method and trigger, plus final validation; frequent automatic recalibration can chase noise or delayed labels. Canary the new mapping because it changes threshold volumes even when score order remains fixed, and keep the prior mapping and decision policy for rollback."
+    }
+  ],
+  "workedExamples": [
+    {
+      "title": "Ranking survives probability distortion",
+      "body": "Transform every logit z into 3z+1 and apply the sigmoid. Ordering and ROC AUC are unchanged because the transform is increasing, but probabilities become much more extreme and shifted. A sigmoid calibrator can learn an approximate inverse on separate data."
+    },
+    {
+      "title": "Calibrated but uninformative",
+      "body": "If prevalence is 20%, predicting 0.2 for every case is calibrated: one fifth of all equally scored cases are positive. It has no ability to rank individual risk and provides no refinement beyond the base rate."
+    }
+  ],
+  "exercises": [
+    {
+      "prompt": "Can predicting prevalence for every row be calibrated?",
+      "solution": "Yes, globally, if the evaluation prevalence matches; it remains uninformative because it provides no resolution."
+    },
+    {
+      "prompt": "Why might isotonic calibration hurt with 100 cases?",
+      "solution": "Its flexible step function can fit sampling noise and create extreme plateaus; a constrained sigmoid may generalize better."
+    },
+    {
+      "prompt": "What does an empty 0.9-to-1.0 bin mean?",
+      "solution": "The model issued no predictions there; it provides no evidence about calibration in that range."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "compare",
+      "title": "Probability quality has two axes",
+      "left": {
+        "title": "Discrimination",
+        "items": [
+          "Orders positives above negatives",
+          "Measured by ranking metrics",
+          "Monotonic transforms preserve it",
+          "Supports prioritization"
+        ]
+      },
+      "right": {
+        "title": "Calibration",
+        "items": [
+          "Matches scores to frequencies",
+          "Measured with reliability evidence",
+          "Monotonic transforms can break it",
+          "Supports expected utility"
+        ]
+      },
+      "caption": "A useful probabilistic model usually needs both ranking and trustworthy numeric risk.",
+      "afterSection": "meaning-diagnostics"
+    },
+    {
+      "type": "flow",
+      "title": "Leakage-safe calibration",
+      "items": [
+        "Fit base model",
+        "Generate held-out or OOF scores",
+        "Fit calibrator",
+        "Lock mapping",
+        "Assess on untouched cohort",
+        "Choose and monitor decision policy"
+      ],
+      "caption": "The calibrator is another learned model and needs its own information boundary.",
+      "afterSection": "fit-calibrator"
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "sklearn-calibration-guide",
+      "contribution": "Verifies reliability diagrams, sigmoid and isotonic calibration, cross-validation and proper-score caveats."
+    },
+    {
+      "resource": "sklearn-model-evaluation",
+      "contribution": "Supports Brier, log loss, ROC AUC and probability-scoring definitions."
+    },
+    {
+      "resource": "sklearn-cross-validation",
+      "contribution": "Supports out-of-fold prediction and separation of base fitting from calibration assessment."
+    }
+  ]
 }

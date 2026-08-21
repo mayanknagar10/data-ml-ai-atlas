@@ -7,39 +7,185 @@
     "ds",
     "as"
   ],
-  "interviewAnswer": "k-NN predicts using nearby training examples. It is simple and non-parametric but sensitive to feature scaling, irrelevant dimensions and inference cost on large datasets.",
+  "interviewAnswer": "k-nearest neighbors is an instance-based, nonparametric method. At prediction time it finds the k training observations closest under a chosen representation and metric, then votes for classification or averages targets for regression, optionally weighting nearer points more. Small k produces flexible, high-variance boundaries; large k smooths toward the global prevalence or mean. Scaling, encoding and irrelevant dimensions are central because they define distance. Exact search costs roughly O(nd) per query without an index; KD and ball trees help mainly at lower intrinsic dimension, while approximate indexes trade recall for latency at scale. I choose the metric and k inside leakage-safe validation, monitor neighbor distance and label mix as support diagnostics, and never interpret proximity as causal similarity.",
   "keyPoints": [
-    "Distance metric",
-    "Scaling",
-    "Choice of k",
-    "Curse of dimensionality"
+    "The representation and distance metric define what the model means by similar.",
+    "k controls locality: small neighborhoods have low smoothing bias and high sampling variance.",
+    "Neighbor search and the prediction rule are separate; exact, tree-based and approximate indexes have different guarantees.",
+    "High dimension makes distances concentrate and indexing less effective unless useful structure remains.",
+    "Store-and-query models require privacy, deletion, freshness and latency controls for the reference set."
   ],
   "resources": [
-    "sklearn",
-    "statquest",
-    "stanford-cs229",
-    "google-mlcc",
+    "sklearn-neighbors",
+    "nearest-neighbor-paper",
     "isl"
   ],
   "featured": false,
-  "why": "k-NN is a simple non-parametric method that exposes distance metrics, scaling, curse of dimensionality and latency trade-offs.",
-  "intuition": "To predict a new point, find the nearest training examples and let their labels/values vote. The model stores data rather than learning many parameters.",
-  "deepDive": "Small k gives flexible high-variance boundaries; large k smooths predictions and increases bias. Feature scaling is critical because distance is coordinate-dependent. In high dimensions, distances concentrate and nearest-neighbor meaning degrades. Exact search is expensive for large datasets, motivating trees or approximate nearest-neighbor indexes.",
-  "workedExample": "If one feature ranges 0–1 and another 0–100000, Euclidean distance is dominated by the large-scale feature unless you normalize appropriately.",
-  "code": "from sklearn.pipeline import make_pipeline\nfrom sklearn.preprocessing import StandardScaler\nfrom sklearn.neighbors import KNeighborsClassifier\nm=make_pipeline(StandardScaler(),KNeighborsClassifier(n_neighbors=7))",
+  "why": "Nearest neighbors makes inductive bias unusually visible. There is almost no fitted parameter vector: behavior comes from the feature representation, distance, neighborhood size, weighting and stored reference set. That makes KNN a strong diagnostic baseline for irregular boundaries and a practical foundation for retrieval, matching, local regression, anomaly detection and manifold methods. It also reveals the curse of dimensionality concretely. Adding noisy dimensions changes rankings; different units can dominate Euclidean distance; sparse cosine neighborhoods behave differently from dense Minkowski geometry; and a fast index may return approximate rather than exact neighbors. Production challenges are equally instructive because training is cheap but prediction, memory, privacy, deletion and freshness are expensive. Learning KNN well means treating similarity as a model assumption and the neighbor index as a versioned data product rather than calling it a parameter-free algorithm.",
+  "intuition": "To estimate an unfamiliar house price, look for past houses that are genuinely similar and average their prices. Looking at one house is responsive but fragile; averaging a thousand ignores local differences. The word genuinely carries the whole model: a kilometer difference, an extra bedroom and a construction-year gap need compatible scales and relevance. In high dimensions, nearly every house may be far away and the nearest one may not be meaningfully near. The returned neighbors are therefore both a prediction mechanism and an audit trail. Large distances, mixed labels or only one represented subgroup warn that the query lacks local support.",
+  "deepDive": "KNN estimates a local target distribution using geometry supplied by the representation and metric. Statistical smoothing, computational search and operational reference-data management are distinct layers. A credible system tunes locality under deployment-like splits, measures exact or approximate retrieval quality, handles ties and sparse support deterministically, and governs stored examples as potentially sensitive production data.",
+  "workedExample": "A query differs from candidate A by $5,000 in income and 0 years in age, and from B by $500 and 20 years. Raw Euclidean distance is dominated by income and selects B. After scaling each feature by a training standard deviation—say $10,000 and 10 years—A has distance 0.5 while B has about 2.0, so A is closer. Neither scaling is universally correct; it encodes what changes should count as comparable.",
+  "code": "from sklearn.neighbors import KNeighborsClassifier\nmodel=KNeighborsClassifier(n_neighbors=3,weights='distance').fit(X,y)\nsk_pred=model.predict(X); sk_prob=model.predict_proba(X)[:,1]",
   "commonMistakes": [
-    "Using raw unscaled features with heterogeneous units.",
-    "Assuming k-NN training is expensive—it is inference/storage that often dominates.",
-    "Ignoring high-dimensional distance concentration."
+    {
+      "misconception": "KNN has no training, so it has no model assumptions.",
+      "correction": "Representation, metric, k, weights and reference-set construction are strong assumptions that determine every neighborhood."
+    },
+    {
+      "misconception": "More features always improve similarity.",
+      "correction": "Irrelevant dimensions add distance noise and can cause concentration, unstable rankings and slower search."
+    },
+    {
+      "misconception": "KD trees always make KNN logarithmic.",
+      "correction": "Their pruning degrades with dimension and data geometry; brute force can be faster. Benchmark representative queries."
+    },
+    {
+      "misconception": "Neighbor class fractions are calibrated probabilities.",
+      "correction": "They are local empirical estimates affected by k, density, sampling and shift and require independent calibration assessment."
+    }
   ],
   "followUps": [
-    "How choose k?",
-    "Why scale features?",
-    "What is curse of dimensionality?",
-    "How does ANN search relate?"
+    {
+      "question": "How do you choose k?",
+      "answer": "Tune it under the final split and metric, inspecting validation loss, support and latency. Theoretical asymptotic conditions do not supply a universal finite-sample value."
+    },
+    {
+      "question": "Why does scaling matter?",
+      "answer": "Distance aggregates coordinate differences. A large-unit feature can dominate geometry even when it is not more relevant."
+    },
+    {
+      "question": "What should happen when no radius neighbor exists?",
+      "answer": "Return an explicit unsupported state or validated fallback; silently forcing a distant neighbor defeats the radius contract."
+    }
   ],
-  "production": "k-NN can be latency/memory heavy at scale; vector indexes and embedding retrieval are modern relatives with similar distance/index concerns.",
+  "production": "Version the reference population and cutoff, feature and embedding transformation, scaling, metric, k or radius, weighting, tie rule, index algorithm and build parameters. Test feature parity and exact-neighbor fixtures before deploy. Measure index build time, memory, recall@k against brute force, downstream metric impact, update freshness and p95/p99 latency. Monitor query and neighbor-distance distributions, duplicate and empty-neighborhood rates, cohort representation, score or target spread, delayed loss and fallback use. Protect raw examples and embeddings with tenant isolation, encryption, minimal logs and end-to-end deletion. Gate online inserts against poisoning and label-quality checks. Canary embedding and index changes together, never mix incompatible versions, and retain the previous index manifest plus a global or segment baseline for rollback.",
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "math": "For metric d and neighbor set N_k(x), regression predicts k^-1Σ_{i∈N_k(x)} y_i or Σ_i w_i y_i/Σ_i w_i. Classification estimates p(c|x)=k^-1Σ_i 1[y_i=c] and applies a decision rule. Minkowski distance d_p(x,z)=(Σ_j|x_j-z_j|^p)^(1/p); standardized Euclidean distance uses transformed coordinates. Under suitable regularity with k→∞ and k/n→0, kNN can be consistent. For 1-NN, the classical asymptotic error is bounded relative to Bayes error under stated conditions, not a finite-sample guarantee.",
+  "lab": {
+    "language": "python",
+    "goal": "Implement distance-weighted KNN classification, compare it with scikit-learn, and verify voting, self-neighbor and scaling behavior.",
+    "buildIt": "import numpy as np\nX=np.array([[0,0],[0,2],[1,1],[8,8],[9,8],[8,10]],float); y=np.array([0,0,0,1,1,1])\ndef knn_predict(train_x,train_y,queries,k=3):\n    out=[]; probs=[]\n    for q in np.asarray(queries,float):\n        dist=np.sqrt(np.sum((train_x-q)**2,axis=1)); idx=np.argsort(dist,kind='stable')[:k]\n        w=1/np.maximum(dist[idx],1e-12); p=np.sum(w*train_y[idx])/np.sum(w)\n        probs.append(p); out.append(int(p>=0.5))\n    return np.array(out),np.array(probs)\nscratch_pred,scratch_prob=knn_predict(X,y,X,k=3)",
+    "useIt": "from sklearn.neighbors import KNeighborsClassifier\nmodel=KNeighborsClassifier(n_neighbors=3,weights='distance').fit(X,y)\nsk_pred=model.predict(X); sk_prob=model.predict_proba(X)[:,1]",
+    "verifyIt": "assert np.array_equal(scratch_pred,sk_pred)\nassert np.allclose(scratch_prob,sk_prob)\nassert np.array_equal(scratch_pred,y)\nassert np.all((scratch_prob>=0)&(scratch_prob<=1))\nq=np.array([[1,1000]],float); raw=np.argmin(np.linalg.norm(X-q,axis=1))\nscale=np.array([5,1000.0]); scaled=np.argmin(np.linalg.norm(X/scale-q/scale,axis=1))\nassert raw!=scaled",
+    "shipIt": "Freeze metric, transform, reference cutoff and index; measure exact recall and tail latency; monitor neighbor distance and fallbacks; enforce privacy, deletion and version-compatible updates."
+  },
+  "description": "k-nearest neighbors predicts from labels or targets of nearby stored observations. This chapter treats representation, distance and neighborhood choice as the learned model, derives uniform and distance-weighted classification and regression, and explains the bias-variance effect of k. It covers standardization, mixed and sparse data, Mahalanobis and cosine choices, ties, radius neighborhoods, class imbalance, distance concentration, intrinsic dimension, exact brute force, KD trees, ball trees and approximate search. Worked examples show how units reverse a neighbor ranking and how a large neighbor distance signals unsupported inference. The lab implements Euclidean KNN from scratch, compares it with scikit-learn and verifies self-neighbor, voting, scaling and probability invariants. Production guidance addresses reference-set versioning, embedding parity, deletion, privacy, index recall, tail latency, freshness, drift, fallbacks and rollback. The goal is to make one principle operational: a nearby point is useful only if the metric encodes task-relevant similarity and the search system returns that neighborhood reliably.",
+  "prerequisites": [
+    "norms-distances",
+    "bias-variance"
+  ],
+  "learningObjectives": [
+    "Implement kNN classification and regression from a declared metric and weighting rule.",
+    "Explain how k, scaling, irrelevant dimensions and class density affect predictions.",
+    "Choose among brute-force, tree-based and approximate search using measured recall and latency.",
+    "Operate a reference-set model with support, privacy, freshness and deletion controls."
+  ],
+  "deepSections": [
+    {
+      "id": "geometry-model",
+      "title": "Similarity is the model",
+      "body": "KNN stores training observations and delays most computation until a query arrives. Given transformed feature vectors, it calculates distances and selects the smallest k. Euclidean distance assumes comparable continuous coordinates and spherical local geometry. Manhattan distance changes sensitivity to coordinate differences; Mahalanobis distance accounts for covariance but requires a stable covariance estimate; cosine distance focuses on direction and is common for sparse text or normalized embeddings. Categorical and mixed data need an intentional representation rather than arbitrary integer codes. Standardization, dimensionality reduction or learned embeddings must be fit using training data only and reproduced exactly at serving. A feature with a large numeric unit or many noisy coordinates can dominate ranking. Missing values require imputation or a metric designed for incomplete comparisons. Similarity should be validated by neighbor relevance and downstream utility, not accepted because a distance formula is familiar."
+    },
+    {
+      "id": "local-smoothing",
+      "title": "k controls the locality and sampling noise",
+      "body": "For classification, uniform KNN estimates local class proportions and selects the largest; for regression it estimates a local mean. Inverse-distance weighting gives closer points greater influence but needs an epsilon and an explicit policy for exact duplicates. Small k follows narrow patterns and mislabeled points, producing high variance. Large k stabilizes the estimate but crosses real boundaries and tends toward global prevalence or mean, increasing smoothing bias. Choose k with validation that preserves entities and time. Radius neighbors adapt the count to local density but can return no points in sparse regions and too many in dense ones. Class imbalance affects local votes; class weighting, distance weighting and threshold adjustment answer different questions. Ties depend on distance equality, class order and implementation rules, so deterministic tie behavior belongs in tests. Local probability fractions are discrete and not automatically calibrated, especially under covariate or prevalence shift."
+    },
+    {
+      "id": "dimension-support",
+      "title": "High dimension weakens locality",
+      "body": "As dimension grows, volume expands and finite data become sparse. Under many distributions, nearest and farthest distances become less distinguishable, so neighbor rankings are sensitive to noise. The relevant issue is intrinsic, not only raw, dimension: structured data on a low-dimensional manifold can remain searchable. Feature selection, supervised metric learning and compact task-relevant embeddings may restore neighborhoods, but each can leak labels if trained outside the validation fold. Report neighbor-distance distributions and ratios to a typical training distance. A query whose closest neighbor is much farther than validation queries is out of support even if the API must still return k rows. Inspect class or target dispersion among neighbors and representation cohorts. KNN does not extrapolate a trend; regression predictions remain within the range of neighbor targets under nonnegative normalized weights. That can be safe or severely biased at boundaries."
+    },
+    {
+      "id": "search-index",
+      "title": "Search strategy changes systems behavior",
+      "body": "Brute-force search computes every distance and can be competitive for modest n, vectorized dense data or high dimension. KD trees recursively partition coordinate axes and are effective mainly in lower dimensions. Ball trees use nested metric balls and can suit other geometries, but both degrade as pruning opportunities disappear. Approximate nearest-neighbor indexes trade retrieval recall for memory, build time and query latency. Measure recall@k against exact neighbors on representative queries, then measure downstream prediction loss; high index recall is not sufficient if missed neighbors carry rare labels. Index hyperparameters, quantization and updates belong in artifact lineage. Batched matrix operations may outperform complex indexes at some scales. Define behavior for index unavailability, partial shards, stale replicas and duplicate vectors. Separate retrieval latency from aggregation and feature-extraction latency so regressions can be localized."
+    },
+    {
+      "id": "reference-operations",
+      "title": "The training set becomes a live model asset",
+      "body": "A KNN service may retain sensitive examples or embeddings, so access, encryption, retention, deletion and tenant isolation are first-class requirements. Version the reference cutoff, feature transform, metric, index build, k, weights, tie rules and threshold. A deletion request must remove an item from source data, index replicas, caches and future rebuilds. Online additions improve freshness but can bypass quality review or allow poisoning; validate labels and provenance before admission. Monitor index size, build health, exact-versus-approximate recall samples, query latency, neighbor distance, duplicate rate, cohort representation, prediction and delayed error. Avoid returning raw neighbors when they reveal private records. Canary index or embedding changes because distances across embedding versions are not comparable. Keep a global or segment baseline when no valid neighbor exists, and retain the prior index manifest for rollback."
+    }
+  ],
+  "workedExamples": [
+    {
+      "title": "Units reverse the nearest neighbor",
+      "body": "A query differs from candidate A by $5,000 in income and 0 years in age, and from B by $500 and 20 years. Raw Euclidean distance is dominated by income and selects B. After scaling each feature by a training standard deviation—say $10,000 and 10 years—A has distance 0.5 while B has about 2.0, so A is closer. Neither scaling is universally correct; it encodes what changes should count as comparable."
+    },
+    {
+      "title": "A result without local support",
+      "body": "A medical query's nearest training patient is six standard deviations away and the five neighbors split labels 3–2. The classifier still returns 0.6, but this is weak evidence. The service flags out-of-support distance, returns the validated population baseline with uncertainty, and routes the case for expert review instead of presenting the local fraction as confident probability."
+    }
+  ],
+  "exercises": [
+    {
+      "prompt": "What does k=n predict in uniform-weight classification?",
+      "solution": "Every query receives the global training class proportions and majority class, so all local information disappears."
+    },
+    {
+      "prompt": "Why can inverse-distance weights fail on duplicates?",
+      "solution": "Zero distance produces division by zero and duplicate labels may conflict. Define an epsilon and explicit exact-match aggregation policy."
+    },
+    {
+      "prompt": "How would you validate an approximate index?",
+      "solution": "Compare retrieved neighbors with exact search on representative queries, then measure downstream predictions, rare cohorts, latency, memory and failure behavior."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "compare",
+      "title": "Small and large neighborhoods",
+      "left": {
+        "title": "Small k",
+        "items": [
+          "Highly local",
+          "Irregular boundary",
+          "Sensitive to noise",
+          "High variance"
+        ]
+      },
+      "right": {
+        "title": "Large k",
+        "items": [
+          "More smoothing",
+          "Stable vote",
+          "Crosses local boundaries",
+          "Higher bias"
+        ]
+      },
+      "caption": "Neighborhood size controls how much local structure is averaged away.",
+      "afterSection": "local-smoothing"
+    },
+    {
+      "type": "flow",
+      "title": "KNN serving path",
+      "items": [
+        "Transform query",
+        "Search versioned reference index",
+        "Measure neighbor support",
+        "Aggregate labels or targets",
+        "Calibrate or threshold",
+        "Fallback when unsupported"
+      ],
+      "caption": "Search, support assessment and decision policy are separate production stages.",
+      "afterSection": "search-index"
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "nearest-neighbor-paper",
+      "contribution": "Provides the foundational statistical framing of nearest-neighbor classification."
+    },
+    {
+      "resource": "sklearn-neighbors",
+      "contribution": "Verifies current classifier, regression, weighting and neighbor-search behavior."
+    },
+    {
+      "resource": "isl",
+      "contribution": "Supports the bias-variance, scaling and validation treatment for flexible classifiers."
+    }
+  ]
 }

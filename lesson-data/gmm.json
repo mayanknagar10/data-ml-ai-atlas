@@ -7,39 +7,187 @@
     "ds",
     "as"
   ],
-  "interviewAnswer": "A Gaussian mixture models data as a weighted combination of Gaussian components and gives soft cluster probabilities. EM alternates between estimating component responsibilities and updating parameters.",
+  "interviewAnswer": "A Gaussian mixture models density as p(x)=Σ_k π_k N(x|μ_k,Σ_k) with latent component membership. EM alternates responsibilities r_ik proportional to π_k N(x_i|μ_k,Σ_k) and weighted maximum-likelihood updates for π, means and covariances. Each iteration does not decrease observed-data likelihood, but solutions are local, labels can permute, and unconstrained covariance can collapse around a point with unbounded likelihood. Covariance regularization, adequate component support and repeated initialization are essential. Unlike k-means, GMM provides soft assignments and elliptical covariance, but a component is not automatically a real class. I select covariance structure and component count using held-out likelihood, BIC plus stability and purpose, evaluate calibration of responsibilities cautiously, and monitor log likelihood, weights, covariance conditioning and support drift.",
   "keyPoints": [
-    "Soft assignments differ from k-means hard labels.",
-    "Covariance structure controls cluster shapes.",
-    "Likelihood can favor complexity without regularization/model selection."
+    "Mixture weights, means and covariances define a density; responsibilities are posterior component probabilities under that model.",
+    "EM alternates posterior expectation of latent assignments and weighted maximum-likelihood parameter updates.",
+    "Likelihood is nonconvex, component labels are interchangeable, and covariance collapse creates singular solutions.",
+    "Covariance type controls geometric flexibility and parameter count: spherical, diagonal, tied or full.",
+    "Component count and semantic interpretation require external evidence beyond likelihood improvement."
   ],
   "resources": [
-    "sklearn",
-    "isl"
+    "sklearn-mixtures",
+    "isl",
+    "probml-book",
+    "stanford-cs229"
   ],
   "featured": false,
-  "why": "Gaussian Mixture Models & EM appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
-  "intuition": "Soft assignments differ from k-means hard labels.",
-  "deepDive": "A Gaussian mixture models data as a weighted combination of Gaussian components and gives soft cluster probabilities. EM alternates between estimating component responsibilities and updating parameters. Covariance structure controls cluster shapes. Likelihood can favor complexity without regularization/model selection. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
-  "workedExample": "Segment customers into overlapping behavioral groups with posterior membership probabilities.",
+  "why": "Gaussian mixtures turn clustering into probabilistic density estimation with soft membership. They generalize centroid models by representing cluster size, orientation, uncertainty and overlap, and they introduce expectation-maximization as a reusable latent-variable algorithm. Their flexibility also exposes deep modeling issues. Finite Gaussian likelihood can diverge through covariance collapse; different starts reach different local maxima; more components almost always improve training likelihood; and one real population may require several Gaussian components merely to approximate a non-Gaussian shape. Component responsibilities are conditional on the model and priors, not universal membership truth. Mastery requires deriving EM, choosing covariance constraints, using stable log-sum-exp computations, measuring held-out density and operational utility, aligning labels across refits and monitoring singularity and component death.",
+  "intuition": "Imagine several overlapping elliptical fog banks. A point does not announce which bank generated it, so first estimate fractional responsibility from current fog density and prevalence. Then move each bank's center and shape using those fractional weights. Repeating improves how well the combined fog explains the observations. A tiny bank can wrap one point with almost zero variance and infinite peak density, which looks optimal to raw likelihood but is useless. Regularization and adequate support prevent that collapse. One curved population may need several ellipses, so a component should not automatically receive a human category name.",
+  "deepDive": "A GMM is a latent-variable density model whose EM optimizer provides soft assignments and monotone likelihood ascent. Statistical validity depends on Gaussian-component adequacy, covariance regularization and component-count evidence; operational validity depends on stable log arithmetic, label alignment, support and explicit treatment of low-weight or collapsing components.",
+  "workedExample": "Two one-dimensional components have equal prior and variance 1, with means 0 and 3. At x=1, density factors are proportional to exp(-0.5)=0.607 and exp(-2)=0.135. Responsibilities are 0.607/(0.742)=0.818 and 0.182. This soft assignment would change if priors or variances changed even though distances did not.",
   "commonMistakes": [
-    "Applying the method without checking its assumptions or data-generating process.",
-    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+    {
+      "misconception": "EM finds the global maximum because likelihood rises every iteration.",
+      "correction": "Monotone ascent is local; different starts can converge to different maxima or degenerate solutions."
+    },
+    {
+      "misconception": "Responsibilities are ground-truth class probabilities.",
+      "correction": "They are posterior component probabilities under the chosen mixture, priors and transformations."
+    },
+    {
+      "misconception": "BIC reveals the true number of real-world groups.",
+      "correction": "It compares fitted statistical models under assumptions; components may approximate shape rather than semantic populations."
+    },
+    {
+      "misconception": "A covariance matrix near zero simply means a very tight valid cluster.",
+      "correction": "It may be a likelihood singularity around one or a few observations and requires support and regularization checks."
+    }
   ],
   "followUps": [
-    "What assumptions does Gaussian Mixture Models & EM make?",
-    "How would you validate or debug Gaussian Mixture Models & EM in practice?"
+    {
+      "question": "How is k-means related to GMM?",
+      "answer": "A spherical equal-variance mixture with hard small-variance assignments approaches nearest-centroid behavior, while GMM retains priors, covariance and soft membership."
+    },
+    {
+      "question": "Why use log-sum-exp?",
+      "answer": "Gaussian densities can underflow; log-sum-exp normalizes component log scores stably."
+    },
+    {
+      "question": "What is label switching?",
+      "answer": "Permuting component indices leaves the mixture density unchanged, so identities must be aligned before comparing runs or retrains."
+    }
   ],
-  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "production": "Version feature transform, component count, covariance type, regularization, initialization, seeds, stopping rule, weights, means and covariance factors. Test stable log densities, normalized responsibilities, positive eigenvalues and deterministic fixtures. Benchmark fit and inference cost for dimension and component count. Monitor held-out or production log likelihood, entropy, effective membership, component weights, mean and covariance drift, condition numbers and subgroup support. Treat low density as a support signal until anomaly thresholds are externally validated. Align components before publishing semantic IDs, canary changes, retain the previous mixture and provide a regularized single-Gaussian or global fallback for feature, singularity or support failure.",
   "lab": {
-    "goal": "Fit a Gaussian mixture and inspect soft memberships.",
     "language": "python",
-    "buildIt": "import numpy as np\nrng=np.random.default_rng(0)\nX=np.r_[rng.normal([-2,0],[.7,.5],(200,2)),rng.normal([2,1],[.8,.7],(250,2))]\n",
-    "useIt": "from sklearn.mixture import GaussianMixture\ng=GaussianMixture(n_components=2,random_state=0).fit(X)\nP=g.predict_proba(X)\nprint(P[:5],g.means_)\n",
-    "verifyIt": "assert np.allclose(P.sum(axis=1),1) and len(g.means_)==2\n",
-    "shipIt": "Select component count/covariance with validation or information criteria and monitor whether deployed populations remain compatible with the mixture assumptions."
+    "goal": "Implement one-dimensional Gaussian-mixture EM, compare with scikit-learn, and verify responsibilities and monotone likelihood.",
+    "buildIt": "import numpy as np\nrng=np.random.default_rng(3); X=np.r_[rng.normal(-2,.4,80),rng.normal(2,.6,120)]; K=2; means=np.array([-1.,1.]); var=np.array([1.,1.]); weight=np.array([.5,.5]); history=[]\nfor _ in range(100):\n    logp=np.column_stack([np.log(weight[k])-.5*(np.log(2*np.pi*var[k])+(X-means[k])**2/var[k]) for k in range(K)])\n    m=logp.max(axis=1,keepdims=True); resp=np.exp(logp-m); norm=resp.sum(axis=1,keepdims=True); ll=float(np.sum(m[:,0]+np.log(norm[:,0]))); resp/=norm; history.append(ll)\n    Nk=resp.sum(axis=0); weight=Nk/len(X); means=(resp*X[:,None]).sum(axis=0)/Nk; var=(resp*(X[:,None]-means)**2).sum(axis=0)/Nk+1e-6\norder=np.argsort(means); means=means[order]; weight=weight[order]; var=var[order]; resp=resp[:,order]",
+    "useIt": "from sklearn.mixture import GaussianMixture\nmodel=GaussianMixture(n_components=2,covariance_type='diag',reg_covar=1e-6,n_init=5,random_state=3).fit(X[:,None]); sk_means=np.sort(model.means_[:,0])",
+    "verifyIt": "assert all(b>=a-1e-8 for a,b in zip(history,history[1:]))\nassert np.allclose(resp.sum(axis=1),1)\nassert np.all(var>0) and abs(weight.sum()-1)<1e-12\nassert np.allclose(means,sk_means,atol=.12)\nassert means[0]<0<means[1]\nassert np.isfinite(history).all()",
+    "shipIt": "Freeze transform, covariance and regularization; repeat starts; monitor likelihood, weight and eigenvalue health; align component identities; retain a broad-density fallback and prior mixture."
   },
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "math": "p(x_i)=Σ_k π_k φ(x_i;μ_k,Σ_k), π_k≥0 and Σ_kπ_k=1. E-step r_ik=π_kφ_k(x_i)/Σ_jπ_jφ_j(x_i). With N_k=Σ_i r_ik, M-step π_k=N_k/n, μ_k=N_k^-1Σ_i r_ik x_i, Σ_k=N_k^-1Σ_i r_ik(x_i-μ_k)(x_i-μ_k)^T plus regularization. EM maximizes a lower bound using Jensen's inequality and does not decrease observed log likelihood. BIC=-2 log L_hat+p log n under its asymptotic model assumptions.",
+  "code": "from sklearn.mixture import GaussianMixture\nmodel=GaussianMixture(n_components=2,covariance_type='diag',reg_covar=1e-6,n_init=5,random_state=3).fit(X[:,None]); sk_means=np.sort(model.means_[:,0])",
+  "description": "Gaussian mixture models represent a density as a weighted sum of Gaussian components with latent membership. This chapter derives posterior responsibilities and every expectation-maximization update, explains the evidence lower-bound argument for monotone likelihood ascent, and distinguishes observed likelihood from complete-data likelihood. It covers spherical, diagonal, tied and full covariance, parameter counts, initialization, local optima, label switching, singular covariance collapse, regularization, component death, soft versus hard assignment, sampling, held-out likelihood, AIC, BIC and variational alternatives. Worked examples calculate responsibilities and demonstrate covariance collapse. The lab implements one-dimensional EM in log-stable form, compares fitted means and likelihood with scikit-learn, and verifies normalized responsibilities, monotone likelihood and label-permutation alignment. Production guidance versions transforms and components, monitors likelihood, mixture weights, covariance eigenvalues and support, aligns identities, protects density traces and supports fallback and rollback. Components are treated as approximation units until domain evidence justifies semantic labels. You will also learn why a density component need not equal a population, how regularization prevents unbounded solutions, and why component identities must be aligned before dashboards or downstream policies consume them.",
+  "prerequisites": [
+    "probability-basics",
+    "distributions",
+    "expectation-variance"
+  ],
+  "learningObjectives": [
+    "Derive GMM responsibilities and weighted EM updates.",
+    "Explain likelihood ascent, local optima, label switching and singular covariance failure.",
+    "Select covariance structure and component count using held-out and stability evidence.",
+    "Deploy a stable mixture with component alignment, support monitoring and safe fallbacks."
+  ],
+  "deepSections": [
+    {
+      "id": "latent-density",
+      "title": "Soft membership follows from a generative density",
+      "body": "Choose latent z_i with categorical probabilities π, then draw x_i from the selected Gaussian. Marginalizing z produces a weighted density sum. Bayes' rule gives responsibilities: a component receives high responsibility when it is prevalent and assigns high density to the point. Responsibilities across components sum to one for each observation, but they are model-dependent posterior probabilities, not calibrated labels against an external class. A full covariance gives rotated ellipses, diagonal gives axis-aligned ellipses, spherical gives one variance per component, and tied shares one covariance. Parameter count grows rapidly with full covariance and dimension. Scaling and transformation affect Gaussian adequacy and covariance conditioning. Heavy tails, skew or manifolds may be approximated by multiple components even when there is one semantic population."
+    },
+    {
+      "id": "em-derivation",
+      "title": "EM alternates inference and weighted estimation",
+      "body": "Direct log likelihood contains log of a sum, coupling component parameters. EM uses current parameters to compute posterior responsibilities in the E-step. In the M-step, maximize expected complete-data log likelihood, giving weighted counts, means and covariances. Jensen's inequality shows this coordinate procedure raises or preserves a lower bound tight at the current posterior, so observed likelihood does not decrease apart from numeric tolerance. It can converge to a local maximum or saddle and convergence in likelihood does not mean parameters are scientifically correct. Compute Gaussian log densities and normalize with log-sum-exp to prevent underflow. Track lower bound, iteration count and finite covariance. Multiple starts, k-means initialization or informed seeds improve optimization coverage but do not correct a wrong component family."
+    },
+    {
+      "id": "singularity-regularization",
+      "title": "Maximum likelihood can prefer a collapsed component",
+      "body": "A Gaussian centered exactly on one point with covariance determinant approaching zero produces arbitrarily high density there. In a mixture, another component can explain the remaining data, so unconstrained likelihood is unbounded. Add covariance regularization, minimum eigenvalues or Bayesian priors and require effective membership N_k above a threshold. Duplicate points and high dimension increase risk. A low-weight component can die and cease receiving useful responsibility; implementations may reinitialize or retain it. Examine eigenvalues, condition numbers, component weights and effective sample sizes. Regularization changes the model and should be selected before final evaluation. Robust mixtures or Student-t components may handle heavy tails better. Removing a suspicious point solely because it breaks EM can hide a valid rare mode or data-quality incident."
+    },
+    {
+      "id": "selection-interpretation",
+      "title": "Select a density model, not a desired story",
+      "body": "Training likelihood improves with more components. Held-out log likelihood directly evaluates density prediction when that is the goal. AIC and BIC penalize parameter count under assumptions; BIC's preference is not proof of a true number of populations, especially under misspecification. Stability across starts and resamples reveals whether components recur after label alignment. For clustering use, examine responsibility entropy, separation, domain coherence and downstream action. A single semantic class can occupy several components, and two semantic classes can overlap one Gaussian. Hard labels discard uncertainty. If external labels tune component count or naming, preserve independent evaluation. Compare against k-means, KDE and simpler covariance structures. Avoid causal or identity claims from a latent density decomposition alone."
+    },
+    {
+      "id": "mixture-service",
+      "title": "Operate likelihood, components and identities",
+      "body": "Persist preprocessing, dimension, component count, covariance type, regularization, weights, means, covariance factors, random seeds and convergence settings. Use Cholesky or stable decompositions and test finite log likelihood, responsibility sums and positive eigenvalues. Monitor per-sample log likelihood, responsibility entropy, weights, effective membership, mean drift, covariance conditioning and component support by cohort. Low likelihood can flag unsupported input but is not automatically anomaly risk; validate thresholds. Labels can permute, so align components across refits by a cost over means, covariance and responsibilities before updating semantic IDs. Canary new mixtures, retain the previous artifact and use a broad single-Gaussian or rule-based fallback when fitting, feature or support health fails."
+    }
+  ],
+  "workedExamples": [
+    {
+      "title": "Compute a responsibility",
+      "body": "Two one-dimensional components have equal prior and variance 1, with means 0 and 3. At x=1, density factors are proportional to exp(-0.5)=0.607 and exp(-2)=0.135. Responsibilities are 0.607/(0.742)=0.818 and 0.182. This soft assignment would change if priors or variances changed even though distances did not."
+    },
+    {
+      "title": "Likelihood collapse around one point",
+      "body": "A two-component fit assigns one component only to x=100, sets its mean to 100 and drives variance toward zero. Its density at that point diverges, increasing total likelihood while representing no reusable cluster. A variance floor, prior or minimum effective count blocks the singular solution and flags the isolated observation for separate review."
+    }
+  ],
+  "exercises": [
+    {
+      "prompt": "Why do responsibilities sum to one per observation?",
+      "solution": "They are normalized posterior probabilities over mutually exclusive latent component choices under the mixture."
+    },
+    {
+      "prompt": "What does tied covariance change?",
+      "solution": "All components share one covariance estimate, reducing parameters and constraining shapes while retaining separate means and priors."
+    },
+    {
+      "prompt": "Why can adding a component increase training likelihood without adding a real group?",
+      "solution": "It can approximate skew, tails or individual points more closely; mixture components are density basis elements, not guaranteed semantic populations."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "flow",
+      "title": "Expectation-maximization",
+      "items": [
+        "Initialize mixture parameters",
+        "Compute log component densities",
+        "Normalize responsibilities",
+        "Update weighted counts and means",
+        "Update regularized covariance",
+        "Repeat while likelihood improves"
+      ],
+      "caption": "The E-step infers soft membership; the M-step re-estimates the density from those weights.",
+      "afterSection": "em-derivation"
+    },
+    {
+      "type": "compare",
+      "title": "Centroids and Gaussian components",
+      "left": {
+        "title": "K-means",
+        "items": [
+          "Hard nearest assignment",
+          "Spherical squared-distance geometry",
+          "One centroid per cluster",
+          "No density likelihood"
+        ]
+      },
+      "right": {
+        "title": "GMM",
+        "items": [
+          "Soft responsibilities",
+          "Covariance and priors",
+          "Elliptical components",
+          "Density and singularity risk"
+        ]
+      },
+      "caption": "GMM adds probabilistic shape and overlap at the cost of more assumptions and failure modes.",
+      "afterSection": "latent-density"
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "sklearn-mixtures",
+      "contribution": "Verifies EM, covariance choices, initialization, singularity and model-selection behavior."
+    },
+    {
+      "resource": "probml-book",
+      "contribution": "Grounds latent-variable, mixture and EM derivations."
+    },
+    {
+      "resource": "stanford-cs229",
+      "contribution": "Supports the EM lower-bound and Gaussian-mixture formulation."
+    }
+  ]
 }

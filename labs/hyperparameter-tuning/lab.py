@@ -1,13 +1,27 @@
+import numpy as np
 from sklearn.datasets import make_classification
-from sklearn.model_selection import train_test_split
-X,y=make_classification(n_samples=700,n_features=10,n_informative=5,random_state=0)
-Xtr,Xte,ytr,yte=train_test_split(X,y,test_size=.2,random_state=0,stratify=y)
+from sklearn.model_selection import train_test_split,StratifiedKFold,cross_val_score
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import StandardScaler
+from sklearn.linear_model import LogisticRegression
+X,y=make_classification(n_samples=400,n_features=12,n_informative=6,random_state=4)
+X_dev,X_test,y_dev,y_test=train_test_split(X,y,test_size=.25,stratify=y,random_state=9)
+cv=StratifiedKFold(5,shuffle=True,random_state=3); values=[.01,.1,1.,10.]
+means=[]
+for C in values:
+    pipe=make_pipeline(StandardScaler(),LogisticRegression(C=C,max_iter=2000))
+    means.append(cross_val_score(pipe,X_dev,y_dev,cv=cv,scoring='roc_auc').mean())
+best_C=values[int(np.argmax(means))]
 
 # ---- Use it ----
 from sklearn.model_selection import GridSearchCV
-from sklearn.ensemble import RandomForestClassifier
-gs=GridSearchCV(RandomForestClassifier(random_state=0),{'max_depth':[3,6,None],'min_samples_leaf':[1,5,15]},cv=4,scoring='roc_auc').fit(Xtr,ytr)
-print(gs.best_params_,gs.best_score_,gs.score(Xte,yte))
+base=make_pipeline(StandardScaler(),LogisticRegression(max_iter=2000))
+search=GridSearchCV(base,{'logisticregression__C':values},cv=cv,scoring='roc_auc',refit=True,return_train_score=True).fit(X_dev,y_dev)
+final_test_auc=__import__('sklearn.metrics').metrics.roc_auc_score(y_test,search.predict_proba(X_test)[:,1])
 
 # ---- Verify it ----
-assert gs.best_estimator_ is not None
+assert np.allclose(means,search.cv_results_['mean_test_score'])
+assert best_C==search.best_params_['logisticregression__C']
+assert len(search.cv_results_['params'])==len(values)
+assert X_test.shape[0]==100 and 0<=final_test_auc<=1
+assert search.best_index_==int(np.argmax(search.cv_results_['mean_test_score']))

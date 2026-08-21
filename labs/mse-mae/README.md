@@ -1,6 +1,6 @@
 # MSE vs MAE — Code Lab
 
-Make outlier sensitivity visible rather than memorizing definitions.
+Implement weighted MSE, RMSE and MAE, compare with scikit-learn, and verify their invariants and point optima.
 
 ## 1. Build it
 

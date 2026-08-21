@@ -8,46 +8,67 @@
     "mle",
     "as"
   ],
-  "interviewAnswer": "Boosting builds weak learners sequentially so each new learner focuses on correcting the current ensemble’s errors. Modern gradient-boosted trees are often excellent baselines for tabular data.",
+  "interviewAnswer": "Gradient boosting builds an additive predictor stage by stage. Starting from a constant, each new weak learner approximates the negative gradient of the chosen loss with respect to current predictions; a learning rate shrinks its contribution. With squared error, those pseudo-residuals are ordinary residuals. Tree boosting adds shallow regression trees that specialize in remaining error. XGBoost-style systems use first and second derivatives, regularized leaf scores, row and column sampling, sparsity-aware split handling and efficient histogram or quantile approximations. The main controls—number of rounds, learning rate, tree complexity and regularization—interact, so I select them with chronological or grouped validation and early stopping on an independent set. I monitor calibration, subgroup error, latency, drift and missing-value routing, and preserve a simpler fallback.",
   "keyPoints": [
-    "Sequential vs bagging",
-    "Learning rate",
-    "Tree depth",
-    "Regularization"
+    "Boosting performs greedy optimization in function space by adding a learner aligned with the loss gradient.",
+    "Residual fitting is exact intuition for squared loss but other losses use different pseudo-residuals.",
+    "Learning rate, boosting rounds, tree depth and leaf regularization must be tuned jointly.",
+    "XGBoost's second-order and systems machinery changes efficiency and regularization, not the need for honest evaluation.",
+    "Early stopping consumes validation information and must not be evaluated on the same data as final performance."
   ],
   "resources": [
-    "sklearn",
-    "statquest",
-    "stanford-cs229",
-    "google-mlcc",
+    "gradient-boosting-paper",
+    "xgboost-paper",
+    "sklearn-ensembles",
     "isl"
   ],
   "featured": false,
-  "why": "Gradient boosting/XGBoost is one of the strongest default families for structured tabular data and a frequent Data Scientist interview topic.",
-  "intuition": "Instead of building independent trees and averaging them, boosting builds trees sequentially. Each new tree focuses on correcting the errors made by the current ensemble.",
-  "deepDive": "Gradient boosting views training as functional gradient descent: fit a weak learner to the negative gradient/residual of the loss, then add it with a learning-rate shrinkage factor. XGBoost adds regularization, efficient split finding, missing-value handling and second-order information. Key trade-offs include number of trees, depth, learning rate, subsampling and column sampling.",
-  "math": "F_m(x)=F_{m-1}(x)+η h_m(x), where h_m approximates the negative loss gradient",
-  "workedExample": "For tabular churn data, a shallow boosted-tree ensemble can capture nonlinear thresholds and interactions while remaining easier to train than a deep neural network on modest data.",
-  "code": "from sklearn.ensemble import HistGradientBoostingClassifier\nm=HistGradientBoostingClassifier(learning_rate=.05,max_iter=300,max_leaf_nodes=31)\nm.fit(X_train,y_train)",
+  "why": "Gradient-boosted trees are among the strongest general-purpose models for structured data because they combine nonlinear partitions with direct optimization of a differentiable objective. They connect statistical learning, numerical optimization and systems engineering: gradients define what to correct, tree structure defines which observations share an update, shrinkage regularizes stagewise learning, and histogram or sparsity-aware algorithms make training scalable. That power creates several traps. 'Fit the residuals' is incomplete outside squared error; a low training loss can coexist with leakage or severe miscalibration; early stopping can quietly overfit a repeatedly inspected validation set; and library names hide materially different missing-value, categorical, weighting and objective semantics. Understanding the additive formulation makes hyperparameters intelligible and lets you diagnose divergence, underfitting, over-complex interactions and production regressions instead of treating boosting as a black-box leaderboard tool.",
+  "intuition": "Write a first rough answer, inspect where it is wrong, and add a small correction targeted at those mistakes. Repeat without allowing any correction to rewrite the whole solution. For squared error the error itself points toward the correction; for logistic loss, confidently wrong examples create larger gradients. A shallow tree groups examples that need similar updates. The learning rate makes each correction cautious, usually requiring more rounds. If later writers chase noise or leaked labels, the essay becomes worse despite every edit reducing training loss. A held-out editor, complexity limits and stopping rule keep the sequence focused on transferable mistakes.",
+  "deepDive": "Gradient boosting is greedy functional gradient descent implemented with constrained base learners. The chosen loss supplies derivatives, the tree partitions determine shared leaf updates, and regularization controls how aggressively the additive function grows. Implementation accelerations do not alter the experimental contract: features and labels must be time-correct, early stopping must be separated from final evaluation, and deployed missing-value, categorical and threshold behavior must match training.",
+  "math": "Let F_0 minimize Σ_i L(y_i,c). At round m compute pseudo-residual r_im=-∂L(y_i,F(x_i))/∂F(x_i)|F=F_{m-1}. Fit base learner h_m to r_im and update F_m(x)=F_{m-1}(x)+ν γ_m h_m(x), where γ_m may be found by line search. For squared loss r=y-F. A second-order tree objective approximates Σ_i[g_i f(x_i)+0.5 h_i f(x_i)^2]+Ω(f); for leaf j with gradient sum G_j and Hessian sum H_j, regularized optimal weight is -G_j/(H_j+λ).",
+  "workedExample": "Targets are [1,3,5]. The best constant under squared loss is F0=3, giving residuals [-2,0,2]. A stump predicts -1 for the first two points and 2 for the third. With ν=0.5, F1=[2.5,2.5,4], and residuals become [-1.5,0.5,1]. The next tree fits this new pattern, not the original target. Every deployed prediction is the base value plus all shrunken tree outputs.",
+  "code": "from sklearn.ensemble import GradientBoostingRegressor\nmodel=GradientBoostingRegressor(n_estimators=30,learning_rate=0.2,max_depth=1,loss='squared_error',random_state=0).fit(X[:,None],y)\nsk_pred=model.predict(X[:,None])",
   "commonMistakes": [
-    "Calling boosting the same as bagging.",
-    "Increasing trees/depth without reducing learning rate or validating.",
-    "Using test data for early stopping or hyperparameter tuning."
+    {
+      "misconception": "Gradient boosting always fits ordinary residuals.",
+      "correction": "That is true for squared loss. General objectives fit negative loss gradients, and Newton variants also use curvature."
+    },
+    {
+      "misconception": "A lower learning rate always prevents overfitting.",
+      "correction": "It changes the path and usually needs more rounds. Continuing long enough can still fit noise; rounds and capacity must be selected together."
+    },
+    {
+      "misconception": "The early-stopping set remains an unbiased test set.",
+      "correction": "It chooses the stopping round and is therefore training information. Use an independent final evaluation or nested design."
+    },
+    {
+      "misconception": "Native missing-value support removes missingness risk.",
+      "correction": "It learns routing from training patterns. A production outage can create a new missingness mechanism and send traffic through unsupported branches."
+    }
   ],
   "followUps": [
-    "Random forest vs gradient boosting?",
-    "What does learning rate do?",
-    "Why can shallow trees work well?",
-    "How does XGBoost handle missing values?"
+    {
+      "question": "Why can shallow trees work well in boosting?",
+      "answer": "Each tree needs only to model a useful correction. The additive sequence composes many simple regions while restricting the interaction complexity of each stage."
+    },
+    {
+      "question": "What does the Hessian do in second-order boosting?",
+      "answer": "It represents local loss curvature, scales leaf updates and enters regularized split gain; flat or weakly supported regions receive smaller or less certain updates."
+    },
+    {
+      "question": "Random forest or gradient boosting?",
+      "answer": "Forests average largely independent deep trees for variance reduction; boosting sequentially corrects a shared predictor and often attains lower bias but is more tuning- and leakage-sensitive."
+    }
   ],
-  "production": "Boosted trees are often excellent low-latency tabular models. Track feature schema, calibration and threshold behavior; retraining must reproduce categorical/preprocessing logic.",
+  "production": "Version the target cutoff, feature pipeline, categorical and missing semantics, objective, base score, weights, derivative conventions, tree parameters, bins, random seed, early-stopping rule, selected round, threshold and library build. Add parity tests for raw margins, probabilities and labels across serving environments. Benchmark memory, load time and tail latency with the final tree count. Monitor missingness and category novelty, feature and margin distributions, probability prevalence, delayed loss, calibration, decision capacity and subgroup outcomes. Alert on upstream outages even if learned missing routing still returns a number. Treat early stopping, calibration and threshold tuning as training stages in lineage. Canary challengers, retain the current artifact, and keep a cheaper linear or rule-based fallback. Roll back on schema, latency, calibration or safety breaches with recorded decision owners and immutable evaluation reports.",
   "lab": {
-    "goal": "Train a gradient-boosted tree baseline.",
     "language": "python",
-    "buildIt": "from sklearn.datasets import make_classification\nfrom sklearn.model_selection import train_test_split\nX,y=make_classification(n_samples=1000,n_features=15,n_informative=7,random_state=1)\nXtr,Xte,ytr,yte=train_test_split(X,y,test_size=.25,random_state=1,stratify=y)\n",
-    "useIt": "from sklearn.ensemble import HistGradientBoostingClassifier\nfrom sklearn.metrics import roc_auc_score\nm=HistGradientBoostingClassifier(max_iter=150,learning_rate=.08,max_leaf_nodes=31,random_state=1).fit(Xtr,ytr)\nauc=roc_auc_score(yte,m.predict_proba(Xte)[:,1])\nprint(auc)\n",
-    "verifyIt": "assert auc>0.8\n",
-    "shipIt": "Treat boosted trees as a strong tabular baseline; tune depth/learning rate/iterations together and monitor latency, calibration and feature availability."
+    "goal": "Implement squared-error gradient boosting with stumps, compare with scikit-learn, and verify additive updates and loss reduction.",
+    "buildIt": "import numpy as np\nX=np.arange(12,dtype=float); y=np.array([0,0,1,1,2,2,5,5,7,8,8,9],float)\ndef fit_regression_stump(x,target):\n    best=None\n    for t in (np.unique(x)[:-1]+np.unique(x)[1:])/2:\n        left=x<=t; lv=target[left].mean(); rv=target[~left].mean()\n        pred=np.where(left,lv,rv); loss=np.mean((target-pred)**2)\n        if best is None or loss<best[0]: best=(loss,float(t),float(lv),float(rv))\n    return best[1:]\ndef stump_predict(x,s):\n    t,lv,rv=s; return np.where(x<=t,lv,rv)\nbase=float(y.mean()); pred=np.full(len(y),base); rate=0.2; stumps=[]; losses=[float(np.mean((y-pred)**2))]\nfor _ in range(30):\n    stump=fit_regression_stump(X,y-pred); update=stump_predict(X,stump)\n    pred=pred+rate*update; stumps.append(stump); losses.append(float(np.mean((y-pred)**2)))\nscratch_pred=pred.copy()",
+    "useIt": "from sklearn.ensemble import GradientBoostingRegressor\nmodel=GradientBoostingRegressor(n_estimators=30,learning_rate=0.2,max_depth=1,loss='squared_error',random_state=0).fit(X[:,None],y)\nsk_pred=model.predict(X[:,None])",
+    "verifyIt": "assert len(stumps)==30\nassert all(b<=a+1e-12 for a,b in zip(losses,losses[1:]))\nreconstructed=np.full(len(y),base)\nfor stump in stumps: reconstructed+=rate*stump_predict(X,stump)\nassert np.allclose(reconstructed,scratch_pred)\nassert losses[-1]<0.2*losses[0]\nassert np.mean((y-sk_pred)**2)<0.2*np.var(y)\nassert np.isfinite(sk_pred).all()",
+    "shipIt": "Freeze preprocessing, objective, missing routing, selected round and threshold; test margin/probability parity; monitor loss, calibration, latency and missingness; retain a simpler fallback."
   },
   "visual": {
     "type": "flow",
@@ -63,6 +84,123 @@
     "orientation": "horizontal"
   },
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "Gradient boosting constructs a prediction function as a sequence of small loss-reducing corrections. This chapter derives pseudo-residuals as negative functional gradients, shows why squared-error boosting fits ordinary residuals, and explains logistic gradients, line search, shrinkage, tree depth, subsampling and early stopping. It then connects classical gradient boosting with XGBoost's second-order objective, regularized leaf weights, sparsity-aware routing and scalable split approximations. Worked examples calculate two regression rounds and explain why a repeatedly reused early-stopping set is no longer an unbiased test. The lab implements one-dimensional squared-error boosting with decision stumps, compares it with scikit-learn and verifies monotone training-loss reduction and additive predictions. Production coverage includes objective and weight semantics, missing and categorical values, class imbalance, calibration, thresholding, determinism, artifact size, latency, drift, canaries and rollback. The chapter keeps optimization and evidence separate: stagewise training can minimize exactly the wrong loss on exactly the wrong data. It also shows how derivative conventions, sample weights and learned missing directions become part of the deployed model contract and must be tested across training and serving runtimes.",
+  "prerequisites": [
+    "decision-trees",
+    "gradient-descent"
+  ],
+  "learningObjectives": [
+    "Derive the stagewise additive update and pseudo-residual for a differentiable loss.",
+    "Explain how shrinkage, rounds, tree complexity, sampling and regularization interact.",
+    "Connect first-order gradient boosting with XGBoost-style second-order leaf optimization.",
+    "Design leakage-safe early stopping, evaluation and production monitoring for boosted trees."
+  ],
+  "deepSections": [
+    {
+      "id": "functional-gradient",
+      "title": "Optimize a function by adding another function",
+      "body": "Ordinary gradient descent updates a finite parameter vector. Gradient boosting instead searches over prediction functions. At the current predictor F, evaluate the loss derivative at each training prediction. The negative derivatives form targets describing the direction that would reduce empirical risk at the observed points. A base learner h is fit to approximate this direction under its representational constraints, then added with step size γ and shrinkage ν. For squared loss L=0.5(y-F)^2, the negative gradient is y-F, so fitting residuals is literal. For binary logistic loss, it is related to y-p and depends on the link and label encoding; calling every gradient a residual can hide the objective. Because a tree produces one value per leaf, observations in a leaf share an update. Exact line search, Newton steps or closed-form leaf formulas may refine that value. The procedure is greedy: earlier functions remain, and later learners repair their combined errors."
+    },
+    {
+      "id": "regularization-path",
+      "title": "Capacity is distributed across rounds and trees",
+      "body": "A boosted ensemble can become complex through more rounds, deeper trees, more leaves, weak minimum-leaf constraints or large step sizes. Learning rate ν scales every new tree. Smaller ν typically needs more rounds and often yields a smoother path, but it is not free regularization if training continues indefinitely. Tree depth controls interaction order only approximately: stumps model additive effects, while deeper trees express interactions within each update. Row subsampling introduces stochastic gradients and diversity; column sampling limits feature competition. L1/L2 leaf penalties, minimum Hessian mass and split-gain penalties shrink or reject poorly supported updates. Tune these controls jointly under the real split design. Plot training and validation loss over rounds, but remember that repeatedly changing the search after viewing one curve adapts to that validation sample. Nested evaluation or a final untouched test is required for an honest performance claim."
+    },
+    {
+      "id": "second-order-systems",
+      "title": "Second-order trees and scalable implementations",
+      "body": "XGBoost expands the loss around current predictions using gradient g_i and Hessian h_i. For a fixed tree structure, summing derivatives within a leaf gives an analytically regularized weight and a split-gain calculation. Hessians represent local curvature and influence the effective evidence in a leaf; they are not generic sample counts. Histogram methods bin feature values so gradients can be accumulated over a small set of candidate thresholds. Quantile sketches, compressed columns, cache-aware layouts and parallelization reduce cost. Sparse-aware algorithms learn a default direction for missing or absent values, which becomes part of the model semantics. Libraries differ in categorical support, missing handling, objectives, regularization units and probability links. Verify the exact official contract and pin versions. Systems speedups do not excuse leakage: global target encoding, future aggregates or validation-aware preprocessing can make a very efficient model efficiently wrong."
+    },
+    {
+      "id": "evaluation-decisions",
+      "title": "Evaluate scores, probabilities and decisions separately",
+      "body": "Choose an objective that is compatible with the target but evaluate the operational consequence. Logistic loss measures probabilistic fit; ranking metrics evaluate ordering; thresholded precision and recall depend on prevalence, costs and capacity. Class weights or focal-like objectives alter optimization and may distort raw probability interpretation. Calibrate on separate held-out data when decisions require probabilities, and evaluate calibration by subgroup and time. Use grouped or chronological splits for entities and temporal features. Early stopping selects the round using a validation set, so that set is part of training and cannot provide the final unbiased estimate. Compare against a linear model, a random forest and simple operational rules. Inspect error slices, interaction plausibility, out-of-support behavior and stability across seeds or folds. Attribution tools describe the fitted function under a background distribution; correlated predictors and synthetic perturbations limit what can be concluded."
+    },
+    {
+      "id": "deployment-contract",
+      "title": "Deploy the whole boosting state machine",
+      "body": "Persist feature construction, binning or category metadata, missing defaults, objective, base score, class and sample weights, tree sequence, learning rate, threshold and library version. Test that raw margins, transformed probabilities and class labels are not confused across languages. Validate schemas, nonfinite values and unseen categories before inference. Benchmark load time, memory, batch throughput and tail latency as tree count and depth grow. Monitor input and missingness drift, score and margin distributions, prediction prevalence, calibration, delayed loss, threshold workload and subgroup outcomes. Missing-value direction can become unsafe when a data source fails, so alert on sudden missingness rather than trusting learned routing. Canary new ensembles, cap resource use, retain the prior artifact and provide a simpler fallback. Roll back on schema mismatch, latency breach, calibration loss or decision harm, not merely on one aggregate metric."
+    }
+  ],
+  "workedExamples": [
+    {
+      "title": "Two squared-error boosting rounds",
+      "body": "Targets are [1,3,5]. The best constant under squared loss is F0=3, giving residuals [-2,0,2]. A stump predicts -1 for the first two points and 2 for the third. With ν=0.5, F1=[2.5,2.5,4], and residuals become [-1.5,0.5,1]. The next tree fits this new pattern, not the original target. Every deployed prediction is the base value plus all shrunken tree outputs."
+    },
+    {
+      "title": "Early stopping is model selection",
+      "body": "A team trains 500 configurations and selects each one's best round on the same validation month, then reports the winner's validation AUC. The month influenced hyperparameters, round count and winner selection, so the estimate is optimistic. A later untouched month—or outer temporal fold—must measure final performance, with threshold and calibration also frozen before inspection."
+    }
+  ],
+  "exercises": [
+    {
+      "prompt": "Derive the pseudo-residual for L=0.5(y-F)^2.",
+      "solution": "∂L/∂F=F-y, so the negative gradient is y-F, the ordinary residual."
+    },
+    {
+      "prompt": "Why does early stopping require a separate final test?",
+      "solution": "The validation trajectory selects the round and often influences other hyperparameters. It is part of model fitting, so reusing it for final reporting is optimistic."
+    },
+    {
+      "prompt": "What happens if every tree is a stump?",
+      "solution": "The model is largely additive in feature effects because one split appears per stage. Repeated stumps create flexible univariate step functions but cannot directly encode within-tree higher-order interactions."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "flow",
+      "title": "Stagewise functional optimization",
+      "items": [
+        "Initialize a constant score",
+        "Differentiate loss at predictions",
+        "Fit a weak learner to gradients",
+        "Choose and shrink its update",
+        "Add it to the ensemble",
+        "Stop using validation evidence"
+      ],
+      "caption": "Each stage adds a constrained function that follows the current loss gradient.",
+      "afterSection": "functional-gradient"
+    },
+    {
+      "type": "compare",
+      "title": "First- and second-order tree boosting",
+      "left": {
+        "title": "Gradient update",
+        "items": [
+          "Uses first derivative",
+          "Fits pseudo-residual direction",
+          "May use line search",
+          "Classical GBM framing"
+        ]
+      },
+      "right": {
+        "title": "Newton-style update",
+        "items": [
+          "Uses gradient and Hessian",
+          "Closed-form regularized leaves",
+          "Curvature-aware split gain",
+          "XGBoost-style framing"
+        ]
+      },
+      "caption": "Both build additive trees; the second-order approximation also uses local curvature.",
+      "afterSection": "second-order-systems"
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "gradient-boosting-paper",
+      "contribution": "Grounds the functional-gradient derivation and stagewise additive formulation."
+    },
+    {
+      "resource": "xgboost-paper",
+      "contribution": "Supports the regularized second-order objective and scalable systems discussion."
+    },
+    {
+      "resource": "sklearn-ensembles",
+      "contribution": "Verifies current implementation concepts, losses and practical estimator behavior."
+    }
+  ]
 }

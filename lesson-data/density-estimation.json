@@ -7,31 +7,186 @@
     "ds",
     "as"
   ],
-  "interviewAnswer": "Density estimation approximates the underlying probability density. Kernel density estimation smooths observations with kernels; bandwidth is the critical bias–variance control.",
+  "interviewAnswer": "Density estimation learns a probability density p(x), not a class boundary. A histogram approximates density with bins; kernel density estimation places a normalized kernel at each observation: p_hat_h(x)=1/(nh^d)Σ_i K((x-x_i)/h). Bandwidth h controls smoothing—too small produces spiky high-variance estimates, too large erases modes. Kernels matter less than bandwidth in many low-dimensional settings, but boundaries, scaling and dimension matter greatly. Density values are unit-dependent and often counterintuitive in high dimension; low likelihood is not automatically anomaly risk. I select transforms and bandwidth by held-out log likelihood or a task-specific criterion, use boundary correction or domain transforms, validate normalization and support, and benchmark O(n) query cost or scalable approximations.",
   "keyPoints": [
-    "Bandwidth too small overfits, too large oversmooths.",
-    "Dimension hurts nonparametric density estimation.",
-    "Useful for exploration/anomaly scoring in low dimension."
+    "A density integrates to one; its pointwise value is not a probability mass and changes under unit transformations.",
+    "KDE is a sum of normalized local kernels whose bandwidth sets the bias-variance trade-off.",
+    "Boundary bias, feature scaling and high-dimensional sample sparsity can dominate kernel choice.",
+    "Held-out log likelihood evaluates predictive density but may not align with anomaly or decision utility.",
+    "Exact KDE stores reference points and can require one kernel evaluation per training point per query."
   ],
   "resources": [
-    "sklearn",
-    "openintro-stats"
+    "sklearn-density",
+    "openintro-stats",
+    "isl"
   ],
   "featured": false,
-  "why": "Density Estimation & KDE appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
-  "intuition": "Bandwidth too small overfits, too large oversmooths.",
-  "deepDive": "Density estimation approximates the underlying probability density. Kernel density estimation smooths observations with kernels; bandwidth is the critical bias–variance control. Dimension hurts nonparametric density estimation. Useful for exploration/anomaly scoring in low dimension. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
-  "workedExample": "Estimate a smooth distribution of response times instead of choosing arbitrary histogram bins.",
+  "why": "Density estimation asks a richer question than point prediction: where does probability mass lie and how uncertain is the distribution? It supports simulation, likelihood comparison, anomaly support, generative modeling and exploratory analysis. KDE is especially valuable because its mechanism is transparent and nonparametric, but that transparency can hide severe dimensional and operational costs. A bandwidth has units, boundary kernels leak mass outside constrained domains, and a high-dimensional estimate needs exponentially more data to maintain local support. Likelihood can be dominated by nuisance dimensions, while an anomalous but valid rare event may have lower density than an error. A rigorous treatment connects normalization, bandwidth bias and variance, cross-validation, transformations, curse of dimensionality, computational indexing and the distinction between density and downstream risk.",
+  "intuition": "Replace each observed point with a small smooth bump and add the bumps. Narrow bumps reproduce every sample wrinkle; wide bumps merge genuine peaks. Divide by sample count and bandwidth scaling so total area remains one. Near a hard boundary such as age zero, a symmetric bump wastes mass in impossible negative values, lowering the estimate unless the method transforms or corrects the boundary. In many dimensions, most bumps barely overlap because local volume becomes enormous, so the sample no longer supports a smooth picture without strong assumptions.",
+  "deepDive": "Density estimation is a coordinate-dependent model of probability mass. KDE makes its locality and smoothing explicit, enabling derivation and diagnostic checks. Reliable use requires unit-aware transforms, bandwidth validation, boundary handling, dimensionality restraint and a clear separation between low model density and domain anomaly consequence.",
+  "workedExample": "Samples are 0 and 2, bandwidth h=1, and query x=1. Each standardized displacement is ±1, whose standard-normal density is about 0.242. The average divided by h is also 0.242. This is density per x-unit, not a 24.2 percent probability at x=1; probability for an interval requires integration.",
   "commonMistakes": [
-    "Applying the method without checking its assumptions or data-generating process.",
-    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+    {
+      "misconception": "A density value of 0.8 means 80 percent probability.",
+      "correction": "Density is probability per unit volume; integrate over a region to obtain probability mass."
+    },
+    {
+      "misconception": "The kernel shape is always the main hyperparameter.",
+      "correction": "Bandwidth usually has much greater influence on smoothness and finite-sample performance."
+    },
+    {
+      "misconception": "Lowest density observations are confirmed anomalies.",
+      "correction": "Density is representation- and population-dependent. Validate anomaly relevance, costs and subgroup effects separately."
+    },
+    {
+      "misconception": "Leave-one-out density can include the held-out point's kernel.",
+      "correction": "That self-contribution creates severe optimism and favors vanishing bandwidth."
+    }
   ],
   "followUps": [
-    "What assumptions does Density Estimation & KDE make?",
-    "How would you validate or debug Density Estimation & KDE in practice?"
+    {
+      "question": "Why divide by h^d?",
+      "answer": "Scaling a d-dimensional kernel by h changes volume by h^d; the factor preserves unit integral."
+    },
+    {
+      "question": "Why does KDE struggle in high dimension?",
+      "answer": "Local volume grows and finite samples become sparse, so bandwidth must oversmooth or estimates have high variance."
+    },
+    {
+      "question": "How do you evaluate an anomaly threshold from KDE?",
+      "answer": "Use independent labeled or operational outcomes, report false positives and subgroup burden, and do not equate density quantiles with harm."
+    }
   ],
-  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "production": "Version observation unit, reference cutoff, weights, feature transform, metric, kernel, bandwidth, normalization convention and numeric dtype. Test approximate integration, finite log densities, unit transformations and fixed fixtures. Benchmark memory, build time and p95/p99 query latency at reference-set scale; validate any approximation against exact scores. Monitor features, nearest-neighbor support, log-density distribution, underflow, effective local sample size, thresholds and subgroup outcomes. Enforce deletion and tenant isolation for retained examples and avoid exposing neighbors. Canary reference or bandwidth changes, retain the previous estimate and provide a broad parametric or prior fallback when support, latency or reference health fails.",
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "math": "For d-dimensional bandwidth h and normalized kernel K, p_hat_h(x)=1/(n h^d)Σ_i K((x-x_i)/h). A Gaussian kernel integrates to one, so the estimate integrates to one over R^d. In one dimension, pointwise bias is typically O(h²) for smooth densities and variance O(1/(nh)), motivating h shrinking with n but not too quickly. Log likelihood on held-out x_j is Σ_j log p_hat_train(x_j). Leave-one-out evaluation must omit each point's self-kernel to avoid severe optimism.",
+  "code": "from sklearn.neighbors import KernelDensity\nmodel=KernelDensity(kernel='gaussian',bandwidth=h).fit(X[:,None]); sk_log=model.score_samples(grid[:,None])",
+  "lab": {
+    "language": "python",
+    "goal": "Implement Gaussian KDE, compare with scikit-learn, verify approximate normalization and expose bandwidth sensitivity.",
+    "buildIt": "import numpy as np\nrng=np.random.default_rng(8); X=np.r_[rng.normal(-1,.4,80),rng.normal(1,.25,120)]; h=.3\ndef kde(query,bandwidth=h):\n    q=np.asarray(query,float)[:,None]; z=(q-X[None,:])/bandwidth\n    return np.exp(-.5*z*z).mean(axis=1)/(bandwidth*np.sqrt(2*np.pi))\ngrid=np.linspace(-5,5,4000); density=kde(grid); integral=float(np.trapz(density,grid))",
+    "useIt": "from sklearn.neighbors import KernelDensity\nmodel=KernelDensity(kernel='gaussian',bandwidth=h).fit(X[:,None]); sk_log=model.score_samples(grid[:,None])",
+    "verifyIt": "assert np.allclose(np.log(density),sk_log,atol=1e-10)\nassert abs(integral-1)<1e-4\nassert np.all(density>=0) and np.isfinite(density).all()\nrough_small=float(np.mean(np.diff(kde(grid,.08))**2)); rough_large=float(np.mean(np.diff(kde(grid,.8))**2))\nassert rough_small>rough_large\nassert kde([-1])[0]>kde([4])[0]",
+    "shipIt": "Freeze transforms, reference set and bandwidth; verify normalization and exact-versus-approximate scores; monitor log density and support; protect and delete references; retain a parametric fallback."
+  },
+  "description": "Density estimation models the distribution of observations rather than a conditional label. This chapter distinguishes probability density from probability mass, develops histograms and derives multivariate kernel density estimation with normalized kernels and bandwidth scaling. It explains bandwidth bias and variance, leave-one-out likelihood, kernel choice, adaptive bandwidth, boundary bias, transformations, mixed variables, sampling weights, modes, gradients and high-dimensional failure. Worked examples calculate a Gaussian KDE value and show why a positive-domain boundary loses mass. The lab implements one-dimensional Gaussian KDE, compares log density with scikit-learn, numerically verifies integration and demonstrates bandwidth sensitivity. Production guidance versions reference data, transforms and bandwidth, benchmarks memory and query latency, monitors support and likelihood drift, protects stored examples and separates low-density flags from validated anomaly decisions. The method is framed as a predictive distribution whose units, support and evaluation question must be declared before its scores can be interpreted. You will also learn why a leave-one-out self-kernel is leakage, how Jacobians preserve probability across transformations, and when exact reference-based evaluation must yield to validated scalable approximations.",
+  "prerequisites": [
+    "distributions",
+    "expectation-variance",
+    "knn"
+  ],
+  "learningObjectives": [
+    "Distinguish density values from probability mass and verify normalization.",
+    "Derive KDE and explain bandwidth, kernel, boundary and dimensional effects.",
+    "Select a density model using leakage-free held-out likelihood or task evidence.",
+    "Operate reference-based density scoring with support, privacy, latency and fallback controls."
+  ],
+  "deepSections": [
+    {
+      "id": "density-semantics",
+      "title": "Density is probability per unit volume",
+      "body": "For a continuous variable, P(X=x)=0 at any exact point; probabilities come from integrating density over a region. A density value can exceed one and changes when units or coordinates change, while integrated probability remains invariant with the correct Jacobian. Comparing raw densities from different transformations is therefore meaningless. Histograms divide bin counts by sample count and bin volume; their boundaries introduce discontinuity and origin sensitivity. Parametric families impose a compact form, while nonparametric estimates adapt to data. The sampling population, weights and observation unit define the target distribution. Repeated rows from one entity can dominate an estimate if independence is assumed incorrectly. Decide whether the goal is generative fit, support detection, visualization or a downstream decision because each calls for different validation."
+    },
+    {
+      "id": "kde-bandwidth",
+      "title": "Bandwidth dominates the local smoothing trade-off",
+      "body": "KDE centers a kernel at every observation and averages. The h^-d factor preserves normalization after scaling. Gaussian kernels have infinite support; compact kernels vanish beyond a radius. With small h, self-peaks create low bias near observed fine structure but high sampling variance and poor held-out likelihood. Large h smooths variance but can merge modes and blur tails. In several dimensions, a scalar h assumes one common scaled length; diagonal or full bandwidth matrices encode anisotropy but add parameters. Rules of thumb assume specific smoothness and distribution shapes. Select bandwidth inside training data using leave-one-out or fold-held-out likelihood, taking care that groups and time are respected. A point must be omitted from its own leave-one-out density or its kernel creates optimism, especially as h shrinks."
+    },
+    {
+      "id": "boundaries-dimension",
+      "title": "Support constraints and dimension change the problem",
+      "body": "A symmetric kernel centered near zero assigns mass to negative values even if the variable is nonnegative, causing boundary bias. Reflection, boundary kernels or transformations such as log can help, with Jacobian correction when returning original-scale density. Circular, geographic, categorical and mixed data require domain-specific kernels or models. Scaling determines distance and bandwidth units. In dimension d, effective neighborhood volume shrinks rapidly and sample requirements grow; irrelevant dimensions reduce likelihood and make local estimates unstable. Dimensionality reduction may help but changes the density target and can lose tail information. Evaluate projected density only for its declared use. Inspect nearest-neighbor distances, effective local sample size and sensitivity rather than trusting a smooth-looking contour."
+    },
+    {
+      "id": "evaluation-use",
+      "title": "Likelihood and anomaly utility answer different questions",
+      "body": "Held-out log likelihood is a proper density-scoring rule and penalizes assigning tiny probability to observed data. It can be dominated by common regions and nuisance dimensions, while rare-event detection may care about another tail. A low-density point may be a valid minority case; a harmful anomaly may lie in a dense region under marginal features. If using negative log density as an anomaly score, evaluate labeled incidents, false positives, subgroup burden and decision capacity. Compare histograms, parametric models, mixtures and KDE under the same split. Calibration of density level sets can be checked by held-out coverage. Avoid choosing thresholds on the final test. Visual contours should state units, transform and bandwidth. Bootstrap uncertainty can reveal unstable modes but must respect dependent sampling units."
+    },
+    {
+      "id": "reference-service",
+      "title": "Exact KDE is a stored-example service",
+      "body": "An exact Gaussian KDE retains every reference vector and evaluates a kernel against each query, creating O(nd) work and privacy exposure. Trees can prune compact or rapidly decaying kernels in favorable low-dimensional geometry; fast transforms, mixtures, coresets or random features provide approximations. Benchmark density error, memory, build time and tail latency. Version reference cutoff, weights, transform, metric, bandwidth and kernel normalization. Monitor feature and nearest-neighbor drift, log-density distribution, underflow or clipping, effective support and downstream outcomes. Use log-sum-exp for stable evaluation. Deletion must remove examples from indexes and caches. Canary bandwidth or reference changes, retain a broad parametric fallback and never expose raw neighbor identities to untrusted consumers."
+    }
+  ],
+  "workedExamples": [
+    {
+      "title": "Evaluate a two-point Gaussian KDE",
+      "body": "Samples are 0 and 2, bandwidth h=1, and query x=1. Each standardized displacement is ±1, whose standard-normal density is about 0.242. The average divided by h is also 0.242. This is density per x-unit, not a 24.2 percent probability at x=1; probability for an interval requires integration."
+    },
+    {
+      "title": "Boundary mass leaves the domain",
+      "body": "For nonnegative lifetimes, a Gaussian kernel centered at 0.1 with h=0.5 places substantial mass below zero. The estimate near zero is biased downward after considering only legal support. Log-transforming lifetimes and applying the inverse Jacobian, or using a boundary-aware kernel, respects the domain and must be validated on held-out data."
+    }
+  ],
+  "exercises": [
+    {
+      "prompt": "What happens to KDE as bandwidth approaches zero on training points?",
+      "solution": "It becomes a collection of narrow spikes with high self-density and poor variance; held-out evaluation prevents selecting this degenerate fit."
+    },
+    {
+      "prompt": "Why does changing meters to centimeters change a density value?",
+      "solution": "Density is per unit length, so the Jacobian rescales it even though probabilities of corresponding intervals remain the same."
+    },
+    {
+      "prompt": "What should accompany a KDE contour plot?",
+      "solution": "Feature units and transforms, kernel, bandwidth, sample and weighting definition, and a warning that contours reflect the fitted density model."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "compare",
+      "title": "Bandwidth trade-off",
+      "left": {
+        "title": "Narrow bandwidth",
+        "items": [
+          "Spiky local fit",
+          "Resolves sample noise",
+          "High variance",
+          "Poor held-out tails"
+        ]
+      },
+      "right": {
+        "title": "Wide bandwidth",
+        "items": [
+          "Smooth stable estimate",
+          "Merges modes",
+          "Higher bias",
+          "Broader support"
+        ]
+      },
+      "caption": "Bandwidth determines which sample-scale variation is treated as structure.",
+      "afterSection": "kde-bandwidth"
+    },
+    {
+      "type": "flow",
+      "title": "Density-to-decision workflow",
+      "items": [
+        "Define population and coordinate units",
+        "Fit transform and bandwidth",
+        "Evaluate held-out log likelihood",
+        "Check support and boundaries",
+        "Validate task-specific threshold",
+        "Monitor density and decision outcomes"
+      ],
+      "caption": "A density score becomes a decision only through an independently validated policy.",
+      "afterSection": "evaluation-use"
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "sklearn-density",
+      "contribution": "Verifies KDE formulation, bandwidth and current implementation behavior."
+    },
+    {
+      "resource": "openintro-stats",
+      "contribution": "Supports probability-density, histogram and smoothing foundations."
+    },
+    {
+      "resource": "isl",
+      "contribution": "Provides nonparametric bias-variance and validation context."
+    }
+  ]
 }

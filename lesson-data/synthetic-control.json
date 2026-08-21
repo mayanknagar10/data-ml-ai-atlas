@@ -7,29 +7,57 @@
     "ds",
     "as"
   ],
-  "interviewAnswer": "Synthetic control builds a weighted combination of untreated units that reproduces the treated unit’s pre-treatment trajectory, then uses post-treatment divergence as an estimated effect.",
+  "interviewAnswer": "Synthetic control estimates the counterfactual trajectory of one or a few treated aggregate units as a weighted combination of untreated donor units. Weights are chosen using only pretreatment outcomes and predictors, commonly constrained to be nonnegative and sum to one, so the synthetic unit lies in the donor convex hull. The post-treatment gap is the estimated effect under assumptions that good pretreatment fit captures the relevant time-varying confounding, donors remain untreated and unaffected by spillovers, and no concurrent treated-unit shock creates the gap. I justify the donor pool and intervention date, show the full treated and synthetic paths, pretreatment RMSPE and weights, and conduct in-space and in-time placebo analyses, often scaling post gaps by pre-fit quality. Poor pre-fit means the counterfactual is unsupported. I do not read ordinary regression standard errors mechanically or generalize a single-unit effect without design evidence.",
   "keyPoints": [
-    "Useful for one/few treated aggregate units.",
-    "Pre-treatment fit is crucial.",
-    "Placebo/permutation checks help assess unusualness."
+    "Synthetic control is a comparative case-study design, not merely a forecasting algorithm.",
+    "Donor eligibility, intervention timing, no spillovers and good pretreatment trajectory fit are core assumptions.",
+    "Nonnegative sum-to-one weights favor interpretable interpolation and expose convex-hull support.",
+    "Post-treatment gaps need placebo, permutation and fit-quality context rather than ordinary large-sample standard errors alone.",
+    "Researcher choices about donor pools, predictors and preperiods require transparent sensitivity and no post-outcome cherry-picking."
   ],
   "resources": [
-    "causal-mixtape"
+    "synthetic-control-paper",
+    "did-multiple-periods",
+    "what-if-causal"
   ],
   "featured": false,
-  "why": "Synthetic Control appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
-  "intuition": "Useful for one/few treated aggregate units.",
-  "deepDive": "Synthetic control builds a weighted combination of untreated units that reproduces the treated unit’s pre-treatment trajectory, then uses post-treatment divergence as an estimated effect. Pre-treatment fit is crucial. Placebo/permutation checks help assess unusualness. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
-  "workedExample": "Construct a synthetic region from other regions to evaluate a citywide intervention.",
+  "why": "A statewide law, platform-wide launch or national event may affect one aggregate unit with no obvious single control. A weighted donor combination can reproduce its pre-intervention trajectory better than any donor and make the comparison explicit. Yet excellent post hoc fit can be manufactured by an enormous or contaminated donor pool, and a post-treatment gap may reflect spillovers, another policy or model extrapolation. Unlike ordinary panel regression, synthetic control foregrounds the treated path, donor weights and pre-fit. Credibility comes from comparative design, placebos and qualitative case knowledge—not from optimization alone.",
+  "intuition": "Construct a fictional untreated version of the treated region by mixing unaffected regions until its pre-policy outcomes closely trace the treated history. Freeze the mixture at the intervention. The future difference between the real and synthetic paths estimates what changed, provided the preperiod captured relevant latent forces and nothing else uniquely changed the treated region.",
+  "deepDive": "Synthetic control combines donor selection, constrained weights and longitudinal validation for comparative case studies. Good pre-fit supports interpolation but does not prove identification. Credible inference uses placebo assignments and transparent researcher-choice sensitivity, while extensions trade convex-hull interpretability for regularization, bias correction or multiple treated units.",
+  "workedExample": "A synthetic region uses weights 0.6 on donor A and 0.4 on donor B. If their post outcomes are 20 and 30, the counterfactual is 24. A treated outcome of 19 gives an estimated gap of -5 for that period.",
   "commonMistakes": [
-    "Applying the method without checking its assumptions or data-generating process.",
-    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+    {
+      "misconception": "Excellent pretreatment fit proves causal validity.",
+      "correction": "It supports trajectory comparability but cannot rule out postperiod shocks, anticipation, spillovers or overfit."
+    },
+    {
+      "misconception": "Choose donors by whichever set yields the cleanest post gap.",
+      "correction": "Post-outcome donor selection is specification search; freeze eligibility from design knowledge and preperiod evidence."
+    },
+    {
+      "misconception": "A synthetic control effect is an average policy effect.",
+      "correction": "Classical analysis targets the treated unit and event; broader transport requires additional evidence."
+    },
+    {
+      "misconception": "Ordinary regression standard errors apply to one treated aggregate unit.",
+      "correction": "Use design-aware placebo or permutation evidence and transparent case-study uncertainty."
+    }
   ],
   "followUps": [
-    "What assumptions does Synthetic Control make?",
-    "How would you validate or debug Synthetic Control in practice?"
+    {
+      "question": "Why constrain weights to be nonnegative and sum to one?",
+      "answer": "It makes the synthetic unit an interpretable interpolation within donor support and avoids unrestricted extrapolation."
+    },
+    {
+      "question": "What if pretreatment fit is poor?",
+      "answer": "The classical donor pool does not support the counterfactual well; redesign, narrow the claim or use a justified extension rather than trust the post gap."
+    },
+    {
+      "question": "What does an in-space placebo do?",
+      "answer": "It applies the full method to untreated donors as pseudo-treated units to contextualize how unusual the treated unit's post/pre divergence is."
+    }
   ],
-  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "production": "Version treated unit, intervention and anticipation dates, donor eligibility, outcome and predictor sources, pretreatment window, optimization constraints and weights. Freeze all choices before postperiod monitoring. Publish treated and synthetic paths, RMSPE, weight concentration, placebo distributions, leave-one-out and credible specification sensitivity. Monitor source revisions, spillovers, donor interventions and concurrent treated-unit shocks. Keep conclusions local to the case, require human causal review for policy decisions and retain the pre-intervention design when updated donor data would rewrite history.",
   "visual": {
     "type": "curve",
     "title": "Synthetic control",
@@ -90,6 +118,133 @@
     "yLabel": "outcome"
   },
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "math": "For treated outcome Y_1t and J donors Y_jt, choose weights w_j>=0 and sum_j w_j=1 to minimize pretreatment discrepancy, often sum_{t<T0}(Y_1t-sum_j w_jY_jt)^2 or predictor-weighted distance. Counterfactual after T0 is Yhat_1t(0)=sum_j w_jY_jt and gap tauhat_t=Y_1t-Yhat_1t(0). Pretreatment RMSPE summarizes fit. In-space placebos assign treatment to each donor and repeat the full procedure; compare treated post/pre RMSPE ratio or gap with placebo distribution, excluding units whose pre-fit is not comparable under a prespecified rule.",
+  "code": "pre_rmspe=np.sqrt(np.mean(gaps[:pre]**2)); post_effect=np.mean(gaps[pre:]); concentration=np.sum(weights**2); frozen_prediction=donors[pre:]@weights",
+  "lab": {
+    "language": "python",
+    "goal": "Fit simplex-constrained donor weights on pretreatment outcomes and verify recovery of a known post-treatment counterfactual gap.",
+    "buildIt": "import numpy as np\nfrom scipy.optimize import minimize\nrng=np.random.default_rng(77); pre=35; post=12; time=np.arange(pre+post); factors=np.c_[np.ones(len(time)),np.sin(time/5),time/20]; load=rng.normal(size=(3,4)); donors=factors@load+rng.normal(scale=.03,size=(len(time),4)); true_w=np.array([.5,.3,.2,0.]); counterfactual=donors@true_w; effect=np.r_[np.zeros(pre),np.full(post,-4.)]; treated=counterfactual+effect+rng.normal(scale=.03,size=len(time))\ndef objective(w): return np.mean((treated[:pre]-donors[:pre]@w)**2)\nfit=minimize(objective,np.full(4,.25),method='SLSQP',bounds=[(0,1)]*4,constraints={'type':'eq','fun':lambda w:w.sum()-1}); weights=fit.x; synthetic=donors@weights; gaps=treated-synthetic",
+    "useIt": "pre_rmspe=np.sqrt(np.mean(gaps[:pre]**2)); post_effect=np.mean(gaps[pre:]); concentration=np.sum(weights**2); frozen_prediction=donors[pre:]@weights",
+    "verifyIt": "assert fit.success\nassert np.all(weights>=-1e-8) and abs(weights.sum()-1)<1e-8\nassert np.max(np.abs(weights-true_w))<.06\nassert pre_rmspe<.06\nassert abs(post_effect+4)<.06\nassert np.allclose(frozen_prediction,synthetic[pre:]) and concentration>.25",
+    "shipIt": "Freeze donor eligibility, preperiod and weights, persist paths and placebo diagnostics, and monitor donor contamination, source revisions and treated-unit concurrent shocks."
+  },
+  "description": "Synthetic control constructs a transparent counterfactual for an aggregate intervention from a weighted donor pool. This chapter derives constrained donor weights, predictor and pretreatment-outcome matching, convex-hull support and post-treatment gaps. It explains donor eligibility, spillovers, anticipation, time-varying latent confounding, intervention timing and why good pre-fit is necessary but not sufficient. It develops pretreatment RMSPE, leave-one-out donors, alternative windows, in-space and in-time placebos, post/pre fit ratios and researcher-choice sensitivity. It contrasts classical nonnegative simplex weights with regression, augmented and matrix-completion extensions while preserving the target case-study question. Worked examples compute a weighted counterfactual and diagnose an influential donor. The lab fits simplex-constrained weights to a simulated panel, verifies recovery of the donor mixture and known post-treatment effect, and checks that weights are frozen after intervention. Production guidance versions donor pools and source revisions, reports paths and weights, monitors spillovers and concurrent shocks, and avoids automatic causal claims from forecast accuracy.",
+  "prerequisites": [
+    "difference-in-differences",
+    "optimization-convexity"
+  ],
+  "learningObjectives": [
+    "Construct and interpret simplex-constrained donor weights and a synthetic counterfactual trajectory.",
+    "Diagnose donor contamination, convex-hull failure, poor pre-fit, spillovers and concurrent shocks.",
+    "Perform placebo and specification sensitivity appropriate to a comparative case study.",
+    "Report weights, paths, fit and local case-study scope without unsupported generalization."
+  ],
+  "deepSections": [
+    {
+      "id": "design-donors",
+      "title": "The donor pool defines the untreated counterfactual space",
+      "body": "Select donors that were not exposed to the intervention, anticipation, spillovers or a similar contemporaneous shock. They should share outcome measurement and plausible latent outcome factors with the treated unit. Excluding a donor because its postperiod trajectory narrows the estimated gap is outcome-driven selection; freeze eligibility from pre-intervention and institutional evidence. Define intervention time and any anticipation window. Long pretreatment outcome histories often summarize latent factor loadings better than a few static predictors, but structural breaks can make distant history irrelevant. A donor pool that is too small may not span the treated path; a huge pool increases overfitting and researcher degrees of freedom. Record source revisions, geographic relationships and interference channels. Synthetic control usually targets the one treated unit under this event, not a superpopulation average."
+    },
+    {
+      "id": "weights-prefit",
+      "title": "Constrained weights expose support and fit",
+      "body": "Classical weights are nonnegative and sum to one, making the synthetic trajectory an interpolation among donors. Predictor weights may prioritize variables by how well they reproduce pretreatment outcomes, creating a nested optimization that must use preperiod data only. Plot treated and synthetic outcomes throughout the preperiod and report RMSPE, not merely selected predictor balance. A low RMSPE supports but does not establish that future untreated paths would coincide. If no convex combination fits, the treated unit lies outside donor support; large extrapolative regression coefficients can improve fit while weakening design credibility. Inspect weight concentration and leave-one-out sensitivity. One dominant donor may be substantively reasonable or make the result hinge on a single comparison. Freeze weights before inspecting postperiod outcomes."
+    },
+    {
+      "id": "effects-placebos",
+      "title": "The gap needs a comparative reference distribution",
+      "body": "The post-treatment effect path is the treated outcome minus its frozen synthetic counterfactual. Report pointwise gaps and cumulative or average summaries chosen in advance. Conventional standard errors based on many independent treated units are inappropriate when one case is treated. In-space placebo tests repeatedly treat each donor as if exposed and reconstruct it from remaining donors. If the actual post/pre RMSPE ratio or gap is extreme among comparably fitted placebos, that supports unusual postperiod divergence. Placebo timing before the event tests whether the procedure invents effects. Exclude terrible-fit placebos only by a declared threshold because their post gaps are not comparable. Permutation p-values are descriptive under the assignment interpretation, and a small donor pool yields coarse evidence. Qualitative evidence about alternative shocks remains essential."
+    },
+    {
+      "id": "sensitivity-extensions",
+      "title": "Researcher choices and extensions change the counterfactual",
+      "body": "Repeat analysis over credible pretreatment windows, predictor sets, anticipation dates and donor exclusions. Leave-one-out analysis reveals influential donors. Do not report only the configuration with the largest effect. Augmented synthetic control adds an outcome model to correct pre-fit bias; generalized synthetic control and matrix completion use factor structures across panels; ridge or elastic-net weights allow extrapolation and regularization. These methods can improve prediction but change assumptions and interpretability. Multiple treated units permit pooled or unit-specific effects with cluster-aware methods. Synthetic DID combines weighting ideas with DID-style adjustment. Choose an extension for the identified failure—poor convex-hull fit, multiple cases or noise—not because it produces narrower intervals. Preserve classical paths as a benchmark."
+    },
+    {
+      "id": "case-study-governance",
+      "title": "Quantitative fit complements, not replaces, case knowledge",
+      "body": "Document the policy mechanism, treated unit history, donor institutions, concurrent events and outcome construction. A unique post-treatment recession, data-definition change or migration can mimic an effect. Spillovers into donor units shrink or reverse gaps. Anticipation can contaminate the preperiod used to fit weights. Monitor source revisions and rerun from versioned snapshots because aggregate historical series are frequently backfilled. Publish donor weights, pre-fit, placebo distribution and all prespecified sensitivities. Restrict conclusions to the treated case and observed postperiod. Transport to other regions requires effect-modifier evidence. For live policy monitoring, pre-register windows and freeze weights, but do not automatically trigger decisions from each noisy postperiod deviation."
+    }
+  ],
+  "workedExamples": [
+    {
+      "title": "Weighted counterfactual",
+      "body": "A synthetic region uses weights 0.6 on donor A and 0.4 on donor B. If their post outcomes are 20 and 30, the counterfactual is 24. A treated outcome of 19 gives an estimated gap of -5 for that period."
+    },
+    {
+      "title": "Influential donor",
+      "body": "One donor receives weight 0.85 and experiences an unrelated postperiod boom. The synthetic path rises and exaggerates a negative treatment gap. Leave-one-out and institutional review expose how dependent the conclusion is on that donor."
+    }
+  ],
+  "exercises": [
+    {
+      "prompt": "Weights are 0.25, 0.75 and donor outcomes are 8, 12. What is synthetic outcome?",
+      "solution": "0.25×8+0.75×12=11."
+    },
+    {
+      "prompt": "Why compare post/pre RMSPE ratios in placebos?",
+      "solution": "It contextualizes post divergence relative to each unit's own pretreatment fit, though bad-fit exclusion rules must be declared."
+    },
+    {
+      "prompt": "What does negative donor weight imply?",
+      "solution": "The counterfactual extrapolates outside the donor convex hull; that may improve fit under an extension but changes classical interpretation and risk."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "compare",
+      "title": "Counterfactual choices",
+      "left": {
+        "title": "Single comparison unit",
+        "items": [
+          "Easy to explain",
+          "May mismatch trajectory",
+          "Sensitive to idiosyncratic shocks",
+          "Chosen qualitatively"
+        ]
+      },
+      "right": {
+        "title": "Synthetic combination",
+        "items": [
+          "Matches multiple preperiod features",
+          "Weights are transparent",
+          "Requires donor support",
+          "Can concentrate on few donors"
+        ]
+      },
+      "caption": "A weighted control systematizes comparison but remains only as credible as donor eligibility and pre-fit.",
+      "afterSection": "weights-prefit"
+    },
+    {
+      "type": "flow",
+      "title": "Synthetic-control audit",
+      "items": [
+        "Freeze donor pool and intervention",
+        "Fit weights on preperiod only",
+        "Inspect paths, RMSPE and concentration",
+        "Measure post gap",
+        "Run in-space, time and leave-one-out placebos",
+        "Review shocks, spillovers and scope"
+      ],
+      "caption": "Optimization produces a counterfactual candidate; design evidence determines causal credibility.",
+      "afterSection": "effects-placebos"
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "synthetic-control-paper",
+      "contribution": "Provides classical donor weighting, comparative case-study identification and placebo inference."
+    },
+    {
+      "resource": "did-multiple-periods",
+      "contribution": "Supports comparison with panel trend estimands and heterogeneous time effects."
+    },
+    {
+      "resource": "what-if-causal",
+      "contribution": "Supports intervention, counterfactual and target-population causal definitions."
+    }
+  ]
 }

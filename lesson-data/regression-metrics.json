@@ -6,30 +6,57 @@
   "roles": [
     "ds"
   ],
-  "interviewAnswer": "Regression metrics emphasize different error properties. RMSE punishes large errors; MAE is robust and in target units; MAPE fails near zero and weights relative errors unevenly; R² measures variance explained relative to a mean baseline.",
+  "interviewAnswer": "Regression metrics answer different questions. MAE and RMSE measure error in target units, with RMSE emphasizing large misses. R-squared compares squared error with a constant-mean baseline on the evaluated sample; it can be negative out of sample and is not a percentage of predictions that are correct. MAPE measures relative absolute error but is undefined at zero, explodes near zero and asymmetrically penalizes underprediction. WAPE is total absolute error divided by total absolute actual volume, so high-volume observations dominate and cancellation is avoided; sMAPE has bounded-looking formulas but multiple conventions and awkward zero behavior. For forecasts I also use scaled errors such as MASE against a training-only naive baseline. I choose a metric from decision cost and aggregation level, report complementary scale, relative, bias and tail measures, preserve time/entity structure, and verify denominators, weights and inverse transformations.",
   "keyPoints": [
-    "Metric must match decision cost.",
-    "Scale-dependent vs scale-free metrics differ.",
-    "Always compare with a baseline."
+    "Absolute, squared, relative, explained-variance and scaled metrics encode distinct estimands and weights.",
+    "Out-of-sample R-squared may be negative because a model can lose to the evaluation-set mean baseline.",
+    "MAPE is invalid at zero and gives tiny actual values extreme influence; it is also directionally asymmetric.",
+    "WAPE is a ratio of aggregates, not the mean of percentage errors, and weights large actual volumes more.",
+    "A production scorecard needs scale-dependent error, signed bias, tails, slices and a decision-relevant baseline."
   ],
   "resources": [
+    "sklearn-model-evaluation",
     "isl",
-    "fpp3"
+    "openintro-stats"
   ],
   "featured": true,
-  "why": "Regression Metrics: RMSE, MAE, MAPE & R² is a recurring foundation across data science and machine learning because it affects both theoretical correctness and practical system behavior.",
-  "intuition": "Metric must match decision cost.",
-  "deepDive": "Regression metrics emphasize different error properties. RMSE punishes large errors; MAE is robust and in target units; MAPE fails near zero and weights relative errors unevenly; R² measures variance explained relative to a mean baseline. Scale-dependent vs scale-free metrics differ. Always compare with a baseline. The interview-level skill is not merely recalling the definition: explain the assumptions, what diagnostic evidence you would inspect, and what alternative you would choose when those assumptions fail.",
-  "workedExample": "Forecast demand with MAE for typical unit error and WAPE/MASE for cross-series comparability rather than blindly using MAPE near zeros.",
+  "why": "Teams often search for one normalized regression number that works across products, regions and time. Every normalization changes the weights. A dollar MAE emphasizes absolute business volume; MAPE gives a one-unit target enormous weight when compared with a thousand-unit target; WAPE emphasizes high-volume units; R-squared measures improvement over a particular mean baseline. A model can improve an aggregate while degrading low-volume products, rare peaks or systematic underforecasting. Forecast horizons, repeated entities and target transforms create further aggregation choices. The solution is not a longer metric catalog but a declared estimand: what unit is predicted, which errors cost what, what baseline is credible, and which population receives weight.",
+  "intuition": "An error of ten units is tiny for a product selling one thousand and catastrophic for a product selling five. A percentage metric emphasizes the second case; an absolute metric emphasizes total units. Neither weighting is automatically fair or useful. R-squared asks a different question: how much squared-error improvement did the model deliver over predicting one constant? Read every metric as a weighting and baseline contract.",
+  "deepDive": "Regression evaluation combines error geometry, target scale, normalization, baselines and aggregation. Reliable scorecards keep train-derived scaling separate from test outcomes, handle zeros and negative targets explicitly, compare models on paired residuals, and expose bias and tails. Forecasting and grouped prediction require horizon- and entity-aware weighting rather than an accidental row mean.",
+  "workedExample": "Two products sell 1,000 and 10 units. A model misses both by 10, so MAE is 10. Their absolute percentage errors are 1% and 100%, giving MAPE 50.5%. An absolute portfolio metric treats the misses equally; MAPE gives the small product one hundred times the relative influence.",
   "commonMistakes": [
-    "Using the concept mechanically without checking assumptions or data semantics.",
-    "Reporting one metric/result without examining uncertainty, slices or failure modes."
+    {
+      "misconception": "R-squared of 0.8 means 80% of predictions are accurate.",
+      "correction": "It is a squared-error comparison with a mean baseline, not a fraction of correct predictions."
+    },
+    {
+      "misconception": "Adding epsilon makes MAPE safe.",
+      "correction": "It replaces undefined behavior with an arbitrary and potentially dominant weighting choice that must be justified."
+    },
+    {
+      "misconception": "WAPE treats every series fairly.",
+      "correction": "It weights errors by aggregate actual volume and can hide low-volume series failures."
+    },
+    {
+      "misconception": "Averaging per-fold RMSE equals overall RMSE.",
+      "correction": "Rooting before averaging changes weights; pool squared residuals first if overall observation-weighted RMSE is intended."
+    }
   ],
   "followUps": [
-    "What assumptions or limitations does Regression Metrics: RMSE, MAE, MAPE & R² have?",
-    "How would you validate Regression Metrics: RMSE, MAE, MAPE & R² on a real dataset?"
+    {
+      "question": "When is MASE useful?",
+      "answer": "For cross-series forecast comparison when a meaningful training-only naive lag exists and its average absolute difference is nonzero."
+    },
+    {
+      "question": "Why can R-squared be negative?",
+      "answer": "On the evaluated sample the model's squared error can exceed that of predicting the sample mean."
+    },
+    {
+      "question": "How would you evaluate asymmetric inventory cost?",
+      "answer": "Report operational holding and shortage cost or an aligned quantile loss, plus physical-unit errors and service metrics."
+    }
   ],
-  "production": "In production, make assumptions explicit, validate on representative slices, compare with a simple baseline and monitor the signals that can drift.",
+  "production": "Version the target, physical units, transformation and inverse transform, prediction horizon, evaluation cohort, weights, clipping, missing labels, percentage denominator and baseline window. Unit-test exact predictions, scaling, zeros, constant targets and pooled versus grouped aggregation. Monitor MAE or RMSE, signed bias, tail error, a justified normalized measure, numerator and denominator separately, and decision cost by horizon and cohort. Compute paired uncertainty over independent entities or time blocks. Backfill delayed targets by prediction cohort, compare with naive and current-production baselines, and rollback when critical cost or slice limits fail even if a global ratio improves.",
   "visual": {
     "type": "concept-map",
     "title": "Regression Metrics: RMSE, MAE, MAPE & R²",
@@ -41,6 +68,133 @@
     "caption": "A compact concept map for the most important ideas in this lesson."
   },
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "math": "With residual e_i=y_i-yhat_i: MAE=mean|e_i|, RMSE=sqrt(mean e_i^2), and R^2=1-sum e_i^2/sum(y_i-ybar)^2. MAPE=100 mean |e_i/y_i| when every denominator is valid. WAPE=100 sum|e_i|/sum|y_i|. One common sMAPE is 100 mean[2|e_i|/(|y_i|+|yhat_i|)], but conventions differ. MASE divides mean absolute forecast error by the in-sample mean absolute naive difference at a stated seasonal lag. Mean signed error estimates bias, while pinball loss evaluates quantile forecasts.",
+  "code": "from sklearn.metrics import mean_absolute_error,mean_squared_error,r2_score,mean_absolute_percentage_error\nsk=[mean_absolute_error(y,p),mean_squared_error(y,p)**.5,r2_score(y,p),100*mean_absolute_percentage_error(y,p)]",
+  "lab": {
+    "language": "python",
+    "goal": "Implement R-squared and common relative regression metrics, verify library agreement, and expose zero and scale behavior.",
+    "buildIt": "import numpy as np\ny=np.array([10.,20.,40.,80.]); p=np.array([12.,18.,35.,90.])\ndef scorecard(y,p):\n    y=np.asarray(y,float); p=np.asarray(p,float); e=y-p\n    mae=np.mean(np.abs(e)); mse=np.mean(e**2)\n    r2=1-np.sum(e**2)/np.sum((y-y.mean())**2)\n    mape=np.mean(np.abs(e/y))*100 if np.all(y!=0) else float('nan')\n    wape=np.sum(np.abs(e))/np.sum(np.abs(y))*100 if np.sum(np.abs(y)) else float('nan')\n    smape=np.mean(2*np.abs(e)/(np.abs(y)+np.abs(p)))*100\n    return {'mae':mae,'rmse':mse**.5,'r2':r2,'mape':mape,'wape':wape,'smape':smape,'bias':np.mean(p-y)}\nm=scorecard(y,p)",
+    "useIt": "from sklearn.metrics import mean_absolute_error,mean_squared_error,r2_score,mean_absolute_percentage_error\nsk=[mean_absolute_error(y,p),mean_squared_error(y,p)**.5,r2_score(y,p),100*mean_absolute_percentage_error(y,p)]",
+    "verifyIt": "assert np.allclose([m['mae'],m['rmse'],m['r2'],m['mape']],sk)\nassert scorecard(y,y)['mae']==0 and scorecard(y,y)['r2']==1\nscaled=scorecard(10*y,10*p); assert abs(scaled['mape']-m['mape'])<1e-12 and abs(scaled['r2']-m['r2'])<1e-12\nassert abs(scaled['mae']-10*m['mae'])<1e-12\nassert np.isnan(scorecard(np.array([0.,1.]),np.array([1.,1.]))['mape'])\nassert scorecard(np.array([0.,2.]),np.array([3.,3.]))['r2']<0",
+    "shipIt": "Publish the metric formulas and denominator policy, monitor numerators and denominators with horizon and entity slices, and retain paired residuals for release and rollback decisions."
+  },
+  "description": "Regression evaluation requires more than choosing between MAE and RMSE. This chapter organizes scale-dependent, percentage, relative, scaled and baseline-relative metrics around the decisions they represent. It derives R-squared and explains negative out-of-sample values, intercept effects and why R-squared is not an accuracy percentage. It dissects MAPE's zero denominator, near-zero explosion and underprediction asymmetry; distinguishes WAPE from a mean of ratios; documents competing sMAPE conventions; and introduces MASE, RMSLE, signed bias, quantile loss and tail error. Worked examples show metric rankings reversing across low- and high-volume series and a model losing to the mean. The lab implements the major formulas, checks them against scikit-learn where applicable, and verifies scale and zero invariants. Production guidance fixes target units, transforms, baselines, horizon and entity weights, reports paired uncertainty and relevant slices, and treats each denominator or aggregation change as a metric-version change. It also separates portfolio performance from the experience of a typical series or entity, preventing accidental weighting from becoming an unstated product decision.",
+  "prerequisites": [
+    "mse-mae",
+    "expectation-variance"
+  ],
+  "learningObjectives": [
+    "Compute and interpret R-squared, MAPE, WAPE, sMAPE, scaled error and signed bias.",
+    "Diagnose zero, scale, asymmetry, weighting and aggregation failures in normalized metrics.",
+    "Choose complementary regression measures from operational costs and baseline performance.",
+    "Design grouped and time-aware evaluation with paired uncertainty and versioned definitions."
+  ],
+  "deepSections": [
+    {
+      "id": "metric-families",
+      "title": "Metric families change the question and weight",
+      "body": "Scale-dependent metrics retain target units. MAE represents linear absolute cost and RMSE magnifies large misses; both are directly comparable only on the same target scale. Percentage metrics divide each error by an observation-level scale and thus reweight the sample toward small denominators. Ratio-of-sums metrics such as WAPE instead aggregate absolute error and actual volume before division, giving large-volume observations more influence. Scaled metrics divide by a benchmark error, often enabling comparison across series, but inherit the benchmark's definition and failure modes. Baseline-relative measures such as R-squared compare squared errors rather than reporting magnitude. Log metrics make multiplicative differences more central but require domain restrictions and a declared inverse transformation. Pick the family after specifying whether the claim concerns total volume, a typical entity, proportional error, improvement over policy or tail risk. Preserve at least one error in physical units so stakeholders can interpret consequence."
+    },
+    {
+      "id": "r2-baseline",
+      "title": "R-squared is a baseline comparison",
+      "body": "R-squared subtracts the ratio of model sum of squared errors to the total sum of squares around the evaluation target mean from one. A value of zero means performance equal to that constant mean under this definition; one means exact predictions. Out of sample, the numerator can exceed the denominator, producing a negative value with no mathematical problem. In-sample linear regression with an intercept has familiar decomposition properties that need not hold without an intercept, with weights, after regularization or out of sample. R-squared does not measure calibration, causal explanation or the proportion of individual predictions that are correct. It is unstable when target variance is nearly zero and undefined for a truly constant target without a convention. Compare against stronger operational baselines too: a seasonal naive forecast can be much harder to beat than the sample mean. Always report the underlying error and baseline alongside R-squared."
+    },
+    {
+      "id": "percentage-pathologies",
+      "title": "Percentage errors fail exactly where denominators fail",
+      "body": "MAPE divides by each actual value. A zero actual makes the ratio undefined, and an actual near zero can dominate the average. Negative actuals make percentage meaning ambiguous. Even for positive values, MAPE is asymmetric: predicting 50 for an actual 100 is a 50% error, while predicting 100 for an actual 50 is a 100% error. This can encourage underforecasting in optimization. Arbitrary epsilon denominators cap explosions but create an undocumented weighting rule. sMAPE divides by a combination of actual and prediction and is often bounded, yet published formulas differ by factors and absolute-value conventions; it still has difficult behavior when both are zero. WAPE avoids observation-level division and is interpretable as total absolute miss relative to total absolute volume, but can hide poor low-volume series and is undefined if aggregate actual volume is zero. Use domain-specific denominators only when they represent real exposure."
+    },
+    {
+      "id": "grouped-forecasting",
+      "title": "Series, horizons and entities need deliberate aggregation",
+      "body": "A row mean weights long or frequently observed series more than short ones. Macro averaging first computes an entity metric and weights entities equally, but becomes noisy or undefined for small-denominator entities. Volume weighting answers a portfolio question but can conceal poor service for low-volume items. In forecasting, report metrics by horizon because error commonly grows with look-ahead time. MASE scales error by an in-sample naive forecast difference at a chosen seasonal lag, avoiding test leakage and supporting cross-series comparison; it fails when the training series has no variation under that lag. RMSLE or log-scale errors emphasize multiplicative fit, but predictions and targets must satisfy the transform domain. For intermittent demand, separate occurrence and size performance or use inventory decision costs. Uncertainty should resample complete entities or time blocks and preserve paired model residuals. Do not average fold RMSEs and call it pooled RMSE without stating the weighting."
+    },
+    {
+      "id": "scorecard-operations",
+      "title": "A scorecard connects residuals to action",
+      "body": "Start with a naive and current-production baseline. Report MAE or RMSE in units, signed mean error for bias, a tail statistic such as the 95th percentile absolute error, and a normalized or scaled measure only if its denominator is defensible. Add asymmetric or pinball loss when under- and overprediction have different cost or a quantile is forecast. Plot residuals against target, prediction, time, horizon and important cohorts to find heteroskedasticity and systematic structure. Freeze target query, transform, inverse transform, clipping, weights, denominator policy and label-maturity window. Test exact predictions, scaling behavior, constant targets, zero denominators and hand calculations. Monitor metric numerator and denominator separately so a ratio improvement caused by volume mix is visible. Backfill outcomes by prediction cohort and retain sufficient paired residual evidence for rollback decisions."
+    }
+  ],
+  "workedExamples": [
+    {
+      "title": "Absolute and percentage rankings disagree",
+      "body": "Two products sell 1,000 and 10 units. A model misses both by 10, so MAE is 10. Their absolute percentage errors are 1% and 100%, giving MAPE 50.5%. An absolute portfolio metric treats the misses equally; MAPE gives the small product one hundred times the relative influence."
+    },
+    {
+      "title": "Negative test R-squared",
+      "body": "Targets [0,2] have mean 1 and total squared deviation 2. Predictions [3,3] have squared error 10, so R-squared is 1-10/2=-4. The model is much worse than the constant evaluation-set mean; the negative value is informative, not invalid."
+    }
+  ],
+  "exercises": [
+    {
+      "prompt": "Targets [0,2] and predictions [1,1] have what R-squared?",
+      "solution": "The predictions equal the target mean, so SSE equals total sum of squares and R-squared is zero."
+    },
+    {
+      "prompt": "Why is WAPE not the average percentage error?",
+      "solution": "It divides total absolute error by total absolute actual volume; it is a ratio of sums rather than a mean of observation-level ratios."
+    },
+    {
+      "prompt": "What should accompany a cross-series MASE report?",
+      "solution": "The naive lag, training window, per-series denominator validity, aggregation weights, physical-unit errors and horizon-specific results."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "compare",
+      "title": "Normalization changes influence",
+      "left": {
+        "title": "Observation-level ratio",
+        "items": [
+          "MAPE-like weighting",
+          "Small actuals dominate",
+          "Zero is undefined",
+          "Typical relative case"
+        ]
+      },
+      "right": {
+        "title": "Aggregate ratio",
+        "items": [
+          "WAPE-like weighting",
+          "Large volume dominates",
+          "Aggregate zero is undefined",
+          "Portfolio volume view"
+        ]
+      },
+      "caption": "The denominator is a weighting decision, not cosmetic normalization.",
+      "afterSection": "percentage-pathologies"
+    },
+    {
+      "type": "flow",
+      "title": "Regression scorecard design",
+      "items": [
+        "Declare unit and action cost",
+        "Choose physical-unit loss",
+        "Add bias and tail evidence",
+        "Justify any denominator",
+        "Compare paired with baseline",
+        "Monitor mix and label maturity"
+      ],
+      "caption": "Complementary metrics reveal magnitude, direction, tails and normalization effects.",
+      "afterSection": "scorecard-operations"
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "sklearn-model-evaluation",
+      "contribution": "Verifies regression metric formulas, R-squared behavior and percentage-error API conventions."
+    },
+    {
+      "resource": "isl",
+      "contribution": "Supports test error, baseline comparison and loss-based regression evaluation."
+    },
+    {
+      "resource": "openintro-stats",
+      "contribution": "Supports variance, residual summaries and uncertainty over evaluation samples."
+    }
+  ]
 }

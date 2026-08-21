@@ -1,6 +1,6 @@
 # Data, ML & AI Atlas — Curriculum
 
-**45 modules · 394 topics · 241 curated resources**
+**45 modules · 394 topics · 306 curated resources**
 
 ## 01. 🐍 Python & Software Engineering
 
@@ -157,59 +157,59 @@ Deep-complete: **9/9** · Visual models: **18/9**
 
 Core supervised algorithms and practical model-selection reasoning.
 
-Deep-complete: **0/12** · Visual models: **5/12**
+Deep-complete: **12/12** · Visual models: **24/12**
 
-- 🔥 **Decision Trees** — ◻ interview-ready · 🖼 visual
-- ⬆️ **Random Forest** — ◻ interview-ready · 🖼 visual
-- 🔥 **Gradient Boosting / XGBoost Intuition** — ◻ interview-ready · 🖼 visual
-- ⬆️ **Support Vector Machines** — ◻ interview-ready · 🖼 visual
-- • **k-Nearest Neighbors** — ◻ interview-ready
-- • **Naive Bayes** — ◻ interview-ready
-- 🔥 **Bias–Variance Trade-off** — ◻ interview-ready · 🖼 visual
-- • **LDA & QDA** — ◻ interview-ready
-- • **AdaBoost** — ◻ interview-ready
-- ⬆️ **Bagging, Blending & Stacking** — ◻ interview-ready
-- ⬆️ **Kernel Methods & the Kernel Trick** — ◻ interview-ready
-- • **Perceptron & Online Learning** — ◻ interview-ready
+- 🔥 **Decision Trees** — ✅ deep · 🖼 visual
+- ⬆️ **Random Forest** — ✅ deep · 🖼 visual
+- 🔥 **Gradient Boosting / XGBoost Intuition** — ✅ deep · 🖼 visual
+- ⬆️ **Support Vector Machines** — ✅ deep · 🖼 visual
+- • **k-Nearest Neighbors** — ✅ deep · 🖼 visual
+- • **Naive Bayes** — ✅ deep · 🖼 visual
+- 🔥 **Bias–Variance Trade-off** — ✅ deep · 🖼 visual
+- • **LDA & QDA** — ✅ deep · 🖼 visual
+- • **AdaBoost** — ✅ deep · 🖼 visual
+- ⬆️ **Bagging, Blending & Stacking** — ✅ deep · 🖼 visual
+- ⬆️ **Kernel Methods & the Kernel Trick** — ✅ deep · 🖼 visual
+- • **Perceptron & Online Learning** — ✅ deep · 🖼 visual
 
 ## 12. 🧭 Unsupervised Learning
 
 Clustering, dimensionality reduction, density estimation and latent structure.
 
-Deep-complete: **0/9** · Visual models: **5/9**
+Deep-complete: **9/9** · Visual models: **18/9**
 
-- ⬆️ **K-means Clustering** — ◻ interview-ready · 🖼 visual
-- ⬆️ **PCA** — ◻ interview-ready · 🖼 visual
-- ⬆️ **Hierarchical Clustering** — ◻ interview-ready · 🖼 visual
-- ⬆️ **DBSCAN & Density-based Clustering** — ◻ interview-ready · 🖼 visual
-- ⬆️ **Gaussian Mixture Models & EM** — ◻ interview-ready
-- • **t-SNE & UMAP for Visualization** — ◻ interview-ready · 🖼 visual
-- • **Density Estimation & KDE** — ◻ interview-ready
-- • **Factor Analysis** — ◻ interview-ready
-- • **Independent Component Analysis (ICA)** — ◻ interview-ready
+- ⬆️ **K-means Clustering** — ✅ deep · 🖼 visual
+- ⬆️ **PCA** — ✅ deep · 🖼 visual
+- ⬆️ **Hierarchical Clustering** — ✅ deep · 🖼 visual
+- ⬆️ **DBSCAN & Density-based Clustering** — ✅ deep · 🖼 visual
+- ⬆️ **Gaussian Mixture Models & EM** — ✅ deep · 🖼 visual
+- • **t-SNE & UMAP for Visualization** — ✅ deep · 🖼 visual
+- • **Density Estimation & KDE** — ✅ deep · 🖼 visual
+- • **Factor Analysis** — ✅ deep · 🖼 visual
+- • **Independent Component Analysis (ICA)** — ✅ deep · 🖼 visual
 
 ## 13. 📏 Evaluation & Feature Engineering
 
 Metrics, validation, leakage, preprocessing, imbalance and interpretability.
 
-Deep-complete: **0/16** · Visual models: **12/16**
+Deep-complete: **16/16** · Visual models: **32/16**
 
-- 🔥 **MSE vs MAE** — ◻ interview-ready · 🖼 visual
-- 🔥 **Precision, Recall & F1** — ◻ interview-ready · 🖼 visual
-- ⬆️ **ROC-AUC vs PR-AUC** — ◻ interview-ready · 🖼 visual
-- 🔥 **Train/Validation/Test & Cross-validation** — ◻ interview-ready · 🖼 visual
-- 🔥 **Data Leakage** — ◻ interview-ready · 🖼 visual
-- 🔥 **Class Imbalance** — ◻ interview-ready · 🖼 visual
-- ⬆️ **Missing Values & Outliers** — ◻ interview-ready
-- ⬆️ **Feature Importance & Explainability** — ◻ interview-ready
-- 🔥 **Probability Calibration** — ◻ interview-ready · 🖼 visual
-- 🔥 **Decision Thresholds & Cost-sensitive Classification** — ◻ interview-ready · 🖼 visual
-- 🔥 **Regression Metrics: RMSE, MAE, MAPE & R²** — ◻ interview-ready · 🖼 visual
-- 🔥 **Scaling & Encoding Features** — ◻ interview-ready · 🖼 visual
-- ⬆️ **Interactions & Domain Feature Engineering** — ◻ interview-ready
-- 🔥 **Grid, Random & Bayesian Hyperparameter Search** — ◻ interview-ready · 🖼 visual
-- • **Nested Cross-validation** — ◻ interview-ready · 🖼 visual
-- ⬆️ **Permutation Importance, PDP & SHAP** — ◻ interview-ready
+- 🔥 **MSE vs MAE** — ✅ deep · 🖼 visual
+- 🔥 **Precision, Recall & F1** — ✅ deep · 🖼 visual
+- ⬆️ **ROC-AUC vs PR-AUC** — ✅ deep · 🖼 visual
+- 🔥 **Train/Validation/Test & Cross-validation** — ✅ deep · 🖼 visual
+- 🔥 **Data Leakage** — ✅ deep · 🖼 visual
+- 🔥 **Class Imbalance** — ✅ deep · 🖼 visual
+- ⬆️ **Missing Values & Outliers** — ✅ deep · 🖼 visual
+- ⬆️ **Feature Importance & Explainability** — ✅ deep · 🖼 visual
+- 🔥 **Probability Calibration** — ✅ deep · 🖼 visual
+- 🔥 **Decision Thresholds & Cost-sensitive Classification** — ✅ deep · 🖼 visual
+- 🔥 **Regression Metrics: RMSE, MAE, MAPE & R²** — ✅ deep · 🖼 visual
+- 🔥 **Scaling & Encoding Features** — ✅ deep · 🖼 visual
+- ⬆️ **Interactions & Domain Feature Engineering** — ✅ deep · 🖼 visual
+- 🔥 **Grid, Random & Bayesian Hyperparameter Search** — ✅ deep · 🖼 visual
+- • **Nested Cross-validation** — ✅ deep · 🖼 visual
+- ⬆️ **Permutation Importance, PDP & SHAP** — ✅ deep · 🖼 visual
 
 ## 14. 🧪 Experimentation & Product Analytics
 
@@ -232,17 +232,17 @@ Deep-complete: **10/10** · Visual models: **20/10**
 
 Potential outcomes, DAGs and quasi-experimental identification strategies.
 
-Deep-complete: **0/10** · Visual models: **5/10**
+Deep-complete: **9/10** · Visual models: **18/10**
 
-- ⬆️ **Causal Inference vs Prediction** — ◻ interview-ready
-- • **DAGs, Confounders & Colliders** — ◻ interview-ready · 🖼 visual
-- 🔥 **Potential Outcomes & Average Treatment Effects** — ◻ interview-ready · 🖼 visual
-- ⬆️ **Backdoor Adjustment & Confounding Control** — ◻ interview-ready
-- ⬆️ **Propensity Scores, Matching & Weighting** — ◻ interview-ready
-- ⬆️ **Difference-in-Differences** — ◻ interview-ready · 🖼 visual
-- • **Instrumental Variables** — ◻ interview-ready
-- • **Regression Discontinuity** — ◻ interview-ready · 🖼 visual
-- • **Synthetic Control** — ◻ interview-ready · 🖼 visual
+- ⬆️ **Causal Inference vs Prediction** — ✅ deep · 🖼 visual
+- • **DAGs, Confounders & Colliders** — ✅ deep · 🖼 visual
+- 🔥 **Potential Outcomes & Average Treatment Effects** — ✅ deep · 🖼 visual
+- ⬆️ **Backdoor Adjustment & Confounding Control** — ✅ deep · 🖼 visual
+- ⬆️ **Propensity Scores, Matching & Weighting** — ✅ deep · 🖼 visual
+- ⬆️ **Difference-in-Differences** — ✅ deep · 🖼 visual
+- • **Instrumental Variables** — ✅ deep · 🖼 visual
+- • **Regression Discontinuity** — ✅ deep · 🖼 visual
+- • **Synthetic Control** — ✅ deep · 🖼 visual
 - ⬆️ **Heterogeneous Treatment Effects & Uplift Modeling** — ◻ interview-ready
 
 ## 16. ⏱️ Time Series & Forecasting
@@ -623,23 +623,23 @@ Deep-complete: **0/9** · Visual models: **4/9**
 
 End-to-end technical case studies plus a framework for explaining architecture, evaluation, trade-offs and productionization.
 
-Deep-complete: **0/4** · Visual models: **4/4**
+Deep-complete: **4/4** · Visual models: **8/4**
 
-- ⬆️ **Case Study: Scientific 3D Reconstruction / Super-resolution** — ◻ interview-ready · 🖼 visual
-- ⬆️ **Case Study: Graph-based Matching & Recommendation** — ◻ interview-ready · 🖼 visual
-- ⬆️ **Case Study: Real-time Streaming Application** — ◻ interview-ready · 🖼 visual
-- ⬆️ **Case Study: LLM Copilot with Tools + RAG** — ◻ interview-ready · 🖼 visual
+- ⬆️ **Case Study: Scientific 3D Reconstruction / Super-resolution** — ✅ deep · 🖼 visual
+- ⬆️ **Case Study: Graph-based Matching & Recommendation** — ✅ deep · 🖼 visual
+- ⬆️ **Case Study: Real-time Streaming Application** — ✅ deep · 🖼 visual
+- ⬆️ **Case Study: LLM Copilot with Tools + RAG** — ✅ deep · 🖼 visual
 
 ## 40. 🎯 Interview Strategy
 
 How to turn broad knowledge into concise, defensible interview answers.
 
-Deep-complete: **0/4** · Visual models: **3/4**
+Deep-complete: **4/4** · Visual models: **8/4**
 
-- 🔥 **Tell me about yourself** — ◻ interview-ready · 🖼 visual
-- 🔥 **Defend Any Technical Project** — ◻ interview-ready · 🖼 visual
-- ⬆️ **Behavioral Answers with CAR / STAR** — ◻ interview-ready
-- 🔥 **How to Handle a Question You Do Not Know** — ◻ interview-ready · 🖼 visual
+- 🔥 **Tell me about yourself** — ✅ deep · 🖼 visual
+- 🔥 **Defend Any Technical Project** — ✅ deep · 🖼 visual
+- ⬆️ **Behavioral Answers with CAR / STAR** — ✅ deep · 🖼 visual
+- 🔥 **How to Handle a Question You Do Not Know** — ✅ deep · 🖼 visual
 
 ## 41. 🧮 Information Theory for ML
 
@@ -687,27 +687,27 @@ Deep-complete: **6/6** · Visual models: **12/6**
 
 Classical scalable algorithms for frequent patterns, similarity, approximate counting, link analysis and streams.
 
-Deep-complete: **0/7** · Visual models: **0/7**
+Deep-complete: **7/7** · Visual models: **14/7**
 
-- • **Frequent Itemsets & Association Rules** — ◻ interview-ready
-- • **MinHash & Jaccard Similarity** — ◻ interview-ready
-- ⬆️ **Locality-Sensitive Hashing (LSH)** — ◻ interview-ready
-- • **Bloom Filters** — ◻ interview-ready
-- • **Count-Min Sketch & Heavy Hitters** — ◻ interview-ready
-- • **HyperLogLog & Distinct Counting** — ◻ interview-ready
-- • **PageRank & Link Analysis** — ◻ interview-ready
+- • **Frequent Itemsets & Association Rules** — ✅ deep · 🖼 visual
+- • **MinHash & Jaccard Similarity** — ✅ deep · 🖼 visual
+- ⬆️ **Locality-Sensitive Hashing (LSH)** — ✅ deep · 🖼 visual
+- • **Bloom Filters** — ✅ deep · 🖼 visual
+- • **Count-Min Sketch & Heavy Hitters** — ✅ deep · 🖼 visual
+- • **HyperLogLog & Distinct Counting** — ✅ deep · 🖼 visual
+- • **PageRank & Link Analysis** — ✅ deep · 🖼 visual
 
 ## 45. 🗺️ Geospatial Data Science
 
 Spatial data, projections, joins, indexing, autocorrelation and spatially valid modeling.
 
-Deep-complete: **0/7** · Visual models: **2/7**
+Deep-complete: **7/7** · Visual models: **14/7**
 
-- ⬆️ **Vector vs Raster Spatial Data** — ◻ interview-ready · 🖼 visual
-- ⬆️ **Coordinate Reference Systems & Projections** — ◻ interview-ready
-- ⬆️ **Spatial Joins & Predicates** — ◻ interview-ready
-- • **Spatial Indexes, Geohash & H3** — ◻ interview-ready
-- • **Geodesic Distance & Spatial kNN** — ◻ interview-ready
-- • **Spatial Autocorrelation & Moran’s I** — ◻ interview-ready
-- ⬆️ **Spatial Cross-Validation & Geographic Leakage** — ◻ interview-ready · 🖼 visual
+- ⬆️ **Vector vs Raster Spatial Data** — ✅ deep · 🖼 visual
+- ⬆️ **Coordinate Reference Systems & Projections** — ✅ deep · 🖼 visual
+- ⬆️ **Spatial Joins & Predicates** — ✅ deep · 🖼 visual
+- • **Spatial Indexes, Geohash & H3** — ✅ deep · 🖼 visual
+- • **Geodesic Distance & Spatial kNN** — ✅ deep · 🖼 visual
+- • **Spatial Autocorrelation & Moran’s I** — ✅ deep · 🖼 visual
+- ⬆️ **Spatial Cross-Validation & Geographic Leakage** — ✅ deep · 🖼 visual
 

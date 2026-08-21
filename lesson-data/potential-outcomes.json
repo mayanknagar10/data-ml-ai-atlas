@@ -7,30 +7,57 @@
     "ds",
     "as"
   ],
-  "interviewAnswer": "Causal inference defines treatment effects through potential outcomes: what the same unit would experience under treatment versus control. Because both cannot be observed, identification requires randomization or assumptions/design.",
+  "interviewAnswer": "The potential-outcomes framework defines Y_i(a) as unit i's outcome under treatment strategy a. For a binary treatment, the individual effect Y_i(1)-Y_i(0) is fundamentally unobservable because only one potential outcome is revealed. We therefore target population quantities such as ATE E[Y(1)-Y(0)], ATT, risk ratio, quantile effect or policy value. Consistency connects observed Y to Y(A); positivity supplies support; exchangeability connects treatment groups to counterfactual outcomes; and SUTVA-style assumptions require well-defined versions and manageable interference. Randomization establishes exchangeability by design, while observational analyses need measured-confounding assumptions or another identification strategy. I specify time zero, treatment versions, population and outcome horizon, distinguish assignment from receipt, report intention-to-treat and adherence estimands clearly, and avoid claiming individual treatment effects are validated from factual outcomes alone.",
   "keyPoints": [
-    "Fundamental problem: one potential outcome is missing.",
-    "ATE, ATT and CATE answer different questions.",
-    "Assignment mechanism is central."
+    "Potential outcomes define causal effects by comparing intervention states for the same target units.",
+    "Only one potential outcome per unit is observed, so individual effects require untestable structure or remain unidentified.",
+    "ATE, ATT, CATE, risk ratio, quantile and policy effects are different estimands with different target populations.",
+    "Consistency, exchangeability, positivity and interference assumptions connect potential outcomes to observed data.",
+    "Assignment, treatment receipt, adherence and treatment versions must not be collapsed into one ambiguous variable."
   ],
   "resources": [
-    "causal-mixtape",
-    "harvard-causal-diagrams"
+    "what-if-causal",
+    "causal-tree-paper",
+    "dml-paper"
   ],
   "featured": true,
-  "why": "Potential Outcomes & Average Treatment Effects appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
-  "intuition": "Fundamental problem: one potential outcome is missing.",
-  "deepDive": "Causal inference defines treatment effects through potential outcomes: what the same unit would experience under treatment versus control. Because both cannot be observed, identification requires randomization or assumptions/design. ATE, ATT and CATE answer different questions. Assignment mechanism is central. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
-  "workedExample": "Estimate the average effect of a pricing banner, not merely whether exposed users buy more.",
+  "why": "Causal statements become vague when they do not say whose outcome, under which alternatives and over what horizon. 'The campaign worked' could mean assignment increased average conversion, exposure helped compliers, or a personalized policy improved total value. Potential outcomes force these distinctions. They also expose the central missing-data problem: the counterfactual is never observed for the same unit. Randomized groups solve an average comparison through design, not by revealing both individual outcomes. In observational settings, precise notation prevents an estimator from quietly changing the population, treatment version or effect scale. It also stops heterogeneous-effect models from being judged like ordinary label predictors when individual causal labels do not exist.",
+  "intuition": "Imagine two sealed outcome cards for each person: one under treatment and one under control. Assignment reveals exactly one card. A causal effect compares the two cards, but the individual difference stays hidden. Randomization makes the revealed treated cards representative of all treatment cards and the revealed control cards representative of all control cards, allowing an average contrast.",
+  "deepDive": "Potential outcomes provide a precise language for interventions, estimands and identification. Their usefulness depends on treatment consistency, assignment design, overlap, interference and time alignment. Average effects can be estimated without recovering individual effects; heterogeneous and policy claims require additional data, structure and honest evaluation.",
+  "workedExample": "In a randomized trial, person A reveals Y(1) and person B reveals Y(0). Neither person's counterfactual is observed, but group averages consistently estimate E[Y(1)] and E[Y(0)] under the assignment design, so their difference estimates ATE.",
   "commonMistakes": [
-    "Applying the method without checking its assumptions or data-generating process.",
-    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+    {
+      "misconception": "A causal model predicts each unit's treatment effect label.",
+      "correction": "Individual effects are never jointly observed; evaluation targets average contrasts, calibration or policy value under assumptions."
+    },
+    {
+      "misconception": "Randomization reveals both potential outcomes.",
+      "correction": "It balances which one is revealed across groups, enabling average inference while individual counterfactuals remain missing."
+    },
+    {
+      "misconception": "ATE and ATT differ only by estimator.",
+      "correction": "They average effects over different populations and can genuinely differ under heterogeneity."
+    },
+    {
+      "misconception": "SUTVA means only no interference.",
+      "correction": "It also includes treatment-version consistency; both require domain-specific interpretation."
+    }
   ],
   "followUps": [
-    "What assumptions does Potential Outcomes & Average Treatment Effects make?",
-    "How would you validate or debug Potential Outcomes & Average Treatment Effects in practice?"
+    {
+      "question": "Why is the individual treatment effect unobservable?",
+      "answer": "At a given time the unit follows one treatment path, revealing one potential outcome while the alternative remains counterfactual."
+    },
+    {
+      "question": "What identifies ATE in a randomized trial?",
+      "answer": "The assignment mechanism makes treatment independent of potential outcomes, with consistency, outcome observation and the appropriate interference assumptions."
+    },
+    {
+      "question": "Can ATT equal ATE?",
+      "answer": "Yes under constant effects or when effect heterogeneity has the same average in treated and target populations, but not by definition."
+    }
   ],
-  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "production": "Version population eligibility, treatment strategies and versions, assignment and receipt, time zero, follow-up, outcome, estimand and interference mapping. Preserve assignment logs, adherence and implementation fidelity. Analyze at the randomization or independent unit, monitor positivity and subgroup support, and backfill outcomes by assignment cohort. Separate discovery from estimation for heterogeneity and validate policies prospectively. Report sampling uncertainty plus sensitivity to missing outcomes, versions and spillovers. Keep the prior assignment policy available when treatment delivery or population changes invalidate consistency or transport.",
   "visual": {
     "type": "compare",
     "title": "Potential outcomes",
@@ -51,6 +78,133 @@
     "caption": "The individual treatment effect Y(1)−Y(0) cannot be observed directly because only one potential outcome is realized."
   },
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "math": "For binary A, observed Y=A Y(1)+(1-A)Y(0) under consistency. Unit effect tau_i=Y_i(1)-Y_i(0); ATE=E[tau], ATT=E[tau|A=1], and CATE tau(x)=E[tau|X=x]. In a randomized trial, A is independent of (Y(1),Y(0)), so E[Y|A=1]-E[Y|A=0]=ATE for the randomized population. Conditional identification gives E[Y(a)]=E_X E[Y|A=a,X]. The variance of a difference in independent sample means is approximately s1^2/n1+s0^2/n0, with design-specific or cluster-aware inference replacing this formula when assignment is not individual independent randomization.",
+  "code": "from scipy.stats import norm\ninterval=(estimate-norm.ppf(.975)*se,estimate+norm.ppf(.975)*se); att_truth=np.mean(individual_effect[a==1]); observed_counterfactual=np.where(a==1,y0,y1)",
+  "lab": {
+    "language": "python",
+    "goal": "Simulate complete potential outcomes, reveal one through random assignment, and verify unbiased average-effect recovery and uncertainty behavior.",
+    "buildIt": "import numpy as np\nrng=np.random.default_rng(12); n=20000; x=rng.normal(size=n); y0=1+2*x+rng.normal(size=n); individual_effect=1+.6*x; y1=y0+individual_effect; true_ate=np.mean(y1-y0); a=rng.binomial(1,.5,size=n); observed=np.where(a==1,y1,y0); estimate=observed[a==1].mean()-observed[a==0].mean()\nse=np.sqrt(observed[a==1].var(ddof=1)/a.sum()+observed[a==0].var(ddof=1)/(n-a.sum()))",
+    "useIt": "from scipy.stats import norm\ninterval=(estimate-norm.ppf(.975)*se,estimate+norm.ppf(.975)*se); att_truth=np.mean(individual_effect[a==1]); observed_counterfactual=np.where(a==1,y0,y1)",
+    "verifyIt": "assert abs(true_ate-1)<.02\nassert abs(estimate-true_ate)<.06\nassert interval[0]<true_ate<interval[1]\nassert abs(att_truth-true_ate)<.03\nassert np.all(observed+observed_counterfactual==y0+y1)\nassert not np.array_equal(observed,observed_counterfactual)",
+    "shipIt": "Persist assignment, treatment-version and outcome-horizon contracts, analyze at the assignment unit, and monitor adherence, interference, support and outcome maturity by cohort."
+  },
+  "description": "Potential outcomes make causal questions explicit by defining what each unit would experience under each treatment strategy. This chapter introduces factual and counterfactual outcomes, the fundamental problem of causal inference, consistency, treatment versions, positivity, exchangeability and interference. It distinguishes individual effects from ATE, ATT, ATC, CATE, risk ratios, quantile effects and policy value; separates treatment assignment, receipt and adherence; and contrasts intention-to-treat with per-protocol questions. It derives identification under randomization and measured-confounding adjustment, explains finite-population versus superpopulation targets, and discusses cluster assignment, censoring and repeated outcomes. Worked examples show why the same experiment supports an average effect but not observed individual effects and why vague treatment versions break consistency. The lab simulates complete potential outcomes, hides one per unit, verifies that randomized difference in means recovers the known ATE and quantifies sampling uncertainty. Production guidance versions estimands and treatment protocols, monitors compliance, spillovers, overlap and outcome maturity, and keeps personalized-effect claims separate from observable predictive validation.",
+  "prerequisites": [
+    "causal-inference",
+    "experiment-design"
+  ],
+  "learningObjectives": [
+    "Define potential outcomes and translate decisions into population, treatment, horizon and effect estimands.",
+    "Distinguish individual, average, treated-population, conditional and policy effects.",
+    "Derive randomized and conditional-exchangeability identification from explicit assumptions.",
+    "Design diagnostics for consistency, adherence, positivity, interference and outcome observation."
+  ],
+  "deepSections": [
+    {
+      "id": "outcomes-estimands",
+      "title": "Potential outcomes separate intervention worlds",
+      "body": "Y_i(a) is defined by a treatment strategy, not merely a recorded label. Binary notation is convenient, but doses, timing and dynamic regimes require many or longitudinal potential outcomes. The individual contrast tau_i cannot be observed because assignment reveals one branch. Population summaries can still be identified: ATE weights the target population, ATT weights the treated population, and CATE conditions on baseline covariates. Risk differences, ratios, odds ratios, means and quantiles describe different features and are not interchangeable. A policy effect compares two assignment rules and may be the operational estimand when capacity limits treatment. Define whether the population is finite enrolled units or draws from a superpopulation. Changes in eligibility or weighting change the estimand. Avoid choosing a convenient effect measure after seeing results, especially when noncollapsible measures such as odds ratios complicate marginal and conditional comparisons."
+    },
+    {
+      "id": "consistency-versions",
+      "title": "Consistency requires a well-defined treatment mapping",
+      "body": "Consistency says that if unit i receives strategy a, its observed outcome equals Y_i(a). This seems tautological until treatment has multiple versions: an email can vary in content and send time, surgery varies by technique, and 'education' can mean different programs. If versions have different effects but are collapsed into A, the potential outcome is ambiguous unless the version mixture is part of the intervention. Treatment receipt and assignment also differ under noncompliance. Intention-to-treat compares assignment strategies and preserves randomization; per-protocol or treatment-on-treated questions need additional assumptions or instruments. Time zero aligns eligibility, assignment and follow-up. Outcomes must be defined with horizon and competing events. Measurement and censoring can break the observed connection even when treatment is well defined. Document implementation fidelity and deviations rather than interpreting one binary column as the intervention."
+    },
+    {
+      "id": "exchangeability-positivity",
+      "title": "Identification replaces missing counterfactual averages",
+      "body": "Random assignment makes treatment independent of potential outcomes according to the assignment mechanism, so treated factual outcomes estimate the population's treated potential outcomes and controls estimate control potential outcomes. Stratified or cluster randomization requires design-aware analysis. In observational data, conditional exchangeability assumes Y(a) is independent of A given measured X; this cannot be established from predictive fit and fails with unmeasured common causes. Positivity requires nonzero probability of every relevant treatment within every target covariate stratum. Structural violations mean some strategies never occur; practical violations create extreme variance. Consistency, exchangeability and positivity produce the g-formula. An interference assumption is also needed for unit-indexed Y_i(a); when one unit's treatment affects another, potential outcomes must depend on a treatment vector or exposure mapping and assignment design."
+    },
+    {
+      "id": "estimation-inference",
+      "title": "Average effects are estimable without individual causal labels",
+      "body": "In a simple randomized trial, difference in means is unbiased for an appropriate average effect under the design. Regression adjustment can improve precision when prespecified and correctly analyzed, but randomization—not the regression—provides identification. Standard errors must follow the assignment unit, clustering, stratification and repeated measurements. Missing outcomes require assumptions and sensitivity; complete-case estimates can lose the randomized comparison if observation depends on treatment and outcome risk. Observational estimators include standardization, weighting, matching and doubly robust scores, each estimating a declared population contrast. Cross-fitting reduces overfit bias for flexible nuisance functions. Confidence intervals address repeated-sample or randomization variation under the design, not ambiguity about treatment versions, unmeasured confounding or interference. Report absolute effects and baseline risk, not only relative measures."
+    },
+    {
+      "id": "heterogeneity-policy",
+      "title": "Heterogeneity is a causal prediction problem without individual labels",
+      "body": "CATE models aim to predict conditional average contrasts, not each person's realized benefit. We never observe tau_i, so ordinary prediction error against individual treatment effects is unavailable. Randomized or unconfounded data permit transformed scores, orthogonal losses and honest sample splitting to evaluate average calibration and policy value. Subgroup discovery on the same outcomes used for estimation exaggerates differences; separate discovery and estimation or use honest methods. Positivity must hold within subgroups. A policy that treats estimated high-benefit units should be evaluated against a baseline policy with cost and capacity, preferably in a randomized experiment. Report uncertainty and population support, and avoid telling individuals an effect is known precisely when the evidence identifies only a noisy conditional mean."
+    }
+  ],
+  "workedExamples": [
+    {
+      "title": "Average effect without individual effects",
+      "body": "In a randomized trial, person A reveals Y(1) and person B reveals Y(0). Neither person's counterfactual is observed, but group averages consistently estimate E[Y(1)] and E[Y(0)] under the assignment design, so their difference estimates ATE."
+    },
+    {
+      "title": "Ambiguous treatment version",
+      "body": "A study codes all notifications as treated, but urgent alerts and promotional messages have opposite effects. Unless the intervention specifies their mixture or separates versions, Y(1) is not a stable potential outcome for future deployment."
+    }
+  ],
+  "exercises": [
+    {
+      "prompt": "What population does ATT average over?",
+      "solution": "The units actually treated under the observed assignment mechanism, not automatically the full eligible population."
+    },
+    {
+      "prompt": "Why can two delivery versions violate consistency?",
+      "solution": "If both map to A=1 but produce different outcomes, Y(1) is ambiguous unless the intervention defines or averages those versions coherently."
+    },
+    {
+      "prompt": "What changes under network interference?",
+      "solution": "A unit's potential outcome depends on its own and others' assignments or an exposure mapping, so Y_i(a_i) alone is insufficient."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "compare",
+      "title": "Factual and counterfactual outcomes",
+      "left": {
+        "title": "Observed branch",
+        "items": [
+          "Assignment reveals Y(A)",
+          "Supports group averages",
+          "Outcome is measurable",
+          "Policy and adherence logged"
+        ]
+      },
+      "right": {
+        "title": "Hidden branch",
+        "items": [
+          "Alternative Y(1-A)",
+          "Never observed for same unit",
+          "Requires design assumptions",
+          "Defines the causal contrast"
+        ]
+      },
+      "caption": "Randomization balances which branch is revealed; it does not expose both branches for an individual.",
+      "afterSection": "outcomes-estimands"
+    },
+    {
+      "type": "flow",
+      "title": "From potential outcomes to evidence",
+      "items": [
+        "Define treatment strategies",
+        "Choose target effect",
+        "Align time zero and horizon",
+        "Establish exchangeability and positivity",
+        "Estimate observed-data contrast",
+        "Assess interference, missingness and transport"
+      ],
+      "caption": "Each step preserves the exact intervention and population named by the estimand.",
+      "afterSection": "exchangeability-positivity"
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "what-if-causal",
+      "contribution": "Provides potential-outcome definitions, causal contrasts, exchangeability, positivity, consistency and target-trial framing."
+    },
+    {
+      "resource": "causal-tree-paper",
+      "contribution": "Supports honest inference and the evaluation challenge for heterogeneous effects without individual causal labels."
+    },
+    {
+      "resource": "dml-paper",
+      "contribution": "Supports cross-fitted nuisance estimation for average and conditional causal parameters."
+    }
+  ]
 }

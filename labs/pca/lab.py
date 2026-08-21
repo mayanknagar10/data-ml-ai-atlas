@@ -1,14 +1,16 @@
 import numpy as np
-rng=np.random.default_rng(2); x=rng.normal(size=300); X=np.c_[x,2*x+rng.normal(0,.2,300)]
-Xc=X-X.mean(0); cov=Xc.T@Xc/(len(X)-1)
-vals,vecs=np.linalg.eigh(cov); order=np.argsort(vals)[::-1]
-W=vecs[:,order[:1]]; Z=Xc@W
-print('variance ratio',vals[order[0]]/vals.sum())
+X=np.array([[1,1.1],[2,1.9],[3,3.2],[4,3.9],[5,5.1]],float); mean=X.mean(axis=0); C=X-mean
+U,S,Vt=np.linalg.svd(C,full_matrices=False); q=1; loadings=Vt[:q].T; scores=C@loadings; recon=scores@loadings.T+mean
+explained=(S**2)/(len(X)-1); ratio=explained/explained.sum()
 
 # ---- Use it ----
 from sklearn.decomposition import PCA
-p=PCA(n_components=1).fit(X)
-print(p.explained_variance_ratio_)
+model=PCA(n_components=1,svd_solver='full').fit(X); sk_scores=model.transform(X); sk_recon=model.inverse_transform(sk_scores)
 
 # ---- Verify it ----
-assert vals[order[0]]/vals.sum()>.95
+assert np.allclose(C.mean(axis=0),0)
+assert np.allclose(loadings.T@loadings,np.eye(q))
+assert np.allclose(recon,sk_recon,atol=1e-10)
+assert np.allclose(loadings@loadings.T,model.components_.T@model.components_,atol=1e-10)
+assert abs(ratio.sum()-1)<1e-12
+assert np.mean((X-recon)**2)<np.mean((X-X.mean(axis=0))**2)

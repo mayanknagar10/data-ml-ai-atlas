@@ -7,29 +7,57 @@
     "ds",
     "as"
   ],
-  "interviewAnswer": "RDD exploits a treatment rule that changes at a cutoff. Units just above and below the threshold can be comparable if they cannot precisely manipulate the running variable and potential outcomes vary smoothly at the cutoff.",
+  "interviewAnswer": "Regression discontinuity uses a treatment rule that changes at a cutoff of a running variable. In a sharp design treatment jumps from zero to one; in a fuzzy design its probability jumps and the outcome discontinuity is divided by the treatment discontinuity for a local complier effect. Identification requires potential-outcome regression functions to be continuous at the cutoff absent treatment, no precise manipulation that sorts units around the threshold, and consistent treatment and outcome measurement. I estimate separate local linear regressions on each side with a justified bandwidth and kernel, use robust bias-corrected inference, and show a binned plot only as visualization rather than estimation. I report density and predetermined-covariate continuity checks, placebo cutoffs and bandwidth sensitivity. I avoid high-order global polynomials. The estimand is local to units near the cutoff and should not be extrapolated to distant scores without new assumptions.",
   "keyPoints": [
-    "Focus inference near cutoff.",
-    "Check manipulation and continuity.",
-    "Do not extrapolate local effects broadly without justification."
+    "RD identifies a local cutoff effect from a discontinuity, not from the overall running-variable slope.",
+    "Continuity of untreated and treated potential-outcome functions is the central identification condition.",
+    "Manipulation, sorting, other rules at the cutoff and discrete scores threaten the comparison.",
+    "Local polynomial order, bandwidth, kernel and robust bias correction determine estimation and inference.",
+    "Sharp RD targets assignment at the cutoff; fuzzy RD is a local IV for treatment compliers near the cutoff."
   ],
   "resources": [
-    "causal-mixtape"
+    "rd-book",
+    "what-if-causal",
+    "late-paper"
   ],
   "featured": false,
-  "why": "Regression Discontinuity appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
-  "intuition": "Focus inference near cutoff.",
-  "deepDive": "RDD exploits a treatment rule that changes at a cutoff. Units just above and below the threshold can be comparable if they cannot precisely manipulate the running variable and potential outcomes vary smoothly at the cutoff. Check manipulation and continuity. Do not extrapolate local effects broadly without justification. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
-  "workedExample": "Estimate scholarship impact around an eligibility-score threshold.",
+  "why": "Eligibility cutoffs in scholarships, credit, medicine and policy can create comparisons that resemble local randomization: units just above and below are similar except for treatment access. The design is visually intuitive but easily overfit. Large bandwidths compare unlike units, tiny bandwidths are noisy, arbitrary bins can manufacture jumps, and high-degree polynomials oscillate at boundaries. People may manipulate a score, or another policy may share the cutoff. A credible RD makes the assignment mechanism and local population explicit, uses boundary-aware estimation and presents falsification and sensitivity evidence alongside the effect.",
+  "intuition": "Imagine applicants with scores 69.99 and 70.01 when eligibility begins at 70. Far apart applicants differ substantially, but these two are nearly identical in score. If nobody can precisely sort and no other rule changes at 70, a sudden outcome jump at that point is evidence of the treatment effect for applicants at the margin.",
+  "deepDive": "RD is a local identification design built from continuity and a discontinuous assignment rule. Modern analysis uses separate local polynomials, data-driven bandwidths and robust bias-aware inference, with density, covariate and placebo checks. Fuzzy designs inherit local-IV assumptions and all results remain tied to the cutoff population.",
+  "workedExample": "The fitted outcome limit is 62 just below a scholarship cutoff and 67 just above. If assignment is sharp and continuity assumptions hold, the local scholarship effect is five outcome units at the cutoff.",
   "commonMistakes": [
-    "Applying the method without checking its assumptions or data-generating process.",
-    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+    {
+      "misconception": "Include the entire running-variable range for more power.",
+      "correction": "Distant units increase functional-form bias; RD estimates local limits with a defensible bandwidth."
+    },
+    {
+      "misconception": "A smooth density proves no manipulation.",
+      "correction": "It is one falsification check with limited power and does not rule out sorting or other cutoff changes."
+    },
+    {
+      "misconception": "The RD effect applies to everyone above the cutoff.",
+      "correction": "It is local to units at the threshold unless additional transport or homogeneity assumptions are justified."
+    },
+    {
+      "misconception": "Fuzzy RD estimates the effect of eligibility itself.",
+      "correction": "The reduced form estimates eligibility; dividing by receipt jump estimates a local treatment effect under IV assumptions."
+    }
   ],
   "followUps": [
-    "What assumptions does Regression Discontinuity make?",
-    "How would you validate or debug Regression Discontinuity in practice?"
+    {
+      "question": "Why prefer local linear over high-order global polynomial?",
+      "answer": "It uses nearby support, behaves better at boundaries and avoids unstable oscillation driven by distant observations."
+    },
+    {
+      "question": "What does a donut RD do?",
+      "answer": "It excludes a neighborhood around the cutoff to assess manipulation or heaping sensitivity, while changing the approximation and support."
+    },
+    {
+      "question": "What population does fuzzy RD identify?",
+      "answer": "Units near the cutoff whose treatment receipt changes because the running variable crosses the threshold."
+    }
   ],
-  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "production": "Version running-variable construction, cutoff, assignment and receipt, treatment versions, outcome horizon, bandwidth, kernel, polynomial order, clustering and exclusions. Preserve binned plots separately from estimation, density and covariate checks, placebo results, first-stage and reduced-form evidence. Monitor score heaping, manipulation, cutoff-rule changes, local sample counts and co-occurring policies. Report bias-robust uncertainty and bandwidth sensitivity, constrain claims to cutoff-supported units and retain prior policy when assignment mechanics change.",
   "visual": {
     "type": "scatter",
     "title": "Regression discontinuity",
@@ -90,6 +118,133 @@
     "yLabel": "outcome"
   },
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "math": "Let running variable R and cutoff c. Sharp treatment A=1(R>=c). The sharp RD estimand is tau_RD=lim_{r down to c}E[Y|R=r]-lim_{r up to c}E[Y|R=r], under continuity of E[Y(0)|R=r] and E[Y(1)|R=r] at c. Local linear estimation fits intercept and slope separately within bandwidth h, often with triangular weights K((R-c)/h). Fuzzy RD divides the outcome jump by lim E[A|R=r] right minus left, yielding a cutoff-local complier effect under IV assumptions. Robust bias-corrected intervals address smoothing bias not captured by conventional standard errors.",
+  "code": "nearby={h:local_rd(h)[0] for h in (.35,.5,.7)}; left=y[(r<0)&(r>-.05)].mean(); right=y[(r>=0)&(r<.05)].mean(); raw_near_jump=right-left",
+  "lab": {
+    "language": "python",
+    "goal": "Simulate a sharp threshold, estimate separate local slopes, and verify discontinuity recovery and bandwidth stability.",
+    "buildIt": "import numpy as np\nfrom sklearn.linear_model import LinearRegression\nrng=np.random.default_rng(66); n=30000; r=rng.uniform(-2,2,size=n); treatment=(r>=0).astype(float); tau=3.; y=1+1.5*r+.5*r*r+tau*treatment+rng.normal(scale=.8,size=n)\ndef local_rd(h):\n    keep=np.abs(r)<=h; rr=r[keep]; aa=treatment[keep]; yy=y[keep]; X=np.c_[aa,rr,aa*rr]; weights=np.maximum(1-np.abs(rr)/h,0); model=LinearRegression().fit(X,yy,sample_weight=weights); return model.coef_[0],keep.sum()\nestimate,n_local=local_rd(.5)",
+    "useIt": "nearby={h:local_rd(h)[0] for h in (.35,.5,.7)}; left=y[(r<0)&(r>-.05)].mean(); right=y[(r>=0)&(r<.05)].mean(); raw_near_jump=right-left",
+    "verifyIt": "assert abs(estimate-tau)<.08\nassert all(abs(v-tau)<.12 for v in nearby.values())\nassert abs(raw_near_jump-tau)<.15\nassert n_local>7000\nassert set(nearby)=={.35,.5,.7}",
+    "shipIt": "Persist score and cutoff lineage, local-support counts, bandwidth and bias-aware inference; alert on manipulation, heaping and coincident rule changes."
+  },
+  "description": "Regression discontinuity identifies a treatment effect at an assignment threshold by comparing limits of outcome functions on either side. This chapter distinguishes sharp, fuzzy, kink and local-randomization designs; derives the cutoff estimand and fuzzy Wald ratio; and states continuity, no-manipulation, exclusion and monotonicity assumptions. It develops boundary-specific local linear and quadratic regression, bandwidth and kernel choice, robust bias-corrected inference, clustered observations and discrete running variables. It explains why bins are for visualization, why global high-order polynomials are dangerous, and how density tests, predetermined covariates, placebo cutoffs, bandwidth sensitivity and donut analyses diagnose specific threats. Worked examples compute sharp and fuzzy effects and expose a second policy at the same threshold. The lab simulates a smooth running-variable response with a known discontinuity, fits separate local slopes through an interaction model and verifies effect recovery across neighboring bandwidths. Production guidance versions score construction and cutoff rules, monitors manipulation and heaping, preserves local support and prevents extrapolation beyond the margin.",
+  "prerequisites": [
+    "potential-outcomes",
+    "instrumental-variables"
+  ],
+  "learningObjectives": [
+    "Derive sharp and fuzzy RD estimands from continuity and threshold assignment.",
+    "Fit and interpret local polynomial models with bandwidth, kernel and bias-aware inference choices.",
+    "Diagnose manipulation, heaping, co-occurring policies, covariate jumps and placebo discontinuities.",
+    "Communicate the cutoff-local population and prevent unsupported extrapolation."
+  ],
+  "deepSections": [
+    {
+      "id": "assignment-identification",
+      "title": "The assignment rule creates a local comparison",
+      "body": "Record the exact running variable, cutoff, whether treatment is deterministic, and whether eligibility or receipt is the intervention. Sharp RD uses a deterministic jump in assignment; fuzzy RD uses a discontinuity in treatment probability. Identification assumes potential-outcome conditional means evolve continuously through the cutoff absent the treatment. Then any outcome jump is attributed to the treatment rule. This is weaker than requiring units be identical but depends on no other discontinuous mechanism. The cutoff effect applies to units at R=c, not the average eligible population. If the running variable is a coarse integer, asymptotic continuity and local-randomization perspectives require special treatment. Multiple cutoffs can aid validation but may represent different populations. Define time zero at assignment and ensure outcome windows are not selected by post-cutoff survival."
+    },
+    {
+      "id": "local-estimation",
+      "title": "Estimate limits at a boundary, not one global curve",
+      "body": "Center R at c and fit separate intercepts and slopes on each side within bandwidth h. The treatment indicator coefficient in a saturated local linear model estimates the intercept jump. Triangular kernels emphasize observations nearest the cutoff and are efficient in common formulations; other kernels usually matter less than bandwidth. Smaller h reduces approximation bias but increases variance, while larger h increases support and functional-form risk. Data-driven bandwidth selectors optimize an estimation criterion, but report sensitivity around the chosen value. Local quadratic fits can estimate bias or check curvature, but high-order global polynomials use distant observations and can oscillate dramatically. Do not force the same slope unless justified. Predictions and confidence intervals must use RD-specific procedures that account for boundary smoothing and bandwidth selection."
+    },
+    {
+      "id": "fuzzy-rd",
+      "title": "Fuzzy RD is an instrument at the cutoff",
+      "body": "When eligibility raises but does not determine receipt, the outcome jump is an intention-to-treat effect of crossing the cutoff. Divide it by the treatment-probability jump to estimate a local average treatment effect for units whose receipt responds to eligibility. Relevance is the first-stage discontinuity. Independence comes from local continuity or randomization assumptions; exclusion requires the cutoff to affect outcome only through the defined treatment; monotonicity excludes units who move treatment oppositely. A cutoff may change information, stigma or other benefits directly, violating exclusion. Report both jumps and weak-first-stage diagnostics. The complier population is near the cutoff and instrument-specific. If treatment intensity changes continuously rather than jumps, a regression-kink design relies on slope-change assumptions and requires separate methods."
+    },
+    {
+      "id": "falsification-checks",
+      "title": "Falsification tests target particular design failures",
+      "body": "Plot the running-variable density and inspect whether units bunch just above the cutoff, considering institutional heaping and test power. A density discontinuity can indicate manipulation, but smooth density does not prove no sorting. Predetermined covariates should not jump if the local groups are comparable; test a prespecified set and account for multiplicity. Outcomes measured before treatment should remain continuous. Placebo cutoffs reveal broad functional-form artifacts, while placebo outcomes reveal coincident mechanisms. A donut RD excludes observations closest to a potentially manipulated cutoff but changes the local data and estimand approximation; report it as sensitivity, not a preferred result chosen after inspection. Audit other eligibility rules, administrative rounding and score revisions at the same threshold."
+    },
+    {
+      "id": "scope-inference",
+      "title": "Inference and communication stay local",
+      "body": "Use robust bias-corrected confidence intervals and standard errors suited to the selected local polynomial. Cluster when multiple observations share assignment units, schools, providers or time shocks. With few mass points or clusters, asymptotic methods can be unreliable; local randomization or randomization inference may be more appropriate if a credible window and assignment mechanism exist. Show the number of observations and unique running-variable values on each side. Report estimates across reasonable bandwidths and polynomial orders without selecting the most favorable. Never extrapolate the local effect to units far from the cutoff by extending the fitted lines. Policy expansion requires effect-homogeneity assumptions or new evidence at other margins."
+    }
+  ],
+  "workedExamples": [
+    {
+      "title": "Sharp cutoff jump",
+      "body": "The fitted outcome limit is 62 just below a scholarship cutoff and 67 just above. If assignment is sharp and continuity assumptions hold, the local scholarship effect is five outcome units at the cutoff."
+    },
+    {
+      "title": "Fuzzy cutoff ratio",
+      "body": "Eligibility raises participation by 0.25 and outcome by 1.5 units. The fuzzy RD estimate is 1.5/0.25=6 units for cutoff compliers under exclusion and monotonicity."
+    }
+  ],
+  "exercises": [
+    {
+      "prompt": "Outcome jump is 4 and treatment-probability jump is 0.5. What is fuzzy RD LATE?",
+      "solution": "Eight outcome units for cutoff compliers, under the fuzzy-IV assumptions."
+    },
+    {
+      "prompt": "Why can another benefit beginning at the same cutoff invalidate RD?",
+      "solution": "The outcome discontinuity can reflect both interventions, violating attribution or fuzzy exclusion for the target treatment."
+    },
+    {
+      "prompt": "What does bandwidth sensitivity reveal?",
+      "solution": "Whether the estimated local jump depends strongly on including more distant observations and functional-form approximation."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "flow",
+      "title": "RD evidence workflow",
+      "items": [
+        "Document running variable and cutoff",
+        "Inspect local support and density",
+        "Fit separate local regressions",
+        "Use bias-aware inference",
+        "Check covariates and placebos",
+        "Report bandwidth sensitivity and local scope"
+      ],
+      "caption": "The design and local diagnostics support the jump; the plotted line alone does not.",
+      "afterSection": "falsification-checks"
+    },
+    {
+      "type": "compare",
+      "title": "Sharp and fuzzy thresholds",
+      "left": {
+        "title": "Sharp RD",
+        "items": [
+          "Assignment jumps 0 to 1",
+          "Outcome jump is effect",
+          "Local at cutoff",
+          "Needs continuity and no sorting"
+        ]
+      },
+      "right": {
+        "title": "Fuzzy RD",
+        "items": [
+          "Receipt probability jumps",
+          "Outcome jump is reduced form",
+          "Divide by first stage",
+          "Adds exclusion and monotonicity"
+        ]
+      },
+      "caption": "Both designs are local, but fuzzy RD inherits the full instrumental-variable interpretation.",
+      "afterSection": "fuzzy-rd"
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "rd-book",
+      "contribution": "Provides modern RD identification, local polynomial estimation, bias-aware inference and falsification guidance."
+    },
+    {
+      "resource": "what-if-causal",
+      "contribution": "Supports potential-outcome consistency, local causal contrasts and observational design reasoning."
+    },
+    {
+      "resource": "late-paper",
+      "contribution": "Supports the local-complier interpretation of fuzzy RD under IV assumptions."
+    }
+  ]
 }

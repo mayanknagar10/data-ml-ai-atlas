@@ -7,38 +7,185 @@
     "ds",
     "as"
   ],
-  "interviewAnswer": "Naive Bayes applies Bayes rule while assuming features are conditionally independent given the class. Despite the strong assumption, it can work surprisingly well for text and sparse features.",
+  "interviewAnswer": "Naive Bayes is a generative classifier that estimates a class prior P(y) and class-conditional feature likelihoods, then applies Bayes' rule. Its naive assumption is conditional independence of features given the class, so log posterior scores become log P(y)+Σ_j log P(x_j|y). Gaussian NB models continuous features with class-specific univariate Gaussians; multinomial and Bernoulli variants suit counts and binary events. Smoothing prevents unseen features from forcing zero likelihood. The independence assumption is often false, yet the argmax class can remain good because classification needs correct ordering rather than perfect joint probabilities. I match the likelihood to the representation, fit vocabulary and smoothing inside validation, evaluate calibration separately, and monitor priors, token or feature drift and underflow-safe log computations.",
   "keyPoints": [
-    "Conditional independence",
-    "Gaussian/Multinomial variants",
-    "Smoothing",
-    "Fast baseline"
+    "Conditional independence is P(x|y)=∏_j P(x_j|y), not marginal independence of features.",
+    "Different variants encode different data-generating assumptions; multinomial counts and Bernoulli presence are not interchangeable.",
+    "Additive smoothing handles zero counts and changes rare-feature evidence.",
+    "Log-space scoring prevents product underflow and converts evidence into additive contributions.",
+    "Good classification accuracy does not imply calibrated posterior probabilities."
   ],
   "resources": [
-    "stanford-cs229",
-    "statquest",
-    "google-mlcc"
+    "sklearn-naive-bayes",
+    "naive-bayes-optimality-paper",
+    "stanford-cs229"
   ],
   "featured": false,
-  "why": "Naive Bayes connects Bayes rule, conditional independence and simple high-dimensional classifiers.",
-  "intuition": "Estimate how likely each feature is under each class, multiply those pieces with the class prior, and choose the class with the largest posterior score.",
-  "deepDive": "The “naive” assumption is conditional independence of features given the class. Despite being unrealistic, it can work well when likelihood ratios still rank classes effectively, especially for text. Gaussian, Multinomial and Bernoulli variants use different feature likelihoods. Computation uses log probabilities to avoid underflow and turn products into sums.",
-  "math": "P(y|x) ∝ P(y) Π_j P(x_j|y)\nlog score = log P(y)+Σ_j log P(x_j|y)",
-  "workedExample": "Multinomial Naive Bayes can classify documents from token counts because word evidence combines efficiently even with thousands of sparse features.",
-  "code": "from sklearn.naive_bayes import MultinomialNB\nm=MultinomialNB(alpha=1.0).fit(X_counts,y)",
+  "why": "Naive Bayes is fast, data-efficient and exceptionally transparent for high-dimensional sparse problems. It teaches how a probabilistic model becomes a decision rule, why likelihood choice matters, how priors shift decisions and why smoothing is more than a numeric patch. It also provides an important lesson in misspecification: correlated features can double-count evidence and ruin probability estimates, while class labels may still be ranked correctly. This separation between decision accuracy and probability fidelity recurs across machine learning. The model supports streaming count updates, compact deployment and per-feature log-evidence explanations, making it a valuable baseline for text, event and categorical data. Its simplicity does not remove pipeline risk: vocabulary leakage, duplicated features, rare categories, shifted class priors and unsafe raw-text logging can dominate the algorithm. A strong practitioner can derive the scores, select the appropriate variant and recognize when independence violations matter operationally.",
+  "intuition": "A spam filter asks how common each class is and how compatible the observed words are with each class. If 'invoice' is common in legitimate mail and 'prize' is common in spam, each word adds evidence to a running log score. The model acts as though words become independent after class is known. That is rarely literal—'New' and 'York' co-occur—but the accumulated score may still order classes correctly. Repeating correlated synonyms can count the same underlying fact several times and create extreme confidence. Smoothing reserves a little probability for words absent from one class's training documents so one new word does not annihilate the whole product.",
+  "deepDive": "Naive Bayes turns a class-conditional generative model into a linear additive score in transformed feature space. Its speed comes from estimating low-dimensional sufficient statistics separately. Reliability depends on matching likelihood to representation, smoothing rare events, using log arithmetic, validating probability calibration and preserving vocabulary, prior and count semantics from training through serving.",
+  "math": "Bayes gives P(y=c|x)∝P(y=c)P(x|y=c). Under conditional independence, log score_c=log π_c+Σ_j log P(x_j|c). Multinomial NB estimates θ_cj=(N_cj+α)/(N_c+αd) and scores log π_c+Σ_j x_j log θ_cj. Bernoulli NB also includes absent-feature terms. Gaussian NB uses log π_c-0.5Σ_j[log(2πσ_cj²)+(x_j-μ_cj)²/σ_cj²]. Predict argmax_c score_c; use log-sum-exp to normalize if probabilities are required.",
+  "workedExample": "Spam has 8 occurrences of 'prize' among 100 tokens; legitimate mail has 0 among 120. With vocabulary size 20 and α=1, probabilities are 9/120=0.075 and 1/140≈0.0071. One 'prize' contributes log(0.075/0.0071)≈2.36 to spam-versus-legitimate log odds, strong but finite. Without smoothing, legitimate likelihood would be zero and the token would dominate absolutely.",
+  "code": "from sklearn.naive_bayes import MultinomialNB\nmodel=MultinomialNB(alpha=alpha).fit(X,y)\nsk_log_prob=model.predict_log_proba(X); sk_pred=model.predict(X)",
   "commonMistakes": [
-    "Saying features must be marginally independent.",
-    "Multiplying tiny probabilities directly instead of using logs.",
-    "Choosing Gaussian NB for arbitrary count data without modeling logic."
+    {
+      "misconception": "Naive Bayes assumes features are independent in the entire dataset.",
+      "correction": "It assumes conditional independence within each class, which is a different and still often unrealistic statement."
+    },
+    {
+      "misconception": "Laplace smoothing is only to avoid a divide-by-zero error.",
+      "correction": "It changes estimated likelihoods by adding prior mass and controls the strength of rare-feature evidence."
+    },
+    {
+      "misconception": "High classification accuracy validates posterior probabilities.",
+      "correction": "Argmax decisions can be correct under misspecification while probabilities are overconfident. Evaluate calibration separately."
+    },
+    {
+      "misconception": "Bernoulli and multinomial NB are interchangeable for text.",
+      "correction": "Bernoulli models presence and absence; multinomial models event counts. Repeated words and absent words contribute differently."
+    }
   ],
   "followUps": [
-    "Why can Naive Bayes work despite the independence assumption?",
-    "Gaussian vs Multinomial NB?",
-    "What does smoothing do?",
-    "How do priors affect predictions?"
+    {
+      "question": "Why does Naive Bayes work despite dependence?",
+      "answer": "Classification only needs posterior ordering. Dependence-induced errors can cancel or leave the decision boundary correct even while probability estimates are wrong."
+    },
+    {
+      "question": "Why use log probabilities?",
+      "answer": "Products of many small probabilities underflow. Logs convert products to stable sums and expose additive feature evidence."
+    },
+    {
+      "question": "How would you handle class-prior shift?",
+      "answer": "Estimate and adjust priors only with a defensible shift model, then validate labels, calibration and thresholds on recent representative data."
+    }
   ],
-  "production": "Naive Bayes is fast and useful as a sparse baseline; calibration and distribution shift should still be checked.",
+  "production": "Version the tokenizer or field encoder, vocabulary and unknown policy, class mapping, likelihood variant, α or variance smoothing, prior policy, sufficient statistics, training cutoff and numeric precision. Enforce nonnegative inputs for count models and known category domains. Test empty, constant, unseen and very long inputs and verify finite log scores and normalized probabilities across runtimes. Monitor class prevalence, length, token and category distributions, unknown rate, score margins, prediction distribution, delayed error and calibration. Limit repeated-feature or document-length influence only through validated transformations. Protect raw text, token traces and counts because they can expose sensitive content. Gate incremental updates with provenance and poisoning checks, canary statistic snapshots, retain the previous snapshot and provide a prior-only or rule-based fallback when features or counts fail.",
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "lab": {
+    "language": "python",
+    "goal": "Implement multinomial Naive Bayes in log space, compare it with scikit-learn, and verify smoothing and normalization.",
+    "buildIt": "import numpy as np\nX=np.array([[3,0,1,0],[2,0,1,0],[0,2,0,2],[0,3,0,1],[1,0,0,0],[0,1,0,1]],float); y=np.array([0,0,1,1,0,1]); alpha=1.0\nclasses=np.unique(y); class_count=np.array([(y==c).sum() for c in classes],float)\nfeature_count=np.array([X[y==c].sum(axis=0) for c in classes])\nlog_prior=np.log(class_count/class_count.sum())\nlog_theta=np.log((feature_count+alpha)/(feature_count.sum(axis=1,keepdims=True)+alpha*X.shape[1]))\ndef log_scores(Q): return np.asarray(Q)@log_theta.T+log_prior\ndef normalize(scores):\n    shifted=scores-scores.max(axis=1,keepdims=True); p=np.exp(shifted); return p/p.sum(axis=1,keepdims=True)\nscratch_scores=log_scores(X); scratch_prob=normalize(scratch_scores); scratch_pred=classes[scratch_scores.argmax(axis=1)]",
+    "useIt": "from sklearn.naive_bayes import MultinomialNB\nmodel=MultinomialNB(alpha=alpha).fit(X,y)\nsk_log_prob=model.predict_log_proba(X); sk_pred=model.predict(X)",
+    "verifyIt": "assert np.array_equal(scratch_pred,sk_pred)\nassert np.allclose(np.log(scratch_prob),sk_log_prob)\nassert np.allclose(scratch_prob.sum(axis=1),1)\nassert np.isfinite(log_theta).all()\nassert (np.exp(log_theta)>0).all()\nperm=np.array([3,1,4,0,5,2]); assert np.array_equal(classes[log_scores(X[perm]).argmax(axis=1)],scratch_pred[perm])",
+    "shipIt": "Persist vocabulary, smoothing, priors and counts; test log-space parity and unknown inputs; monitor priors, feature drift and calibration; protect raw content and retain a prior-only fallback."
+  },
+  "description": "Naive Bayes combines class priors and feature likelihoods under a conditional-independence approximation. This chapter derives posterior log scores and distinguishes Gaussian, multinomial, Bernoulli, categorical and complement variants. It explains sufficient statistics, Laplace and Lidstone smoothing, absent-feature evidence, class priors, log-sum-exp normalization, correlated-feature double counting, vocabulary leakage and probability calibration. Worked examples calculate smoothed token odds and show how duplicated correlated features make a posterior unjustifiably extreme. The lab implements multinomial Naive Bayes from token counts, compares log probabilities and predictions with scikit-learn, and verifies normalization, smoothing and permutation invariants. Production coverage includes streaming count updates, vocabulary and tokenizer versioning, prior shift, numeric precision, unknown categories, privacy-sensitive text, feature drift, canaries and rollback. The key distinction is maintained throughout: a misspecified generative model may still draw a useful classification boundary, but its posterior numbers should not be treated as trustworthy risk without independent evidence. You will learn how likelihood assumptions define legal inputs, why feature absence can itself be evidence, and how a compact count model can fail when its vocabulary or deployment prevalence changes.",
+  "prerequisites": [
+    "probability-basics",
+    "independence"
+  ],
+  "learningObjectives": [
+    "Derive Naive Bayes posterior scores from priors and conditionally independent likelihoods.",
+    "Select Gaussian, multinomial, Bernoulli, categorical or complement assumptions for a representation.",
+    "Apply smoothing and stable log arithmetic and explain their effect on rare evidence.",
+    "Evaluate classification, probability calibration and production drift as separate concerns."
+  ],
+  "deepSections": [
+    {
+      "id": "generative-decision",
+      "title": "From a generative model to a classifier",
+      "body": "A generative classifier specifies P(y=c)=π_c and P(x|y=c), then chooses the class with largest posterior. The evidence denominator P(x) is shared across classes, so classification needs only unnormalized scores. Naive Bayes factorizes the class-conditional joint distribution into one factor per feature. The assumption is conditional: two words may be marginally associated because both are common in spam, yet the model assumes their remaining dependence disappears once spam status is fixed. Estimation then reduces to class counts and feature-specific sufficient statistics, which is why the method trains quickly with high-dimensional sparse data. The argmax boundary can be correct even when the joint distribution is wrong because probability errors may cancel or preserve ordering. However, normalized posteriors may become overconfident. State whether the product output is used only to rank or label, or whether a downstream decision treats it as calibrated risk."
+    },
+    {
+      "id": "likelihood-variants",
+      "title": "The feature representation chooses the likelihood",
+      "body": "Multinomial NB treats each sample as event counts allocated across a vocabulary and is a classic text model. Bernoulli NB models whether each event is present and includes evidence from absence, so repeated counts do not increase evidence in the same way. Complement NB estimates weights from other classes and can be robust for imbalanced text. Categorical NB treats each input field as a category with its own conditional table. Gaussian NB models every continuous feature with a class-specific univariate mean and variance; conditional independence implies diagonal class covariance. Negative values are invalid for raw multinomial counts, although transformed nonnegative features are sometimes used pragmatically and must be validated empirically. Binning continuous variables discards information and makes thresholds part of the model. Match the variant to how data are generated and encoded, then preserve that encoder exactly at serving."
+    },
+    {
+      "id": "smoothing-numerics",
+      "title": "Smoothing and log arithmetic make finite data usable",
+      "body": "Without smoothing, a token unseen in class c has θ_cj=0, making the entire document likelihood zero regardless of all other evidence. Add-α smoothing adds a pseudo-count to every vocabulary item and increases the denominator accordingly. Larger α pulls conditional probabilities toward uniformity and weakens rare extreme evidence; select it within validation. Smoothing must include the exact deployed vocabulary size, including unknown-token policy. Multiplying hundreds of probabilities underflows floating-point numbers, so compute log priors plus weighted log likelihoods. To return normalized probabilities, subtract the maximum score and use log-sum-exp. Variance smoothing in Gaussian NB prevents division by zero for near-constant features but has modeling consequences. Unit tests should cover empty documents, unseen categories, duplicate tokens, all-zero rows, constant continuous features and finite normalized outputs."
+    },
+    {
+      "id": "dependence-calibration",
+      "title": "Misspecification affects confidence before labels",
+      "body": "Correlated features can repeat evidence. If two near-duplicate signals each favor a class, the independence product effectively counts both as separate observations, producing extreme odds. Removing duplicates, using n-gram choices carefully, selecting features or moving to a discriminative linear model can help. Nevertheless, zero-one classification can remain strong even under dependence because only the sign of log-odds matters. Evaluate accuracy, F1 or ranking under the task, and evaluate log loss, Brier score and reliability separately if probabilities are consumed. Class priors estimated from training prevalence may be wrong after deployment shift. Prior correction is possible only under assumptions such as stable class-conditional feature distributions. Class weights, resampling and manually set priors change score meaning. Thresholds should reflect actual costs and capacity, not be confused with a change to the generative model."
+    },
+    {
+      "id": "streaming-production",
+      "title": "Operate sufficient statistics with strict lineage",
+      "body": "Naive Bayes can update class and feature counts incrementally, but online updates need immutable tokenizer and category schemas or an explicit migration. Version vocabulary, hashing seed, normalization, α, prior policy, sufficient-statistic window and numeric dtype. A changing vocabulary changes every smoothed denominator. Guard unknown categories and nonnegative-count requirements. Monitor class prior, document length, token or category frequency, unknown rate, score margin, prediction prevalence, delayed loss and calibration. Sudden repeated tokens can create adversarially large evidence; clip or normalize only under a validated contract. Raw text and token logs can contain secrets, so minimize, redact and restrict them. Canary count snapshots and preserve the prior statistics for rollback. A fallback may be a prior-only predictor or a reviewed rule system when the tokenizer, feature feed or count store is unhealthy."
+    }
+  ],
+  "workedExamples": [
+    {
+      "title": "Smoothed token evidence",
+      "body": "Spam has 8 occurrences of 'prize' among 100 tokens; legitimate mail has 0 among 120. With vocabulary size 20 and α=1, probabilities are 9/120=0.075 and 1/140≈0.0071. One 'prize' contributes log(0.075/0.0071)≈2.36 to spam-versus-legitimate log odds, strong but finite. Without smoothing, legitimate likelihood would be zero and the token would dominate absolutely."
+    },
+    {
+      "title": "Duplicated evidence breaks confidence",
+      "body": "A credit dataset includes debt_ratio and an exact copied field. Each independently favors default by likelihood ratio 3. Naive Bayes multiplies them and contributes ratio 9 even though only one fact was observed. The predicted class may stay correct, but the posterior becomes too extreme. Deduplicate the pipeline, compare with logistic regression and evaluate reliability before using the score for pricing or limits."
+    }
+  ],
+  "exercises": [
+    {
+      "prompt": "Why does an unseen word cause trouble without smoothing?",
+      "solution": "Its estimated class likelihood is zero, so multiplying feature likelihoods makes the whole class likelihood zero regardless of other evidence."
+    },
+    {
+      "prompt": "What is the Gaussian NB covariance assumption?",
+      "solution": "Within each class, features are modeled as independent Gaussians, giving a diagonal class-specific covariance matrix."
+    },
+    {
+      "prompt": "A duplicated token feature changes confidence but not labels. Is the model validated?",
+      "solution": "Only for that label sample. The posterior is misspecified; remove duplication and assess log loss and calibration before probability-based decisions."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "flow",
+      "title": "Naive Bayes scoring",
+      "items": [
+        "Estimate class priors",
+        "Estimate smoothed feature likelihoods",
+        "Encode a new sample",
+        "Add log evidence by class",
+        "Normalize with log-sum-exp if needed",
+        "Apply a threshold or argmax"
+      ],
+      "caption": "The independence approximation turns joint evidence into an additive class score.",
+      "afterSection": "generative-decision"
+    },
+    {
+      "type": "compare",
+      "title": "Multinomial and Bernoulli text models",
+      "left": {
+        "title": "Multinomial",
+        "items": [
+          "Models token counts",
+          "Repetition adds evidence",
+          "Uses count totals",
+          "Common bag-of-words model"
+        ]
+      },
+      "right": {
+        "title": "Bernoulli",
+        "items": [
+          "Models presence and absence",
+          "Repeated token is still present",
+          "Absence contributes evidence",
+          "Binary event representation"
+        ]
+      },
+      "caption": "The likelihood must match what each feature value represents.",
+      "afterSection": "likelihood-variants"
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "sklearn-naive-bayes",
+      "contribution": "Verifies variant definitions, smoothing equations and current estimator behavior."
+    },
+    {
+      "resource": "naive-bayes-optimality-paper",
+      "contribution": "Supports the distinction between misspecified probabilities and potentially correct zero-one decisions."
+    },
+    {
+      "resource": "stanford-cs229",
+      "contribution": "Grounds the generative-classifier derivation and log-score formulation."
+    }
+  ]
 }

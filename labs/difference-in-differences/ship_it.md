@@ -1,3 +1,3 @@
 # Ship it
 
-A real DiD study needs many units/time periods, pre-trend diagnostics, explicit treatment timing, robust/clustered uncertainty and sensitivity to composition changes.
+Persist cohort and event-time manifests, raw trend and group-time outputs, assignment-level clusters and composition checks; report sensitivity to anticipation and trend violations.

@@ -7,31 +7,185 @@
     "ds",
     "as"
   ],
-  "interviewAnswer": "AdaBoost sequentially focuses new weak learners on examples previous learners misclassified, then combines learners with performance-based weights. It illustrates boosting before gradient-boosted trees.",
+  "interviewAnswer": "AdaBoost builds a weighted vote of weak binary classifiers. It begins with uniform observation weights, fits a learner to minimize weighted error ε_t, assigns it vote α_t=0.5 log((1-ε_t)/ε_t), then multiplies weights by exp(-α_t y_i h_t(x_i)) so misclassified points receive more attention. The final score is Σ_t α_t h_t(x), usually thresholded at zero. For a learner better than random, α is positive; perfect and chance-level cases need explicit handling. AdaBoost minimizes exponential loss stagewise and can keep improving margins after training error reaches zero, but exponential weighting is sensitive to mislabeled points and outliers. I validate depth, rounds, learning rate, weights and thresholds with leakage-safe splits and monitor margins, calibration, subgroup error and weight concentration.",
   "keyPoints": [
-    "Weak learners combine into strong ensemble.",
-    "Misclassified points receive more emphasis.",
-    "Sensitive to noisy labels/outliers in some settings."
+    "Training weights are an optimization device that changes which observations the next weak learner emphasizes.",
+    "A learner's vote grows with its edge over random guessing; chance-level learners contribute no useful direction.",
+    "The multiplicative update is equivalent to greedy reduction of exponential loss.",
+    "Margins help explain continued improvement after zero training error, but they are not calibrated probabilities.",
+    "Label noise and outliers can capture extreme weight and destabilize later rounds."
   ],
   "resources": [
-    "isl",
-    "stanford-stats202"
+    "adaboost-paper",
+    "sklearn-ensembles",
+    "isl"
   ],
   "featured": false,
-  "why": "AdaBoost is a recurring foundation across data science and machine learning because it affects both theoretical correctness and practical system behavior.",
-  "intuition": "Weak learners combine into strong ensemble.",
-  "deepDive": "AdaBoost sequentially focuses new weak learners on examples previous learners misclassified, then combines learners with performance-based weights. It illustrates boosting before gradient-boosted trees. Misclassified points receive more emphasis. Sensitive to noisy labels/outliers in some settings. The interview-level skill is not merely recalling the definition: explain the assumptions, what diagnostic evidence you would inspect, and what alternative you would choose when those assumptions fail.",
-  "workedExample": "Combine many decision stumps while increasing weight on examples the ensemble keeps missing.",
+  "why": "AdaBoost is the canonical example of converting weak rules into a strong classifier through adaptive reweighting. Its derivation connects online multiplicative weights, ensemble voting, margins and stagewise loss minimization. Unlike bagging, its learners are dependent: each round is trained on the error pattern left by the current ensemble. That makes the algorithm easy to reason about and easy to misuse. Sample weights can concentrate on informative boundaries or on irreducible label errors; weak learners must support weighting correctly; multiclass variants change the formula; and raw ensemble scores do not become probabilities merely because their sign is accurate. Understanding AdaBoost clarifies the broader idea of boosting while revealing why gradient boosting generalized it to other losses. It is also a useful production baseline when small stumps, compact artifacts and fast inference matter, provided weight concentration and data quality are audited.",
+  "intuition": "A committee reviews mistakes after every round. Initially every case counts equally. A rule that performs better than a coin receives a vote proportional to its reliability. Cases it misses become louder in the next meeting, while correctly handled cases become quieter. Later rules specialize in the remaining hard regions. The final answer is a confidence-weighted vote, not the last rule. If one case is mislabeled or impossible, it can keep shouting louder and pull the committee toward noise. Learning-rate shrinkage and robust data practices limit how aggressively each round reacts.",
+  "deepDive": "AdaBoost is an adaptive stagewise ensemble whose exponential objective produces a closed-form vote and multiplicative sample-weight update. Its success depends on a weak learner with positive edge and on hard examples being informative rather than corrupted. Evaluation must distinguish signed margins, labels, probability calibration and operational thresholds, while production must preserve weight, label and weak-learner semantics exactly.",
+  "workedExample": "Four observations start at weight 0.25. A stump misses one, so ε=0.25 and α=0.5 log(0.75/0.25)=0.5493. Before normalization, three correct weights become 0.25e^-0.5493≈0.1443 and the missed weight becomes 0.25e^0.5493≈0.4330. The total is about 0.866, so normalized correct weights are 1/6 each and the missed case has weight 1/2. The next learner spends half its objective on that case.",
   "commonMistakes": [
-    "Using the concept mechanically without checking assumptions or data semantics.",
-    "Reporting one metric/result without examining uncertainty, slices or failure modes."
+    {
+      "misconception": "Misclassified points are simply resampled more often in every implementation.",
+      "correction": "The core algorithm changes weights; a weak learner may consume weights directly or a variant may resample. These are not identical in general."
+    },
+    {
+      "misconception": "A large positive ensemble score is a calibrated probability.",
+      "correction": "It is an additive margin under exponential training loss. Calibrate and validate probabilities separately."
+    },
+    {
+      "misconception": "More rounds cannot hurt after training error is zero.",
+      "correction": "Margins may improve on clean data, but noise, adaptive validation reuse and operational cost can still worsen generalization or deployment."
+    },
+    {
+      "misconception": "AdaBoost and random forests differ only in tree count.",
+      "correction": "Forests train randomized trees largely independently and average them; AdaBoost trains dependent learners against adaptive error weights."
+    }
   ],
   "followUps": [
-    "What assumptions or limitations does AdaBoost have?",
-    "How would you validate AdaBoost on a real dataset?"
+    {
+      "question": "Why must the weak learner beat chance?",
+      "answer": "For binary error below 0.5, alpha is positive and the learner provides a useful direction. Chance gives zero vote; worse than chance should be inverted or rejected."
+    },
+    {
+      "question": "What does learning rate do?",
+      "answer": "It shrinks each alpha contribution, slowing adaptation and usually requiring more rounds; it must be tuned jointly with ensemble size."
+    },
+    {
+      "question": "Why is AdaBoost sensitive to noise?",
+      "answer": "Exponential loss and multiplicative updates assign rapidly growing influence to confidently misclassified examples, including irreducible errors."
+    }
   ],
-  "production": "In production, make assumptions explicit, validate on representative slices, compare with a simple baseline and monitor the signals that can drift.",
+  "production": "Version preprocessing, label mapping, initial weights, base-estimator type and settings, weighted-fit behavior, random seed, learning rate, error clipping, rounds, multiclass rule, calibration and threshold. Test one-round updates against a hand calculation and assert finite normalized weights and deterministic scores. Benchmark size and tail latency. For every retrain, record per-round error, alpha, margin distribution, maximum weight and effective sample size; investigate concentration before promotion. Monitor serving features, scores, prevalence, delayed loss, calibration and subgroup actions. Protect row-level hard-example reports because they may reveal sensitive records. Canary replacements, keep the prior artifact and maintain a simple fallback. Roll back on schema, weight, latency, calibration or safety failures, not just headline accuracy.",
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "math": "For y_i,h_t(x_i)∈{-1,+1} and normalized weights w_i^(t), weighted error ε_t=Σ_i w_i 1[y_i≠h_t(x_i)]. Set α_t=0.5 log((1-ε_t)/ε_t), then w_i^(t+1)=w_i^(t) exp(-α_t y_i h_t(x_i))/Z_t. The additive score F_T(x)=Σ_t α_t h_t(x) and prediction sign(F_T). The update follows stagewise minimization of Σ_i exp(-y_i F(x_i)). A learning rate scales α_t. Binary formulas require adaptation for multiclass SAMME-style algorithms.",
+  "code": "from sklearn.ensemble import AdaBoostClassifier\nfrom sklearn.tree import DecisionTreeClassifier\nmodel=AdaBoostClassifier(estimator=DecisionTreeClassifier(max_depth=1,random_state=0),n_estimators=8,learning_rate=1.0,algorithm='SAMME',random_state=0).fit(X[:,None],(y==1).astype(int))\nsk_pred=np.where(model.predict(X[:,None])==1,1,-1)",
+  "lab": {
+    "language": "python",
+    "goal": "Implement binary AdaBoost with weighted stumps, compare with scikit-learn, and verify votes, normalization and error reduction.",
+    "buildIt": "import numpy as np\nX=np.arange(10,dtype=float); y=np.array([-1,-1,1,1,-1,-1,1,1,1,1])\ndef best_stump(x,y,w):\n    best=None\n    for t in (np.unique(x)[:-1]+np.unique(x)[1:])/2:\n        for polarity in (1,-1):\n            pred=np.where(x<=t,-1,1)*polarity; err=float(w[pred!=y].sum())\n            if best is None or err<best[0]: best=(err,float(t),polarity,pred)\n    return best\nw=np.full(len(y),1/len(y)); learners=[]; weight_sums=[]\nfor _ in range(8):\n    err,t,p,base_pred=best_stump(X,y,w); err=np.clip(err,1e-12,1-1e-12); alpha=.5*np.log((1-err)/err)\n    learners.append((t,p,float(alpha))); w*=np.exp(-alpha*y*base_pred); w/=w.sum(); weight_sums.append(float(w.sum()))\ndef score(q):\n    return sum(a*(np.where(np.asarray(q)<=t,-1,1)*p) for t,p,a in learners)\nscratch_pred=np.where(score(X)>=0,1,-1)",
+    "useIt": "from sklearn.ensemble import AdaBoostClassifier\nfrom sklearn.tree import DecisionTreeClassifier\nmodel=AdaBoostClassifier(estimator=DecisionTreeClassifier(max_depth=1,random_state=0),n_estimators=8,learning_rate=1.0,algorithm='SAMME',random_state=0).fit(X[:,None],(y==1).astype(int))\nsk_pred=np.where(model.predict(X[:,None])==1,1,-1)",
+    "verifyIt": "assert all(abs(s-1)<1e-12 for s in weight_sums)\nassert all(np.isfinite(a) for _,_,a in learners)\nassert (scratch_pred==y).mean()>=0.9\nassert (sk_pred==y).mean()>=0.9\nassert np.unique(scratch_pred).size==2\nassert np.isfinite(score(X)).all()",
+    "shipIt": "Freeze label, weight and learner semantics; log round errors, margins and effective sample size; calibrate independently; monitor drift and latency; retain a simple fallback and prior ensemble."
+  },
+  "description": "AdaBoost creates a strong binary classifier by repeatedly fitting weak learners to adaptively weighted observations and combining them with reliability-based votes. This chapter derives weighted error, the closed-form alpha vote, the multiplicative update, exponential loss and signed margins. It contrasts AdaBoost with bagging and gradient boosting, explains stumps, learning rate, round count, multiclass extensions, sample-weight contracts, class imbalance, label noise, outliers, calibration and early stopping. Worked examples calculate one complete weight update and show how a mislabeled case can dominate later rounds. The lab implements weighted decision stumps and binary AdaBoost from scratch, compares it with scikit-learn and verifies normalization, finite votes and training improvement. Production guidance versions label encoding, weak-learner and weight semantics, monitors margin and weight concentration, evaluates threshold and calibration separately, and defines canaries, fallbacks and rollback. The method's central strength and weakness are the same: it refuses to ignore repeatedly misclassified observations, whether they represent a valuable hard boundary or corrupt data.",
+  "prerequisites": [
+    "decision-trees",
+    "expectation-variance"
+  ],
+  "learningObjectives": [
+    "Derive AdaBoost's learner vote and multiplicative observation-weight update.",
+    "Explain its exponential-loss and margin interpretations and contrast it with bagging.",
+    "Diagnose weak-learner, chance-error, label-noise and class-weight failure modes.",
+    "Evaluate and deploy boosted votes with explicit calibration, threshold and monitoring layers."
+  ],
+  "deepSections": [
+    {
+      "id": "weighted-round",
+      "title": "One boosting round changes the training distribution",
+      "body": "Represent labels and weak predictions as ±1. At round t, fit a base classifier using the current normalized observation weights and compute its weighted error. A classifier with error below 0.5 has positive edge and receives positive vote α; error exactly 0.5 gives zero vote, and error above 0.5 should be inverted when the hypothesis class permits or rejected. Perfect error zero makes the idealized vote infinite, so implementations clip errors or stop. The update multiplies each weight by exp(-α y h): correctly classified examples have y h=+1 and shrink, while errors have y h=-1 and grow. Normalization Z makes weights sum to one. A base estimator that silently ignores sample_weight breaks the algorithm. Duplicating rows is not always equivalent because preprocessing and learner behavior may differ. Log weight, error and effective sample size each round for diagnosis."
+    },
+    {
+      "id": "loss-margin",
+      "title": "Exponential loss explains the update and the sensitivity",
+      "body": "The ensemble score F is a real number. Exponential loss exp(-yF) decays rapidly for positive margin yF and grows rapidly for negative margin. Holding previous learners fixed and adding αh yields the AdaBoost vote as the step that minimizes this loss. This view connects AdaBoost to functional optimization. Training classification error can reach zero while exponential loss continues decreasing by enlarging margins, which helps explain continued generalization in some clean problems. But exponential growth means a confidently wrong or mislabeled example can dominate. The signed margin is useful for comparing confidence and spotting a heavy negative tail, yet it is not a posterior probability and its scale depends on rounds and learning rate. Robust boosting variants or different losses may be preferable when label noise is material; data correction is better when the label is demonstrably wrong."
+    },
+    {
+      "id": "capacity-variants",
+      "title": "Weak-learner capacity and multiclass details matter",
+      "body": "Decision stumps are common because each round adds one threshold and interaction complexity grows through the ensemble. Deeper trees can correct richer patterns per round but may reduce the useful weak-learning behavior and overfit weights. Number of estimators and learning rate interact: shrinking α generally needs more rounds. Weighted class imbalance can be encoded through initial weights or learner weights, but this changes score interpretation and should be distinguished from threshold adjustment. Binary discrete AdaBoost uses ±1 votes. Multiclass SAMME changes the vote with a log(K-1) term; real-valued variants use probability estimates and have different assumptions and library support. Verify the exact current implementation rather than assuming every AdaBoostClassifier follows the binary derivation. Track deterministic seeds, tie handling and error clipping because small differences can alter all subsequent weights."
+    },
+    {
+      "id": "evaluation-noise",
+      "title": "Hard examples require investigation, not admiration",
+      "body": "Use grouped or temporal validation and fit preprocessing within each training fold. Tune base depth, minimum leaf mass, learning rate and rounds without touching the final test. Compare training and validation error, exponential loss, margin distributions and concentration of sample weights. A shrinking effective sample size means a handful of rows drive learning; inspect them for label errors, duplicates, rare but valid cohorts and upstream anomalies. Do not delete hard rows simply to improve score. Evaluate ranking, threshold metrics, calibration and subgroup outcomes under deployment prevalence. If probabilities matter, calibrate on independent data. Compare against a stump, logistic regression, random forest and gradient boosting. AdaBoost explanations aggregate many conditional rules and are predictive, not causal. Repeated validation reveals sensitivity to sample composition that one split hides."
+    },
+    {
+      "id": "serving-contract",
+      "title": "Operate the ensemble and its adaptive lineage",
+      "body": "Version label encoding, initial sample and class weights, preprocessing, base estimator, random seed, error clipping, learning rate, round count, multiclass algorithm, calibration and threshold. Unit-test ±1 or class-index mapping because a sign mismatch reverses the update. Benchmark artifact size and latency proportional to learner count. Monitor feature drift, raw score and margin distributions, predicted prevalence, delayed loss, calibration, subgroup actions and the training-time weight-concentration diagnostics for each retrain. A sudden concentration spike often indicates corrupted labels or changed feature availability. Canary new ensembles, retain the prior model and provide a simple linear or rule-based fallback. Roll back for schema mismatch, resource breaches, calibration loss or decision harm even if aggregate accuracy remains similar."
+    }
+  ],
+  "workedExamples": [
+    {
+      "title": "One complete weight update",
+      "body": "Four observations start at weight 0.25. A stump misses one, so ε=0.25 and α=0.5 log(0.75/0.25)=0.5493. Before normalization, three correct weights become 0.25e^-0.5493≈0.1443 and the missed weight becomes 0.25e^0.5493≈0.4330. The total is about 0.866, so normalized correct weights are 1/6 each and the missed case has weight 1/2. The next learner spends half its objective on that case."
+    },
+    {
+      "title": "A wrong label captures the ensemble",
+      "body": "A duplicated transaction has identical features to twenty negative cases but is labeled positive. No stump can isolate it without harming the group. Its weight grows round after round, effective sample size collapses and validation margins worsen. Investigation finds a join error. Correcting lineage improves performance more safely than adding deeper learners to memorize the contradiction."
+    }
+  ],
+  "exercises": [
+    {
+      "prompt": "Compute alpha for weighted error 0.2.",
+      "solution": "alpha=0.5 log(0.8/0.2)=0.5 log 4≈0.6931."
+    },
+    {
+      "prompt": "What happens at weighted error 0.5?",
+      "solution": "Alpha is zero, so the learner adds no direction and does not change relative weights."
+    },
+    {
+      "prompt": "Why inspect effective sample size of weights?",
+      "solution": "A low value reveals that a few cases dominate later rounds, which may represent useful hard examples, noise, duplicates or corruption."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "flow",
+      "title": "One AdaBoost round",
+      "items": [
+        "Fit using current weights",
+        "Measure weighted error",
+        "Compute learner vote",
+        "Increase weight on errors",
+        "Decrease weight on correct cases",
+        "Normalize and repeat"
+      ],
+      "caption": "Every round changes both the ensemble score and the effective training distribution.",
+      "afterSection": "weighted-round"
+    },
+    {
+      "type": "compare",
+      "title": "Independent and adaptive ensembles",
+      "left": {
+        "title": "Random forest",
+        "items": [
+          "Trees largely independent",
+          "Bootstrap and feature randomness",
+          "Average for variance reduction",
+          "Shared bias remains"
+        ]
+      },
+      "right": {
+        "title": "AdaBoost",
+        "items": [
+          "Learners sequentially dependent",
+          "Reweights current errors",
+          "Weighted additive vote",
+          "Noise can attract weight"
+        ]
+      },
+      "caption": "Bagging decorrelates learners; boosting adapts each learner to the current committee.",
+      "afterSection": "capacity-variants"
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "adaboost-paper",
+      "contribution": "Provides the multiplicative-weight and boosting derivation."
+    },
+    {
+      "resource": "sklearn-ensembles",
+      "contribution": "Verifies current estimator, multiclass and base-learner behavior."
+    },
+    {
+      "resource": "isl",
+      "contribution": "Supports the ensemble, margin and validation treatment."
+    }
+  ]
 }

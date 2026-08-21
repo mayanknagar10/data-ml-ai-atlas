@@ -1,6 +1,6 @@
 # Probability Calibration — Code Lab
 
-Measure and improve probability calibration.
+Distort a well-ranked score, fit sigmoid calibration on separate data, and verify held-out probability improvement without ranking change.
 
 ## 1. Build it
 

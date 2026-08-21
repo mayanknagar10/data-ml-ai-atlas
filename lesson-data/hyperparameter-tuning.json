@@ -7,37 +7,64 @@
     "ds",
     "mle"
   ],
-  "interviewAnswer": "Hyperparameter tuning searches settings not learned directly by model fitting. Random search is often more efficient than exhaustive grids in high-dimensional spaces; Bayesian optimization helps when evaluations are expensive.",
+  "interviewAnswer": "Hyperparameter tuning searches choices that are not learned by the estimator's ordinary fit, such as regularization, tree depth or learning rate. I first define a leakage-safe pipeline, a deployment-faithful splitter, a primary metric and a bounded search space, usually on meaningful log scales. Grid search is suitable for a few discrete choices; randomized search explores larger spaces more efficiently because every trial samples all dimensions; resource-aware methods stop weak candidates early but need comparable learning curves. Each trial is a noisy estimate, so selecting the maximum creates optimism that grows with search breadth. I log all trials, seeds, failures, fit time and secondary constraints, use identical folds for paired comparison, and inspect sensitivity rather than trusting one sharp optimum. The final test set never drives the search. If I need an unbiased estimate after extensive tuning, I use nested CV or a held-out final test, then refit the chosen complete procedure on all development data.",
   "keyPoints": [
-    "Tune using validation/CV, never the final test set.",
-    "Search spaces matter more than search algorithm in many cases.",
-    "Parallelism and early stopping can reduce cost."
+    "Search the complete preprocessing-plus-model procedure on deployment-faithful folds.",
+    "Parameterize spaces using domain geometry, often logarithmic for scale parameters and conditional for architecture choices.",
+    "The best observed validation score is a noisy maximum and becomes more optimistic as trials increase.",
+    "Track compute, latency, memory, calibration and stability alongside the primary predictive metric.",
+    "Selection data choose the configuration; independent outer or final-test data estimate the selected process."
   ],
   "resources": [
-    "sklearn",
-    "stanford-cs229"
+    "sklearn-grid-search",
+    "sklearn-cross-validation",
+    "nested-cv-selection-paper"
   ],
   "featured": true,
-  "why": "Grid, Random & Bayesian Hyperparameter Search is a standard part of a broad data/ML curriculum because it changes how models are selected, evaluated or operated in real systems.",
-  "intuition": "Tune using validation/CV, never the final test set.",
-  "deepDive": "Hyperparameter tuning searches settings not learned directly by model fitting. Random search is often more efficient than exhaustive grids in high-dimensional spaces; Bayesian optimization helps when evaluations are expensive. Search spaces matter more than search algorithm in many cases. Parallelism and early stopping can reduce cost. A strong answer connects the formal idea to validation, data requirements and failure modes instead of treating the method as a recipe.",
-  "workedExample": "Tune learning rate, depth and regularization with random search and keep the test set untouched until final selection.",
+  "why": "Default hyperparameters are rarely universally appropriate, but unstructured search can waste compute and manufacture a winner from noise. Linear grids oversample large values and undersample orders of magnitude. Searching preprocessing outside the estimator leaks folds or hides important interactions. Trials may fail, exceed memory, or exploit a particular split. A configuration with a tiny metric advantage can double latency or be unstable across cohorts. Moreover, the more alternatives inspected, the less honest the winning internal score becomes. Rigorous tuning treats search as an experiment over a versioned procedure: state the budget and objective, encode valid conditional spaces, use reproducible paired folds, retain every result, and reserve independent evidence for the final performance claim.",
+  "intuition": "A validation score is the true quality plus noise from the sampled rows and training randomness. If one hundred equally good configurations are tried, one will often look unusually good by chance. Search is useful for finding promising regions, but the largest number is not automatically the best estimate. Prefer broad exploration, stable plateaus and independent confirmation over chasing the last decimal.",
+  "deepDive": "Hyperparameter optimization couples search-space design, noisy resampling, computational budget and multi-objective constraints. Grid, random, Bayesian and successive-halving strategies make different assumptions about geometry and intermediate fidelity. Reliable selection uses legal pipelines, comparable resources, deterministic manifests and independent assessment, then packages the chosen parameters as part of the production artifact.",
+  "workedExample": "A 10-by-10 grid spends 100 trials on two dimensions. If only one dimension matters, it tests only ten values of that dimension. One hundred random trials can test roughly one hundred distinct values while still exploring the nuisance dimension.",
   "commonMistakes": [
-    "Choosing the technique without checking whether its assumptions match the problem.",
-    "Optimizing an offline metric without checking realistic validation slices or operational constraints."
+    {
+      "misconception": "More trials always yield a better model.",
+      "correction": "They may find better regions but also increase selection optimism, cost and opportunity to exploit validation noise."
+    },
+    {
+      "misconception": "A linear grid from 0 to 1 explores regularization fairly.",
+      "correction": "Many scale parameters act across orders of magnitude and are better searched on a log scale."
+    },
+    {
+      "misconception": "Early stopping makes trials directly comparable automatically.",
+      "correction": "Candidate quality at small resource must predict full-resource quality, and resource allocation rules must be consistent."
+    },
+    {
+      "misconception": "GridSearchCV's best_score_ is final performance.",
+      "correction": "It is the selected internal score and is optimistic after search; estimate the selected process independently."
+    }
   ],
   "followUps": [
-    "When would you not use Grid, Random & Bayesian Hyperparameter Search?",
-    "How would you validate or tune Grid, Random & Bayesian Hyperparameter Search?"
+    {
+      "question": "When is grid search reasonable?",
+      "answer": "For a small set of discrete, meaningful values or a focused local sensitivity study where the Cartesian product remains modest."
+    },
+    {
+      "question": "Why use the same CV splits for candidates?",
+      "answer": "It creates paired comparisons and removes much of the noise from candidates seeing different validation examples."
+    },
+    {
+      "question": "What if the best value lies at the search boundary?",
+      "answer": "Inspect learning and constraint behavior, then consider a documented space expansion; do not assume the boundary value is globally optimal."
+    }
   ],
-  "production": "In production, validate on realistic slices, track latency/cost when relevant, and monitor for distribution changes or failure modes that the offline metric can hide.",
+  "production": "Version raw data and split manifests, complete pipeline, search distributions and bounds, primary and secondary metrics, budget, seeds, software and hardware. Log every candidate, fold score, failure, fit time, inference latency, memory and selected rule. Use common folds, inspect paired stability and boundary optima, and prefer Pareto-feasible plateaus over fragile decimal wins. Keep the final test outside search or use genuine nested CV. Freeze results before assessment, refit the selected pipeline on all development data, canary under the same resource constraints and retain the previous artifact for rollback.",
   "lab": {
-    "goal": "Tune a model without touching the test set.",
     "language": "python",
-    "buildIt": "from sklearn.datasets import make_classification\nfrom sklearn.model_selection import train_test_split\nX,y=make_classification(n_samples=700,n_features=10,n_informative=5,random_state=0)\nXtr,Xte,ytr,yte=train_test_split(X,y,test_size=.2,random_state=0,stratify=y)\n",
-    "useIt": "from sklearn.model_selection import GridSearchCV\nfrom sklearn.ensemble import RandomForestClassifier\ngs=GridSearchCV(RandomForestClassifier(random_state=0),{'max_depth':[3,6,None],'min_samples_leaf':[1,5,15]},cv=4,scoring='roc_auc').fit(Xtr,ytr)\nprint(gs.best_params_,gs.best_score_,gs.score(Xte,yte))\n",
-    "verifyIt": "assert gs.best_estimator_ is not None\n",
-    "shipIt": "Log the search space, folds, metric and winning configuration; keep the final test set isolated and cap tuning cost with sensible priors/search spaces."
+    "goal": "Implement a paired regularization search, verify GridSearchCV results, and keep an untouched final test outside selection.",
+    "buildIt": "import numpy as np\nfrom sklearn.datasets import make_classification\nfrom sklearn.model_selection import train_test_split,StratifiedKFold,cross_val_score\nfrom sklearn.pipeline import make_pipeline\nfrom sklearn.preprocessing import StandardScaler\nfrom sklearn.linear_model import LogisticRegression\nX,y=make_classification(n_samples=400,n_features=12,n_informative=6,random_state=4)\nX_dev,X_test,y_dev,y_test=train_test_split(X,y,test_size=.25,stratify=y,random_state=9)\ncv=StratifiedKFold(5,shuffle=True,random_state=3); values=[.01,.1,1.,10.]\nmeans=[]\nfor C in values:\n    pipe=make_pipeline(StandardScaler(),LogisticRegression(C=C,max_iter=2000))\n    means.append(cross_val_score(pipe,X_dev,y_dev,cv=cv,scoring='roc_auc').mean())\nbest_C=values[int(np.argmax(means))]",
+    "useIt": "from sklearn.model_selection import GridSearchCV\nbase=make_pipeline(StandardScaler(),LogisticRegression(max_iter=2000))\nsearch=GridSearchCV(base,{'logisticregression__C':values},cv=cv,scoring='roc_auc',refit=True,return_train_score=True).fit(X_dev,y_dev)\nfinal_test_auc=__import__('sklearn.metrics').metrics.roc_auc_score(y_test,search.predict_proba(X_test)[:,1])",
+    "verifyIt": "assert np.allclose(means,search.cv_results_['mean_test_score'])\nassert best_C==search.best_params_['logisticregression__C']\nassert len(search.cv_results_['params'])==len(values)\nassert X_test.shape[0]==100 and 0<=final_test_auc<=1\nassert search.best_index_==int(np.argmax(search.cv_results_['mean_test_score']))",
+    "shipIt": "Persist trials, folds, seeds, constraints and failures; freeze the selection before final assessment; refit the chosen complete pipeline and monitor predictive plus resource metrics."
   },
   "visual": {
     "type": "concept-map",
@@ -50,6 +77,125 @@
     "caption": "A compact concept map for the most important ideas in this lesson."
   },
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "math": "Let lambda index a procedure and V(lambda) be its CV estimate. Selection chooses lambda_hat=argmin over Lambda V(lambda). Even if each V is unbiased for its fixed lambda, min V is optimistically low because it selects negative noise; the effect grows with the effective number and variance of trials. Random search samples lambda from a declared distribution, so its coverage follows that distribution. For log-uniform scale parameters, log(lambda) is uniform. Multi-objective selection may minimize loss subject to latency<=B rather than collapse incomparable units into an arbitrary weighted sum.",
+  "code": "from sklearn.model_selection import GridSearchCV\nbase=make_pipeline(StandardScaler(),LogisticRegression(max_iter=2000))\nsearch=GridSearchCV(base,{'logisticregression__C':values},cv=cv,scoring='roc_auc',refit=True,return_train_score=True).fit(X_dev,y_dev)\nfinal_test_auc=__import__('sklearn.metrics').metrics.roc_auc_score(y_test,search.predict_proba(X_test)[:,1])",
+  "description": "Hyperparameter tuning is statistical model selection under a finite compute budget. This chapter distinguishes learned parameters from configuration choices and turns preprocessing, model family, regularization, optimization and threshold settings into one searchable procedure. It compares grid, randomized, Bayesian and successive-halving strategies; explains logarithmic and conditional search spaces; and derives why the best observed validation score is optimistically biased. It covers reproducible split manifests, common random folds, multiple metrics, refit rules, failed trials, early stopping, warm starts, resource fairness and latency or memory constraints. Worked examples show why random search beats a Cartesian grid when only a few dimensions matter and why a broad search can select noise. The lab manually evaluates a regularization grid, verifies GridSearchCV's scores and selected parameter, and confirms that the final test remains untouched. Production guidance logs every trial and environment, chooses stable Pareto-feasible configurations, separates search from final estimation, refits the complete pipeline on all development data, and preserves the selected settings and rollback model.",
+  "prerequisites": [
+    "cross-validation",
+    "bias-variance"
+  ],
+  "learningObjectives": [
+    "Design bounded, correctly scaled and conditional hyperparameter search spaces.",
+    "Compare grid, randomized, Bayesian and resource-aware search from their assumptions and budgets.",
+    "Diagnose winner's optimism, split noise, failed trials and unstable optima.",
+    "Select and package a reproducible procedure under predictive and operational constraints."
+  ],
+  "deepSections": [
+    {
+      "id": "search-object",
+      "title": "Search a complete legal training procedure",
+      "body": "A hyperparameter controls fitting but is not ordinarily optimized by the model's inner training objective. Examples include regularization strength, maximum tree depth, neighborhood size, feature selection count and preprocessing choices. The object passed to search should be the raw-input pipeline: imputation, encoding, scaling, selection, resampling and estimator. Each candidate is fitted independently inside every training fold so validation data never shape its transforms. Conditional spaces prevent invalid combinations, such as a penalty incompatible with a solver or a tree-only parameter applied to a linear model. Decide whether model family belongs in one heterogeneous search or separate searches with a later comparison. Fix the prediction target, split, primary metric, direction and sample weights before looking at results. Threshold and calibration tuning may require an additional validation layer because they consume predictions from the fitted model."
+    },
+    {
+      "id": "space-strategies",
+      "title": "Search-space geometry matters more than a large trial count",
+      "body": "Grid search evaluates a Cartesian product and is transparent for a few genuinely discrete settings. It scales exponentially and wastes trials when many dimensions are unimportant. Randomized search gives each trial a new value in every dimension and lets distributions encode prior plausibility. Scale parameters such as C, alpha and learning rate usually deserve logarithmic sampling across orders of magnitude; integer depths or counts need bounded discrete distributions. Bayesian optimization uses prior observations to propose promising configurations and is attractive for expensive smooth-enough objectives, but can overexploit noisy results and complicate parallelism. Successive halving and similar schedulers allocate small resources first and promote candidates; their early metric must predict full-budget quality, and every candidate needs a comparable resource definition. Seeded quasi-random or random search is often a strong, auditable baseline."
+    },
+    {
+      "id": "selection-noise",
+      "title": "The winner inherits validation noise",
+      "body": "Every candidate score varies with fold composition, stochastic training and sometimes nondeterministic hardware. Selecting the best turns that noise into optimism even when no coding leak occurs. Keep identical splits across candidates to reduce comparison variance, record per-fold paired differences, and examine whether improvements repeat across folds and seeds. A broad flat region is usually safer than a sharp isolated optimum. Do not choose a convenient seed or metric after inspecting results. Report the number of tried and failed configurations, search bounds and whether the optimum lies at a boundary; a boundary suggests the space may be truncated but expanding it consumes more selection budget. Correcting every comparison with a simple multiple-testing formula rarely captures adaptive search; independent confirmation through nested CV or a final test is clearer."
+    },
+    {
+      "id": "budget-objectives",
+      "title": "Predictive quality is one constraint among several",
+      "body": "Trials consume fit time, accelerators, memory, energy and engineering attention. Define maximum trials, wall time and per-trial resources before launching. Log timeouts and numerical failures rather than dropping them invisibly, because failure rate is part of robustness. Compare candidates at a consistent fidelity unless a scheduler explicitly models resource growth. Track inference latency at realistic batch sizes, peak memory, model size, calibration and slice performance. Multi-metric search can refit using a named primary scorer while retaining secondary evidence. For strict constraints, filter infeasible configurations first and select the best feasible score; a Pareto frontier communicates trade-offs better than an arbitrary weighted sum. Include preprocessing and feature-computation latency, not only estimator prediction time. Prefer the simpler configuration when uncertainty swamps a tiny gain."
+    },
+    {
+      "id": "finalize-govern",
+      "title": "Freeze, estimate and refit without rewriting history",
+      "body": "Once search finishes, freeze its candidate table, split manifest, software environment, seeds, scoring implementation and selection rule. If a final test exists, evaluate the selected procedure once; do not reopen tuning after seeing it without declaring a new development cycle and new independent evidence. Nested CV repeats the entire search inside each outer training set when data are scarce. The outer result evaluates the search procedure, and selected parameters may differ across outer folds. For deployment, choose a configuration using all development evidence under a documented rule, refit the complete pipeline on all eligible development data, and persist fitted transformations with the estimator. Run data, schema and prediction-contract checks before canary release. Monitor both predictive and resource objectives, and retain the previous configuration for rollback."
+    }
+  ],
+  "workedExamples": [
+    {
+      "title": "Why random search can cover more useful values",
+      "body": "A 10-by-10 grid spends 100 trials on two dimensions. If only one dimension matters, it tests only ten values of that dimension. One hundred random trials can test roughly one hundred distinct values while still exploring the nuisance dimension."
+    },
+    {
+      "title": "A noisy winner",
+      "body": "Twenty configurations have nearly identical true error, and each CV estimate has random variation. The minimum observed error is likely a configuration that received favorable fold noise. A nested outer fold or final test estimates how that selected winner actually generalizes."
+    }
+  ],
+  "exercises": [
+    {
+      "prompt": "Why sample learning rates logarithmically?",
+      "solution": "Their effects often change multiplicatively across orders of magnitude, so log sampling gives comparable coverage to each order."
+    },
+    {
+      "prompt": "What must be nested inside outer CV?",
+      "solution": "The complete model-selection process: preprocessing, candidate search, early stopping, calibration or threshold choices and the selection rule."
+    },
+    {
+      "prompt": "How should a timeout be treated?",
+      "solution": "As a logged trial outcome and robustness/cost signal under a declared policy, not silently removed from the search history."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "compare",
+      "title": "Search strategies",
+      "left": {
+        "title": "Exhaustive grid",
+        "items": [
+          "Transparent Cartesian product",
+          "Good for few discrete choices",
+          "Exponential growth",
+          "Repeated irrelevant values"
+        ]
+      },
+      "right": {
+        "title": "Sampled or adaptive",
+        "items": [
+          "Distribution encodes geometry",
+          "Better high-dimensional coverage",
+          "Adaptive methods exploit history",
+          "Needs budget and seed logging"
+        ]
+      },
+      "caption": "The best strategy follows space geometry, noise and evaluation cost.",
+      "afterSection": "space-strategies"
+    },
+    {
+      "type": "flow",
+      "title": "Tuning evidence boundary",
+      "items": [
+        "Freeze pipeline, space and metric",
+        "Search on development folds",
+        "Inspect stability and constraints",
+        "Freeze selected rule",
+        "Estimate on outer or final data",
+        "Refit all development data"
+      ],
+      "caption": "Selection and estimation must not consume the same outcome evidence.",
+      "afterSection": "finalize-govern"
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "sklearn-grid-search",
+      "contribution": "Verifies grid, randomized, multi-metric and resource-aware search implementation behavior."
+    },
+    {
+      "resource": "sklearn-cross-validation",
+      "contribution": "Supports leakage-safe fold evaluation and common splitters used during search."
+    },
+    {
+      "resource": "nested-cv-selection-paper",
+      "contribution": "Supports selection-bias analysis when configurations are chosen using noisy validation estimates."
+    }
+  ]
 }

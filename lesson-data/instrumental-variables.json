@@ -7,30 +7,215 @@
     "ds",
     "as"
   ],
-  "interviewAnswer": "An instrumental variable affects treatment, is independent of unmeasured outcome causes under assumptions, and affects the outcome only through treatment. IV can identify causal effects when confounding remains, but valid instruments are hard to justify.",
+  "interviewAnswer": "An instrumental variable Z changes treatment A, is as-if independent of potential outcomes, and affects outcome Y only through A, with monotonicity or an appropriate structural model for interpretation. For a binary instrument and treatment, the Wald ratio [E(Y|Z=1)-E(Y|Z=0)]/[E(A|Z=1)-E(A|Z=0)] identifies the local average treatment effect for compliers under relevance, independence, exclusion and monotonicity. It is not automatically the population ATE. In linear settings, two-stage least squares projects treatment onto instruments and uses only that exogenous variation. I justify each assumption institutionally, report first-stage strength and reduced form, use weak-instrument-robust inference, cluster at assignment level, and inspect whether the instrument has direct pathways or changes sample composition. More instruments or strong treatment prediction do not repair invalid exclusion. I preserve assignment-to-instrument and treatment-receipt definitions and report intention-to-treat alongside LATE.",
   "keyPoints": [
-    "Relevance, independence and exclusion restriction.",
-    "Weak instruments create unstable estimates.",
-    "Often estimates a local effect for compliers."
+    "Relevance is empirically checkable; independence and exclusion are primarily design assumptions.",
+    "The Wald estimand is a ratio of reduced-form outcome and first-stage treatment effects.",
+    "Under monotonicity, binary IV identifies LATE for compliers, whose population depends on the instrument.",
+    "Weak instruments create biased, nonnormal estimates and require robust inference rather than a mechanical F threshold alone.",
+    "Two-stage prediction is not ordinary plug-in regression; uncertainty and controls must follow the IV design."
   ],
   "resources": [
-    "causal-mixtape"
+    "late-paper",
+    "what-if-causal",
+    "dml-paper"
   ],
   "featured": false,
-  "why": "Instrumental Variables appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
-  "intuition": "Relevance, independence and exclusion restriction.",
-  "deepDive": "An instrumental variable affects treatment, is independent of unmeasured outcome causes under assumptions, and affects the outcome only through treatment. IV can identify causal effects when confounding remains, but valid instruments are hard to justify. Weak instruments create unstable estimates. Often estimates a local effect for compliers. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
-  "workedExample": "Use randomized encouragement as an instrument for actual program participation when not everyone complies.",
+  "why": "Unmeasured confounding can make backdoor adjustment impossible. A lottery, eligibility rule or randomized encouragement may shift treatment while remaining unrelated to latent outcome risk, providing a source of exogenous variation. The price is a narrower and assumption-heavy estimand. An instrument can be relevant yet invalid because it changes outcomes directly, alters another service or selects who is observed. A weak instrument can amplify noise dramatically. IV analysis is credible when the source of variation and compliance behavior are understood, the reduced form is visible, and the local population is described—not when an available column merely passes a first-stage significance test.",
+  "intuition": "Use an encouragement that nudges some people into treatment but does not otherwise affect the outcome. Compare how encouragement changes average outcome and divide by how much it changes treatment uptake. The ratio scales the assignment effect to the treatment change among people whose treatment responds to the encouragement. It says nothing directly about always-takers or never-takers' treatment effects.",
+  "deepDive": "IV identification uses exogenous treatment variation to bypass latent treatment-outcome confounding. Binary LATE logic clarifies compliance types and locality; 2SLS extends projection-based estimation. Robust work prioritizes institutional exclusion arguments, first-stage diagnostics, weak-IV inference, assignment-level clustering and transparent reduced forms.",
+  "workedExample": "An encouragement raises treatment uptake from 30% to 50%, a 0.20 first stage, and lowers outcome risk from 12% to 10%, a -0.02 reduced form. Wald LATE is -0.02/0.20=-0.10, a ten-point risk reduction for compliers under the assumptions.",
   "commonMistakes": [
-    "Applying the method without checking its assumptions or data-generating process.",
-    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+    {
+      "misconception": "Any strong predictor of treatment is a valid instrument.",
+      "correction": "It must also be as-if independent and affect outcome only through treatment under a defensible causal design."
+    },
+    {
+      "misconception": "IV always estimates the population ATE.",
+      "correction": "Binary encouragement designs typically identify LATE for instrument-specific compliers under monotonicity."
+    },
+    {
+      "misconception": "Run two OLS regressions and use the second OLS standard error.",
+      "correction": "The fitted treatment is estimated; use an IV procedure with design- and cluster-appropriate inference."
+    },
+    {
+      "misconception": "A nonsignificant overidentification test proves exclusion.",
+      "correction": "It can have low power and tests joint consistency, not the validity of every instrument."
+    }
   ],
   "followUps": [
-    "What assumptions does Instrumental Variables make?",
-    "How would you validate or debug Instrumental Variables in practice?"
+    {
+      "question": "What does monotonicity exclude?",
+      "answer": "Units whose treatment moves opposite the instrument's encouraging direction, known as defiers in the binary compliance framework."
+    },
+    {
+      "question": "Why report the reduced form?",
+      "answer": "It is the direct assignment or encouragement effect on outcome and makes the numerator, scale and design evidence transparent."
+    },
+    {
+      "question": "What is a weak instrument?",
+      "answer": "One that provides little conditional variation in treatment, making the causal ratio unstable and conventional inference unreliable."
+    }
   ],
-  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "production": "Version instrument assignment, treatment receipt and versions, eligibility, time zero, covariates, exclusions and outcome horizon. Preserve assignment flow, uptake, first-stage strength, reduced form, missingness and cluster identifiers. Use IV-native weak-instrument-robust and cluster-aware inference. Audit direct pathways, co-interventions, manipulation, spillovers and attrition. Report the complier population and avoid transporting LATE to unsupported units. Keep intention-to-treat results and prior policy available when uptake or the instrument mechanism changes.",
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "math": "With binary Z and A, first stage pi=E[A|Z=1]-E[A|Z=0], reduced form rho=E[Y|Z=1]-E[Y|Z=0], and Wald LATE=rho/pi when pi is nonzero and assumptions hold. Compliance types are compliers A(1)>A(0), always-takers, never-takers and defiers; monotonicity excludes defiers. In linear 2SLS, first project A on Z and exogenous X, then estimate Y on projected A and X using an IV covariance formula and IV-appropriate standard errors. Weak first stages make ratio distributions unstable. Overidentification restrictions can reject a set of instruments but cannot prove all exclusions valid.",
+  "code": "reduced=LinearRegression().fit(z[:,None],y).coef_[0]; first_coef=first.coef_[0]; ratio=reduced/first_coef; first_r2=first.score(z[:,None],a)",
+  "lab": {
+    "language": "python",
+    "goal": "Simulate an endogenous treatment with a valid instrument, show OLS confounding, and recover the structural effect using two-stage least squares.",
+    "buildIt": "import numpy as np\nfrom sklearn.linear_model import LinearRegression\nrng=np.random.default_rng(55); n=30000; z=rng.normal(size=n); u=rng.normal(size=n); a=1.4*z+1.5*u+rng.normal(size=n); beta=2.; y=beta*a+3*u+rng.normal(size=n)\nols=LinearRegression().fit(a[:,None],y).coef_[0]; first=LinearRegression().fit(z[:,None],a); ahat=first.predict(z[:,None]); stage2=LinearRegression().fit(ahat[:,None],y).coef_[0]\nwald=np.cov(z,y,ddof=0)[0,1]/np.cov(z,a,ddof=0)[0,1]",
+    "useIt": "reduced=LinearRegression().fit(z[:,None],y).coef_[0]; first_coef=first.coef_[0]; ratio=reduced/first_coef; first_r2=first.score(z[:,None],a)",
+    "verifyIt": "assert abs(stage2-beta)<.03\nassert abs(wald-beta)<.03 and abs(ratio-beta)<.03\nassert abs(ols-beta)>.7\nassert abs(stage2-ratio)<1e-12\nassert first_coef>1.35 and first_r2>.25",
+    "shipIt": "Persist assignment and receipt definitions, first stage and reduced form, cluster IDs and weak-IV diagnostics; constrain interpretation to the instrument-induced population."
+  },
+  "description": "Instrumental variables identify causal effects from treatment variation generated by an external assignment or encouragement. This chapter develops relevance, as-if independence, exclusion, monotonicity and stable treatment definitions; classifies compliance types; derives the binary Wald estimator and its local average treatment-effect interpretation; and separates first stage, reduced form, intention-to-treat and treatment-on-complier effects. It explains two-stage least squares, covariate adjustment, clustered designs, weak instruments, many instruments, overidentification tests and heterogeneous local effects. It also analyzes common failures such as direct instrument pathways, differential attrition, treatment versions and conditioning on post-instrument variables. Worked examples calculate a Wald effect and show why two instruments can target different complier populations. The lab simulates unmeasured confounding, verifies ordinary regression bias, and recovers the known structural effect with manual two-stage least squares. Production guidance versions assignment and receipt, reports first-stage and reduced-form evidence, uses weak-IV-robust uncertainty and keeps causal claims local to the instrument-induced population. Institutional evidence for exclusion remains central even when every numerical diagnostic looks strong.",
+  "prerequisites": [
+    "potential-outcomes",
+    "linear-regression"
+  ],
+  "learningObjectives": [
+    "State and defend IV relevance, independence, exclusion and monotonicity assumptions.",
+    "Derive the Wald ratio, compliance-type LATE and linear 2SLS estimator.",
+    "Diagnose weak instruments, direct pathways, attrition, clustering and local-population limits.",
+    "Report first stage, reduced form, uncertainty and transport separately from the causal ratio."
+  ],
+  "deepSections": [
+    {
+      "id": "iv-assumptions",
+      "title": "An instrument needs a causal design, not just correlation",
+      "body": "Relevance requires Z to shift A for some units. Independence says Z is as-if assigned independently of potential outcomes or latent causes, possibly conditional on baseline covariates. Exclusion says Z affects Y only through the treatment pathway represented by A. A physician preference instrument may change other care, violating exclusion; distance to a hospital may affect outcomes through access; eligibility thresholds may change multiple benefits. Monotonicity assumes changing Z in the encouraging direction does not make anyone move treatment oppositely. Treatment and instrument versions must be consistent, and interference may arise when encouragement changes capacity. Draw a DAG and institutional process, identify assignment timing and audit attrition. Balance of baseline variables supports but cannot prove independence, while exclusion has no universal statistical test."
+    },
+    {
+      "id": "late-compliance",
+      "title": "Binary IV identifies a local complier effect",
+      "body": "Potential treatments A(1) and A(0) define always-takers, never-takers, compliers and defiers. Under monotonicity there are no defiers. Independence makes Z comparable; exclusion makes outcome assignment operate through received treatment; relevance guarantees some compliers. The reduced-form outcome effect averages the treatment effect among compliers multiplied by their share, and the first stage estimates that share, so their ratio is LATE. Always- and never-takers contribute no instrument-induced treatment contrast. The complier group is latent and defined by the particular instrument; a different encouragement can move a different population and yield another valid LATE under heterogeneity. Describe observed characteristics whose first stages indicate where compliance occurs, but avoid claiming individual compliance type is observed."
+    },
+    {
+      "id": "two-stage-estimation",
+      "title": "2SLS isolates projected treatment variation",
+      "body": "In a linear constant-effect model, regress endogenous treatment on instruments and exogenous controls, then use the treatment component predicted by that projection in the outcome equation. The conceptual second stage is not ordinary prediction: standard errors from manually treating fitted A as fixed are wrong. Use an IV estimator that carries both stages and clustering. Include the same exogenous controls consistently in both stages; controls can improve precision or support conditional independence but post-instrument variables can bias. Report the first-stage coefficient and partial strength, reduced-form coefficient and 2SLS result. With heterogeneous effects and multiple instruments, 2SLS can be a weighted average of local effects with interpretation depending on the design. Nonlinear outcomes do not make nonlinear two-stage plug-in methods automatically causal."
+    },
+    {
+      "id": "weak-many-instruments",
+      "title": "Weak identification changes the shape of inference",
+      "body": "When Z barely moves A, the Wald denominator approaches zero and small reduced-form noise creates enormous estimates. Conventional 2SLS confidence intervals and normal approximations can be badly misleading. First-stage F statistics are diagnostics whose appropriate threshold depends on instruments, heteroskedasticity and target distortion; report partial R-squared and robust strength measures. Use weak-instrument-robust tests and intervals such as Anderson-Rubin-style procedures when warranted. Many weak instruments overfit endogenous treatment and pull 2SLS toward confounded ordinary least squares. Selecting instruments by outcome performance or trying many definitions introduces further bias. Limited-information estimators can help under some settings but cannot repair invalid exclusion. Prefer one institutionally credible instrument to a large set of convenient proxies."
+    },
+    {
+      "id": "validity-reporting",
+      "title": "The reduced form is often the most transparent result",
+      "body": "An encouragement's effect on outcome is an intention-to-treat contrast supported directly by assignment and may be decision-relevant even when treatment receipt is messy. Show treatment uptake by Z, outcome by Z, missingness and sample flow before the IV ratio. Evaluate baseline balance, manipulation, spillovers and whether Z changes other services. Cluster at the randomization, geography, provider or timing unit that generates Z. With multiple instruments, overidentification tests assess mutual restrictions under assumptions but low power or failure to reject is not validation. Sensitivity analysis can parameterize direct effects or monotonicity violations. Transporting LATE needs knowledge of compliers and effect heterogeneity; label it local and avoid extrapolating to mandated universal treatment without additional evidence."
+    }
+  ],
+  "workedExamples": [
+    {
+      "title": "Wald calculation",
+      "body": "An encouragement raises treatment uptake from 30% to 50%, a 0.20 first stage, and lowers outcome risk from 12% to 10%, a -0.02 reduced form. Wald LATE is -0.02/0.20=-0.10, a ten-point risk reduction for compliers under the assumptions."
+    },
+    {
+      "title": "Different instruments, different effects",
+      "body": "A reminder moves forgetful low-risk patients, while a transport voucher moves geographically isolated high-risk patients. Both can be valid yet identify different complier-average effects."
+    }
+  ],
+  "exercises": [
+    {
+      "prompt": "Reduced form is 0.06 and first stage is 0.30. What is Wald LATE?",
+      "solution": "0.06/0.30=0.20 outcome units per treatment among compliers, under the IV assumptions."
+    },
+    {
+      "prompt": "Why can geographic distance violate exclusion?",
+      "solution": "Distance may affect outcome through travel burden, access to other services or environment, not only the target treatment."
+    },
+    {
+      "prompt": "What happens as the first stage approaches zero?",
+      "solution": "The ratio becomes extremely unstable and conventional normal inference can fail; use weak-IV-robust methods or redesign."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "network",
+      "title": "Instrumental-variable structure",
+      "nodes": [
+        {
+          "id": "z",
+          "label": "Instrument Z",
+          "x": 0.1,
+          "y": 0.3,
+          "kind": "source"
+        },
+        {
+          "id": "a",
+          "label": "Treatment A",
+          "x": 0.48,
+          "y": 0.3,
+          "kind": "target"
+        },
+        {
+          "id": "y",
+          "label": "Outcome Y",
+          "x": 0.85,
+          "y": 0.3,
+          "kind": "target"
+        },
+        {
+          "id": "u",
+          "label": "Latent U",
+          "x": 0.48,
+          "y": 0.82,
+          "kind": "source"
+        }
+      ],
+      "edges": [
+        [
+          "z",
+          "a"
+        ],
+        [
+          "a",
+          "y"
+        ],
+        [
+          "u",
+          "a"
+        ],
+        [
+          "u",
+          "y"
+        ]
+      ],
+      "caption": "Z supplies treatment variation outside latent U; exclusion forbids a direct Z→Y path.",
+      "afterSection": "iv-assumptions"
+    },
+    {
+      "type": "flow",
+      "title": "IV evidence chain",
+      "items": [
+        "Defend assignment independence",
+        "Show first-stage treatment shift",
+        "Show reduced-form outcome shift",
+        "Assess exclusion and monotonicity",
+        "Compute Wald or 2SLS",
+        "Use weak-IV and cluster-aware inference"
+      ],
+      "caption": "The ratio is credible only when every link in the design is visible.",
+      "afterSection": "validity-reporting"
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "late-paper",
+      "contribution": "Provides binary compliance types, monotonicity and local average treatment-effect identification."
+    },
+    {
+      "resource": "what-if-causal",
+      "contribution": "Supports potential-outcome definitions, randomized assignment and consistency reasoning."
+    },
+    {
+      "resource": "dml-paper",
+      "contribution": "Supports orthogonal and cross-fitted extensions for partially linear IV settings."
+    }
+  ]
 }

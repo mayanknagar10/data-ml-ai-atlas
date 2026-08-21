@@ -7,36 +7,64 @@
     "ds",
     "as"
   ],
-  "interviewAnswer": "Difference-in-differences compares outcome changes over time between treated and control groups. Its key identifying assumption is that, absent treatment, their trends would have evolved in parallel.",
+  "interviewAnswer": "Difference-in-differences estimates a treatment effect by comparing the treated group's before-after change with the control group's change. The key identifying assumption is parallel trends in untreated potential outcomes for the target groups, possibly conditional on covariates—not equality of outcome levels. In the canonical two-group, two-period design, DID is (Ybar_T,post-Ybar_T,pre)-(Ybar_C,post-Ybar_C,pre). I define treatment timing, anticipation, comparison group, outcome and estimand, plot raw trends and event time, and use inference clustered at the assignment unit. Pretrend tests can reveal contradictions but low power cannot prove parallel trends. With staggered adoption and heterogeneous dynamic effects, ordinary two-way fixed effects may combine inappropriate already-treated comparisons and nontransparent weights, so I estimate group-time effects using never- or not-yet-treated controls and aggregate explicitly. I also test composition, spillovers and concurrent shocks and report sensitivity to trend violations.",
   "keyPoints": [
-    "Inspect pre-trends.",
-    "Treatment timing and anticipation matter.",
-    "Use clustered/appropriate uncertainty."
+    "DID identifies change relative to a comparison trend, not a generic treatment coefficient.",
+    "Parallel trends concerns untreated potential outcomes and remains an assumption after passing pretrend tests.",
+    "Treatment timing, anticipation, composition and spillovers determine valid control observations.",
+    "Staggered adoption with heterogeneous effects requires group-time estimands rather than naive two-way fixed effects.",
+    "Inference must reflect serial correlation and the number and level of treatment-assignment clusters."
   ],
   "resources": [
-    "causal-mixtape"
+    "did-multiple-periods",
+    "what-if-causal",
+    "openintro-stats"
   ],
   "featured": false,
-  "why": "Difference-in-Differences appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
-  "intuition": "Inspect pre-trends.",
-  "deepDive": "Difference-in-differences compares outcome changes over time between treated and control groups. Its key identifying assumption is that, absent treatment, their trends would have evolved in parallel. Treatment timing and anticipation matter. Use clustered/appropriate uncertainty. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
-  "workedExample": "Compare sales change in regions receiving a policy versus similar untreated regions before and after rollout.",
+  "why": "Policies and product launches are rarely randomized, but repeated outcomes can reveal whether treated units change differently from a credible control trend. The design removes permanent level differences and common time shocks, yet it fails when treated units were already on a different trajectory, anticipate treatment, experience another coincident shock or change composition. Modern staggered rollouts add a subtle problem: an already-treated cohort may serve as control for a later cohort even though its own effect evolves. DID is therefore a research design with a counterfactual trend assumption, not a fixed-effects formula. Clear cohort-time effects and diagnostics matter more than a single coefficient.",
+  "intuition": "The treated group may start higher than control, so post-treatment levels are not comparable. Its own pre-period gives a baseline, while the control group's change estimates what common forces would have done. Subtracting changes removes both the stable group gap and the shared time shock. The remaining difference is causal only if untreated treated units would have followed the same trend.",
+  "deepDive": "DID uses untreated outcome trends to identify counterfactual changes. Canonical identification extends to multiple periods through cohort-time effects, but requires explicit comparison sets and aggregation under heterogeneity. Credible studies diagnose anticipation, composition, spillovers, functional form and cluster-level uncertainty and stress-test deviations from parallel trends.",
+  "workedExample": "Treated outcome rises from 10 to 16, while control rises from 8 to 11. The treated change is 6 and control change is 3, so DID is 3. The raw post-period gap of 5 would retain the original group difference.",
   "commonMistakes": [
-    "Applying the method without checking its assumptions or data-generating process.",
-    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+    {
+      "misconception": "Parallel trends means treated and control outcomes must have equal levels.",
+      "correction": "Stable level differences cancel; the required counterfactual condition concerns changes without treatment."
+    },
+    {
+      "misconception": "Nonsignificant pretrends prove parallel trends.",
+      "correction": "They may be underpowered and cannot exclude a treatment-time-specific differential shock."
+    },
+    {
+      "misconception": "Unit and time fixed effects solve staggered DID automatically.",
+      "correction": "Already-treated comparisons and heterogeneous effects can make the coefficient an opaque mixture."
+    },
+    {
+      "misconception": "Clustering by observation is enough with panel rows.",
+      "correction": "Uncertainty must respect serial correlation and the level of treatment assignment or common shocks."
+    }
   ],
   "followUps": [
-    "What assumptions does Difference-in-Differences make?",
-    "How would you validate or debug Difference-in-Differences in practice?"
+    {
+      "question": "What is the identifying assumption in canonical DID?",
+      "answer": "In the absence of treatment, the treated and comparison groups would have experienced the same average outcome change over the studied periods."
+    },
+    {
+      "question": "Why can already-treated units be bad controls?",
+      "answer": "Their outcome changes include evolving treatment effects, contaminating the untreated counterfactual for newly treated cohorts."
+    },
+    {
+      "question": "What should an event-study plot include?",
+      "answer": "Lead and lag estimates, uncertainty, reference period, cohort and observation support, raw trends and the estimator's comparison-group definition."
+    }
   ],
-  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "production": "Version treatment cohorts, adoption and anticipation windows, comparison groups, outcome definitions, sample composition, covariates, estimator and aggregation weights. Preserve raw group trends and cohort-time effects. Cluster at the assignment or shock level and use few-cluster methods when needed. Monitor migration, attrition, spillovers, concurrent interventions and outcome coding. Treat pretrend tests as diagnostics, report sensitivity to plausible trend violations and alternative controls, and never replace transparent group-time evidence with one unexplained fixed-effects coefficient.",
   "lab": {
-    "goal": "Compute a simple 2x2 difference-in-differences estimate.",
     "language": "python",
-    "buildIt": "treated_pre=100; treated_post=130\ncontrol_pre=90; control_post=100\ndid=(treated_post-treated_pre)-(control_post-control_pre)\nprint('DiD',did)",
-    "useIt": "import pandas as pd, statsmodels.formula.api as smf\ndf=pd.DataFrame({'y':[100,130,90,100],'treated':[1,1,0,0],'post':[0,1,0,1]})\nfit=smf.ols('y ~ treated + post + treated:post',data=df).fit()\nprint(fit.params['treated:post'])",
-    "shipIt": "A real DiD study needs many units/time periods, pre-trend diagnostics, explicit treatment timing, robust/clustered uncertainty and sensitivity to composition changes.",
-    "verifyIt": "assert abs(did-20)<1e-9"
+    "goal": "Simulate a two-period panel, compute DID from group changes, and verify equivalence with a saturated interaction regression.",
+    "buildIt": "import numpy as np\nfrom sklearn.linear_model import LinearRegression\nrng=np.random.default_rng(44); units=5000; group=rng.binomial(1,.5,size=units); base=3+2*group+rng.normal(size=units); effect=2.5\ny_pre=base+rng.normal(scale=.5,size=units); y_post=base+1.2+effect*group+rng.normal(scale=.5,size=units)\ndid=(y_post[group==1].mean()-y_pre[group==1].mean())-(y_post[group==0].mean()-y_pre[group==0].mean())\ny=np.r_[y_pre,y_post]; g=np.r_[group,group]; post=np.r_[np.zeros(units),np.ones(units)]; X=np.c_[g,post,g*post]; regression=LinearRegression().fit(X,y); interaction=regression.coef_[2]",
+    "useIt": "changes=y_post-y_pre; direct=changes[group==1].mean()-changes[group==0].mean(); placebo_pre_gap=y_pre[group==1].mean()-y_pre[group==0].mean(); post_gap=y_post[group==1].mean()-y_post[group==0].mean()",
+    "verifyIt": "assert abs(did-effect)<.04\nassert abs(interaction-did)<1e-12 and abs(direct-did)<1e-12\nassert abs((post_gap-placebo_pre_gap)-did)<1e-12\nassert abs(placebo_pre_gap-2)<.05\nassert len(changes)==units",
+    "shipIt": "Persist cohort and event-time manifests, raw trend and group-time outputs, assignment-level clusters and composition checks; report sensitivity to anticipation and trend violations."
   },
   "visual": {
     "type": "curve",
@@ -82,6 +110,125 @@
     "yLabel": "outcome"
   },
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "math": "For groups G in {T,C} and periods t in {0,1}, delta_DID=[E(Y|T,1)-E(Y|T,0)]-[E(Y|C,1)-E(Y|C,0)]. Parallel trends requires E[Y_1(0)-Y_0(0)|T]=E[Y_1(0)-Y_0(0)|C]. With staggered timing G=g, target ATT(g,t)=E[Y_t(1)-Y_t(0)|G=g] and compare with units untreated at t under suitable conditional assumptions. Aggregating ATT(g,t) requires declared weights by cohort size, calendar time or event time. Standard errors cluster where shocks and assignment correlate; few clusters need design-specific corrections or randomization inference.",
+  "code": "changes=y_post-y_pre; direct=changes[group==1].mean()-changes[group==0].mean(); placebo_pre_gap=y_pre[group==1].mean()-y_pre[group==0].mean(); post_gap=y_post[group==1].mean()-y_post[group==0].mean()",
+  "description": "Difference-in-differences identifies causal effects from changes in treated and comparison groups under a parallel-trends counterfactual. This chapter derives the canonical two-by-two estimator, regression representation and event-study contrasts; distinguishes equal levels from parallel untreated trends; and analyzes anticipation, treatment reversals, time-varying composition, spillovers and concurrent shocks. It explains why visual pretrends and placebo leads are diagnostics rather than proof, how covariate conditioning changes the assumption, and why scale choice matters. For staggered adoption, it develops cohort-time average treatment effects and explains how ordinary two-way fixed effects can use already-treated controls and combine heterogeneous effects with opaque weights. Worked examples compute a manual DID and expose a differential pretrend. The lab simulates panel outcomes, recovers the known effect by differencing and verifies equivalence with an interaction regression. Production guidance versions cohorts and event times, clusters inference at assignment level, monitors composition and spillovers, reports group-time estimates and aggregates only with decision-relevant weights.",
+  "prerequisites": [
+    "potential-outcomes",
+    "linear-regression"
+  ],
+  "learningObjectives": [
+    "Derive the two-group, two-period DID estimator and its parallel-trends identification condition.",
+    "Diagnose anticipation, differential trends, composition, spillovers and concurrent-shock threats.",
+    "Estimate and aggregate staggered cohort-time effects without invalid already-treated controls.",
+    "Choose event-time displays, comparison groups and cluster-aware inference for the assignment design."
+  ],
+  "deepSections": [
+    {
+      "id": "canonical-design",
+      "title": "The two-by-two contrast removes two nuisance components",
+      "body": "Suppose treated and control groups differ by a stable level and both face a common time shock. The treated before-after change contains the common shock plus treatment; the control change contains the common shock. Their difference removes both the group level and time shock. In a saturated regression with group, post and group-by-post indicators, the interaction equals the two-by-two DID. Identification requires that the treated group's untreated potential outcome would have changed like the control group's, not that their baseline levels match. Define treatment at the assignment unit, align time zero and ensure outcome measurement is comparable. Repeated cross sections can identify population changes only when group composition is stable or appropriately modeled; panels permit individual differencing but attrition can select the sample. Cluster treatment and inference at the actual assignment level."
+    },
+    {
+      "id": "parallel-trends",
+      "title": "Parallel trends is a counterfactual assumption",
+      "body": "Multiple pretreatment periods allow raw and covariate-adjusted trend plots, event-study leads and placebo intervention dates. Clear differential pretrends undermine the design. A nonsignificant lead does not prove validity because tests can be underpowered, and conditioning selection on passing a pretest can distort inference. Even perfectly parallel history cannot rule out a treatment-time-specific shock. Use institutional knowledge to explain why controls share outcome determinants but are not exposed to treatment or spillovers. Consider alternative controls, outcome transformations, group-specific trends chosen before outcomes and sensitivity bounds for deviations. Conditional parallel trends permits trends to align within baseline covariates, requiring overlap and careful standardization. Avoid controlling for variables affected by treatment. Check whether units anticipate and change behavior before the official date; redefine event time or estimand where needed."
+    },
+    {
+      "id": "event-studies",
+      "title": "Dynamic effects require explicit reference and support",
+      "body": "An event study indexes time relative to adoption and estimates leads and lags against an omitted pre-period. Plot estimates with uncertainty, number of contributing cohorts and calendar support. Far leads or lags may rely on few cohorts and changing composition. Leads diagnose anticipation or trend differences under their own assumptions; lags describe effect dynamics but can mix cohorts if estimated naively. The reference period choice changes coefficients but not underlying contrasts. Do not normalize away meaningful pre-treatment effects or interpret all pre-coefficients jointly from individual p-values. Smooth-looking dynamics can be artifacts of staggered weighting. Report raw group trends alongside regression estimates and separate calendar shocks from event-time exposure."
+    },
+    {
+      "id": "staggered-adoption",
+      "title": "Estimate cohort-time effects before aggregation",
+      "body": "With different adoption dates and heterogeneous effects, two-way fixed effects can compare newly treated units with already-treated units whose outcomes contain treatment effects. The coefficient becomes a weighted mixture of two-by-two comparisons and may not represent any policy-relevant average. Modern approaches estimate ATT(g,t) for cohort g at time t using never-treated or not-yet-treated controls, possibly conditional on covariates. Then aggregate by event time, calendar time or cohort with transparent nonnegative weights chosen for the question. Never-treated controls support long-run lags but may differ systematically; not-yet-treated controls require no anticipation and disappear as adoption saturates. Define whether treatment is absorbing, reversible or varying in dose. Report cohort support, control composition and sensitivity to comparison choice."
+    },
+    {
+      "id": "inference-validity",
+      "title": "Serial correlation and few assignments govern uncertainty",
+      "body": "Outcomes within a state, store or user are correlated over time, and treatment is commonly assigned to clusters. Row-level robust errors treat repeated observations as independent and can be severely anti-conservative. Cluster at the assignment or shock level, considering multiway dependence when relevant. With few treated clusters, conventional cluster asymptotics are fragile; use wild cluster bootstrap, randomization inference from a credible assignment mechanism or carefully justified small-sample methods. Placebo outcomes and unaffected groups test specific falsification implications. Check concurrent policies, migration, sample entry, outcome coding and differential attrition. Pre-specify primary windows and aggregations to limit event-study specification search. Publish the full cohort-time table and counts so one headline effect can be audited."
+    }
+  ],
+  "workedExamples": [
+    {
+      "title": "Manual DID",
+      "body": "Treated outcome rises from 10 to 16, while control rises from 8 to 11. The treated change is 6 and control change is 3, so DID is 3. The raw post-period gap of 5 would retain the original group difference."
+    },
+    {
+      "title": "Differential trend threat",
+      "body": "Treated stores were already growing three points faster per month before a promotion, and that difference would have continued. A post-launch DID attributes the continuing trend to promotion unless the counterfactual model addresses it credibly."
+    }
+  ],
+  "exercises": [
+    {
+      "prompt": "Treated changes by 7 and control by 4. What is DID?",
+      "solution": "Three outcome units, under the parallel untreated-trends and other design assumptions."
+    },
+    {
+      "prompt": "Why is a pretrend test not a proof?",
+      "solution": "It can miss meaningful violations and cannot test the unobserved post-treatment counterfactual trend."
+    },
+    {
+      "prompt": "How should staggered effects be summarized?",
+      "solution": "Estimate valid cohort-time effects first, then aggregate with transparent weights matching event-time, cohort or calendar-time questions."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "compare",
+      "title": "Observed and counterfactual changes",
+      "left": {
+        "title": "Treated group",
+        "items": [
+          "Observed baseline gap",
+          "Common trend component",
+          "Treatment effect after adoption",
+          "May anticipate"
+        ]
+      },
+      "right": {
+        "title": "Comparison group",
+        "items": [
+          "Provides untreated trend",
+          "Must avoid spillover",
+          "Must remain compositionally credible",
+          "Defines the counterfactual"
+        ]
+      },
+      "caption": "DID subtracts changes, but only the design makes the control change a credible counterfactual.",
+      "afterSection": "canonical-design"
+    },
+    {
+      "type": "flow",
+      "title": "Modern staggered DID",
+      "items": [
+        "Define adoption cohorts",
+        "Choose never or not-yet controls",
+        "Estimate ATT by cohort and time",
+        "Inspect leads, lags and support",
+        "Aggregate with explicit weights",
+        "Cluster and stress-test"
+      ],
+      "caption": "Group-time effects preserve treatment heterogeneity before any policy summary is formed.",
+      "afterSection": "staggered-adoption"
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "did-multiple-periods",
+      "contribution": "Provides group-time treatment effects, staggered timing and transparent aggregation under heterogeneous effects."
+    },
+    {
+      "resource": "what-if-causal",
+      "contribution": "Supports potential-outcome identification, time alignment and observational causal assumptions."
+    },
+    {
+      "resource": "openintro-stats",
+      "contribution": "Supports repeated-group mean contrasts, sampling uncertainty and regression interpretation."
+    }
+  ]
 }

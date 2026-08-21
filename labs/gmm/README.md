@@ -1,6 +1,6 @@
 # Gaussian Mixture Models & EM — Code Lab
 
-Fit a Gaussian mixture and inspect soft memberships.
+Implement one-dimensional Gaussian-mixture EM, compare with scikit-learn, and verify responsibilities and monotone likelihood.
 
 ## 1. Build it
 

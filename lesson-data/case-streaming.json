@@ -7,12 +7,13 @@
     "de",
     "mle"
   ],
-  "interviewAnswer": "Describe event source → Kafka → stream processor → storage/cache/API → UI. Explain why streaming was needed, what each component owns, how containers communicate and where failures are observed.",
+  "interviewAnswer": "I design a streaming application from event semantics and failure contracts. Each event has a stable ID, key, event time, schema version and source position. I distinguish event time from processing time, define windows and a watermark or lateness policy, and specify whether late data updates, retracts, side-outputs or drops. Partition keys preserve needed ordering while avoiding hot shards. State is bounded by window and retention, checkpointed consistently, and sinks are idempotent or transactional; 'exactly once' means each event affects the final result once across the entire source–state–sink path, not that the broker never redelivers. I test duplicates, out-of-order arrivals, crashes before and after checkpoints, schema changes and backpressure. Production monitors consumer lag, watermark lag, late rate, state size, checkpoint health, output reconciliation and replay, with dead letters, backfill, versioned savepoints and rollback.",
   "keyPoints": [
-    "Kafka vs Flink roles",
-    "State",
-    "Containers",
-    "End-to-end data flow"
+    "Event time, processing time, watermarks and allowed lateness are product semantics, not only framework configuration.",
+    "Stable IDs and idempotent or transactional sinks are required to tolerate replay without duplicate effects.",
+    "Partitioning chooses ordering and parallelism while exposing skew and hot-key risks.",
+    "Exactly-once state consistency does not automatically provide end-to-end exactly-once external effects.",
+    "Replay, schema evolution, reconciliation, backpressure, savepoints and rollback must be designed before launch."
   ],
   "resources": [
     "confluent-kafka",
@@ -21,22 +22,43 @@
     "stanford-cs329s"
   ],
   "featured": false,
-  "why": "This case demonstrates end-to-end data engineering: event ingestion, stateful processing, API/cache, UI, containers and cloud deployment.",
-  "intuition": "Separate producers from processors with Kafka, compute continuously with Flink, serve recent/aggregated data through an API, cache hot reads, and keep each service independently deployable.",
-  "deepDive": "Discuss topic/partition design, consumer offsets, event-time vs processing-time, state/checkpoints in Flink, Redis as a cache rather than source of truth, Flask API boundaries, and Docker Compose for local multi-service orchestration. Explain failure recovery and exactly-once/at-least-once claims carefully.",
-  "workedExample": "Telemetry events → Kafka topic → Flink stateful classification/aggregation → low-latency store/cache → backend API → operational dashboard. Docker Compose can run local versions of the broker, stream processor, cache, backend and frontend as separate services.",
+  "why": "Real-time applications turn an unbounded, delayed and failure-prone event log into alerts, aggregates, features or actions. The business meaning of a five-minute count depends on event timestamps and lateness; a payment or notification cannot be repeated just because a worker recovered. Framework vocabulary can hide these choices. This case study joins distributed logs, event-time computation, state, consistency, schema contracts and operations. It shows that stream correctness is demonstrated through replay and failure tests plus reconciliation against an independent batch truth—not by drawing Kafka and Flink boxes.",
+  "intuition": "A stream processor is a continually updated ledger. Events may arrive out of order like delayed receipts. A watermark is the system's declared belief about how far event time has progressed, not proof that no older receipt exists. Checkpoints photograph state and source position so recovery can replay consistently. If an external email was sent outside that transaction, however, replay can send it again. The complete pipeline must decide how every side effect becomes idempotent, transactional or compensatable.",
+  "deepDive": "This case study designs an event-time stateful application through explicit schemas, ordering, window closure, replay and end-to-end effects. It separates broker delivery, operator state and sink semantics, then verifies them with deterministic out-of-order and crash scenarios plus batch reconciliation and operational recovery.",
+  "workedExample": "A fraud feature counts distinct devices per account in ten-minute event-time windows. Mobile clients upload offline events hours late, and broker delivery is at least once. The contract emits an initial value at watermark passage and an upsert revision for 24 hours. Events deduplicate by tenant-scoped ID; the sink key is account-window-model version. A crash after writing but before checkpoint acknowledgement replays input, but the upsert overwrites rather than double increments. Daily batch recomputation reconciles counts and exposes late events beyond retention.",
   "commonMistakes": [
-    "Calling Kafka just a queue and ignoring retention/replay.",
-    "Assuming multiple containers always require different images.",
-    "Claiming exactly-once end-to-end without checking sinks and commits."
+    {
+      "misconception": "Use processing time because it is simpler.",
+      "correction": "Choose time semantics from the product; processing time changes results during lag and replay."
+    },
+    {
+      "misconception": "Call Kafka delivery exactly once.",
+      "correction": "Trace source, state and sink effects; retries can still occur and external actions need idempotency or transactions."
+    },
+    {
+      "misconception": "Set state TTL only from memory cost.",
+      "correction": "TTL changes deduplication and correction semantics and must cover the promised replay or lateness horizon."
+    },
+    {
+      "misconception": "Treat schema compatibility as semantic compatibility.",
+      "correction": "A field can remain parseable while its meaning, unit or timing changes."
+    }
   ],
   "followUps": [
-    "Why Kafka instead of direct API calls?",
-    "Why Flink?",
-    "What happens when the consumer crashes?",
-    "Why Redis?"
+    {
+      "question": "What is a watermark?",
+      "answer": "A distributed progress signal for event time used to trigger time-dependent computation under an explicit lateness policy."
+    },
+    {
+      "question": "How do you make a sink replay-safe?",
+      "answer": "Use transactions aligned with checkpoints or deterministic idempotent keys and reconcile irreversible external effects."
+    },
+    {
+      "question": "How do you handle a hot key?",
+      "answer": "Measure skew, then split or hierarchically aggregate the key with a merge that preserves its ordering and window semantics."
+    }
   ],
-  "production": "Monitor consumer lag, event throughput, checkpoint health, late events, API latency and cache hit rate. Scale partitions/consumers and TaskManagers based on bottlenecks rather than adding replicas blindly.",
+  "production": "Version event and output schemas, ID and partition contracts, time and lateness policy, state serializer and sink semantics. Test deterministic input traces with disorder, duplicates and crashes before and after checkpoint and sink commits. Capacity-test skew and slow dependencies. Monitor partition and watermark lag, late and duplicate events, state, checkpoints, restart and dead-letter loops, sink errors, end-to-end freshness and batch reconciliation. Archive replayable inputs and make replay write to isolated versioned outputs. Protect sensitive event payloads and retention. Practice savepoint restore, route promotion and rollback; never deploy an incompatible state migration without a tested recovery path.",
   "visual": {
     "type": "flow",
     "title": "Streaming monitoring case",
@@ -52,6 +74,119 @@
     "orientation": "horizontal"
   },
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "math": "For tumbling window width W, event timestamp t maps to [floor(t/W)W,(floor(t/W)+1)W). A watermark w asserts that most or policy-eligible future events have timestamp greater than w; a window can emit when w passes its end, with allowed lateness L determining update retention. End-to-end output F over event IDs should be idempotent under replay: F(E multiset with repeated ID)=F(unique(E)) for exactly-once business effects. Throughput capacity must exceed sustained arrival λ with headroom; queue lag grows when service μ<λ. Partition load is governed by key distribution, not only partition count.",
+  "description": "A real-time streaming application processes unbounded, out-of-order and replayed events while maintaining state and producing timely effects. This case study begins with an event contract containing identity, key, event time, ingestion time, schema and source metadata. It compares event, processing and ingestion time; defines tumbling, sliding and session windows; and explains watermarks, idleness, allowed lateness, updates and retractions. Partitioning is tied to ordering, parallelism and hot keys. Stateful operators, checkpoints, savepoints and recovery are separated from broker delivery and external sink guarantees. At-least-once, at-most-once and exactly-once claims are traced end to end, including idempotency, transactions, two-phase commit and side effects that cannot join a transaction. The lab implements deterministic event-time windows, deduplication and late-event classification and verifies replay invariance. Production design covers schema compatibility, backpressure, consumer and watermark lag, state TTL, checkpoint tuning, dead letters, replay, batch reconciliation, backfills, privacy, deployment and rollback. Failure drills include worker and broker restart, poison events, skew, slow sinks and schema rollout. The final architecture is evaluated by correctness and recovery under disorder, not only steady-state latency.",
+  "prerequisites": [
+    "batch-stream",
+    "kafka",
+    "flink-streaming",
+    "project-defense-framework"
+  ],
+  "learningObjectives": [
+    "Define event identity, key, time, schema, lateness and correction semantics for a real product.",
+    "Trace ordering, state, checkpoint and sink guarantees through the end-to-end pipeline.",
+    "Design replay-invariant outputs and tests for duplicates, disorder, crashes, skew and schema change.",
+    "Operate the stream with lag, watermark, state, checkpoint, reconciliation, backfill and rollback controls."
+  ],
+  "deepSections": [
+    {
+      "id": "event-time-contract",
+      "title": "Event identity and time semantics define the result",
+      "body": "A stable event ID is scoped and generated by the system that can distinguish retries from new facts. The partition key decides per-key order and state locality. Event time describes when the fact occurred; ingestion time records arrival; processing time depends on machine execution. Define units, timezone and clock-quality flags. A watermark algorithm follows source progress and expected disorder; idle partitions must not freeze global progress. A window contract specifies boundaries, inclusion, trigger, allowed lateness and whether later data updates previous output, emits a retraction, enters a correction topic or is discarded with accounting. Session gaps are data-dependent and can merge after late arrivals. These choices belong in consumer documentation because dashboards, billing and model features interpret the output differently."
+    },
+    {
+      "id": "state-guarantees",
+      "title": "Source replay, operator state and sink effects form one consistency chain",
+      "body": "A broker may redeliver after consumer failure. A stateful engine checkpoints operator state together with source positions so recovered computation replays from a consistent barrier. This can provide exactly-once state transitions inside the engine. External correctness still depends on the sink. Transactional sinks can commit with checkpoints; idempotent upserts use a deterministic output key and version; append-only increments usually duplicate on replay. Email, payment or third-party APIs need idempotency keys, an outbox, reconciliation or compensating workflow. Deduplication state needs retention long enough for replay and source retry, otherwise old duplicates reappear. State TTL can change answers. Explain the precise boundary of every exactly-once claim and test crashes around commit points."
+    },
+    {
+      "id": "scale-schema",
+      "title": "Partitioning, backpressure and schema evolution determine sustainable operation",
+      "body": "Hash partitioning spreads keys only when their distribution is balanced. Celebrity accounts, global tenants or null keys create hot partitions; detect them and use key splitting, hierarchical aggregation or isolated resources while preserving semantics. Parallelism changes require state redistribution. When sinks slow, backpressure propagates, increasing processing and watermark lag; unbounded buffering moves rather than solves the failure. Schemas evolve through compatible fields, defaults and versioned consumers. A semantic change may require a new topic or output version even if bytes remain compatible. Poison records go to a quarantined path with context and replay tooling, not silent drop loops. Capacity tests include sustained and burst load, skew, state growth, checkpoint duration, recovery time and downstream quotas."
+    },
+    {
+      "id": "operations-replay",
+      "title": "Reconciliation and replay prove correctness beyond the live dashboard",
+      "body": "Maintain immutable input retention or archived events sufficient for recovery and audit. Build a batch reference that recomputes bounded periods under the same semantic version and compare counts, sums, unique IDs and hashes by key and window. Investigate both live error and reference error. A replay targets a new output namespace, respects event-time policy and does not trigger irreversible actions. Savepoints enable controlled upgrades but require state-schema compatibility and tested restore. Monitor arrival and processing rates, partition lag, watermark lag, late and duplicate rates, state bytes, checkpoint success and duration, restart loops, dead letters, sink errors, output reconciliation and end-to-end freshness. Run game days and document recovery time. Roll back code with a compatible savepoint or restore the previous job and route outputs atomically."
+    }
+  ],
+  "workedExamples": [
+    {
+      "title": "Late correction",
+      "body": "A dashboard closes hourly windows after ten minutes but accepts 24-hour corrections as versioned upserts. Consumers display provisional versus final status instead of assuming first emission is immutable."
+    },
+    {
+      "title": "Duplicate side effect",
+      "body": "A notification call succeeds before a crash, then input replays. An idempotency key based on event and action version prevents a second notification."
+    }
+  ],
+  "lab": {
+    "language": "python",
+    "goal": "Implement deterministic event-time windows with deduplication and verify replay and order invariance plus late-event accounting.",
+    "buildIt": "events=[{'id':'a','key':'u1','event_time':3,'value':2},{'id':'b','key':'u1','event_time':12,'value':5},{'id':'c','key':'u2','event_time':8,'value':4},{'id':'a','key':'u1','event_time':3,'value':2},{'id':'d','key':'u1','event_time':7,'value':1}]\ndef process(rows,width=10,watermark=15,allowed_lateness=10):\n    seen=set(); windows={}; duplicates=[]; too_late=[]\n    for event in rows:\n        if event['id'] in seen: duplicates.append(event['id']); continue\n        seen.add(event['id'])\n        if event['event_time']<watermark-allowed_lateness: too_late.append(event['id']); continue\n        start=event['event_time']//width*width; out_key=(event['key'],start); windows[out_key]=windows.get(out_key,0)+event['value']\n    return windows,duplicates,too_late\nresult,duplicates,too_late=process(events)",
+    "useIt": "reordered=process(list(reversed(events)))[0]; replayed=process(events+events)[0]; output_rows=[{'key':k,'window_start':w,'value':v,'output_id':f'{k}:{w}:v1'} for (k,w),v in sorted(result.items())]",
+    "verifyIt": "assert result=={('u1',0):1,('u1',10):5,('u2',0):4}\nassert duplicates==['a'] and too_late==['a']\nassert reordered==result and replayed==result\nassert len({row['output_id'] for row in output_rows})==len(output_rows)\nassert sum(result.values())==10\n# Moving the watermark changes the declared late-data result.\nassert process(events,watermark=10)[0]!=result",
+    "shipIt": "Freeze event-time and lateness semantics, use stable IDs and idempotent outputs, failure-test checkpoints and sinks, reconcile against batch truth, and practice versioned replay and rollback."
+  },
+  "exercises": [
+    {
+      "prompt": "Define an exactly-once boundary.",
+      "solution": "Name source offsets, operator state and every sink or side effect and explain transaction, idempotency or compensation for each."
+    },
+    {
+      "prompt": "Design a late-event policy.",
+      "solution": "Specify watermark, allowed lateness, updates or retractions, finality indicator, retention and consumer behavior."
+    },
+    {
+      "prompt": "What should a replay never do by default?",
+      "solution": "Trigger irreversible external actions or overwrite current outputs without an isolated namespace and explicit promotion."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "flow",
+      "title": "Stateful event-time pipeline",
+      "items": [
+        "Versioned events with IDs and timestamps",
+        "Partitioned durable log",
+        "Watermarks and keyed windows",
+        "Checkpointed state and deduplication",
+        "Idempotent or transactional sink",
+        "Reconciliation, replay and correction"
+      ],
+      "caption": "End-to-end correctness spans source, state, time policy and external effects.",
+      "afterSection": "state-guarantees"
+    },
+    {
+      "type": "layers",
+      "title": "Streaming observability",
+      "items": [
+        "Arrival rate and partition skew",
+        "Consumer and watermark lag",
+        "Late and duplicate classification",
+        "State and checkpoint health",
+        "Sink effects and freshness",
+        "Batch reconciliation and replay audit"
+      ],
+      "caption": "Low processing latency alone does not prove semantic correctness.",
+      "afterSection": "operations-replay"
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "flink",
+      "contribution": "Grounds event-time watermarks, state, checkpointing, savepoints and recovery behavior."
+    },
+    {
+      "resource": "confluent-kafka",
+      "contribution": "Supports durable log, partition, consumer offset, schema and delivery semantics."
+    },
+    {
+      "resource": "stanford-cs329s",
+      "contribution": "Adds production system testing, monitoring, data contracts and failure-management perspective."
+    }
+  ]
 }

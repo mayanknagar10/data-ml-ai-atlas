@@ -1,6 +1,6 @@
 # Causal Inference vs Prediction — Code Lab
 
-Simulate confounding to show prediction is not intervention.
+Simulate confounding by indication, show a predictive association with the wrong sign, and recover the average effect under observed-confounder adjustment.
 
 ## 1. Build it
 

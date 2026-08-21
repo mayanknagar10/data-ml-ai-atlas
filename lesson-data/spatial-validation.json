@@ -8,34 +8,60 @@
     "as",
     "mle"
   ],
-  "interviewAnswer": "Random splits can overestimate geospatial model performance because nearby samples are correlated; spatial blocking or leave-region-out validation better measures transfer to new areas.",
+  "interviewAnswer": "Random cross-validation assumes examples are exchangeable enough for the intended deployment. Spatially nearby rows often share outcomes, covariates, sensors, entities or duplicated context, so random folds place near twins in train and validation and estimate interpolation rather than transfer. I begin with a deployment estimand: new points inside mapped regions, new neighborhoods, new cities, or future regions. Then I group or block by geography at a scale larger than the residual dependence range, optionally add a buffer between train and test, keep preprocessing and feature selection inside each fold, and combine temporal order when required. I report random and spatial results as different questions, map fold coverage and covariate support, quantify distance to training and residual autocorrelation, and reserve a final geographically untouched holdout. Blocking reduces leakage but can introduce extrapolation, which may be exactly the real task.",
   "keyPoints": [
-    "Spatial leakage",
-    "Blocked CV",
-    "Leave-region-out",
-    "Deployment geography"
+    "Validation design estimates a deployment scenario; random and spatial folds answer different questions.",
+    "Spatial dependence, repeated entities, shared rasters and neighborhood features create geographic leakage.",
+    "Block size and buffer should reflect dependence range and operational separation, not arbitrary map aesthetics.",
+    "All learned preprocessing, target encoding, imputation and feature construction must be fit inside training folds.",
+    "Report geographic coverage, support shift and distance-to-training alongside aggregate metrics and uncertainty."
   ],
   "resources": [
     "geodata-science-book",
     "pysal",
-    "google-rules-ml"
+    "google-rules-ml",
+    "roberts-spatial-cv"
   ],
   "featured": false,
-  "why": "Spatial data can make test examples near-duplicates of training examples.",
-  "intuition": "If deployment is a new city, validation should mimic a new city—not random points from the same streets.",
-  "deepDive": "Block scale should reflect autocorrelation range and deployment scope; performance can be reported by region and distance from training support.",
-  "math": "",
+  "why": "A model can appear excellent because validation points sit meters from training points and share the same satellite pixels, household, road segment or local process. Deployment to a new district then fails. Spatial validation makes geographic separation part of the estimand and exposes dependence that ordinary shuffling hides. It also forces difficult but honest questions: will the model interpolate holes within surveyed territory or extrapolate to unseen regions? Are remote areas represented? Does a held-out city differ environmentally as well as spatially? Good blocking does not merely increase error; it aligns evaluation with the decision and shows where data collection or fallback is necessary.",
+  "intuition": "Studying answers from alternating seats before an exam is not a fair test if neighbors copied the same worksheet. Random folds do something similar with nearby locations. Holding out a whole neighborhood removes local twins. Adding a buffer removes immediate border neighbors. Holding out an entire city is harder still and may change climate, policy and demographics. The appropriate difficulty is the geography the deployed model must face.",
+  "deepDive": "Spatial validation is target-population design under dependence. Blocks, groups, buffers and space-time splits control which forms of transfer are tested, while pipeline isolation prevents nonspatial leakage. Honest evaluation also measures support, fold variability, geographic failures and distance from training rather than hiding them in one average.",
+  "math": "For loss ℓ and target deployment distribution P*, desired risk is R*=E_{(X,Y)~P*}ℓ(f_train(X),Y). Cross-validation is useful when its train/test construction emulates P*. Spatial correlation Cov(Y(s),Y(t)) that decays with distance makes random-fold losses dependent on nearby training observations and often optimistic. A blocked estimate averages held-out region losses, ideally weighted like deployment, not merely by sample count when regions have unequal importance. A buffer excludes training points within distance b of test blocks. Effective sample size can be far below row count under positive spatial correlation, increasing uncertainty.",
   "code": "",
   "commonMistakes": [
-    "Randomly splitting spatially correlated rows.",
-    "Using blocks too small to break dependence."
+    {
+      "misconception": "Spatial CV is always the strictest and therefore correct.",
+      "correction": "Choose the split that emulates deployment; regional transfer and local interpolation are different estimands."
+    },
+    {
+      "misconception": "A random split is safe after adding latitude and longitude.",
+      "correction": "Coordinates can make interpolation easier while nearby dependence still leaks across folds."
+    },
+    {
+      "misconception": "Only row IDs need separation.",
+      "correction": "Shared households, tiles, sensors, graph neighborhoods and feature-generation sources can cross folds."
+    },
+    {
+      "misconception": "One block map proves robustness.",
+      "correction": "Results can depend on scale, origin and support; run sensitivity and report fold variation."
+    }
   ],
   "followUps": [
-    "How choose block size?",
-    "Spatial vs temporal leakage?"
+    {
+      "question": "How do you choose block size?",
+      "answer": "Use residual correlation range, feature footprint and expected deployment separation, then test sensitivity around that scale."
+    },
+    {
+      "question": "Why add a buffer?",
+      "answer": "It prevents train points immediately across a block boundary from acting as near duplicates of test points."
+    },
+    {
+      "question": "Should hyperparameter tuning use spatial folds?",
+      "answer": "Yes when regional transfer is the target, preferably with nested spatial inner folds and an untouched outer region."
+    }
   ],
-  "production": "Design validation around geographic deployment and monitor regional performance.",
-  "workedExample": "Hold out whole farms/regions for crop prediction instead of random pixels from each farm.",
+  "production": "Write a deployment statement before splitting: target regions, time, neighbor-label availability and retraining. Freeze row, entity, tile, region, time and buffer assignments in a checksummed manifest. Fit every learned transform and tune only within training geography. Keep one final untouched region or rollout wave. Report random and spatial estimates by name, per-fold metrics, maps, residual dependence, nearest-training distance and support shift. In serving, monitor geographic coverage, out-of-support rate, distance and subgroup calibration with privacy controls; abstain or escalate beyond validated support. Preserve prior manifests and models for rollback and never reshuffle the benchmark after seeing results.",
+  "workedExample": "A house-price model includes coordinates and neighborhood amenities. Random five-fold CV splits houses from every street across folds; nearest training houses provide near-direct comparables and RMSE is low. Leave-neighborhood-out CV tests transfer to an unseen neighborhood and error doubles. Neither result is universally correct: the random result approximates infill prediction where nearby sales exist, while the grouped result approximates launching in a neighborhood with no labeled sales. The product roadmap chooses which should govern release.",
   "visual": {
     "type": "map",
     "title": "Spatial validation holds out coherent regions",
@@ -50,6 +76,127 @@
     "caption": "Conceptually, geographic blocks separate train and test instead of randomly mixing neighbors."
   },
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "Spatial cross-validation aligns model evaluation with geographic deployment under dependence and distribution shift. This chapter explains why random folds can underestimate error when nearby observations share latent processes, repeated entities, imagery, sensors, administrative attributes or engineered neighborhoods. It distinguishes interpolation within sampled territory, prediction into spatial gaps, transfer to new regions and space-time forecasting. Designs include leave-location or group-out, regular and environmental blocks, buffered leave-one-out, spatial clustering, leave-one-region-out and nested spatial cross-validation for tuning. Block size is linked to residual autocorrelation, sampling design and operational separation, while buffers reduce near-boundary leakage. The chapter covers fold balance, disconnected regions, covariate support, extrapolation, target-weighted aggregation and uncertainty across a small number of geographic folds. It traces pipeline leakage through global imputation, scaling, feature selection, target encoding, raster composites, graph neighborhoods and hyperparameter tuning. The lab simulates a smooth spatial field, compares random K-fold with blocked folds using a distance-based regressor and verifies optimistic random error. Production guidance adds immutable split manifests, spatial and temporal cutoffs, final region holdouts, subgroup maps, distance-to-training and out-of-support monitoring, fallback and rollback. Spatial blocking is treated as an estimand decision, not a ritual that automatically makes any metric unbiased.",
+  "prerequisites": [
+    "cross-validation",
+    "spatial-autocorrelation",
+    "distribution-shift-generalization"
+  ],
+  "learningObjectives": [
+    "Define whether deployment requires interpolation, spatial gap filling, regional transfer or space-time forecasting.",
+    "Construct group, block and buffer splits at a defensible dependence scale.",
+    "Prevent preprocessing, feature, graph, raster and tuning leakage inside spatial folds.",
+    "Report spatial performance, uncertainty and support diagnostics and operate geographic fallback policies."
+  ],
+  "deepSections": [
+    {
+      "id": "estimand",
+      "title": "The deployment geography defines the validation estimand",
+      "body": "Random folds may be appropriate for predicting a new observation interspersed among well-sampled neighbors, assuming the production training set truly contains those neighbors. Leaving out spatial blocks estimates performance in geographic gaps. Leaving out administrative regions or cities estimates transfer to new domains and mixes spatial separation with policy and covariate shift. Forecasting a future region needs both temporal ordering and spatial separation; random space-time splits can leak future measurements. Decide target population, label availability, retraining cadence and whether each prediction has nearby labeled history. Weight fold losses to deployment geography or population rather than letting dense sampling dominate. Report multiple scenarios when a product serves both infill and expansion. A harsher number is not automatically more honest; alignment with the real use is the criterion."
+    },
+    {
+      "id": "split-design",
+      "title": "Block scale and buffers should exceed the leakage mechanism",
+      "body": "Regular grids are reproducible but sensitive to origin and orientation. Administrative groups match operational rollouts but can have unequal size. Spatial clustering balances points yet creates irregular boundaries. Environmental blocking tests covariate transfer rather than geographic distance. Choose block diameter from empirical residual autocorrelation, sensor footprint, feature-generation radius, entity scope and expected deployment separation. A buffer removes training points within b of the test region, reducing edge proximity but shrinking data and potentially changing support. Test several grid origins and block scales because one convenient partition can be lucky. Keep folds spatially coherent, enough in number for uncertainty, and balanced for outcomes or classes where possible without breaking geography. Save explicit IDs in a manifest rather than regenerating splits from library defaults."
+    },
+    {
+      "id": "pipeline-leakage",
+      "title": "Spatially separated rows can still share leaked information",
+      "body": "Fit imputation, scaling, category vocabularies, feature selection and hyperparameters using training folds only. Target encoding must exclude held-out geography. Raster mosaics or interpolated covariates built using observations from the test block leak labels even when final rows are separate. Neighborhood aggregates, graph embeddings and rolling features must cut edges to held-out nodes or use only information available at prediction time. Deduplicate entities and household, parcel, device or road-segment groups before spatial splitting. Nested CV should use spatial inner folds for tuning if transfer is the target; random inner tuning can select overly local models. A final untouched region remains necessary after repeated experimentation. Version feature-source timestamps and spatial footprints with the split manifest."
+    },
+    {
+      "id": "report-deploy",
+      "title": "Maps, support and distance diagnostics reveal where aggregate error hides",
+      "body": "Report per-fold and per-region metrics, confidence intervals or bootstrap units that respect spatial grouping, and maps of residuals and calibration. Compare random and blocked CV with labels describing their estimands. Measure nearest-training distance, local sample density, covariate range and domain-classifier separability; performance often degrades with distance or out-of-support features. Check residual Moran's I inside held-out regions. Rare remote communities can vanish from sample-weighted averages, so include deployment-weighted and subgroup results. In production, log coordinate uncertainty, region, distance to training, support score and model version with privacy safeguards. Define abstention or human review for far or unsupported locations, monitor expansion geography and label maturity, and trigger region-specific data collection rather than globally retraining on the same biased coverage."
+    }
+  ],
+  "workedExamples": [
+    {
+      "title": "Shared satellite tile",
+      "body": "Two nearby rows use pixels from the same source tile. Random splitting leaks almost identical imagery even if point IDs differ; tile-grouped or buffered splitting matches new-tile deployment."
+    },
+    {
+      "title": "Space-time expansion",
+      "body": "Training on future observations near a test point leaks time, while training on past observations from every future region leaks rollout geography. The split must enforce both cutoffs."
+    }
+  ],
+  "lab": {
+    "language": "python",
+    "goal": "Simulate a spatial field and demonstrate why random folds can look better than leave-region-out validation.",
+    "buildIt": "import numpy as np\nfrom sklearn.neighbors import KNeighborsRegressor\nfrom sklearn.model_selection import KFold, GroupKFold, cross_val_score\nrng=np.random.default_rng(31); n=1200; coords=rng.uniform(0,1,(n,2)); y=np.sin(5*coords[:,0])+np.cos(5*coords[:,1])+rng.normal(0,.03,n)\nmodel=KNeighborsRegressor(n_neighbors=8,weights='distance'); random_cv=KFold(6,shuffle=True,random_state=31)\n# Six vertical deployment regions create geographic transfer folds.\ngroups=np.minimum((coords[:,0]*6).astype(int),5); spatial_cv=GroupKFold(6)",
+    "useIt": "random_rmse=np.sqrt(-cross_val_score(model,coords,y,cv=random_cv,scoring='neg_mean_squared_error')).mean(); spatial_rmse=np.sqrt(-cross_val_score(model,coords,y,groups=groups,cv=spatial_cv,scoring='neg_mean_squared_error')).mean()\nrandom_splits=list(random_cv.split(coords)); spatial_splits=list(spatial_cv.split(coords,y,groups))",
+    "verifyIt": "assert spatial_rmse>random_rmse*1.5\nassert all(set(train).isdisjoint(test) for train,test in spatial_splits)\nassert all(set(groups[train]).isdisjoint(groups[test]) for train,test in spatial_splits)\nassert set().union(*(set(test) for _,test in spatial_splits))==set(range(n))\n# Random folds mix every geographic group across train and test.\nassert all(set(groups[train])&set(groups[test]) for train,test in random_splits)\nassert np.isfinite([random_rmse,spatial_rmse]).all()",
+    "shipIt": "Freeze deployment-aligned spatial and temporal manifests, keep preprocessing inside folds, report support and distance diagnostics, reserve an untouched region, and define out-of-coverage fallback."
+  },
+  "exercises": [
+    {
+      "prompt": "When can random CV be the right estimand?",
+      "solution": "When production predicts interspersed new points with similarly distributed nearby labeled training data available."
+    },
+    {
+      "prompt": "What does a spatial buffer trade off?",
+      "solution": "It reduces near-boundary dependence but discards training data and can increase covariate extrapolation."
+    },
+    {
+      "prompt": "Why map fold errors?",
+      "solution": "An aggregate average can hide coherent failing regions, remote subgroups and boundary artifacts."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "compare",
+      "title": "Validation estimands",
+      "left": {
+        "title": "Random folds",
+        "items": [
+          "Local interpolation",
+          "Nearby labels in train",
+          "Often lower error",
+          "Valid for dense infill"
+        ]
+      },
+      "right": {
+        "title": "Spatial blocks",
+        "items": [
+          "Regional transfer",
+          "Geographic separation",
+          "Support shift exposed",
+          "Valid for expansion"
+        ]
+      },
+      "caption": "Neither estimate is universal; label it with the deployment scenario it approximates.",
+      "afterSection": "estimand"
+    },
+    {
+      "type": "flow",
+      "title": "Leakage-resistant spatial evaluation",
+      "items": [
+        "Define deployment geography",
+        "Group entities and source footprints",
+        "Choose blocks and buffers",
+        "Fit pipeline inside folds",
+        "Map errors and support",
+        "Freeze final region holdout and fallback"
+      ],
+      "caption": "Geographic separation must extend through feature construction and tuning.",
+      "afterSection": "pipeline-leakage"
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "roberts-spatial-cv",
+      "contribution": "Grounds the argument that random validation under structured dependence can underestimate error and motivates blocking strategies."
+    },
+    {
+      "resource": "geodata-science-book",
+      "contribution": "Supports practical spatial dependence, geographic analysis and validation interpretation."
+    },
+    {
+      "resource": "google-rules-ml",
+      "contribution": "Adds production guidance on training-serving alignment, leakage, monitoring and deployment behavior."
+    }
+  ]
 }

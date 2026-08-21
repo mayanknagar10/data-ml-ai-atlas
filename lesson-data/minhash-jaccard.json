@@ -8,33 +8,185 @@
     "ds",
     "mle"
   ],
-  "interviewAnswer": "MinHash creates compact signatures whose collision probability equals Jaccard similarity, allowing approximate set similarity at scale.",
+  "interviewAnswer": "Jaccard similarity compares sets as |A∩B|/|A∪B|. MinHash compresses a large set into k minimum values under independent random permutations or suitable hash functions. For one component, the probability that two sets choose the same minimum equals their Jaccard similarity, because the first element in a random ordering of A∪B is uniformly likely and matches both signatures exactly when it lies in A∩B. The fraction of matching components is therefore an unbiased estimator with variance J(1−J)/k under independence. I define shingling and canonicalization first, choose k from the uncertainty required near the decision threshold, use stable versioned hashes, and evaluate false merges and misses on labeled pairs. Plain MinHash represents set Jaccard, not cosine similarity, edit distance, multiplicity, or weighted Jaccard.",
   "keyPoints": [
-    "Set similarity",
-    "Signatures",
-    "Collision probability",
-    "Near duplicates"
+    "Jaccard measures intersection relative to union and ignores multiplicity in ordinary sets.",
+    "A MinHash collision is a Bernoulli observation whose expectation equals Jaccard similarity.",
+    "More independent signature rows reduce sampling variance but increase storage and hashing work.",
+    "Shingle construction, normalization and hash quality often matter more than the estimator formula.",
+    "MinHash estimates similarity; LSH is a separate indexing layer that avoids comparing every signature pair."
   ],
   "resources": [
-    "stanford-cs246"
+    "stanford-cs246",
+    "broder-minhash-paper"
   ],
   "featured": false,
-  "why": "MinHash is foundational for web-scale duplicate detection and sparse-set similarity.",
-  "intuition": "Keep a small randomized signature instead of repeatedly intersecting huge sets.",
-  "deepDive": "Under a random permutation, the probability that two sets share the same minimum element equals their Jaccard similarity.",
-  "math": "",
+  "why": "Exact all-pairs set similarity costs too much when a corpus contains millions of documents, users or sparse binary profiles. MinHash creates a fixed-size, mergeable-looking signature whose comparison time is independent of original set size. It is foundational for near-duplicate detection, crawl deduplication, plagiarism triage, entity resolution candidates and sparse recommendation features. More importantly, it is a clean example of randomized algorithm design: transform a target quantity into a collision probability, average independent indicators, quantify error and preserve the randomness as part of the data contract. A correct implementation begins before hashing—with a carefully designed universe of shingles—and ends after estimation—with threshold calibration and representative error analysis.",
+  "intuition": "Shuffle every possible token into a random order and ask which token from each set appears first. Looking only within A∪B, both sets name the same first token precisely when that token belongs to their intersection. Since each union token is equally likely to be first, the chance of agreement is intersection size divided by union size. One shuffle gives a noisy yes/no vote. Many independent shuffles give a signature, and its agreement fraction estimates Jaccard. In practice no one stores gigantic permutations; universal or high-quality seeded hashes emulate random priorities, and each set records the minimum hash under every seed.",
+  "deepDive": "MinHash turns set similarity into repeated collision experiments. The proof depends on a shared universe and genuinely shared random ordering, while the useful system depends on stable shingles, enough independent rows and a calibrated threshold. It is a lossy estimator rather than an index or a semantic model, and its uncertainty must be considered near decisions.",
+  "math": "For nonempty sets A,B, J(A,B)=|A∩B|/|A∪B|. For a uniformly random permutation π, h_π(S)=argmin_{x∈S}π(x). Then P[h_π(A)=h_π(B)]=J(A,B). With k independent rows, J_hat=k^{-1}Σ_j 1[h_j(A)=h_j(B)], E[J_hat]=J, Var(J_hat)=J(1−J)/k, and an approximate standard error is sqrt(J_hat(1−J_hat)/k). Hoeffding gives P(|J_hat−J|≥ε)≤2exp(−2kε²). Empty-set behavior must be defined separately; two empty sets are often treated as equal by product convention, but a signature has no minimum.",
   "code": "",
   "commonMistakes": [
-    "Confusing MinHash with cryptographic hashing.",
-    "Using it for arbitrary Euclidean distance."
+    {
+      "misconception": "MinHash computes semantic similarity.",
+      "correction": "It estimates Jaccard of the sets produced by your representation; semantic meaning is not automatic."
+    },
+    {
+      "misconception": "One matching signature component means two documents are duplicates.",
+      "correction": "It is one Bernoulli trial; use many rows and calibrate aggregate agreement."
+    },
+    {
+      "misconception": "Different services can choose their own random seeds.",
+      "correction": "Rows are comparable only under the same versioned hash family and preprocessing contract."
+    },
+    {
+      "misconception": "More signature rows fix poor tokenization.",
+      "correction": "They reduce randomized estimator variance but cannot remove representation bias."
+    }
   ],
   "followUps": [
-    "How does MinHash connect to LSH?",
-    "How many hashes are enough?"
+    {
+      "question": "Why does the minimum collision probability equal Jaccard?",
+      "answer": "The first union element under a random ordering is shared exactly when it comes from the intersection."
+    },
+    {
+      "question": "How many rows should a signature have?",
+      "answer": "Choose k from acceptable uncertainty near the operational threshold and validate the resulting decision errors on labeled pairs."
+    },
+    {
+      "question": "What is the difference between MinHash and LSH?",
+      "answer": "MinHash sketches and estimates Jaccard; LSH groups signatures to generate a small candidate set."
+    }
   ],
-  "production": "Choose signature size by memory/accuracy requirements and validate candidate recall.",
-  "workedExample": "Document shingles can use MinHash to detect near-duplicate pages.",
+  "production": "Publish a signature schema containing canonicalization, tokenizer or shingle definition, universe encoding, hash algorithm, seeds, row count and empty-set policy. Make it immutable per version. Dual-run migrations and never compare rows across versions. Generate candidates with an index, calculate signature similarity, and use exact Jaccard or content checks near destructive merge thresholds. Evaluate candidate recall and final false-merge rate on representative labeled pairs, including short, templated and multilingual documents. Monitor set sizes, empty rates, signature entropy, bucket skew, score and cluster-size drift, throughput and backfill completeness. Persist cluster provenance and support unmerge or reprocessing. Limit access because fingerprints can still expose membership and linkage. Roll back the index and decision threshold independently from source documents.",
+  "workedExample": "Document A has shingles {data, model, deploy, monitor}; B has {data, model, test, monitor}. Their intersection has three elements and union five, so J=0.6. Across 100 independent MinHash rows, about 60 matches are expected, with standard deviation sqrt(100×0.6×0.4)≈4.9 matches. An estimate such as 0.56 is unsurprising. If an application merges at 0.58, sampling noise near the boundary matters; it should use more rows, a gray zone with exact verification, or a threshold chosen from labeled costs.",
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "MinHash is a randomized sketch for estimating Jaccard similarity between large sets. This chapter begins with set construction, token normalization, character and word shingles, binary incidence and the difference between resemblance and containment. It proves the central collision identity from the minimum element of a random permutation and derives the estimator's expectation, variance and concentration behavior. It explains how seeded hash functions replace explicit permutations, why all compared objects must share the same hash family, and how signature length controls storage, compute and uncertainty. Edge cases include empty sets, duplicate tokens, tiny sets, hash collisions, correlated rows and adversarial or unstable hashing. The chapter distinguishes ordinary MinHash from weighted MinHash, one-permutation variants, bottom-k sketches and semantic embeddings, and distinguishes similarity estimation from LSH candidate retrieval. A worked document example interprets error near a deduplication threshold. The lab creates deterministic universal-hash signatures, compares them with exact and library Jaccard, and verifies identity, disjointness, permutation invariance and improved accuracy with longer signatures. Production sections cover preprocessing contracts, hash-family versioning, backfills, threshold calibration, exact second-stage checks, privacy, skew, monitoring and rollback.",
+  "prerequisites": [
+    "hash-tables",
+    "probability-basics",
+    "monte-carlo"
+  ],
+  "learningObjectives": [
+    "Derive the MinHash collision probability and the sampling uncertainty of a signature estimate.",
+    "Construct stable shingles and signatures while handling duplicates, empty sets and hash-family versioning.",
+    "Select a signature length and decision workflow from error tolerance and labeled merge or miss costs.",
+    "Distinguish MinHash from LSH, weighted similarity, exact verification and semantic retrieval."
+  ],
+  "deepSections": [
+    {
+      "id": "set-model",
+      "title": "The set representation defines what similarity means",
+      "body": "Jaccard treats each distinct element as present or absent. For text, elements might be normalized words, character k-shingles or word n-grams. Character shingles tolerate small tokenization changes but create large sets; long shingles reduce accidental overlap but miss paraphrases and edits. Lowercasing, Unicode normalization, boilerplate removal, language handling, punctuation, URL canonicalization and boundary markers all change the result. For users, elements may be interacted item IDs within a time window; for graphs, neighbor IDs. Ordinary sets discard frequency, so repeated terms or event counts do not matter. Weighted Jaccard requires a different consistent weighted sampling construction. Containment |A∩B|/|A| is asymmetric and detects a short document copied into a long one, whereas resemblance may be low. Empty sets and tiny sets need explicit policy. Thus MinHash does not decide the semantics: it faithfully approximates the similarity induced by the chosen set contract."
+    },
+    {
+      "id": "collision-proof",
+      "title": "A minimum under shared randomness becomes a Jaccard trial",
+      "body": "Consider a random permutation of the entire universe but restrict attention to A∪B. Its earliest element is uniformly distributed among union elements. If that element belongs to A∩B, it is the first element of both sets and the two MinHash values match. If it belongs to only one set, the other set selects a different element. The equality probability is therefore |A∩B|/|A∪B|. Repeating with independent permutations produces Bernoulli trials. Explicit permutations are infeasible, so implementations assign pseudorandom priorities through seeded hashes and keep the minimum. Pairwise-independent affine hashes modulo a prime are educational, while production systems use well-tested stable 64- or 128-bit hashes and domain-separated seeds. Finite hashes permit accidental collisions, and deriving many rows poorly from one hash introduces correlation. Python's process-randomized hash is unsuitable for persistent signatures."
+    },
+    {
+      "id": "error-variants",
+      "title": "Signature length controls estimator error, not representation bias",
+      "body": "With k independent rows the agreement count is binomial, so standard error is largest near J=0.5 and shrinks as 1/sqrt(k). Choose k around the similarity and error band relevant to the decision, not from a universal default. A confidence interval or concentration bound exposes uncertainty near a threshold. Increasing k cannot repair bad shingles, biased sampling, concept mismatch or changed preprocessing. Bottom-k or KMV sketches retain the k smallest hashes from one stream and can estimate unions and intersections with different estimators. One-permutation hashing reduces compute but needs densification and careful analysis. Weighted MinHash targets weighted Jaccard; SimHash targets angular or cosine-like similarity. Embeddings capture learned semantic proximity but do not preserve exact token overlap. These methods can be combined, but their scores are not interchangeable and require separate calibration."
+    },
+    {
+      "id": "pipeline",
+      "title": "A reliable deduplication pipeline uses MinHash as one evidence layer",
+      "body": "Store the canonicalization and shingling version, hash algorithm, seeds, signature length and source time with every signature. A version mismatch makes row comparisons meaningless, so migrations need dual writing or complete backfills. At corpus scale, place signatures into LSH buckets or another candidate index, then calculate signature agreement and often exact Jaccard only for candidates. Use labeled duplicate, near-duplicate and hard-negative pairs to choose thresholds against the costs of false merges and misses. Add a gray zone for review or exact verification. Measure candidate recall separately from final precision, stratified by language, document length, template and source. Monitor empty and tiny sets, shingle counts, signature collisions, bucket skew, score distributions and merge rates. Keep originals or recoverable cluster provenance, because erroneous deduplication can delete distinct content. Treat shingles and signatures as potentially identifying fingerprints with access and retention controls."
+    }
+  ],
+  "workedExamples": [
+    {
+      "title": "Containment versus resemblance",
+      "body": "A 20-shingle paragraph appears inside a 200-shingle article. Containment of the paragraph is one, but Jaccard is only 0.1; choose the target metric before choosing the sketch."
+    },
+    {
+      "title": "Threshold uncertainty",
+      "body": "At true J=0.8 and k=100, the standard error is about 0.04. A hard 0.80 merge rule will fluctuate; more rows or exact verification around the cutoff reduces inconsistent decisions."
+    }
+  ],
+  "lab": {
+    "language": "python",
+    "goal": "Build deterministic MinHash signatures, compare them with exact and library Jaccard, and test core estimator invariants.",
+    "buildIt": "import hashlib, numpy as np\nrows=512\ndef jaccard(left,right):\n    left,right=set(left),set(right); union=left|right\n    return len(left&right)/len(union) if union else 1.0\ndef hash_value(value,seed):\n    return int.from_bytes(hashlib.blake2b(str(value).encode(),digest_size=8,key=seed.to_bytes(8,'big')).digest(),'big')\ndef signature(values,k=rows):\n    unique=sorted(set(values))\n    if not unique: raise ValueError('empty set has no minimum')\n    return np.array([min(hash_value(value,seed) for value in unique) for seed in range(1,k+1)],dtype=np.uint64)\ndef estimate(left,right,k=rows): return float(np.mean(signature(left,k)==signature(right,k)))\nA=set(range(0,300)); B=set(range(100,400)); exact=jaccard(A,B); approx_64=estimate(A,B,64); approx_512=estimate(A,B,512)",
+    "useIt": "from sklearn.metrics import jaccard_score\nuniverse=sorted(A|B); y_a=np.array([x in A for x in universe],dtype=int); y_b=np.array([x in B for x in universe],dtype=int)\nlibrary_value=jaccard_score(y_a,y_b)",
+    "verifyIt": "assert exact==.5 and abs(library_value-exact)<1e-12\nassert estimate(A,A)==1.0\nassert estimate(A,set(range(1000,1300)))<.03\nassert np.array_equal(signature(A),signature(list(reversed(sorted(A)))))\nassert abs(approx_512-exact)<.06\nassert abs(approx_512-exact)<=abs(approx_64-exact)+.08\ntry: signature(set())\nexcept ValueError: pass\nelse: raise AssertionError('empty set policy must be explicit')",
+    "shipIt": "Freeze preprocessing and hash-family versions, size signatures from labeled threshold error, index candidates separately, exact-check ambiguous or destructive merges, and monitor signature and cluster drift."
+  },
+  "exercises": [
+    {
+      "prompt": "Derive the variance of the k-row estimator.",
+      "solution": "Each row match is Bernoulli(J); averaging k independent rows gives J(1−J)/k."
+    },
+    {
+      "prompt": "Why is Python's built-in hash risky for stored signatures?",
+      "solution": "Its randomization and implementation details can change values between processes or versions, breaking row comparability."
+    },
+    {
+      "prompt": "When would containment be preferable to Jaccard?",
+      "solution": "When detecting whether a small object is mostly included in a much larger one, such as a copied paragraph."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "flow",
+      "title": "From document to similarity estimate",
+      "items": [
+        "Canonicalize content",
+        "Create distinct shingles",
+        "Apply shared seeded hash rows",
+        "Keep each row minimum",
+        "Compare signature rows",
+        "Exact-check threshold cases"
+      ],
+      "caption": "Every signature is meaningful only under the same set and hash contract.",
+      "afterSection": "pipeline"
+    },
+    {
+      "type": "curve",
+      "title": "Estimator uncertainty shrinks with rows",
+      "series": [
+        {
+          "label": "Approximate standard error at J=0.5",
+          "points": [
+            [
+              0.08,
+              0.88
+            ],
+            [
+              0.2,
+              0.62
+            ],
+            [
+              0.45,
+              0.38
+            ],
+            [
+              0.72,
+              0.25
+            ],
+            [
+              0.94,
+              0.17
+            ]
+          ]
+        }
+      ],
+      "caption": "Conceptual normalized curve: random error falls only with the square root of signature length.",
+      "afterSection": "error-variants"
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "broder-minhash-paper",
+      "contribution": "Provides the foundational document resemblance, containment, shingling and random-sampling construction behind MinHash."
+    },
+    {
+      "resource": "stanford-cs246",
+      "contribution": "Supports the collision proof, signature-matrix implementation, error reasoning and connection to similarity search."
+    }
+  ]
 }

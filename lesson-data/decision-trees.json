@@ -8,39 +8,59 @@
     "mle",
     "as"
   ],
-  "interviewAnswer": "Decision trees recursively split the feature space to make child nodes purer. They capture nonlinear interactions and require little preprocessing, but deep trees overfit easily.",
+  "interviewAnswer": "A decision tree is a nonparametric, piecewise-constant model that recursively partitions feature space. At each node it greedily searches a feature and threshold that maximize weighted impurity reduction: Gini or entropy for classification, and usually squared-error reduction for regression. A leaf predicts its training-label distribution or target average. Trees capture thresholds and interactions without scaling, but an unpruned tree has high variance, unstable boundaries, unreliable small-leaf probabilities, and no sensible extrapolation. I tune leaf size, depth or cost-complexity pruning inside leakage-safe validation, compare against simple baselines, and evaluate probability calibration separately from discrimination. In production I version preprocessing and category handling, guard unsupported ranges, monitor leaf occupancy and delayed error, and never interpret impurity importance as causality.",
   "keyPoints": [
-    "Gini/entropy",
-    "Split criterion",
-    "Depth",
-    "Feature importance caveats"
+    "A split is selected by weighted reduction in a declared node impurity or loss.",
+    "Greedy recursive partitioning is locally optimal, not a search for the globally best tree.",
+    "Depth, minimum leaf mass and cost-complexity pruning control variance and rule complexity.",
+    "Leaf class fractions are estimates, not automatically calibrated probabilities.",
+    "Tree explanations and feature importances describe model behavior, not causal effects."
   ],
   "resources": [
-    "sklearn",
-    "statquest",
-    "stanford-cs229",
-    "google-mlcc",
-    "isl"
+    "sklearn-trees",
+    "isl",
+    "stanford-cs229"
   ],
   "featured": false,
-  "why": "Decision trees introduce recursive partitioning, impurity measures, overfitting and the foundation for random forests and gradient boosting.",
-  "intuition": "A tree repeatedly asks simple questions that split the data into purer groups. Each path from root to leaf is an interpretable set of rules.",
-  "deepDive": "For classification, splits often maximize impurity reduction using Gini or entropy; regression trees reduce squared/absolute error. Trees naturally model nonlinear interactions and mixed scales but are high variance: a small data change can alter structure. Depth, minimum samples and pruning regularize them. Greedy split selection is local, not globally optimal.",
-  "math": "Gini = 1-Σ_k p_k²\nEntropy = -Σ_k p_k log p_k\nSplit gain = parent impurity - weighted child impurities",
-  "workedExample": "A failure classifier might first split on load, then material type, then temperature. The interactions are learned without manually creating load×material features.",
-  "code": "from sklearn.tree import DecisionTreeClassifier\nm=DecisionTreeClassifier(max_depth=5,min_samples_leaf=20,random_state=0)\nm.fit(X_train,y_train)",
+  "why": "Decision trees are the primitive behind random forests, boosted trees and many high-performing tabular systems. They transform continuous and categorical evidence into explicit regions, naturally express conditional interactions, and establish a useful contrast with globally smooth linear models. Their apparent simplicity is also pedagogically valuable: every modeling choice is visible in a split, a stopping rule or a leaf statistic. That visibility makes it easier to see how label leakage, rare categories, class weights, missingness and sampling choices alter a predictor. Mastery requires more than reading a plotted tree. You must distinguish an impurity objective from the business metric, understand why a greedy split can miss a better multistep partition, quantify small-leaf uncertainty, select complexity using independent data, and treat a path explanation as a property of one fitted artifact. These habits transfer directly to ensemble trees, model debugging and production governance.",
+  "intuition": "Imagine dividing a map with vertical and horizontal fences. Each fence is chosen to make the groups on its two sides more homogeneous in the target. A sequence of fences creates rectangular neighborhoods, and each neighborhood receives one prediction. A deep tree can place fences around individual training points, memorizing noise; a shallow tree may merge genuinely different populations. Because the first fence changes which later fences are even possible, a tiny sample change can reorganize the whole map. Pruning asks whether the extra local detail earns enough reduction in error to justify another branch. The resulting rules are readable, but readability does not make the data or the learned association causal.",
+  "deepDive": "A tree is a greedy estimator of a partition and a value within every terminal region. The central trade-off is local adaptability versus sampling variance: smaller leaves fit sharper interactions but estimate their values from fewer independent observations. Honest evaluation must reproduce deployment grouping and time, while production must preserve split semantics, route unsupported inputs safely, and monitor whether traffic still reaches leaves in the proportions and outcome ranges seen during training.",
+  "math": "For node m with weighted class proportions p_mk, Gini H(m)=1-Σ_k p_mk² and entropy H(m)=-Σ_k p_mk log p_mk. A candidate split s with children L,R has gain Δ(s)=H(m)-[W_L/W_m H(L)+W_R/W_m H(R)]. Regression with squared loss uses within-node sum of squared deviations and predicts the weighted mean. Cost-complexity pruning selects a subtree T minimizing R(T)+α|leaves(T)| on training data, with α chosen using independent validation or cross-validation.",
+  "workedExample": "A node has six observations with labels [0,0,0,1,1,1], so parent Gini is 1-(3/6)^2-(3/6)^2=0.5. A threshold sends [0,0,0,1] left and [1,1] right. Left Gini is 1-(3/4)^2-(1/4)^2=0.375; right Gini is zero. Weighted child impurity is (4/6)*0.375=0.25, so gain is 0.25. A competing split with one pure observation and five mixed observations must be weighted; purity of the tiny child alone is not enough.",
+  "code": "from sklearn.tree import DecisionTreeClassifier\nmodel=DecisionTreeClassifier(max_depth=1,random_state=0).fit(X,y)\nsk_pred=model.predict(X)",
   "commonMistakes": [
-    "Assuming deeper trees are always better.",
-    "Treating feature-importance scores as causal.",
-    "Ignoring class imbalance or leakage because trees handle preprocessing well."
+    {
+      "misconception": "Gini impurity is the model's business loss.",
+      "correction": "It is a local training criterion. Select and evaluate the final decision using costs and metrics that represent the actual use case."
+    },
+    {
+      "misconception": "A readable tree is automatically stable and trustworthy.",
+      "correction": "Small data changes can alter its structure; readability explains one artifact, not its sampling stability, causality or fairness."
+    },
+    {
+      "misconception": "Trees need no preprocessing at all.",
+      "correction": "They may not need scaling, but category encoding, missingness, timestamps, leakage control, units and schema consistency remain essential."
+    },
+    {
+      "misconception": "Impurity importance tells what causes the target.",
+      "correction": "It summarizes fitted associations and split opportunities; it is biased and cannot identify causal effects."
+    }
   ],
   "followUps": [
-    "Gini vs entropy?",
-    "Why do trees overfit?",
-    "How does pruning help?",
-    "Why do ensembles improve trees?"
+    {
+      "question": "Why does minimum leaf size regularize a tree?",
+      "answer": "It prevents values and subsequent splits from being estimated on tiny samples, smoothing the partition and reducing variance at the cost of possible bias."
+    },
+    {
+      "question": "Gini or entropy?",
+      "answer": "Both reward purity and often choose similar splits. Entropy has an information interpretation and is costlier to compute; validation and operational metrics matter more than a universal preference."
+    },
+    {
+      "question": "Why can a tree not extrapolate?",
+      "answer": "Every prediction is a stored leaf statistic. Beyond the outermost training thresholds, new values remain in an edge leaf rather than extending a learned slope."
+    }
   ],
-  "production": "Tree models are strong tabular baselines. Validate input ranges/categories and monitor feature distributions because splits can behave unexpectedly outside training support.",
+  "production": "Package the fitted tree with the complete feature pipeline and decision policy. Version training cutoff, target definition, units, categorical mappings, missing-value routing, sample and class weights, pruning settings, library version and serialization format. Validate finite numeric inputs and known categories, and specify behavior for new categories and values beyond training support. Benchmark p95 latency and memory at realistic tree depth. Monitor feature health, prediction and probability distributions, leaf occupancy, class prevalence, delayed error, calibration and subgroup decision rates. A path trace is useful for debugging but may expose sensitive logic, so apply access controls and retention limits. Canary replacements against the current tree, rerun invariant and fairness checks, and keep a constant or rule-based fallback plus the prior model for immediate rollback. Retraining requires the same grouped or chronological evaluation and must not silently reuse the production test window for tuning.",
   "visual": {
     "type": "network",
     "title": "Decision tree",
@@ -98,6 +118,130 @@
     "directed": true
   },
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "lab": {
+    "language": "python",
+    "goal": "Build a one-level classification tree, compare it with scikit-learn, and verify impurity and partition invariants.",
+    "buildIt": "import numpy as np\nX=np.array([[0.1],[0.2],[0.4],[0.8],[0.9],[1.1]],float); y=np.array([0,0,0,1,1,1])\ndef gini(labels):\n    if len(labels)==0: return 0.0\n    p=np.bincount(labels,minlength=2)/len(labels)\n    return float(1-np.sum(p*p))\ndef best_stump(X,y):\n    parent=gini(y); best=None\n    for j in range(X.shape[1]):\n        vals=np.unique(X[:,j]); thresholds=(vals[:-1]+vals[1:])/2\n        for t in thresholds:\n            left=X[:,j]<=t; right=~left\n            child=(left.mean()*gini(y[left])+right.mean()*gini(y[right]))\n            candidate=(parent-child,j,float(t))\n            if best is None or candidate[0]>best[0]: best=candidate\n    gain,j,t=best; left=X[:,j]<=t\n    values=(np.bincount(y[left],minlength=2).argmax(),np.bincount(y[~left],minlength=2).argmax())\n    return {'gain':gain,'feature':j,'threshold':t,'values':values}\nstump=best_stump(X,y)\ndef predict_stump(X,s): return np.where(X[:,s['feature']]<=s['threshold'],s['values'][0],s['values'][1])\nscratch_pred=predict_stump(X,stump)",
+    "useIt": "from sklearn.tree import DecisionTreeClassifier\nmodel=DecisionTreeClassifier(max_depth=1,random_state=0).fit(X,y)\nsk_pred=model.predict(X)",
+    "verifyIt": "assert 0<=gini(y)<=1\nassert stump['gain']>0\nassert X[y==0].max()<stump['threshold']<X[y==1].min()\nassert np.array_equal(scratch_pred,y)\nassert np.array_equal(sk_pred,scratch_pred)\nassert model.tree_.node_count==3\nassert abs(model.tree_.impurity[0]-gini(y))<1e-12",
+    "shipIt": "Put encoders inside validation, version split and pruning settings, reject schema violations, monitor leaf occupancy and delayed calibration, and retain a baseline and previous artifact for rollback."
+  },
+  "description": "Decision trees learn if-then rules by recursively partitioning feature space and assigning a constant prediction to every terminal region. This chapter derives classification impurity and regression loss reduction, explains the weighted split calculation, and separates greedy tree construction from post-pruning. It covers Gini versus entropy, thresholds, categorical encoding, sample and class weights, stopping rules, cost-complexity pruning, leaf probabilities, instability, missing values, monotonic constraints, extrapolation and interpretation. Two worked examples calculate a split and expose a leakage-prone customer identifier. The lab implements a one-level classifier from scratch, compares its threshold and predictions with scikit-learn, and verifies partition and impurity invariants. The production discussion treats the tree as a versioned decision system: input schema, category policy, leaf occupancy, probability calibration, latency, fairness, fallbacks and rollback all need explicit contracts. A tree can be transparent about its computation while still being wrong about the population or unsafe for a decision. You will also learn why validation must preserve grouped and temporal dependence, how tiny leaves create false confidence, and when a simple rule list is preferable to a statistically unstable tree.",
+  "prerequisites": [
+    "expectation-variance"
+  ],
+  "learningObjectives": [
+    "Compute weighted Gini, entropy or regression-loss reduction for a candidate split.",
+    "Explain recursive partitioning, greedy search and the piecewise-constant prediction surface.",
+    "Control complexity with leaf constraints and cost-complexity pruning under honest validation.",
+    "Audit tree probabilities, explanations, importances and production behavior without causal overclaiming."
+  ],
+  "deepSections": [
+    {
+      "id": "partition-objective",
+      "title": "From observations to a recursive partition",
+      "body": "At a node m, the learner considers allowed feature tests and divides the node's observations into candidate children. For a numerical feature, thresholds only need to be considered between distinct sorted values. For a classification target, a node is pure when one class has all weight. Gini impurity and entropy are both zero there and increase as class mass mixes. Split gain subtracts the children’s weighted impurity from the parent impurity; weighting prevents a tiny pure child from looking better than two useful groups. A regression tree instead reduces an additive loss, commonly squared error around each node mean. Sample weights alter proportions and losses, so they change both structure and leaf values. The fitted function is constant within every leaf and discontinuous at split boundaries. Multi-output criteria aggregate reduction across targets. Software details matter: native categorical splits, ordered encodings, missing-value routing and tie-breaking differ by implementation. Put all learned encoders inside the validation pipeline; fitting a target encoding before the split leaks labels into every proposed rule."
+    },
+    {
+      "id": "greedy-growth",
+      "title": "Greedy growth is a heuristic search",
+      "body": "Finding a globally optimal constrained tree is computationally hard, so CART-style algorithms make the best immediate split and recurse. A split with little immediate gain may unlock an excellent later partition, yet greedy search can reject it; conversely, an early accidental association can dominate every later branch. Maximum depth limits path length, minimum samples or weight per leaf limits how little evidence supports a value, and minimum impurity decrease rejects marginal branches. These controls interact. A depth limit can leave one branch underfit while allowing another to spend unnecessary capacity. Fully growing and cost-complexity pruning produces a nested sequence of subtrees by penalizing each leaf with α, but α still must be selected without using the final test set. A validation curve is more informative than choosing a folklore depth. Repeated or nested validation reveals structural instability: similar scores can hide radically different first splits, especially when predictors are correlated or the sample is small."
+    },
+    {
+      "id": "leaf-estimates",
+      "title": "Leaf values, uncertainty and class probability",
+      "body": "For squared-error regression, the optimal leaf value is the weighted target mean. For classification, the empirical weighted class fraction minimizes multinomial log loss within a fixed leaf and is commonly returned as predict_proba. That number may be extreme because only a few observations reached the leaf, because class weights changed the effective distribution, or because the training prevalence differs from deployment. Minimum leaf mass regularizes indirectly; explicit calibration on held-out data may improve probabilities, but calibration must use an honest split and be rechecked after prevalence change. A hard label applies a decision threshold to probabilities and costs, so accuracy and impurity are not the same as decision utility. Predictions beyond the observed feature range remain the value of an edge leaf: trees do not extrapolate a trend. Quantile or distributional variants can represent more than a mean, but uncertainty still depends on independent sampling units and cannot be inferred from leaf size alone when observations are clustered."
+    },
+    {
+      "id": "interpretation-risk",
+      "title": "Interpret rules without mistaking them for truth",
+      "body": "A root-to-leaf path is a faithful description of how that fitted tree computed one prediction, given the exact feature values and missing-value behavior. It is not proof that each condition is causally important, stable under retraining, or fair. Mean decrease in impurity accumulates training gains and is biased toward variables with many possible split points or proxies that appear early. Permutation importance measures score degradation under a chosen evaluation distribution, but correlated features can substitute for one another and unrealistic permutations can leave the data manifold. Always state the metric, dataset and intervention used by an importance method. Audit subgroup errors and threshold consequences directly instead of inferring fairness from tree visibility. Sensitive attributes can be reconstructed through proxies. A simple tree may be suitable as a policy only when features are available at decision time, rule changes are governed, and applicants or operators can understand and challenge relevant outcomes."
+    },
+    {
+      "id": "evaluation-operations",
+      "title": "Evaluate and operate the complete tree pipeline",
+      "body": "Use chronological, grouped or spatial splits whenever related rows would make random validation optimistic. Tune preprocessing, depth, leaf constraints and pruning only inside the training portion; preserve an untouched final test or repeated outer folds for an unbiased comparison. Report the metric aligned with the decision, probability calibration where probabilities are consumed, subgroup results, uncertainty across splits and latency. Compare with a constant predictor, a regularized linear model and a stronger ensemble. In service, version the training window, target, feature schema, categorical mappings, missing policy, sample weights, code and serialized artifact. Reject incompatible types and nonfinite values rather than relying on accidental casting. Monitor missingness, range, category novelty, prediction distribution, leaf occupancy, delayed loss and decision outcomes. Sparse traffic in a formerly busy leaf can signal drift or upstream breakage. Canary new trees, retain the prior artifact, and define a safe baseline or manual route when features are unavailable."
+    }
+  ],
+  "workedExamples": [
+    {
+      "title": "Calculate a weighted Gini split",
+      "body": "A node has six observations with labels [0,0,0,1,1,1], so parent Gini is 1-(3/6)^2-(3/6)^2=0.5. A threshold sends [0,0,0,1] left and [1,1] right. Left Gini is 1-(3/4)^2-(1/4)^2=0.375; right Gini is zero. Weighted child impurity is (4/6)*0.375=0.25, so gain is 0.25. A competing split with one pure observation and five mixed observations must be weighted; purity of the tiny child alone is not enough."
+    },
+    {
+      "title": "A high-cardinality identifier wins for the wrong reason",
+      "body": "A churn dataset includes customer ID encoded as an integer. A deep tree finds thresholds that isolate small groups and reports large impurity importance for the ID. Random row validation looks strong because repeated events for the same customers appear in both sets. Grouping by customer collapses performance. The repair is to define the prediction unit and cutoff, remove or safely encode identifiers, split by customer and time, require adequate leaf mass, and compare against a no-ID baseline."
+    }
+  ],
+  "exercises": [
+    {
+      "prompt": "Why must child impurity be weighted by child mass?",
+      "solution": "Without weighting, isolating one pure observation could dominate even if the other child remains almost as mixed as the parent. Weighting measures expected impurity after routing a random node observation."
+    },
+    {
+      "prompt": "A regression tree predicts the same value for x=100 and x=10,000. Explain.",
+      "solution": "Both values traverse the same outer leaf. Standard regression trees store a constant leaf statistic and do not extend a trend outside observed support."
+    },
+    {
+      "prompt": "Design a leakage-safe validation for repeated patient visits.",
+      "solution": "Group all visits from one patient together and respect the deployment cutoff if future visits are predicted. Fit every preprocessing and pruning choice only on training groups."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "flow",
+      "title": "How a tree learns one branch",
+      "items": [
+        "Collect node observations",
+        "Enumerate valid tests",
+        "Compute weighted gain",
+        "Choose the best local split",
+        "Recurse or stop",
+        "Store a leaf value"
+      ],
+      "caption": "Recursive partitioning alternates greedy split selection with an explicit stopping rule.",
+      "afterSection": "greedy-growth"
+    },
+    {
+      "type": "compare",
+      "title": "Growth versus regularization",
+      "left": {
+        "title": "More local detail",
+        "items": [
+          "Greater depth",
+          "Smaller leaves",
+          "Lower training loss",
+          "Higher structural variance"
+        ]
+      },
+      "right": {
+        "title": "More stable regions",
+        "items": [
+          "Pruning penalty",
+          "Larger leaf mass",
+          "Smoother probabilities",
+          "Possible underfitting"
+        ]
+      },
+      "caption": "Tree complexity trades local fit against the reliability of each region.",
+      "afterSection": "leaf-estimates"
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "sklearn-trees",
+      "contribution": "Verifies current CART-style objectives, implementation behavior, pruning controls and practical limitations."
+    },
+    {
+      "resource": "isl",
+      "contribution": "Provides the statistical-learning treatment of recursive partitioning, pruning and validation."
+    },
+    {
+      "resource": "stanford-cs229",
+      "contribution": "Supports the supervised-learning and generalization framing used to separate training criteria from evaluation."
+    }
+  ]
 }

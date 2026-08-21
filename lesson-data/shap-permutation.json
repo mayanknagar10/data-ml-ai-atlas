@@ -6,31 +6,185 @@
   "roles": [
     "ds"
   ],
-  "interviewAnswer": "Interpretability tools answer different questions: permutation importance measures performance drop when a feature is disrupted; PDP shows average predicted response; SHAP attributes prediction differences under a chosen background/assumption framework.",
+  "interviewAnswer": "SHAP and permutation importance answer different questions. Permutation importance is global model reliance: how much a chosen held-out score drops when a feature or feature group is disrupted for a fixed fitted model. SHAP assigns one prediction's difference from a background expectation among features using Shapley-value axioms and a chosen missing-feature game. SHAP values sum to the explained output relative to the baseline, but they depend on model output scale, background population and whether absent features are handled interventionally or conditionally. Correlated features can share or redirect credit, and neither method establishes causality. I use held-out grouped permutation for global necessity, SHAP for local decomposition and interaction exploration, validate local efficiency and global stability, preserve encoded-to-raw lineage, and never treat a force plot as proof of why the real-world outcome occurred.",
   "keyPoints": [
-    "Importance is not causality.",
-    "Correlated features complicate attribution.",
-    "Global and local explanations differ."
+    "Permutation measures score reliance after a perturbation; SHAP distributes a prediction difference under a feature-coalition game.",
+    "SHAP's baseline, output scale, background sample and missing-feature semantics are part of the explanation.",
+    "Local additivity does not imply causal truth, unique semantic credit or stable ranking under correlated features.",
+    "Aggregate SHAP summaries answer different questions from held-out permutation and retraining ablation.",
+    "Explanations require fidelity checks, uncertainty, feature lineage, privacy review and human-readable limitations."
   ],
   "resources": [
-    "sklearn",
-    "isl"
+    "shap-paper",
+    "sklearn-inspection-guide",
+    "sklearn-model-evaluation"
   ],
   "featured": false,
-  "why": "Permutation Importance, PDP & SHAP is a standard part of a broad data/ML curriculum because it changes how models are selected, evaluated or operated in real systems.",
-  "intuition": "Importance is not causality.",
-  "deepDive": "Interpretability tools answer different questions: permutation importance measures performance drop when a feature is disrupted; PDP shows average predicted response; SHAP attributes prediction differences under a chosen background/assumption framework. Correlated features complicate attribution. Global and local explanations differ. A strong answer connects the formal idea to validation, data requirements and failure modes instead of treating the method as a recipe.",
-  "workedExample": "Use permutation importance to find useful features, then SHAP for individual high-risk decisions—but state that neither proves causal impact.",
+  "why": "A local explanation can help debug an unexpected denial, inspect a prediction or communicate model evidence. A global reliance measure can identify brittle inputs or guide ablation. Problems arise when colorful attributions are treated as causal reasons, when a convenient background population silently defines the baseline, or when one-hot columns fragment a business concept. Correlated features make credit non-unique, off-manifold feature masking creates unrealistic counterfactuals, and probability explanations can differ from log-odds explanations. A rigorous explanation names the exact mathematical game and population, verifies its algebraic contract, cross-checks behavior with perturbations and examples, and connects the method to a specific decision rather than promising universal transparency.",
+  "intuition": "Suppose a prediction is 12 while the average background prediction is 5. SHAP divides the seven-unit difference among features by averaging how much each feature adds across all orders in which features could join a coalition. Permutation instead scrambles a feature across many held-out rows and measures lost model score. One explains allocation for a prediction; the other tests global reliance under disruption.",
+  "deepDive": "Shapley attribution uses cooperative-game axioms to allocate a chosen value function, while permutation importance perturbs evaluation data for a chosen scorer. Their assumptions live in background distributions, masking semantics, feature groupings and dependence. Reliable explanation validates additivity and fidelity, checks stability across populations and seeds, and retains a clear boundary between predictive behavior, causal reasoning and normative justification.",
+  "workedExample": "For f(x1,x2)=x1+x2+2x1x2 with zero baseline and x=(1,1), adding x1 first contributes 1 and then x2 contributes 3; reversing order swaps those values. Averaging orders assigns each feature 2, summing to prediction 4.",
   "commonMistakes": [
-    "Choosing the technique without checking whether its assumptions match the problem.",
-    "Optimizing an offline metric without checking realistic validation slices or operational constraints."
+    {
+      "misconception": "SHAP values reveal the causal reasons for an outcome.",
+      "correction": "They allocate a fitted model output under a chosen game; causal effects require intervention and identification assumptions."
+    },
+    {
+      "misconception": "There is one canonical SHAP explanation for a prediction.",
+      "correction": "Background, dependence convention, output scale, grouping and approximation can all change the valid result."
+    },
+    {
+      "misconception": "Mean absolute SHAP equals permutation importance.",
+      "correction": "One averages local attribution magnitude; the other measures held-out score loss after disruption."
+    },
+    {
+      "misconception": "Local additivity proves explanation fidelity in every sense.",
+      "correction": "It checks an algebraic contract for the chosen game, not realism of masking, stability, causality or human usefulness."
+    }
   ],
   "followUps": [
-    "When would you not use Permutation Importance, PDP & SHAP?",
-    "How would you validate or tune Permutation Importance, PDP & SHAP?"
+    {
+      "question": "What is the SHAP baseline?",
+      "answer": "The empty-coalition value, commonly an expected model output over a declared background population on a stated scale."
+    },
+    {
+      "question": "How do correlated features affect SHAP?",
+      "answer": "Credit depends on conditional versus interventional semantics and grouping; correlated substitutes make individual attribution non-unique conceptually."
+    },
+    {
+      "question": "When prefer permutation importance?",
+      "answer": "For global reliance on a labeled held-out metric, especially with meaningful feature groups and a realistic perturbation."
+    }
   ],
-  "production": "In production, validate on realistic slices, track latency/cost when relevant, and monitor for distribution changes or failure modes that the offline metric can hide.",
+  "production": "Version model, explainer algorithm, output scale, feature grouping, dependence convention, background sample and seed. Enforce encoded-to-raw feature lineage and access controls. Test exact fixtures, local efficiency, feature ordering, approximation convergence and model-randomization sanity. Report local attributions with baseline and scale; report global summaries by cohort with stability; compare with grouped held-out permutation and retraining ablation for consequential decisions. Monitor background coverage and attribution drift diagnostically, prevent causal language, and retain previous model-explainer bundles for rollback.",
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "math": "For feature set F and value function v(S), phi_j=sum over S subset F without j of |S|!(M-|S|-1)!/M! times [v(S union {j})-v(S)]. Efficiency gives sum_j phi_j=v(F)-v(empty). In model explanation, v(S) is an expectation of model output with only coalition S known under an interventional or conditional convention. Global mean absolute SHAP, E|phi_j|, measures attribution magnitude, not signed effect or score loss. Permutation importance is baseline score minus expected permuted score for a fixed model and held-out distribution.",
+  "code": "from itertools import permutations\ncontrib={0:[],1:[]}\nfor order in permutations([0,1]):\n    current=base.copy(); before=float(f(current))\n    for j in order:\n        current[j]=x[j]; after=float(f(current)); contrib[j].append(after-before); before=after\norder_average=np.array([np.mean(contrib[0]),np.mean(contrib[1])])",
+  "lab": {
+    "language": "python",
+    "goal": "Compute exact two-feature Shapley values, verify axioms for an interaction model, and contrast local allocation with global permutation reliance.",
+    "buildIt": "import numpy as np\ndef f(x): return x[...,0]+x[...,1]+2*x[...,0]*x[...,1]\nx=np.array([1.,1.]); base=np.array([0.,0.])\nv_empty=float(f(base)); v1=float(f(np.array([x[0],base[1]]))); v2=float(f(np.array([base[0],x[1]]))); v12=float(f(x))\nphi1=.5*((v1-v_empty)+(v12-v2)); phi2=.5*((v2-v_empty)+(v12-v1)); phi=np.array([phi1,phi2])\nrng=np.random.default_rng(2); X=rng.normal(size=(500,2)); y=f(X); baseline=-np.mean((y-f(X))**2)\ndrops=[]\nfor j in range(2):\n    xp=X.copy(); xp[:,j]=rng.permutation(xp[:,j]); drops.append(baseline-(-np.mean((y-f(xp))**2)))",
+    "useIt": "from itertools import permutations\ncontrib={0:[],1:[]}\nfor order in permutations([0,1]):\n    current=base.copy(); before=float(f(current))\n    for j in order:\n        current[j]=x[j]; after=float(f(current)); contrib[j].append(after-before); before=after\norder_average=np.array([np.mean(contrib[0]),np.mean(contrib[1])])",
+    "verifyIt": "assert np.allclose(phi,[2.,2.])\nassert np.allclose(phi,order_average)\nassert abs(v_empty+phi.sum()-v12)<1e-12\nassert abs(phi[0]-phi[1])<1e-12\nassert all(d>0 for d in drops)\nassert len(contrib[0])==len(contrib[1])==2",
+    "shipIt": "Persist the explanation game, background, scale and grouping; verify additivity and stability; and cross-check local narratives with held-out grouped reliance before decisions."
+  },
+  "description": "SHAP and permutation importance inspect fitted models through complementary estimands. This chapter derives Shapley values from coalition marginal contributions and explains efficiency, symmetry, dummy and additivity, then maps the game to model outputs, background expectations and feature-missing conventions. It distinguishes interventional from conditional explanations, output probability from log-odds scale, local signed attribution from global mean absolute summaries, and main effects from SHAP interaction values. It contrasts those allocations with held-out permutation score degradation, grouped perturbations and drop-column retraining. Correlation, one-hot fragmentation, off-manifold masking, background choice, approximation error, privacy and causal misinterpretation receive explicit treatment. The lab computes exact two-feature Shapley values for a model with an interaction, verifies local efficiency and symmetry, and contrasts them with permutation reliance. Production guidance versions explainer and background artifacts, checks additivity and stability, maps encoded features to governed concepts, limits sensitive disclosure and treats explanations as diagnostic evidence rather than automatic causal or legal justification.",
+  "prerequisites": [
+    "feature-importance",
+    "expectation-variance"
+  ],
+  "learningObjectives": [
+    "Derive exact Shapley values and interpret the local efficiency baseline contract.",
+    "Choose background, output scale, feature grouping and dependence semantics deliberately.",
+    "Contrast local SHAP allocation with global permutation and retraining importance.",
+    "Validate explanation fidelity, stability, privacy and communication limitations in production."
+  ],
+  "deepSections": [
+    {
+      "id": "shapley-game",
+      "title": "SHAP explains a game, not a feature in isolation",
+      "body": "Shapley values come from cooperative game theory. A value function assigns an outcome to every coalition of features; each feature receives its average marginal contribution across coalition orders. Efficiency makes contributions sum to the full-coalition value minus the empty-coalition baseline. Symmetry gives equal credit to interchangeable players, the dummy property gives zero to a player that never changes value, and additivity combines games consistently. For model explanations, the difficult step is defining v(S): what prediction should represent a coalition when other features are absent? That requires a background distribution or masking mechanism. Once the game is fixed, the allocation is principled; changing the game can legitimately change the explanation. The axioms do not prove that features cause outcomes or that the allocation matches human responsibility."
+    },
+    {
+      "id": "background-dependence",
+      "title": "Background and dependence define the counterfactual",
+      "body": "An interventional-style explanation replaces missing features using a marginal background distribution, breaking dependence and potentially constructing impossible combinations. A conditional explanation integrates missing features given observed coalition values, preserving dependence but crediting correlated variables through the conditional distribution and requiring a good dependence model. Neither is universally correct. A background of all customers explains deviation from the overall average; a background of eligible peers answers a different question. Small background samples reduce cost but add Monte Carlo variability; a nonrepresentative background shifts both baseline and credit. Group one-hot columns, text tokens or engineered families when the raw concept is the meaningful player. Record background row provenance and privacy constraints. Compare explanations across reasonable backgrounds to expose fragile narratives rather than selecting the most convenient one."
+    },
+    {
+      "id": "local-global-scale",
+      "title": "Local sums and global summaries have different meanings",
+      "body": "For one example, signed SHAP values describe movement from the baseline to a specified model output. Tree explainers often operate naturally on raw margin or log-odds; probability-scale attributions have different nonlinear behavior. Always state the scale and verify that baseline plus contributions reconstructs the predicted output within tolerance. Aggregating mean absolute SHAP ranks typical attribution magnitude, while mean signed SHAP can cancel. Beeswarm and dependence plots show distributions and interactions but remain observational descriptions. SHAP interaction values split pairwise contribution under an additional decomposition and become expensive as features grow. Global SHAP importance is not the same as held-out score reliance: a feature can receive large local attribution in a redundant representation yet cause little permutation score loss. Preserve subgroup and time distributions rather than collapsing every explanation into one bar chart."
+    },
+    {
+      "id": "permutation-comparison",
+      "title": "Permutation asks whether the fixed model loses score",
+      "body": "Permutation importance uses a held-out dataset and scorer, shuffles one column or group, and measures degradation. It is direct for global reliance and operational metrics, but correlated substitutes and impossible shuffled rows complicate interpretation. SHAP does not require a target label for a local decomposition, though validating explanation usefulness does. Permutation needs labels and averages across a population. Drop-column retraining lets the learning algorithm adapt and is closer to a removal decision. Use these methods together: SHAP to inspect which evidence moves individual outputs relative to a baseline; grouped permutation to test global score reliance; ablation to decide whether a feature family can be removed. Disagreement is expected and informative because the estimands differ. Never force them into one allegedly true ranking."
+    },
+    {
+      "id": "validation-governance",
+      "title": "Explanations are production artifacts with failure modes",
+      "body": "Validate local efficiency, deterministic behavior under fixed seeds, feature-name alignment and agreement with exact calculations for small fixtures. For approximate explainers, measure convergence across sample budgets. Test invariance properties that the chosen method claims and sanity-check that randomizing model parameters changes explanations. Review representative correct, incorrect, borderline and out-of-support cases with domain experts. Monitor attribution distributions and background coverage alongside prediction and feature drift, but diagnose before alerting on rank changes. Explanations can reveal sensitive inputs, training data patterns or security-relevant decision boundaries; control access and redact carefully. Human-facing text should state that attributions describe the model relative to a reference, not why an event happened or what a person should change. Version explainer code, background and model atomically and preserve rollback artifacts."
+    }
+  ],
+  "workedExamples": [
+    {
+      "title": "Interaction credit depends on coalition order",
+      "body": "For f(x1,x2)=x1+x2+2x1x2 with zero baseline and x=(1,1), adding x1 first contributes 1 and then x2 contributes 3; reversing order swaps those values. Averaging orders assigns each feature 2, summing to prediction 4."
+    },
+    {
+      "title": "Baseline changes the story",
+      "body": "A risk of 0.3 is above an overall background prediction of 0.1 but below a high-risk clinic background of 0.5. The same prediction has opposite signed total deviation because the reference population changed."
+    }
+  ],
+  "exercises": [
+    {
+      "prompt": "What does SHAP efficiency guarantee?",
+      "solution": "For the chosen value function, feature attributions sum to the full-coalition value minus the empty-coalition baseline."
+    },
+    {
+      "prompt": "Why can two valid backgrounds produce different explanations?",
+      "solution": "They define different reference expectations and coalition values, so the same prediction is contrasted with a different population."
+    },
+    {
+      "prompt": "Why does permutation need a scorer but local SHAP may not need labels?",
+      "solution": "Permutation measures labeled performance degradation, while local SHAP decomposes a model output for one input under its game."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "compare",
+      "title": "Two explanation questions",
+      "left": {
+        "title": "SHAP allocation",
+        "items": [
+          "One output versus baseline",
+          "Coalition marginal contributions",
+          "Depends on background and scale",
+          "Local then aggregatable"
+        ]
+      },
+      "right": {
+        "title": "Permutation reliance",
+        "items": [
+          "Held-out score degradation",
+          "Feature-breaking perturbation",
+          "Depends on scorer and population",
+          "Global evaluation"
+        ]
+      },
+      "caption": "Complementary methods should not be collapsed into one allegedly intrinsic feature ranking.",
+      "afterSection": "permutation-comparison"
+    },
+    {
+      "type": "flow",
+      "title": "Explanation contract",
+      "items": [
+        "Name the decision question",
+        "Choose population and background",
+        "Choose scale and missing-feature game",
+        "Compute and verify additivity",
+        "Check stability and support",
+        "Communicate non-causal limits"
+      ],
+      "caption": "Explanation quality depends more on a clear contract than on a polished plot.",
+      "afterSection": "validation-governance"
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "shap-paper",
+      "contribution": "Provides the additive feature-attribution framework and Shapley-value properties underlying SHAP."
+    },
+    {
+      "resource": "sklearn-inspection-guide",
+      "contribution": "Supports the contrasting held-out permutation-importance estimand and its practical cautions."
+    },
+    {
+      "resource": "sklearn-model-evaluation",
+      "contribution": "Supports scorer-specific global evaluation used to distinguish predictive reliance from attribution."
+    }
+  ]
 }

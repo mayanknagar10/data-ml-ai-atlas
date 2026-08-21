@@ -1,6 +1,6 @@
 # Gradient Boosting / XGBoost Intuition — Code Lab
 
-Train a gradient-boosted tree baseline.
+Implement squared-error gradient boosting with stumps, compare with scikit-learn, and verify additive updates and loss reduction.
 
 ## 1. Build it
 

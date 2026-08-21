@@ -6,30 +6,57 @@
   "roles": [
     "ds"
   ],
-  "interviewAnswer": "Scaling matters for distance- and gradient-based models; categorical encoding choices affect leakage, dimensionality and generalization. Tree models often need less scaling but still require correct category handling.",
+  "interviewAnswer": "Encoding and scaling translate raw fields into a representation whose geometry matches the estimator. Standardization centers and divides by training standard deviation; robust scaling uses quantiles; min-max scaling fixes a training range but future values may exceed it. Distance-, gradient- and regularization-based models are scale-sensitive, while ordinary tree splits usually are not. One-hot encoding represents nominal categories without fake order; ordinal encoding is appropriate only when order is real; target or count encodings need fold-local construction and smoothing to prevent label leakage. I fit every learned statistic and vocabulary inside the training fold with a ColumnTransformer or equivalent pipeline, define behavior for missing and unseen categories, preserve sparse output where useful, and version feature names. Scaling does not make a skewed distribution Gaussian and encoding does not create semantic equivalence; both are production contracts that must remain identical online and offline.",
   "keyPoints": [
-    "Standardization uses training statistics only.",
-    "One-hot is robust for low-cardinality nominal categories.",
-    "Target encoding requires leakage-safe folds/smoothing."
+    "Representation should match estimator geometry, regularization and the semantic type of each field.",
+    "Means, variances, quantiles, category vocabularies and target statistics are learned state and must fit on training data only.",
+    "One-hot avoids arbitrary nominal order but can create high-dimensional sparse features and unstable rare levels.",
+    "Target encoding requires nested or out-of-fold values for training rows plus smoothing and unseen-category fallback.",
+    "Unknown, missing, infrequent and structurally inapplicable categories need distinct, versioned handling when semantics differ."
   ],
   "resources": [
-    "sklearn",
-    "google-mlcc"
+    "sklearn-preprocessing-guide",
+    "sklearn-cross-validation",
+    "sklearn-model-evaluation"
   ],
   "featured": true,
-  "why": "Scaling & Encoding Features is a recurring foundation across data science and machine learning because it affects both theoretical correctness and practical system behavior.",
-  "intuition": "Standardization uses training statistics only.",
-  "deepDive": "Scaling matters for distance- and gradient-based models; categorical encoding choices affect leakage, dimensionality and generalization. Tree models often need less scaling but still require correct category handling. One-hot is robust for low-cardinality nominal categories. Target encoding requires leakage-safe folds/smoothing. The interview-level skill is not merely recalling the definition: explain the assumptions, what diagnostic evidence you would inspect, and what alternative you would choose when those assumptions fail.",
-  "workedExample": "Fit the scaler/target encoder on training folds only, then transform validation/test.",
+  "why": "A model sees numerical arrays, but a zip code is not a continuous magnitude and a thousand-dollar feature should not automatically dominate a one-unit feature. Incorrect representation changes distances, penalties, optimization and extrapolation. Fitting a scaler globally leaks validation distribution; fitting a vocabulary from all rows reveals future categories; target encoding a row with its own label can nearly reproduce the outcome. Production adds new levels, schema changes, sparse-memory limits and discrepancies between batch and online code. Good preprocessing therefore begins with feature semantics, uses a fold-local typed pipeline, tests unknown and extreme inputs, and publishes fitted artifacts as part of the model rather than as undocumented data cleaning.",
+  "intuition": "K-nearest neighbors compares geometric distances. If income ranges to 100,000 and age to 100, income can overwhelm age only because of units. Standardization changes the coordinate system. One-hot encoding gives red, blue and green separate switches instead of pretending green is numerically twice blue. The representation tells the algorithm which differences count and how.",
+  "deepDive": "Preprocessing is an estimator-specific representation layer. Numeric transforms set scale and distribution geometry; categorical encodings set similarity, order and statistical sharing. Leakage-safe pipelines fit state per fold, manage sparsity and unknowns, preserve interpretable feature lineage, and freeze exactly the artifacts served in production.",
+  "workedExample": "Two customers differ by 5 years of age and $10,000 income. Raw Euclidean distance is dominated by income units. Standardizing with training spreads makes the comparison depend on relative deviations rather than arbitrary measurement scale.",
   "commonMistakes": [
-    "Using the concept mechanically without checking assumptions or data semantics.",
-    "Reporting one metric/result without examining uncertainty, slices or failure modes."
+    {
+      "misconception": "Standardization makes every feature normally distributed.",
+      "correction": "It changes center and scale only; skew, multimodality and outliers remain."
+    },
+    {
+      "misconception": "Integer codes are harmless for nominal categories.",
+      "correction": "Many models interpret numeric order and distance that do not exist semantically."
+    },
+    {
+      "misconception": "One-hot unknown='ignore' solves category drift.",
+      "correction": "It prevents crashes but maps novel levels to an all-zero pattern whose meaning and impact still require monitoring."
+    },
+    {
+      "misconception": "Target encoding can be computed once for the feature store.",
+      "correction": "It depends on labels and split boundaries and must be generated out of fold or past-only for each training procedure."
+    }
   ],
   "followUps": [
-    "What assumptions or limitations does Scaling & Encoding Features have?",
-    "How would you validate Scaling & Encoding Features on a real dataset?"
+    {
+      "question": "Which models usually require scaling?",
+      "answer": "Distance-, dot-product-, gradient- and regularization-sensitive models; tree splits are usually less sensitive to monotonic scaling."
+    },
+    {
+      "question": "How do you handle unseen categories?",
+      "answer": "Use a documented unknown mapping, hashing or fallback statistic, then monitor its rate and re-evaluate meaningful new levels."
+    },
+    {
+      "question": "Why avoid centering sparse one-hot matrices?",
+      "answer": "Subtracting nonzero means turns zeros into nonzeros, densifying the matrix and greatly increasing memory."
+    }
   ],
-  "production": "In production, make assumptions explicit, validate on representative slices, compare with a simple baseline and monitor the signals that can drift.",
+  "production": "Version raw dtypes, column selection, imputers, numeric transforms, category order, rare-level rules, unknown behavior, target-encoding folds and smoothing, output feature names and library versions with the estimator. Fit all learned state inside training boundaries. Test missing, extreme, zero-variance, unseen and all-unknown batches plus sparse dimensionality and deterministic ordering. Monitor range violations, standardized drift, unknown rates, sparsity, latency and online-offline parity. Treat any representation change as a new model contract, canary it and retain the prior transformer-estimator bundle for rollback.",
   "visual": {
     "type": "concept-map",
     "title": "Scaling & Encoding Features",
@@ -41,6 +68,133 @@
     "caption": "A compact concept map for the most important ideas in this lesson."
   },
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "math": "Standard scaling uses z_j=(x_j-mu_j)/sigma_j with training estimates; zero-variance features need a defined convention. Min-max uses (x-a)/(b-a), where a and b are training extrema. Robust scaling commonly subtracts the median and divides by an interquantile range. One-hot maps a K-level nominal variable to indicator coordinates, often dropping one column only when needed for identifiability. Smoothed target encoding may combine category mean m_c with global mean m_0 as (n_c m_c+alpha m_0)/(n_c+alpha), computed out of fold for training rows.",
+  "code": "from sklearn.compose import ColumnTransformer\nfrom sklearn.preprocessing import StandardScaler,OneHotEncoder\npre=ColumnTransformer([('num',StandardScaler(),['age','income']),('cat',OneHotEncoder(handle_unknown='ignore',sparse_output=False),['city'])],sparse_threshold=0).fit(train)\nXt=pre.transform(train); Xnew=pre.transform(test); names=pre.get_feature_names_out()",
+  "lab": {
+    "language": "python",
+    "goal": "Build a typed numeric and categorical transformer, verify training-only statistics, and test stable unseen-category behavior.",
+    "buildIt": "import numpy as np\nimport pandas as pd\ntrain=pd.DataFrame({'age':[20.,30.,40.,50.],'income':[30.,50.,70.,90.],'city':['A','B','A','C']}); test=pd.DataFrame({'age':[60.],'income':[110.],'city':['Z']})\nage_mean=train.age.mean(); age_std=train.age.std(ddof=0); manual_age=(train.age.to_numpy()-age_mean)/age_std",
+    "useIt": "from sklearn.compose import ColumnTransformer\nfrom sklearn.preprocessing import StandardScaler,OneHotEncoder\npre=ColumnTransformer([('num',StandardScaler(),['age','income']),('cat',OneHotEncoder(handle_unknown='ignore',sparse_output=False),['city'])],sparse_threshold=0).fit(train)\nXt=pre.transform(train); Xnew=pre.transform(test); names=pre.get_feature_names_out()",
+    "verifyIt": "assert np.allclose(Xt[:,0],manual_age)\nassert np.allclose(pre.named_transformers_['num'].mean_,[35.,60.])\nassert Xt.shape==(4,5) and Xnew.shape==(1,5)\nassert np.allclose(Xnew[0,2:],0)\nassert names.tolist()==['num__age','num__income','cat__city_A','cat__city_B','cat__city_C']\nassert Xnew[0,0]>Xt[:,0].max()",
+    "shipIt": "Persist the complete fitted transformer and feature names, validate raw schemas and unseen values, and monitor vocabulary, range, density and online-offline parity."
+  },
+  "description": "Encoding and scaling define the numerical representation consumed by machine-learning estimators. This chapter compares standard, min-max, max-absolute, robust, unit-norm, logarithmic, power and quantile transforms and explains which alter units, distances, tails or distribution shape. It connects scale to gradient optimization, regularization, kernels, nearest neighbors, PCA and tree models. For categorical data it distinguishes nominal one-hot, ordinal, hashing, count, frequency and target encodings; addresses high cardinality, rare levels, missing values and unseen categories; and derives smoothed out-of-fold target statistics. It shows why every fitted statistic and vocabulary belongs inside cross-validation and why sparse matrices should not be centered blindly. Worked examples expose unit-dominated distance and self-leaking target encoding. The lab builds a typed ColumnTransformer, verifies training statistics and unknown-category behavior, and confirms manual standardized values. Production guidance versions schemas, categories, feature names and transforms, tests extremes and unknowns, monitors range and vocabulary drift, and guarantees online-offline parity. The representation is treated as a fitted, testable component of the model rather than disposable cleaning code.",
+  "prerequisites": [
+    "data-leakage",
+    "vectors-matrices"
+  ],
+  "learningObjectives": [
+    "Choose numeric scaling and transformation from estimator geometry and data semantics.",
+    "Encode nominal, ordinal and high-cardinality categories without invented order or target leakage.",
+    "Build typed fold-local preprocessing pipelines with stable sparse output and unknown handling.",
+    "Version and monitor production representations, feature names, ranges and vocabularies."
+  ],
+  "deepSections": [
+    {
+      "id": "numeric-geometry",
+      "title": "Numeric transforms define distance and penalty geometry",
+      "body": "Standardization makes one training standard deviation a common coordinate unit and is often helpful for linear models with regularization, SVMs, neural optimization, KNN and PCA. It does not remove skew or outliers; mean and standard deviation can themselves be dominated by tails. Robust scaling uses median and interquantile spread, reducing that sensitivity without making extremes harmless. Min-max scaling maps the training range to a chosen interval, useful for bounded inputs, but deployment values can fall outside it. Log and power transforms change distribution shape and multiplicative relationships, requiring domain handling for zero and negative values. Unit normalization scales each row rather than each feature and is common for directional text similarity. Trees generally split by order and are invariant to monotonic scaling, though preprocessing can still affect missingness, histogram binning and combined pipelines. Preserve units in documentation and invert transforms before interpreting target error."
+    },
+    {
+      "id": "categorical-semantics",
+      "title": "Categorical encoding must respect meaning",
+      "body": "One-hot encoding treats categories as nominal and lets a linear model learn a separate coefficient. Dropping one level avoids exact collinearity in unregularized models but changes the reference interpretation; regularized prediction often tolerates all columns. Ordinal encoding assigns numbers and is appropriate only when a meaningful order exists, with spacing assumptions handled by the model. Hashing provides fixed dimensionality and unknown support but introduces collisions and weakens feature-level interpretation. Count and frequency encodings are unsupervised summaries but can still leak future distribution if fitted globally. Rare-level grouping controls dimensionality and variance, but the threshold and semantic exceptions need versioning. Distinguish missing, unknown-at-training and genuinely novel categories where business meaning differs. Entity identifiers usually invite memorization and need careful group evaluation rather than automatic encoding."
+    },
+    {
+      "id": "target-encoding",
+      "title": "Target statistics require an extra information boundary",
+      "body": "A category mean of the label can represent high-cardinality levels compactly, but computing it from all training rows gives each row access to its own outcome, and using validation labels is direct leakage. Build training encodings out of fold: for each row, estimate its category statistic from other training folds. For a validation or production row, fit the mapping on the complete legal training set. Smooth rare categories toward the global training mean and define an unseen fallback. Ordered data need past-only statistics; group data may need group-held-out construction. Noise injection can regularize but complicates reproducibility. Target encoding changes with target definition and prevalence, so it belongs with the supervised estimator, not a reusable generic feature table. Compare with hashing, learned embeddings or native categorical models under the same leakage-safe split."
+    },
+    {
+      "id": "pipeline-sparsity",
+      "title": "Typed pipelines keep fitted state and feature lineage together",
+      "body": "Select columns by stable schema or explicit names, not fragile positional assumptions. A ColumnTransformer can apply numeric imputation and scaling to numeric fields, one-hot encoding to nominal fields and ordinal logic to ordered fields, then combine outputs. Fit the entire object on each training fold. Centering a large sparse one-hot matrix densifies it and can exhaust memory; use sparse-compatible scaling or scale numeric blocks before concatenation. Persist output feature names, category order, dtypes and library versions. Ensure validation cannot influence the set of retained rare categories. Feature selection, interactions and the model follow inside the same pipeline. Test row ordering, deterministic output, absence of infinities, expected dimensionality and behavior for a batch containing only unseen categories. Training-serving skew often originates in supposedly harmless preprocessing differences."
+    },
+    {
+      "id": "production-monitoring",
+      "title": "A fitted representation is part of the deployed model",
+      "body": "Package means, scales, quantiles, category vocabularies, hashing configuration, target-encoding maps, fallbacks and feature order atomically with the estimator. Validate raw schemas before transformation and reject ambiguous coercions such as numeric strings becoming categories. Monitor numeric out-of-range rates, standardized drift, clipping frequency, unknown and rare-category rates, sparse density, transform latency and missingness. A new category should not crash scoring, but silently mapping a critical new product to generic unknown can degrade decisions. Maintain batch-online parity fixtures with representative, missing, extreme and novel values. Changes to scaling windows or category groupings create a new model input contract and require re-evaluation, canarying and rollback even when estimator coefficients are unchanged."
+    }
+  ],
+  "workedExamples": [
+    {
+      "title": "Units dominate KNN",
+      "body": "Two customers differ by 5 years of age and $10,000 income. Raw Euclidean distance is dominated by income units. Standardizing with training spreads makes the comparison depend on relative deviations rather than arbitrary measurement scale."
+    },
+    {
+      "title": "Self-leaking category mean",
+      "body": "A category appears once and its target is 1. Encoding it with the full-data category mean gives that row the value 1, revealing its label. Out-of-fold encoding falls back toward a training-only global mean because no other occurrence exists."
+    }
+  ],
+  "exercises": [
+    {
+      "prompt": "Why might robust scaling help a heavy-tailed feature?",
+      "solution": "Median and interquantile range are less influenced by extreme observations than mean and standard deviation."
+    },
+    {
+      "prompt": "How should a target encoding be built for a training row?",
+      "solution": "From labels in other legal folds or earlier times, with smoothing and a global training-only fallback."
+    },
+    {
+      "prompt": "What happens when a min-max-scaled production value exceeds the training maximum?",
+      "solution": "Its transformed value can exceed the nominal upper bound unless clipping is explicitly enabled; monitor and document the chosen behavior."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "compare",
+      "title": "Representation by semantic type",
+      "left": {
+        "title": "Numeric geometry",
+        "items": [
+          "Standard or robust scale",
+          "Log or power shape",
+          "Training statistics",
+          "Units and outliers matter"
+        ]
+      },
+      "right": {
+        "title": "Categorical structure",
+        "items": [
+          "Nominal one-hot or hashing",
+          "True ordinal order only",
+          "Vocabulary and unknowns",
+          "Cardinality and sparsity matter"
+        ]
+      },
+      "caption": "Preprocessing encodes assumptions about which differences the estimator should recognize.",
+      "afterSection": "numeric-geometry"
+    },
+    {
+      "type": "flow",
+      "title": "Fold-local representation",
+      "items": [
+        "Validate raw schema",
+        "Split independent units",
+        "Fit numeric statistics",
+        "Fit category vocabulary",
+        "Transform holdout with frozen state",
+        "Persist feature names with model"
+      ],
+      "caption": "Every learned representation artifact belongs inside the same evaluation and deployment bundle.",
+      "afterSection": "pipeline-sparsity"
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "sklearn-preprocessing-guide",
+      "contribution": "Verifies numeric scaling, normalization, categorical encoding and pipeline behavior."
+    },
+    {
+      "resource": "sklearn-cross-validation",
+      "contribution": "Supports fold-local fitting of learned preprocessing and pipeline evaluation."
+    },
+    {
+      "resource": "sklearn-model-evaluation",
+      "contribution": "Supports comparing full preprocessing-plus-estimator procedures on held-out metrics."
+    }
+  ]
 }

@@ -6,34 +6,198 @@
   "roles": [
     "all"
   ],
-  "interviewAnswer": "Use Context, Action, Result (or STAR) to keep behavioral answers concrete. Spend most of the time on your own action and the measurable result, then add what changed in your behavior afterward.",
+  "interviewAnswer": "For behavioral questions I use Context–Action–Result or STAR as an evidence scaffold. I choose a real example that matches the competency and has enough tension to show judgment. Context and task are brief: stakes, constraints, team and my responsibility. Action is the majority: what I personally noticed, decided, communicated, built or changed, including alternatives and disagreement. Result includes outcome, verification, side effects and what I learned; I do not claim team or business causality beyond the evidence. I adapt if the interviewer probes rather than forcing a memorized script. For failure questions I describe the mistake and changed mechanism, not a disguised strength. For conflict I represent the other view fairly, explain the decision process and show how the relationship and outcome were handled.",
   "keyPoints": [
-    "Use real examples",
-    "Quantify when possible",
-    "Own mistakes without overexplaining",
-    "End failure stories with changed behavior"
+    "Behavioral answers are competency evidence, so select examples from the question rather than from a favorite story.",
+    "Context should establish stakes quickly; personal action and reasoning deserve most of the time.",
+    "Results include verification, trade-offs, side effects and learning, not only a flattering number.",
+    "Precise ownership language distinguishes individual contribution from team success.",
+    "A story bank should cover different competencies and failures without reusing one example for everything."
   ],
   "resources": [
+    "opm-structured-interviews",
+    "google-technical-writing",
     "stanford-cs329s"
   ],
   "featured": false,
-  "why": "Behavioral questions evaluate how you actually work: ownership, communication, learning, conflict handling and judgment—not just whether you know the right buzzwords.",
-  "intuition": "CAR/STAR prevents rambling. Give enough context to understand the problem, spend most of the answer on your actions, and end with a concrete result and lesson.",
-  "deepDive": "Choose real stories that can answer multiple themes: failure, teamwork, ambiguity, conflict, initiative and learning. Avoid turning the context into a five-minute history. Use “I” for your actions even when the project was collaborative. Quantify results only when you can defend the measurement. A learning is strongest when you can explain what behavior changed afterward.",
-  "workedExample": "Failure story: wrong compression metric → expensive experiments → literature/supervisor review → corrected bit-based formulation → new rule: validate the metric and run a cheap sanity check before large GPU jobs.",
+  "why": "Past-behavior questions seek evidence about collaboration, ownership, prioritization, conflict, failure, learning and ethical judgment that a coding exercise cannot show. Unstructured answers often spend two minutes on background, skip the candidate's decision and end with an unverified success. CAR or STAR supplies a compact ordering, but the acronym alone does not create evidence. The candidate must select a relevant event, separate team context from personal action, preserve nuance and connect the result to the asked competency. Done well, behavioral preparation is factual reflection rather than performance theatre.",
+  "intuition": "A behavioral story is a small incident report. The reader needs conditions and responsibility, then a timeline of decisions, evidence and outcome. If the report only says the team succeeded, it cannot explain your behavior. If it only celebrates action, it hides whether the intervention worked. The framework is a container; the quality comes from specific choices, constraints, communication and consequences inside it.",
+  "deepDive": "CAR and STAR organize competency evidence through bounded context, explicit responsibility, personal actions, observable results and learning. Strong answers select representative examples, handle conflict and failure honestly, calibrate claims and remain responsive under probes rather than sounding optimized for a slogan.",
+  "workedExample": "Question: 'Tell me about a disagreement.' Context: a product lead wanted to launch a churn model using random-split AUC; I owned evaluation and saw temporal leakage. Action: I reproduced the score with chronological folds, showed the drop by cohort, listened to the launch constraint, and proposed a smaller shadow deployment with a leakage-safe threshold and review capacity. I documented the decision and did not block unrelated instrumentation. Result: the team delayed automated action, collected mature labels and later launched a narrower policy. Learning: surface decision consequences with an executable alternative, not only a methodological objection.",
   "commonMistakes": [
-    "Giving a hypothetical answer instead of a real event.",
-    "Using a fake weakness such as “I work too hard.”",
-    "Ending at the result without explaining what changed in your behavior."
+    {
+      "misconception": "Spend most of the answer explaining project context.",
+      "correction": "Compress context and use time for your decisions, communication, execution and adjustment."
+    },
+    {
+      "misconception": "Turn every result into a large percentage improvement.",
+      "correction": "Use verified outcomes and causal language appropriate to the evidence."
+    },
+    {
+      "misconception": "Make the other person unreasonable in conflict stories.",
+      "correction": "Represent their constraints fairly and explain the decision process and relationship."
+    },
+    {
+      "misconception": "Use a disguised strength as failure.",
+      "correction": "Choose a real miss and demonstrate accountability plus a durable prevention mechanism."
+    }
   ],
   "followUps": [
-    "What would you do differently now?",
-    "What was your personal responsibility?",
-    "How did the other person react?",
-    "What did you learn that you still use today?"
+    {
+      "question": "Can I use the same story twice?",
+      "answer": "Occasionally, if it genuinely shows different evidence, but broad preparation should provide several examples."
+    },
+    {
+      "question": "What if the result was not successful?",
+      "answer": "A poor outcome can be strong evidence when you own your part, contain harm, learn and change the system."
+    },
+    {
+      "question": "How detailed should context be?",
+      "answer": "Enough to understand stakes, constraints and your responsibility—usually a few sentences before actions."
+    }
   ],
-  "production": "Keep a small story bank with 5–6 genuine examples. Before an interview, map each story to the company values and role rather than memorizing a separate story for every possible question.",
+  "production": "Maintain a story bank with event date, competency, context, stakeholders, personal actions, artifacts, result evidence, team contribution, lesson and confidentiality limits. Require at least one conflict, failure, ambiguity, prioritization, quality and support-of-others story. Rehearse 60-, 120- and 180-second versions by structure rather than exact wording. Ask reviewers to identify the competency and personal decisions they heard. Remove stories that depend on blaming or unverifiable numbers. After interviews, record missing probes and update evidence, but preserve source facts and avoid optimizing toward stereotypes about one company.",
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "math": "For a two-minute answer at roughly 130–160 words per minute, a useful allocation is 15–20% context and task, 55–65% actions and reasoning, and 20–25% results and learning. Treat this as an editing diagnostic. A story-evidence matrix maps stories s to competencies c with coverage e_sc in {0,1,2}, where 2 means strong direct evidence. Preparation seeks coverage across required competencies without choosing stories solely to maximize a score. Specificity can be audited through actors, decisions, constraints, timestamps, artifacts and measurable consequences.",
+  "description": "Behavioral interview answers provide evidence of past decisions and collaboration. This chapter uses Context–Action–Result and Situation–Task–Action–Result as flexible structures rather than rigid scripts. It begins with competency analysis and story selection, then shows how to define stakes, constraints, team context and personal responsibility concisely. The action section is decomposed into observation, alternatives, decision, communication, implementation and adjustment. Results include quantitative or qualitative outcomes, verification, unintended effects and learning, with careful ownership and causal language. Dedicated sections cover disagreement, influence without authority, prioritization, ambiguity, failure, missed deadlines, incidents, ethics and supporting others. The chapter explains how to represent colleagues fairly, avoid confidential disclosure, acknowledge privilege and team contribution, and answer follow-up questions. The lab builds a story-to-competency matrix, detects overused examples and audits whether each story contains evidence across the CAR stages. Production-style practice maintains a factual story bank, spaced rehearsal, concise variants, reviewer feedback and post-interview notes. Structured interview guidance supports focusing on job-related competencies and consistent behavioral evidence rather than charisma or invented perfection.",
+  "prerequisites": [
+    "tell-me-about-yourself"
+  ],
+  "learningObjectives": [
+    "Select a real story whose decisions and stakes directly evidence the asked competency.",
+    "Allocate answer time toward personal actions, reasoning, communication and adjustment.",
+    "Report outcomes, team contribution, causal limits and learning accurately.",
+    "Prepare conflict, failure, ambiguity and ethics examples that remain honest under follow-up."
+  ],
+  "deepSections": [
+    {
+      "id": "competency-selection",
+      "title": "Choose the story from the competency and evidence quality",
+      "body": "Translate the question into a competency: conflict resolution, ownership, influence, prioritization, resilience, quality, inclusion or judgment under ambiguity. Choose an event where your behavior affected the process and where consequences are known. The largest project is not always best; a bounded incident with clear choices is easier to evaluate. Avoid using one heroic story for every question because it produces shallow mapping and suggests a narrow evidence base. Build a matrix of stories versus competencies and identify gaps. Prefer recent examples but use an older one if it is substantially more relevant. Confirm confidentiality and whether numbers can be shared. Structured interviews aim to evaluate job-related competencies consistently, so answer the behavior asked rather than guessing a personality trait the interviewer wants."
+    },
+    {
+      "id": "action-evidence",
+      "title": "Personal decisions and reasoning are the center of the answer",
+      "body": "Context gives team, problem, stakes and constraints; task clarifies your responsibility. Then slow down. Describe what information you gathered, alternatives considered, trade-off chosen, people consulted, communication used and how you adapted to feedback. Use 'I' for your actions and 'we' for team decisions or outcomes. Naming personal ownership does not require erasing others. Include the moment of judgment: why a technically plausible alternative was rejected or why you escalated. For collaboration questions, the interpersonal mechanism matters—listening, restating concerns, writing a decision document, prototyping, negotiating scope—not merely the final technical implementation. Avoid retrospective certainty. If you did not know something then, say how you reduced uncertainty. Evidence beats adjectives such as proactive or collaborative."
+    },
+    {
+      "id": "conflict-failure",
+      "title": "Conflict and failure answers require fairness, accountability and changed behavior",
+      "body": "In conflict stories, describe the other position in terms its advocate would recognize. Separate disagreement over goals, facts, risk or constraints from personality. Explain the forum and decision rule, then what happened after the decision—including supporting a choice that was not yours. Do not portray colleagues as obstacles defeated by superior logic. In failure stories, name an actual miss, your contribution and its impact. Explain detection, containment and repair, but spend enough time on prevention: a changed test, review, alert, planning process or communication habit. 'I care too much' is not a failure. Neither is blaming incomplete requirements while ignoring your responsibility to clarify. Ethical examples should foreground affected people, policy and escalation, not clever workarounds."
+    },
+    {
+      "id": "result-learning",
+      "title": "Results close the evidence loop and learning makes it durable",
+      "body": "Report what changed for users, system, schedule or team and how it was observed. A launch metric may be correlated with your work without proving causality; say whether evidence came from an experiment, operational comparison or stakeholder report. Include guardrails and negative side effects. If the result was poor, explain what was salvaged and what mechanism changed. Learning should be specific and demonstrated in later behavior, not 'communication is important.' For example: 'I now write the decision owner and rollback criterion before migration' is testable. Invite follow-ups by retaining source artifacts, but do not expose private customer or colleague information. Finish on the asked competency, not a moral unrelated to the story. Reviewers should be able to identify your choice, evidence and updated practice."
+    }
+  ],
+  "workedExamples": [
+    {
+      "title": "Missed deadline",
+      "body": "State the estimate error and your delayed escalation, how scope was renegotiated, impact contained and which forecasting and risk-review mechanism changed afterward."
+    },
+    {
+      "title": "Influence without authority",
+      "body": "Show stakeholder incentives, evidence gathered, small reversible proposal, coalition or review process and result—not merely that everyone accepted your idea."
+    }
+  ],
+  "lab": {
+    "language": "python",
+    "goal": "Audit a behavioral story bank for competency coverage, evidence completeness and overuse of one example.",
+    "buildIt": "stories=[{'id':'leakage-disagreement','competencies':{'conflict','quality','influence'},'stages':{'context','action','result','learning'},'owned':True},{'id':'migration-incident','competencies':{'failure','ownership','reliability'},'stages':{'context','action','result','learning'},'owned':True},{'id':'roadmap-cut','competencies':{'prioritization','ambiguity'},'stages':{'context','action','result','learning'},'owned':True},{'id':'mentoring','competencies':{'inclusion','support'},'stages':{'context','action','result','learning'},'owned':True}]\nrequired={'conflict','quality','influence','failure','ownership','reliability','prioritization','ambiguity','inclusion','support'}\ncoverage=set().union(*(s['competencies'] for s in stories)); complete=[s['id'] for s in stories if s['stages']=={'context','action','result','learning'} and s['owned']]",
+    "useIt": "assignments={'conflict':'leakage-disagreement','failure':'migration-incident','prioritization':'roadmap-cut','support':'mentoring'}\nusage={s['id']:list(assignments.values()).count(s['id']) for s in stories}",
+    "verifyIt": "assert coverage>=required and len(complete)==len(stories)\nassert max(usage.values())==1\nassert all(assignments[c] in {s['id'] for s in stories if c in s['competencies']} for c in assignments)\nbroken=dict(stories[0]); broken['stages']={'context','action'}; assert broken['stages']!={'context','action','result','learning'}\nassert all(s['owned'] for s in stories)",
+    "shipIt": "Keep a factual competency-indexed story bank, verify ownership and outcomes, rehearse flexible lengths, protect confidential people and data, and add durable learning mechanisms after real events."
+  },
+  "exercises": [
+    {
+      "prompt": "Rewrite a conflict story from the other person's viewpoint.",
+      "solution": "State their goals, information and constraints in terms they would accept, then identify the real decision disagreement."
+    },
+    {
+      "prompt": "Turn a vague action into evidence.",
+      "solution": "Replace 'I communicated' with audience, message, medium, feedback and how the plan changed."
+    },
+    {
+      "prompt": "Strengthen a failure result.",
+      "solution": "Include impact, containment, repair, prevention and a later example showing the prevention worked."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "flow",
+      "title": "Evidence-first CAR answer",
+      "items": [
+        "Identify asked competency",
+        "Set bounded context and responsibility",
+        "Explain observation and alternatives",
+        "Describe personal actions and communication",
+        "Report verified result and side effects",
+        "Name durable learning"
+      ],
+      "caption": "The framework keeps the answer evaluable without turning it into a rigid script.",
+      "afterSection": "action-evidence"
+    },
+    {
+      "type": "matrix",
+      "title": "Story bank coverage",
+      "rows": [
+        "Disagreement",
+        "Incident",
+        "Roadmap",
+        "Mentoring"
+      ],
+      "cols": [
+        "Judgment",
+        "Collaboration",
+        "Failure",
+        "Learning"
+      ],
+      "cells": [
+        [
+          "strong",
+          "strong",
+          "—",
+          "strong"
+        ],
+        [
+          "strong",
+          "medium",
+          "strong",
+          "strong"
+        ],
+        [
+          "strong",
+          "strong",
+          "—",
+          "medium"
+        ],
+        [
+          "medium",
+          "strong",
+          "—",
+          "strong"
+        ]
+      ],
+      "caption": "A varied story bank prevents one example from being stretched across every competency.",
+      "afterSection": "competency-selection"
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "opm-structured-interviews",
+      "contribution": "Grounds job-related competency assessment using consistent past-behavior and situational evidence."
+    },
+    {
+      "resource": "google-technical-writing",
+      "contribution": "Supports audience-aware, concise and clearly structured explanations with consistent terminology."
+    },
+    {
+      "resource": "stanford-cs329s",
+      "contribution": "Provides realistic ML systems failure, lifecycle and collaboration contexts for technical behavioral examples."
+    }
+  ]
 }

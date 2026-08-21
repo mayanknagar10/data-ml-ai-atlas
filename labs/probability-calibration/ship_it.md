@@ -1,3 +1,3 @@
 # Ship it
 
-Calibrate using held-out/CV predictions, re-check calibration after prevalence shift, and do not confuse calibration with ranking performance.
+Separate base fit, calibration and assessment cohorts; publish reliability counts and proper scores; monitor probability ranges and label maturity before versioned recalibration.

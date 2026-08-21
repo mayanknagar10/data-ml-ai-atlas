@@ -1,6 +1,6 @@
 # Precision, Recall & F1 — Code Lab
 
-Compute the confusion matrix metrics manually and with sklearn.
+Implement confusion counts and core binary metrics, compare them with scikit-learn, and verify denominator and label invariants.
 
 ## 1. Build it
 

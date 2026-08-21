@@ -9,34 +9,224 @@
     "as",
     "mle"
   ],
-  "interviewAnswer": "PageRank scores nodes by the stationary distribution of a random walk with teleportation: links from important nodes contribute more than raw in-degree alone.",
+  "interviewAnswer": "PageRank is the stationary distribution of a random-surfer Markov chain. From page j, follow one of its outgoing links with probability α and teleport according to distribution v with probability 1−α. Dangling pages need an explicit transition, commonly v. With a column-stochastic matrix P, r=αPr+(1−α)v; teleportation makes the usual finite chain well behaved and power iteration converges. I normalize orientation, deduplicate or weight edges deliberately, handle dangling mass, iterate until a residual or rank-change tolerance, and compare with an independent solve on small graphs. PageRank measures recursive prominence under this browsing model—not relevance, truth, causality or safety. Production systems combine it with content and quality signals, defend against link farms, version graph snapshots, monitor convergence and slices, and keep rollback and explanation paths.",
   "keyPoints": [
-    "Random walk",
-    "Stationary distribution",
-    "Teleportation",
-    "Power iteration"
+    "PageRank is an eigenvector or stationary-distribution problem on a normalized directed graph.",
+    "Teleportation prevents rank traps and usually supplies uniqueness and convergence under standard conditions.",
+    "Dangling nodes must redistribute their probability mass rather than leaking it.",
+    "Row-versus-column conventions are equivalent only when equations and multiplication match.",
+    "Recursive link prominence is one signal and is vulnerable to graph construction choices and manipulation."
   ],
   "resources": [
     "stanford-cs246",
-    "stanford-cs224w"
+    "stanford-cs224w",
+    "pagerank-paper"
   ],
   "featured": false,
-  "why": "PageRank is a foundational web/graph-mining algorithm and distributed iterative-computation example.",
-  "intuition": "An endorsement from an important page should count more than one from an isolated page.",
-  "deepDive": "Teleportation prevents sinks and makes the chain well-behaved under standard conditions; repeated sparse matrix-vector multiplication converges to rank scores.",
-  "math": "",
+  "why": "Many networks contain no direct feature called importance. PageRank defines importance recursively: a node receives more credit when it is linked by nodes that themselves have credit, with each source distributing its vote across outgoing links. The construction influenced web search and remains useful for citation, trust, recommendation, entity and dependency graphs. Its lasting value is broader: it connects graph modeling, Markov chains, eigenvectors, sparse iteration and large-scale system operation. Yet every score is conditional on how nodes, edges, weights, teleportation and time were defined. Without that context, a precise-looking rank can legitimize popularity bias, spam or data-quality artifacts.",
+  "intuition": "Imagine a browser who repeatedly flips a biased coin. Usually it clicks a uniformly selected outgoing link; sometimes it jumps to a page drawn from a teleport distribution. The long-run fraction of time spent on each page is PageRank. A page gains score from incoming neighbors, but each neighbor divides its contribution across its outgoing choices. Teleportation lets the surfer escape cycles and reach components that links alone cannot reach. A page with no outgoing links must also teleport, or probability disappears from the model.",
+  "deepDive": "PageRank converts a directed graph into an ergodic-style random-surfer process and solves its stationary distribution with sparse iterative linear algebra. Correctness depends on stochastic orientation, dangling handling, teleportation and convergence evidence. Interpretation and production safety depend on graph provenance, temporal and spam controls, fairness analysis and combining the score with task-specific signals.",
+  "math": "Let P be column-stochastic, P_ij=P(move to i | currently at j). Replace dangling columns with v. For damping α∈(0,1) and probability vector v, r satisfies r=αPr+(1−α)v, equivalently (I−αP)r=(1−α)v. Power iteration r_{t+1}=αPr_t+(1−α)v preserves nonnegativity and unit sum. Stop using ||r_{t+1}−r_t||_1 and verify fixed-point residual ||r−αPr−(1−α)v||_1. Personalized PageRank changes v. With row-stochastic convention, distributions multiply on the left or P is transposed; mixing conventions creates wrong results that may still sum to one.",
   "code": "",
   "commonMistakes": [
-    "Equating PageRank with in-degree.",
-    "Omitting teleportation/sink handling."
+    {
+      "misconception": "PageRank is the number of inbound links.",
+      "correction": "It recursively weights sources and divides each source's contribution across outgoing probability."
+    },
+    {
+      "misconception": "Normalize the final vector and dangling bugs disappear.",
+      "correction": "Post-hoc normalization hides leaked mass but does not implement the intended Markov chain."
+    },
+    {
+      "misconception": "α=0.85 is universally optimal.",
+      "correction": "It is a modeling and convergence choice that should be evaluated for the graph and task."
+    },
+    {
+      "misconception": "High PageRank means trustworthy or relevant.",
+      "correction": "It means prominence under the defined graph and teleport model; combine with task-specific evidence."
+    }
   ],
   "followUps": [
-    "PageRank vs HITS?",
-    "How does damping affect ranking?"
+    {
+      "question": "Why is teleportation necessary?",
+      "answer": "It escapes traps, connects components through the preference distribution and typically ensures a unique convergent stationary score."
+    },
+    {
+      "question": "How do you handle dangling nodes?",
+      "answer": "Redistribute their mass according to the teleport distribution or another explicit probability vector during every iteration."
+    },
+    {
+      "question": "How would you validate an implementation?",
+      "answer": "Check stochastic columns, mass conservation, nonnegativity, convergence change, fixed-point residual, motifs and an independent small-graph solve."
+    }
   ],
-  "production": "Large graphs require sparse/distributed iteration and resistance to adversarial link manipulation.",
-  "workedExample": "Citation networks can use PageRank-like centrality to rank influential nodes.",
+  "production": "Version node identity and canonicalization, edge semantics and window, weights, duplicate and self-link policy, dangling treatment, α, teleport vector, solver tolerance and graph watermark. Validate stochasticity and graph counts before iteration. Use sparse partitioned multiplication, record mass, residual, iterations and top-k stability, and compare selected motifs with an independent implementation. Promote snapshots atomically after spam, cohort and downstream ranking checks. Monitor graph volume, dangling fraction, component changes, score concentration, top-k churn, residual, latency and manipulation signals. Combine PageRank with relevance, freshness, safety and quality rather than treating it as authority. Restrict private-edge access and retain the prior graph, vector and routing configuration for independent rollback.",
+  "workedExample": "Pages A and B link to each other, C links to A, and D is dangling. Without teleportation, the A–B component traps mass and D leaks it if mishandled. With α=0.85, uniform v and D's column replaced by v, every iteration preserves total probability and all nodes receive some base mass. A ranks strongly because it receives from B and C, but the exact order depends on outgoing normalization and teleport choice.",
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "PageRank is a graph-centrality algorithm defined by the stationary distribution of a damped random-surfer process. This chapter constructs a directed transition matrix from links, makes row and column conventions explicit, distributes each source's vote over outgoing edges, and handles self-links, duplicates, weights and dangling nodes. It derives the fixed-point and linear-system forms, explains teleportation, irreducibility, aperiodicity and convergence, and implements sparse-style power iteration with change and residual checks. Personalized PageRank, topic-sensitive teleportation and incremental or approximate computation extend the basic method. The chapter distinguishes PageRank from HITS, degree, shortest-path centralities, content relevance and causal authority. It examines link farms, sybil structures, temporal staleness, popularity feedback, graph incompleteness and fairness across cohorts. The lab builds a stochastic matrix, compares power iteration with a direct linear solve, verifies probability conservation, residual and permutation invariance, and exercises dangling behavior. Production guidance covers graph contracts, snapshot manifests, distributed sparse multiplication, convergence diagnostics, spam defenses, canaries, feature combination, explanations, monitoring, privacy and rollback. The central message is that PageRank is mathematically precise about one browsing model, not universally authoritative about page quality or truth.",
+  "prerequisites": [
+    "eigen-svd",
+    "probability-basics",
+    "trees-graphs-algorithms"
+  ],
+  "learningObjectives": [
+    "Construct a valid transition matrix with explicit orientation, edge weighting and dangling policy.",
+    "Derive PageRank's fixed point and compute it with converged power iteration and residual checks.",
+    "Explain how damping, teleportation and personalization change reachability and interpretation.",
+    "Design a scalable, manipulation-aware graph-ranking pipeline with reproducible snapshots and rollback."
+  ],
+  "deepSections": [
+    {
+      "id": "graph-to-chain",
+      "title": "Graph construction determines the random surfer's choices",
+      "body": "Choose what a node represents, which directed events become edges, the time window and whether multiple edges encode weight or are deduplicated. Under a column-stochastic convention, column j contains probabilities of moving from j to destinations i; an unweighted page divides one across unique outgoing neighbors. Weighted links divide normalized positive weight. Self-links may be retained or removed by policy. A dangling node with zero outdegree has no valid column, so redirect its mass—commonly according to teleport vector v or uniformly. Failing to do so causes rank mass to vanish. Graph extraction errors, redirects, duplicate URLs, bots and missing private links change the chain. Before ranking, verify every column sum, nonnegative entries, node count, edge count, dangling share and provenance. The mathematics is conditional on this constructed graph, not on an abstract true network."
+    },
+    {
+      "id": "fixed-point",
+      "title": "Teleportation creates a solvable fixed point and controls mixing",
+      "body": "Pure link following can become trapped in a closed component or oscillate in a periodic graph, and stationary distributions may not be unique. At each step, the damped surfer follows P with probability α and teleports via v otherwise. For positive v and α<1, the resulting transition has broad reachability and a unique positive stationary distribution in the usual finite setting. Rearranging yields a nonsingular linear system because the spectral radius of αP is below one. α near one emphasizes long link paths but slows convergence and increases sensitivity to graph structure; lower α emphasizes teleportation. The historical default near 0.85 is not a law. Personalized PageRank concentrates v on users, topics or seeds and must be interpreted as proximity to that preference, with privacy and filter-bubble implications."
+    },
+    {
+      "id": "computation",
+      "title": "Sparse power iteration needs conservation and residual diagnostics",
+      "body": "Initialize a probability vector and repeatedly compute link contribution, dangling redistribution and teleportation. Sparse matrix-vector multiplication costs O(E) per iteration rather than materializing an N×N matrix. Partitioning by source or destination changes communication; dangling mass is a global scalar reduction. Stop when L1 change or a norm-scaled criterion reaches tolerance, but also compute the fixed-point residual because a coding error can appear stable. Record iteration count, mass before normalization, residual, top-k stability and rank distribution. A direct solve or eigenvector on small sampled graphs is an excellent independent test. Warm starts help related snapshots but can mask incomplete updates, so compare cold-start canaries. Monte Carlo walks and local push algorithms are alternatives for massive or personalized workloads, each with approximation and latency trade-offs."
+    },
+    {
+      "id": "interpretation-operations",
+      "title": "Prominence is not truth, and graph incentives invite manipulation",
+      "body": "PageRank rewards incoming mass under the chosen link behavior. It does not evaluate textual relevance, factuality, recency, safety, creator quality or causal influence. Link farms and sybil clusters manufacture endorsement; dangling and redirect policies can shift credit. Spam-resistant systems detect suspicious topology, discount untrusted edges, incorporate seed trust and combine rank with content, freshness and quality features. Evaluate ranking utility and harms by query, language, site size and new-versus-established nodes. Popularity signals can create feedback that entrenches incumbents. Version graph snapshot, extraction code, node mapping, edge policy, α, v, tolerance and output checksum. Canary on known motifs and business slices before promotion. Monitor graph and rank drift, residual, concentration, top-k turnover, spam indicators and downstream outcomes. Preserve explanations such as major contributing neighborhoods without exposing private edges, and roll back the feature independently from the rest of ranking."
+    }
+  ],
+  "workedExamples": [
+    {
+      "title": "Outgoing dilution",
+      "body": "Two pages with equal rank link to A, but one has one outgoing edge and the other has ten. Their contributions are rank and rank/10 respectively under uniform link choice."
+    },
+    {
+      "title": "Personalized teleportation",
+      "body": "Putting most teleport mass on trusted research seeds turns the score into proximity to that trust context, not a global statement of importance."
+    }
+  ],
+  "lab": {
+    "language": "python",
+    "goal": "Build PageRank with dangling redistribution, compare power iteration with a direct solve, and verify conservation, residual and relabeling invariance.",
+    "buildIt": "import numpy as np\nn=6; edges=[(0,1),(0,2),(1,2),(2,0),(3,2),(3,4),(4,3)]\nv=np.full(n,1/n); alpha=.85; P=np.zeros((n,n))\nfor source in range(n):\n    targets=sorted({dst for src,dst in edges if src==source})\n    if targets:\n        for target in targets: P[target,source]=1/len(targets)\n    else: P[:,source]=v\ndef power(matrix,teleport,tol=1e-13):\n    rank=teleport.copy()\n    for iteration in range(10000):\n        new=alpha*(matrix@rank)+(1-alpha)*teleport\n        if np.linalg.norm(new-rank,1)<tol: return new,iteration+1\n        rank=new\n    raise RuntimeError('did not converge')\nrank,iterations=power(P,v)",
+    "useIt": "direct=np.linalg.solve(np.eye(n)-alpha*P,(1-alpha)*v)\nresidual=np.linalg.norm(rank-alpha*(P@rank)-(1-alpha)*v,1)\norder=np.argsort(-rank); top_nodes=order[:3].tolist()",
+    "verifyIt": "assert np.allclose(P.sum(axis=0),1) and np.all(P>=0)\nassert np.all(rank>0) and abs(rank.sum()-1)<1e-12\nassert residual<1e-11 and np.allclose(rank,direct,atol=1e-11) and iterations<1000\nperm=np.array([2,0,5,1,4,3]); Pp=P[np.ix_(perm,perm)]; vp=v[perm]; rank_p,_=power(Pp,vp); assert np.allclose(rank_p,rank[perm],atol=1e-11)\n# Node 5 is dangling yet keeps valid positive mass through teleportation.\nassert rank[5]>0 and len(top_nodes)==3",
+    "shipIt": "Freeze graph and solver contracts, check stochasticity and residuals, canary known motifs and cohorts, combine prominence with task signals, monitor manipulation, and retain atomic graph/rank rollback."
+  },
+  "exercises": [
+    {
+      "prompt": "Write the fixed-point equation for row-stochastic P.",
+      "solution": "If rank is a row vector, r=rαP+(1−α)v; alternatively transpose P and use the column-vector convention consistently."
+    },
+    {
+      "prompt": "What happens as α approaches one?",
+      "solution": "Links dominate and convergence can slow while sensitivity to traps and graph perturbations increases."
+    },
+    {
+      "prompt": "Why can PageRank reinforce popularity?",
+      "solution": "Visibility and links can feed future visibility, so a prominence feature may create a self-reinforcing exposure loop."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "network",
+      "title": "Random-surfer graph",
+      "nodes": [
+        {
+          "id": "a",
+          "label": "A",
+          "x": 0.18,
+          "y": 0.25,
+          "kind": "high"
+        },
+        {
+          "id": "b",
+          "label": "B",
+          "x": 0.5,
+          "y": 0.12
+        },
+        {
+          "id": "c",
+          "label": "C",
+          "x": 0.76,
+          "y": 0.34,
+          "kind": "high"
+        },
+        {
+          "id": "d",
+          "label": "D",
+          "x": 0.58,
+          "y": 0.72
+        },
+        {
+          "id": "e",
+          "label": "Dangling",
+          "x": 0.18,
+          "y": 0.72,
+          "kind": "risk"
+        }
+      ],
+      "edges": [
+        [
+          "a",
+          "b"
+        ],
+        [
+          "a",
+          "c"
+        ],
+        [
+          "b",
+          "c"
+        ],
+        [
+          "c",
+          "a"
+        ],
+        [
+          "d",
+          "c"
+        ],
+        [
+          "d",
+          "e"
+        ]
+      ],
+      "caption": "Links move probability; teleportation and dangling redistribution keep the complete chain valid.",
+      "afterSection": "graph-to-chain"
+    },
+    {
+      "type": "flow",
+      "title": "PageRank snapshot pipeline",
+      "items": [
+        "Extract and canonicalize graph",
+        "Normalize weighted outgoing edges",
+        "Redistribute dangling mass",
+        "Iterate sparse rank updates",
+        "Check conservation and residual",
+        "Spam-check, canary and publish"
+      ],
+      "caption": "A converged vector is only publishable after graph and manipulation checks.",
+      "afterSection": "interpretation-operations"
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "pagerank-paper",
+      "contribution": "Grounds recursive link ranking, the random-surfer interpretation and web-scale PageRank motivation."
+    },
+    {
+      "resource": "stanford-cs246",
+      "contribution": "Supports matrix formulation, rank sinks, teleportation, iterative computation and web-spam context."
+    },
+    {
+      "resource": "stanford-cs224w",
+      "contribution": "Adds modern graph-analysis perspective for centrality, network structure and evaluation."
+    }
+  ]
 }

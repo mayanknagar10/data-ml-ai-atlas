@@ -1,13 +1,10 @@
 import numpy as np
-rng=np.random.default_rng(0); n=10000
-ability=rng.normal(size=n)
-training=(ability+rng.normal(size=n)>.3).astype(int)
-salary=2*ability + 1.5*training + rng.normal(size=n)
-naive=salary[training==1].mean()-salary[training==0].mean()
-print('naive association',naive,'true treatment effect',1.5)
+from sklearn.linear_model import LinearRegression,LogisticRegression
+rng=np.random.default_rng(7); n=12000; risk=rng.normal(size=n); propensity=1/(1+np.exp(-1.7*risk)); treatment=rng.binomial(1,propensity); true_effect=-2.; outcome=4*risk+true_effect*treatment+rng.normal(scale=1,size=n)
+naive=outcome[treatment==1].mean()-outcome[treatment==0].mean()
+adjusted=LinearRegression().fit(np.c_[treatment,risk],outcome).coef_[0]
 
 # ---- Use it ----
-# Adjust for the confounder with a simple regression.
-from sklearn.linear_model import LinearRegression
-X=np.c_[training,ability]; m=LinearRegression().fit(X,salary)
-print('adjusted training coefficient',m.coef_[0])
+ps=LogisticRegression(max_iter=2000).fit(risk[:,None],treatment).predict_proba(risk[:,None])[:,1]
+weights=treatment/ps+(1-treatment)/(1-ps)
+weighted_treated=np.sum(weights*treatment*outcome)/np.sum(weights*treatment); weighted_control=np.sum(weights*(1-treatment)*outcome)/np.sum(weights*(1-treatment)); ipw=weighted_treated-weighted_control

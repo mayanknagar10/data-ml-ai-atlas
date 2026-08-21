@@ -7,33 +7,57 @@
     "mle",
     "ds"
   ],
-  "interviewAnswer": "Explain why the problem is naturally a graph, how semantic PR features enter the graph, why an inductive GNN helps new PRs, how link prediction/ranking is evaluated and how popularity bias is handled.",
+  "interviewAnswer": "For graph-based matching, I first define node and edge semantics, prediction time and the constrained decision. In reviewer assignment, paper and reviewer nodes have text and profile features; historical bids, authorship, expertise and prior assignments form typed edges, but future decisions and conflicts must not leak into training. I establish lexical or embedding similarity and popularity baselines before a GNN. Neighborhood aggregation is justified only if graph relations carry incremental signal and new-node induction is handled. Offline link metrics are insufficient: the assignment optimizer must respect conflicts, capacity, coverage and fairness. I evaluate chronologically with unseen papers and reviewers, report candidate recall before ranking quality, calibration and constrained assignment utility, then shadow against human decisions. Production versions the graph snapshot, features, conflict policy, model and optimizer; supports abstention, explanations, audit, manual override and rollback.",
   "keyPoints": [
-    "Graph construction",
-    "GraphSAGE",
-    "Code embeddings",
-    "Recall@K"
+    "Graph construction and temporal edge availability define the learning problem and its leakage risks.",
+    "Strong content and heuristic baselines must precede graph complexity.",
+    "Candidate generation, edge scoring and constrained assignment are separate stages with separate metrics.",
+    "A high link-prediction score can still produce infeasible, unfair or low-coverage assignments.",
+    "Sensitive relationships, conflicts, human override and explanation require governance and audit."
   ],
   "resources": [
-    "stanford-cs329s"
+    "stanford-cs329s",
+    "stanford-cs224w",
+    "graphsage-paper"
   ],
   "featured": false,
-  "why": "This case demonstrates a general graph-based matching system that combines content semantics, interaction structure, candidate generation, ranking and bias controls.",
-  "intuition": "Represent entities and interactions as a graph, encode content features, learn embeddings that capture both semantics and behavior, generate a manageable candidate set and then rank under product constraints.",
-  "deepDive": "Graph-based matching is useful when historical interactions carry signal that tabular features alone miss. Node features can come from text/image encoders, graph message passing propagates neighborhood context, and a link-prediction or ranking decoder scores potential matches. Evaluation should reflect the serving task—Recall@K or NDCG rather than only AUC. Temporal splits, hard-negative sampling, cold-start handling, popularity bias, freshness and eligibility constraints are central production concerns.",
-  "workedExample": "Represent users and opportunities/items as nodes, encode content features, learn graph embeddings from historical interactions, generate candidates, correct popularity bias and rank the top matches under availability and policy constraints.",
+  "why": "Matching reviewers, mentors, suppliers, experts or recommendations is rarely a pure nearest-neighbor problem. Relationships contain signal, but actions must satisfy capacity, conflicts, diversity, coverage and policy. Graph models can propagate expertise or interaction context, yet they also amplify popularity, leak future edges and expose sensitive ties. This case study demonstrates how to separate representation learning from optimization and product decisions. The transferable lesson is that model scores are inputs to a constrained system whose quality depends on candidate recall, graph provenance, feasibility and human consequences.",
+  "intuition": "A graph adds context to two profiles. A reviewer who has worked near a topic, bid on related papers and shares neighbors with experts may be a good match even if keywords differ. But the highest-scoring reviewer cannot review every paper, and a collaborator cannot be assigned despite high expertise. The system therefore behaves like a funnel: retrieve plausible edges, score them, remove prohibited edges and solve a global allocation. Evaluating only individual edges ignores the final puzzle.",
+  "deepDive": "This case study builds an evolving heterogeneous graph into a governed matching service. It separates time-correct graph construction, inductive representations, candidate and scoring evaluation, global constrained optimization and human operations. Graph signal must prove incremental value over content baselines without leaking or amplifying unsafe relationships.",
+  "workedExample": "A text-embedding baseline retrieves 50 reviewers per paper. A GraphSAGE-style scorer adds historical bid and co-review neighborhoods, improving edge recall on frequent topics but hurting brand-new reviewers. The team keeps text retrieval as a union candidate source, trains chronologically, and gives cold-start reviewers content-only scores. A min-cost assignment layer enforces conflicts and load. Offline gain survives only after measuring feasible coverage and simulated reviewer load, so rollout begins as recommendations to chairs with override reasons logged.",
   "commonMistakes": [
-    "Using random edge splits that leak future interactions.",
-    "Optimizing AUC while production returns only top-K matches.",
-    "Ignoring cold-start entities and popularity/exposure bias."
+    {
+      "misconception": "Use the full graph and random edge splits.",
+      "correction": "Build time-indexed snapshots and test on future unseen entities to prevent neighborhood leakage."
+    },
+    {
+      "misconception": "Assume missing edges are negative preference.",
+      "correction": "Missingness often reflects exposure and platform policy; sample and interpret negatives carefully."
+    },
+    {
+      "misconception": "Optimize link AUC only.",
+      "correction": "Measure candidate recall, feasible assignment, capacity, conflict, exposure and human outcome."
+    },
+    {
+      "misconception": "Let the GNN decide hard constraints.",
+      "correction": "Enforce conflicts and policy in a deterministic optimization and authorization layer."
+    }
   ],
   "followUps": [
-    "Why use a graph instead of only content embeddings?",
-    "How would you create negative samples?",
-    "How would you handle unseen users/items?",
-    "How would you separate candidate generation from ranking?"
+    {
+      "question": "Why use GraphSAGE here?",
+      "answer": "It can aggregate features and sampled neighborhoods for unseen nodes, unlike a purely transductive embedding table."
+    },
+    {
+      "question": "How do you handle cold start?",
+      "answer": "Union content candidates with graph candidates and use content-only scoring when safe neighborhoods are absent."
+    },
+    {
+      "question": "What if the assignment problem is infeasible?",
+      "answer": "Expose unmet constraints, use predeclared slack or escalation and route cases to human sourcing rather than violating hard rules."
+    }
   ],
-  "production": "Refresh graph edges/features incrementally, maintain a fast candidate stage, apply ranking and eligibility/business constraints, cache stable embeddings, monitor concentration/cold-start quality/latency and log exposure plus outcomes for retraining.",
+  "production": "Publish graph and constraint schemas with edge-time eligibility, sources and privacy classes. Build immutable snapshots, validate counts and forbidden edges, and version feature, model and solver. Evaluate chronological new-node cohorts plus final feasible assignment. Serve hybrid candidates, deterministic conflict filtering and a capacity-aware optimizer. Log explanations and overrides with access control. Monitor candidate recall audits, cold start, degree, score and exposure drift, workload, conflicts, infeasibility, decline, latency and freshness. Keep content-only and manual fallbacks and roll back the model and solver independently while preserving hard constraints.",
   "visual": {
     "type": "network",
     "title": "Reviewer recommendation graph",
@@ -95,6 +119,181 @@
     "directed": true
   },
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "math": "For graph G_t=(V,E_t) at decision time t, a message-passing layer may compute h_v^{k}=σ(W_k[h_v^{k-1}||AGG({h_u^{k-1}:u∈N_t(v)})]). Edge score s_pr compares paper p and reviewer r representations. Final binary assignment x_pr maximizes Σs_prx_pr subject to Σ_r x_pr≥q per paper, Σ_p x_pr≤capacity_r, x_pr=0 for conflicts and optional diversity or load constraints. Candidate recall bounds achievable assignment quality. Evaluate ranking with Recall@K or NDCG, calibration with probabilities if used, and optimizer utility plus constraint violations and unmatched rates.",
+  "description": "Graph-based matching and recommendation combine relational representation learning with constrained decisions. This case study defines a heterogeneous, time-indexed graph of papers, reviewers, topics, organizations, interactions and conflicts, then establishes content, popularity and collaborative baselines. It develops neighborhood aggregation and inductive GraphSAGE-style representations, negative sampling, cold start, temporal leakage and oversmoothing. Candidate retrieval, edge scoring and the final assignment optimizer are treated as independent components: the optimizer enforces capacity, conflicts, minimum coverage, load balance and optional diversity constraints. Evaluation includes candidate recall, ranking quality, calibration, feasible assignment utility, unmatched entities, exposure and subgroup behavior on chronological unseen-node splits. The lab builds content and graph scores for a toy bipartite problem, solves a capacity-constrained assignment with SciPy and verifies conflict, capacity and coverage invariants. Production design versions graph snapshots and edge-time policy, prevents forbidden relationships from training or serving, caches embeddings with freshness, monitors degree and exposure drift, explains scores, supports human override and rolls back model and optimizer separately. The chapter also discusses privacy, popularity feedback, strategic bidding and when simpler content matching is safer than a GNN.",
+  "prerequisites": [
+    "graphsage",
+    "link-prediction",
+    "design-recommender",
+    "project-defense-framework"
+  ],
+  "learningObjectives": [
+    "Construct a time-correct heterogeneous matching graph with explicit edge and conflict semantics.",
+    "Compare content, heuristic and graph representation baselines including cold-start behavior.",
+    "Evaluate candidate, scoring and constrained assignment stages with distinct metrics.",
+    "Operate an auditable human-in-the-loop matching system with fairness, privacy and rollback."
+  ],
+  "deepSections": [
+    {
+      "id": "graph-contract",
+      "title": "Graph semantics and time define which relationships are legitimate evidence",
+      "body": "Specify each node type, stable identity, feature availability and edge meaning. Authorship, citation, bid, co-review, click and assignment edges are not interchangeable. An edge created after the assignment decision cannot be used to predict that decision. Conflict edges may be derived from recent collaboration or organization and belong to policy, not positive training labels. Snapshot the graph at prediction time and split by future decision rounds, with unseen papers and some unseen reviewers. Remove label-derived features from neighborhoods. Deduplicate identities carefully without exposing private affiliations. Degree and missing-edge patterns reflect platform behavior: no bid may mean no exposure, not dislike. A graph data contract includes event time, source, retention, correction, deletion and whether an edge is safe for features, labels, constraints or explanations."
+    },
+    {
+      "id": "model-baselines",
+      "title": "Graph signal must beat content and heuristic baselines under induction",
+      "body": "Start with keyword overlap, TF-IDF or embedding cosine, expertise tags, recent workload and popularity-normalized heuristics. They establish value and cold-start coverage. A transductive embedding table cannot naturally represent new nodes; inductive aggregation combines node features and sampled neighborhoods. GraphSAGE learns an aggregation function, but performance depends on neighbor types, sampling, depth and feature quality. Multiple layers can oversmooth representations or propagate popularity and sensitive attributes. Heterogeneous graphs may need relation-specific transforms. Negative samples should resemble real candidates and respect time; treating every unobserved edge as negative creates exposure bias. Ablate content, degree and edge families. If graph gains disappear for new nodes or after chronological splitting, keep the simpler baseline or use a hybrid fallback."
+    },
+    {
+      "id": "stages-optimization",
+      "title": "Retrieval, scoring and global assignment solve different problems",
+      "body": "A candidate generator must retrieve enough qualified reviewers at bounded cost; candidate recall is a hard ceiling for later stages. The ranker estimates relevance or preference among candidates. Calibration matters if scores feed expected utility, but relative rank alone may suffice. The assignment optimizer makes global trade-offs: each paper needs reviewers, each reviewer has capacity, conflicts are forbidden and coverage or diversity may be required. Greedy top scores can overload popular people and strand specialized papers. Formulate bipartite matching, min-cost flow or integer programming with hard versus soft constraints and explicit slack penalties. Test infeasibility and provide a manual queue. Evaluate final assignment, not only held-out edges, using domain review, workload distribution and counterfactual simulations."
+    },
+    {
+      "id": "human-operations",
+      "title": "Human authority, explanations and feedback shape the graph over time",
+      "body": "Present a ranked shortlist with evidence such as topic overlap and non-sensitive graph paths, not opaque certainty. Never reveal confidential conflicts or private relationships through explanations. Chairs or operators must override, exclude and add candidates; log reason codes without treating every override as ground-truth preference. Assignment decisions change future graph edges and availability, creating feedback. Randomized exposure or carefully designed exploration may be needed to learn beyond incumbents. Monitor candidate coverage, cold-start rate, degree and score distribution, load, conflict filtering, subgroup exposure, override and decline rates, latency and embedding age. Version the graph, feature code, model, constraints and solver. If the model fails, fall back to content matching and manual assignment while preserving hard policy constraints."
+    }
+  ],
+  "workedExamples": [
+    {
+      "title": "Popularity feedback",
+      "body": "Frequently assigned reviewers gain more edges, improving graph scores and causing further assignments. Normalize degree, evaluate exposure and preserve exploration for qualified newcomers."
+    },
+    {
+      "title": "Constraint infeasibility",
+      "body": "A niche paper has only conflicted or overloaded candidates. The system should expose slack and request manual sourcing rather than silently violating policy."
+    }
+  ],
+  "lab": {
+    "language": "python",
+    "goal": "Score a toy reviewer–paper graph and solve a conflict- and capacity-constrained assignment with verified invariants.",
+    "buildIt": "import numpy as np\nfrom scipy.optimize import linear_sum_assignment\n# Three papers each need one reviewer; two slots model capacity for reviewer 0.\ncontent=np.array([[.9,.6,.3],[.8,.4,.7],[.2,.85,.65]])\ngraph=np.array([[.1,.7,.2],[.5,.2,.8],[.1,.6,.4]])\nscores=.7*content+.3*graph\nconflicts=np.array([[False,True,False],[False,False,True],[False,False,False]])\nslots=[0,0,1,2]; expanded=scores[:,slots].copy()\nfor p in range(3):\n    for j,r in enumerate(slots):\n        if conflicts[p,r]: expanded[p,j]=-1e6\nrows,cols=linear_sum_assignment(-expanded); assignment=[(int(p),slots[int(c)]) for p,c in zip(rows,cols)]",
+    "useIt": "capacities={0:2,1:1,2:1}; loads={r:sum(rr==r for _,rr in assignment) for r in capacities}; utility=sum(scores[p,r] for p,r in assignment)",
+    "verifyIt": "assert len(assignment)==3 and {p for p,_ in assignment}=={0,1,2}\nassert all(not conflicts[p,r] for p,r in assignment)\nassert all(loads[r]<=capacities[r] for r in capacities)\nassert utility>1.5\n# Content-only remains available for nodes without graph history.\ncold_score=content[0]; assert cold_score.argmax()==0\nassert np.isfinite(scores).all()",
+    "shipIt": "Version graph time and constraints, preserve content cold-start fallback, evaluate feasible assignment and exposure, log overrides safely, and roll back scoring independently of hard policy."
+  },
+  "exercises": [
+    {
+      "prompt": "Design a temporal graph split.",
+      "solution": "Build each training snapshot only from edges available before its assignment round and test on later unseen papers and reviewers."
+    },
+    {
+      "prompt": "Why can link AUC mislead?",
+      "solution": "It ignores candidate misses, capacity, conflicts, global allocation and exposure distribution."
+    },
+    {
+      "prompt": "Name an explanation that may be unsafe.",
+      "solution": "A graph path revealing a confidential collaboration, conflict, private bid or protected relationship."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "flow",
+      "title": "Graph matching system",
+      "items": [
+        "Time-correct heterogeneous graph",
+        "Content and graph candidate union",
+        "Hybrid edge scoring",
+        "Hard conflict filtering",
+        "Capacity-constrained assignment",
+        "Human review, feedback and audit"
+      ],
+      "caption": "Prediction proposes edges; deterministic policy and optimization create an assignment.",
+      "afterSection": "stages-optimization"
+    },
+    {
+      "type": "network",
+      "title": "Bipartite reviewer matching",
+      "nodes": [
+        {
+          "id": "p1",
+          "label": "Paper A",
+          "x": 0.15,
+          "y": 0.2,
+          "kind": "source"
+        },
+        {
+          "id": "p2",
+          "label": "Paper B",
+          "x": 0.15,
+          "y": 0.5,
+          "kind": "source"
+        },
+        {
+          "id": "p3",
+          "label": "Paper C",
+          "x": 0.15,
+          "y": 0.8,
+          "kind": "source"
+        },
+        {
+          "id": "r1",
+          "label": "Reviewer 1",
+          "x": 0.82,
+          "y": 0.18,
+          "kind": "target"
+        },
+        {
+          "id": "r2",
+          "label": "Reviewer 2",
+          "x": 0.82,
+          "y": 0.5,
+          "kind": "target"
+        },
+        {
+          "id": "r3",
+          "label": "Reviewer 3",
+          "x": 0.82,
+          "y": 0.82,
+          "kind": "target"
+        }
+      ],
+      "edges": [
+        [
+          "p1",
+          "r1"
+        ],
+        [
+          "p1",
+          "r2"
+        ],
+        [
+          "p2",
+          "r1"
+        ],
+        [
+          "p2",
+          "r3"
+        ],
+        [
+          "p3",
+          "r2"
+        ],
+        [
+          "p3",
+          "r3"
+        ]
+      ],
+      "caption": "Candidate edges are globally selected under reviewer capacity and conflict constraints.",
+      "afterSection": "graph-contract"
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "graphsage-paper",
+      "contribution": "Grounds inductive sampled neighborhood aggregation for representations of previously unseen graph nodes."
+    },
+    {
+      "resource": "stanford-cs224w",
+      "contribution": "Supports graph representation, link prediction, heterogeneous networks and evaluation."
+    },
+    {
+      "resource": "stanford-cs329s",
+      "contribution": "Provides production ML guidance for data, serving, feedback, monitoring and human operations."
+    }
+  ]
 }

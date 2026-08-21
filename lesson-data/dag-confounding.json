@@ -7,31 +7,57 @@
     "ds",
     "as"
   ],
-  "interviewAnswer": "A causal DAG encodes assumptions about which variables cause which others. A confounder causes both treatment and outcome and often needs adjustment; a collider is caused by two variables and conditioning on it can create a spurious association.",
+  "interviewAnswer": "A causal DAG is a directed acyclic graph whose arrows encode direct causal relationships under a chosen level of abstraction. It is not learned from correlations alone; it records domain assumptions and lets us reason about open paths. A confounder is a common cause of treatment and outcome, creating a backdoor path that must be blocked. A mediator lies on the causal path and adjusting for it changes a total-effect question. A collider is a common effect; conditioning on it or its descendants can open a previously blocked path and create association. I define treatment, outcome, time order and target effect, draw all plausible common causes including unmeasured ones, apply d-separation or the backdoor criterion, and avoid descendants of treatment for total effects. I compare defensible adjustment sets, use negative controls or sensitivity analysis, and never treat an algorithmically discovered graph as identified truth without interventions or strong assumptions.",
   "keyPoints": [
-    "DAG",
-    "confounder",
-    "collider",
-    "backdoor paths"
+    "DAG arrows express causal assumptions, not regression coefficients or mere temporal correlation.",
+    "Confounders open noncausal backdoor paths; mediators carry effects; colliders block paths until conditioned on.",
+    "d-separation is a graphical rule for conditional independence implied by the assumed graph.",
+    "An adjustment set is effect- and graph-specific; adding variables can create rather than remove bias.",
+    "Unmeasured nodes belong in the graph because they determine identification even when absent from the dataset."
   ],
   "resources": [
-    "causal-neal",
-    "causal-mixtape"
+    "pearl-diagrams",
+    "what-if-causal",
+    "openintro-stats"
   ],
   "featured": false,
-  "why": "Choosing adjustment variables mechanically from correlation can bias causal estimates. DAG reasoning makes assumptions explicit before modeling.",
-  "intuition": "Imagine arrows as information about the data-generating process. Conditioning can close useful backdoor paths—but can also accidentally open a path through a collider.",
-  "deepDive": "The backdoor criterion formalizes sets that block noncausal paths between treatment and outcome without blocking the causal effect itself. DAGs do not prove assumptions; they make them inspectable.",
-  "workedExample": "Ability → Training and Ability → Salary makes Ability a confounder when estimating Training → Salary. If Hiring ← Ability and Hiring ← Network, conditioning on Hiring can associate Ability and Network even if they were independent.",
+  "why": "Regression tables encourage a harmful habit: call every pretreatment correlate a confounder and include every available field. Conditioning can block causal pathways, induce selection through colliders or encode post-treatment information. A DAG makes those consequences visible before modeling. It also separates what data can test from what subject-matter knowledge must assert. Multiple graphs can fit the same observed distribution yet imply different intervention effects, so graphical reasoning does not eliminate uncertainty; it organizes it. The practical value is a reviewable causal contract that connects temporal lineage, adjustment, missing variables, selection and the estimand.",
+  "intuition": "Paths behave like pipes for association. A fork C→A and C→Y is open unless C is conditioned on, so treated and untreated groups differ through C. A chain A→M→Y carries the effect and closes when M is conditioned on. A collider A→K←Y is naturally closed because K requires two arrows to meet; selecting or conditioning on K opens a competition between its causes.",
+  "deepDive": "DAG analysis distinguishes causal paths from noncausal associations using d-separation, graph surgery and effect-specific adjustment criteria. Correct use requires temporal and substantive assumptions, inclusion of latent causes, careful treatment of selection and measurement, and explicit recognition of Markov equivalence and causal-discovery limits.",
+  "workedExample": "Baseline severity causes treatment and outcome, so it should be adjusted for the total treatment effect. Post-treatment biomarker lies on treatment→biomarker→outcome; adjusting for it changes the question and can introduce bias through unmeasured biomarker-outcome causes.",
   "commonMistakes": [
-    "Calling every correlated variable a confounder.",
-    "Conditioning on a collider because “more controls must be better.”"
+    {
+      "misconception": "Every variable associated with treatment and outcome is a confounder.",
+      "correction": "Mediators, colliders and proxies can share associations; role follows the causal graph and timing."
+    },
+    {
+      "misconception": "More adjustment is always safer.",
+      "correction": "Conditioning on colliders or post-treatment variables can create bias and positivity problems."
+    },
+    {
+      "misconception": "A DAG learned from data proves causal direction.",
+      "correction": "Discovery relies on strong assumptions and often identifies only an equivalence class; interventions and domain knowledge remain necessary."
+    },
+    {
+      "misconception": "Unmeasured variables can be omitted from the graph because they cannot enter regression.",
+      "correction": "They determine whether observed adjustment identifies the effect and must remain visible in the assumptions."
+    }
   ],
   "followUps": [
-    "What is a backdoor path?",
-    "Can DAG structure be learned reliably from data alone?"
+    {
+      "question": "What happens when you condition on a collider?",
+      "answer": "It can open a previously blocked path between the collider's causes, inducing a noncausal association."
+    },
+    {
+      "question": "Can a variable be a confounder and mediator?",
+      "answer": "Its role is query- and time-specific; a time-varying variable may mediate earlier treatment while confounding later treatment."
+    },
+    {
+      "question": "How do you choose among multiple valid adjustment sets?",
+      "answer": "Prefer sets with reliable measurement, good positivity and precision, then test robustness; all rely on the same causal assumptions."
+    }
   ],
-  "production": "For experimentation/decision systems, keep causal assumptions versioned alongside the analysis and distinguish pre-treatment from post-treatment features.",
+  "production": "Version the DAG, node and treatment definitions, time order, latent causes, edge rationale, estimand and selected adjustment set. Assert that adjustment features precede treatment for total-effect analyses and flag filters or missingness rules that condition on selection. Compare plausible graph variants, run overlap and sensitivity diagnostics and maintain negative controls where justified. Review the graph whenever data collection or policy changes create new arrows. Keep the prior design and decision policy available when the updated system invalidates the original identification argument.",
   "visual": {
     "type": "network",
     "title": "Confounder vs collider",
@@ -87,6 +113,177 @@
     "directed": true
   },
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "math": "A path is blocked by conditioning set Z if it contains a noncollider in Z or a collider with neither it nor any descendant in Z. X and Y are d-separated by Z when every path is blocked. A backdoor path from A to Y begins with an arrow into A. A set Z satisfies the backdoor criterion if it contains no descendant of A and blocks every backdoor path. Then P(Y|do(A=a))=sum_z P(Y|A=a,Z=z)P(Z=z) for discrete Z. This equality follows from causal assumptions; ordinary probability alone does not license replacing do(A) with conditioning on A.",
+  "code": "confounder_bias=naive-2; adjusted_bias=adjusted-2; collider_bias=conditioned-open_path\nresults={'naive':naive,'adjusted':adjusted,'unconditioned_collider_graph':open_path,'conditioned_collider_graph':conditioned}",
+  "lab": {
+    "language": "python",
+    "goal": "Simulate a confounder and a collider, then verify that conditioning removes bias in the first graph and creates bias in the second.",
+    "buildIt": "import numpy as np\nfrom sklearn.linear_model import LinearRegression\nrng=np.random.default_rng(9); n=20000\nc=rng.normal(size=n); a=.9*c+rng.normal(size=n); y=2*a+2*c+rng.normal(size=n)\nnaive=LinearRegression().fit(a[:,None],y).coef_[0]; adjusted=LinearRegression().fit(np.c_[a,c],y).coef_[0]\na2=rng.normal(size=n); y2=rng.normal(size=n); collider=a2+y2+rng.normal(scale=.3,size=n)\nopen_path=LinearRegression().fit(a2[:,None],y2).coef_[0]; conditioned=LinearRegression().fit(np.c_[a2,collider],y2).coef_[0]",
+    "useIt": "confounder_bias=naive-2; adjusted_bias=adjusted-2; collider_bias=conditioned-open_path\nresults={'naive':naive,'adjusted':adjusted,'unconditioned_collider_graph':open_path,'conditioned_collider_graph':conditioned}",
+    "verifyIt": "assert abs(adjusted-2)<.03\nassert abs(naive-2)>.5\nassert abs(open_path)<.03\nassert conditioned<-.8 and abs(collider_bias)>.8\nassert all(np.isfinite(v) for v in results.values())",
+    "shipIt": "Persist the reviewed DAG and adjustment set, assert temporal feature lineage, and rerun collider, overlap and sensitivity audits when policy or data collection changes."
+  },
+  "description": "Directed acyclic graphs turn causal assumptions into a precise map for identification and bias analysis. This chapter defines nodes, arrows, paths, ancestors, descendants, forks, chains and colliders; derives d-separation; and explains why confounding, mediation and selection depend on graph position rather than variable names. It applies the backdoor criterion, distinguishes total from direct effects, analyzes M-bias, proxy adjustment, measurement error and selection on descendants, and explains why unmeasured causes must appear even when they cannot enter a model. It also covers Markov equivalence and the assumptions behind causal discovery. Worked examples show confounder adjustment removing bias and collider adjustment creating it. The lab simulates both structures and verifies their opposite regression consequences. Production guidance versions graphs, node semantics, time availability and adjustment sets, reviews new features for post-treatment status, maintains negative-control and sensitivity evidence, and treats every graph revision as a change to the causal claim rather than a cosmetic diagram update.",
+  "prerequisites": [
+    "causal-inference",
+    "joint-marginal-conditional"
+  ],
+  "learningObjectives": [
+    "Classify causal paths, forks, chains and colliders and apply d-separation correctly.",
+    "Choose adjustment sets for a declared total or direct effect using the backdoor criterion.",
+    "Diagnose collider, mediator, descendant and selection bias introduced by inappropriate conditioning.",
+    "Document latent causes, temporal assumptions, graph alternatives and sensitivity in a reviewable workflow."
+  ],
+  "deepSections": [
+    {
+      "id": "graph-semantics",
+      "title": "A DAG is a structural claim at a chosen abstraction",
+      "body": "Nodes represent variables or states and arrows represent direct causal relationships relative to the included variables and time scale. Absence of an arrow is also an assumption: no direct effect after accounting for the graph. Acyclicity excludes feedback within the represented time slice; real feedback can be unfolded over time with indexed nodes. Arrows do not encode effect sign, size, linearity or determinism. Draw treatment, outcome, baseline causes, mediators, selection and measurement processes before opening the data. Include latent common causes as unobserved nodes so missing identification is visible. The same real system can have different valid graphs for different granularities, but the nodes and intervention must remain coherent. Temporal order rules out some arrows but does not prove the remaining orientation. Review the graph with domain, data and causal experts and attach evidence or rationale to each contested edge."
+    },
+    {
+      "id": "d-separation",
+      "title": "d-separation tracks which paths transmit association",
+      "body": "A chain X→M→Y and a fork X←C→Y are open until their middle noncollider is conditioned on. Conditioning blocks them. A collider X→K←Y is blocked by default and opens when K or one of its descendants is conditioned on. To test d-separation, enumerate paths without following arrow direction, classify each interior node on that path and apply the blocking rules. The causal Markov property implies d-separated variables are conditionally independent, subject to distributional faithfulness for using observed independences to recover structure. Failure to observe an expected independence can falsify a graph or reveal measurement and sampling issues, but observed independence cannot select a unique causal direction among Markov-equivalent DAGs. d-separation is qualitative identification logic, not a measure of how large residual bias is."
+    },
+    {
+      "id": "roles-adjustment",
+      "title": "Variable roles depend on the treatment-outcome query",
+      "body": "A baseline common cause of A and Y is a confounder and opens a backdoor path. A mediator lies on a directed path from A to Y; conditioning on it removes part of the total effect and may introduce mediator-outcome confounding affected by treatment. A collider is a common effect on a path and conditioning opens it. A variable can play multiple roles on different paths, and a confounder for one exposure may be a mediator for another. Prognostic causes of Y that do not cause A can improve precision without being required for identification. Instruments cause A and affect Y only through A under exclusion; adjusting for them is not necessary for confounding control and can amplify residual bias in some settings. Do not assign roles from correlation or a reusable feature label. State the exact A, Y, intervention time and estimand first."
+    },
+    {
+      "id": "backdoor-selection",
+      "title": "Backdoor adjustment blocks noncausal paths without blocking the effect",
+      "body": "For a total effect, remove arrows leaving A conceptually and identify paths entering A. A valid set contains no descendants of A and blocks all such paths. Minimal sets are often preferable to an indiscriminate superset because extra variables can open colliders, increase variance or worsen positivity. Selection is conditioning, whether implemented by a regression covariate, a filter, complete-case analysis or dataset membership. Restricting to hospitalized patients can open a path if hospitalization is caused by treatment-related and outcome-related factors. Adjusting for a proxy may reduce but not eliminate confounding, depending on measurement structure. When no measured set blocks every path, the effect is not backdoor-identified; use sensitivity, bounds, an alternative design or a narrower claim rather than letting regularization choose a convenient set."
+    },
+    {
+      "id": "graph-governance",
+      "title": "Graphs are versioned assumptions and diagnostic tools",
+      "body": "Store node definitions, timing, edge rationale, latent variables, target effect and candidate adjustment sets with the analysis. Map every model feature back to a node and flag descendants of treatment or outcome-window fields. Compare plausible alternative graphs and record whether the estimand remains identified. Use negative-control exposures or outcomes where their assumptions are credible to detect residual structure, not as automatic proof. Conduct quantitative sensitivity analyses for unmeasured confounding and selection. Causal discovery can generate hypotheses under Markov, faithfulness, causal sufficiency or other assumptions, but equivalence classes and hidden variables limit orientation. Production policy changes can alter edges—for example, a risk score begins causing treatment—so the graph and evaluation design must be reviewed whenever the system intervenes."
+    }
+  ],
+  "workedExamples": [
+    {
+      "title": "Confounder versus mediator",
+      "body": "Baseline severity causes treatment and outcome, so it should be adjusted for the total treatment effect. Post-treatment biomarker lies on treatment→biomarker→outcome; adjusting for it changes the question and can introduce bias through unmeasured biomarker-outcome causes."
+    },
+    {
+      "title": "Collider selection",
+      "body": "Skill and family connections independently cause admission. Among admitted applicants, low connections imply unusually high skill and vice versa, creating a negative association even if the causes are independent in the applicant population."
+    }
+  ],
+  "exercises": [
+    {
+      "prompt": "In A←C→Y, what does conditioning on C do?",
+      "solution": "It blocks the backdoor fork between A and Y, supporting adjustment if the remaining assumptions hold."
+    },
+    {
+      "prompt": "Why avoid adjusting for A→M→Y when estimating the total effect?",
+      "solution": "M carries part of the effect; conditioning blocks that pathway and changes the estimand, possibly adding mediator-related bias."
+    },
+    {
+      "prompt": "Why can filtering rows create collider bias?",
+      "solution": "Dataset inclusion is conditioning on a selection variable; if multiple causes feed selection, their path can become open within the selected sample."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "network",
+      "title": "Confounding fork",
+      "nodes": [
+        {
+          "id": "c",
+          "label": "Baseline severity C",
+          "x": 0.18,
+          "y": 0.2,
+          "kind": "source"
+        },
+        {
+          "id": "a",
+          "label": "Treatment A",
+          "x": 0.18,
+          "y": 0.78,
+          "kind": "target"
+        },
+        {
+          "id": "y",
+          "label": "Outcome Y",
+          "x": 0.82,
+          "y": 0.5,
+          "kind": "target"
+        }
+      ],
+      "edges": [
+        [
+          "c",
+          "a"
+        ],
+        [
+          "c",
+          "y"
+        ],
+        [
+          "a",
+          "y"
+        ]
+      ],
+      "caption": "C opens a backdoor path into A; conditioning on C blocks that noncausal component while preserving A→Y.",
+      "afterSection": "roles-adjustment"
+    },
+    {
+      "type": "network",
+      "title": "Collider selection",
+      "nodes": [
+        {
+          "id": "a",
+          "label": "Cause A",
+          "x": 0.15,
+          "y": 0.25,
+          "kind": "source"
+        },
+        {
+          "id": "y",
+          "label": "Cause Y",
+          "x": 0.15,
+          "y": 0.75,
+          "kind": "source"
+        },
+        {
+          "id": "k",
+          "label": "Selected K",
+          "x": 0.82,
+          "y": 0.5,
+          "kind": "target"
+        }
+      ],
+      "edges": [
+        [
+          "a",
+          "k"
+        ],
+        [
+          "y",
+          "k"
+        ]
+      ],
+      "caption": "The path is closed until K or its descendant is conditioned on; selection then associates its independent causes.",
+      "afterSection": "backdoor-selection"
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "pearl-diagrams",
+      "contribution": "Provides d-separation, causal diagrams and graphical identification principles."
+    },
+    {
+      "resource": "what-if-causal",
+      "contribution": "Supports confounding, exchangeability, selection and treatment-effect interpretation."
+    },
+    {
+      "resource": "openintro-stats",
+      "contribution": "Supports conditional association and regression concepts used in the simulations."
+    }
+  ]
 }

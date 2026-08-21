@@ -7,34 +7,207 @@
     "ds",
     "as"
   ],
-  "interviewAnswer": "Spatial autocorrelation asks whether nearby observations are more similar than expected. Moran’s I is a common global measure; local indicators identify spatial clusters/outliers.",
+  "interviewAnswer": "Spatial autocorrelation asks whether values at locations connected by a specified weights matrix are more similar or dissimilar than expected. Global Moran's I is I=(n/S0)[Σ_iΣ_j w_ij(z_i−z̄)(z_j−z̄)]/[Σ_i(z_i−z̄)^2]. Positive values indicate neighboring deviations tend to share sign, negative values indicate contrast, and interpretation depends on W, scaling and the null. Under a common randomization null E[I]=−1/(n−1), not zero. I define neighbors from the process—contiguity, distance, kNN or network—handle islands and row standardization, examine a Moran scatterplot, and use permutation inference that reassigns values while holding W fixed. Global significance does not locate clusters or establish causation. I test residual autocorrelation, multiple local statistics and boundary sensitivity before production use.",
   "keyPoints": [
-    "Spatial weights",
-    "Moran’s I",
-    "LISA",
-    "Dependence"
+    "Spatial dependence is defined relative to a weights matrix, not inherent in a column alone.",
+    "Moran's I compares cross-products of centered neighboring values with global variance.",
+    "Randomization expectation is often −1/(n−1); permutation design must match the null.",
+    "Global I summarizes overall association and can hide local clusters, outliers and nonstationarity.",
+    "Residual spatial autocorrelation signals missing structure and invalid independent-error assumptions, not a specific remedy."
   ],
   "resources": [
     "pysal",
-    "geodata-science-book"
+    "geodata-science-book",
+    "moran-1950"
   ],
   "featured": false,
-  "why": "Geography often violates the independence assumption behind ordinary statistics.",
-  "intuition": "Nearby house prices or disease rates often move together.",
-  "deepDive": "A spatial weights matrix defines neighborhood structure; Moran’s I compares neighboring deviations with overall variance and commonly uses permutation inference.",
-  "math": "",
+  "why": "Nearby places often share climate, infrastructure, policy, history or measurement processes. Treating observations as independent can understate uncertainty, make random cross-validation optimistic and leave model residual patterns. Moran's I provides a compact diagnostic for whether neighboring centered values move together under an explicit graph. Its apparent simplicity hides major modeling choices: polygon adjacency, distance threshold, kNN, row standardization, islands, boundaries and permutations all change the question. Learning to construct and audit W is more important than memorizing a cutoff for I. The statistic should open spatial investigation, not end it.",
+  "intuition": "Color each area above or below the overall mean. If neighboring areas often share colors, their centered values multiply to positive numbers and Moran's numerator grows. If high areas border low areas, products are negative. The weights matrix decides who counts as a neighbor and how strongly. A checkerboard and a smooth gradient can use identical values yet have opposite spatial association after values are arranged differently.",
+  "deepDive": "Moran's I is a quadratic form over centered observations and a chosen spatial graph. The result and its inference belong to that graph, normalization and null. Responsible use examines alternative weights, local structure, residuals, multiple comparisons and scale rather than treating one significant global number as a causal cluster detector.",
+  "math": "Let x be n observations, z=x−x̄1, W=[w_ij] with zero diagonal and S0=Σ_iΣ_jw_ij. Then I=(n/S0)(zᵀWz)/(zᵀz). With symmetric W, zᵀWz sums weighted cross-products; for asymmetric row-standardized kNN, direction and symmetrization matter. Under a randomization null commonly E[I]=−1/(n−1). A Moran scatterplot uses standardized z on x and spatial lag Wz on y; with row-standardized W, the fitted slope relates to I. Local I_i is proportional to z_iΣ_jw_ijz_j but requires permutation inference and multiplicity control.",
   "code": "",
   "commonMistakes": [
-    "Calling visual clustering statistically significant.",
-    "Choosing weights after seeing the desired result."
+    {
+      "misconception": "Moran's I near zero is the exact null expectation.",
+      "correction": "Under common randomization it is −1/(n−1), and inference depends on W and null."
+    },
+    {
+      "misconception": "Significant I proves a causal spillover.",
+      "correction": "It shows arrangement under a spatial graph; confounding, trend and shared measurement can explain it."
+    },
+    {
+      "misconception": "There is one objective neighbor matrix.",
+      "correction": "W encodes a process hypothesis and should be justified and sensitivity-tested."
+    },
+    {
+      "misconception": "A global statistic identifies cluster locations.",
+      "correction": "Use local diagnostics with permutation and multiplicity control, and interpret cautiously."
+    }
   ],
   "followUps": [
-    "Global vs local Moran?",
-    "Effect on regression?"
+    {
+      "question": "What does row standardization do?",
+      "answer": "It makes each location's outgoing weights sum to one, turning Wz into a neighbor average but changing influence and symmetry."
+    },
+    {
+      "question": "Why use permutation inference?",
+      "answer": "It obtains a reference distribution for the chosen W and observed values without relying only on asymptotic normal approximations."
+    },
+    {
+      "question": "What if residual Moran's I is significant?",
+      "answer": "Investigate missing spatial structure and validation design; choose a remedy from the data-generating process rather than automatically adding coordinates."
+    }
   ],
-  "production": "Define neighborhoods from domain logic and account for spatial dependence in inference/validation.",
-  "workedExample": "A high-high cluster can identify adjacent regions with consistently elevated values.",
+  "production": "Version geography, feature values, neighbor construction, weight scaling, island policy, permutations and seed. Validate W dimensions, diagonal, finite values, row sums, symmetry expectation, connected components and islands. Report I, null expectation, permutation distribution and sensitivity across plausible W. For local maps, control multiplicity and suppress unsafe small-area disclosure. Monitor geography changes, residual I and subgroup calibration. Store artifacts and model diagnostics so a changed boundary or weights package can be reproduced. Keep raw and previous geography and W for rollback rather than overwriting spatial relationships.",
+  "workedExample": "Nine regions in a 3×3 grid have values increasing from west to east. Rook adjacency connects shared edges. Neighboring regions usually have similar centered values, so I is positive. Randomly permuting the same nine values preserves the histogram and variance but breaks spatial arrangement, yielding a permutation distribution around the null expectation. Changing to queen adjacency adds diagonals and changes both S0 and cross-products; neither result is automatically the unique correct one.",
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "Spatial autocorrelation measures dependence between values linked through geography. This chapter develops spatial weights matrices from rook and queen polygon contiguity, fixed distance, inverse distance, k-nearest neighbors and network relations, including binary versus weighted edges, row standardization, symmetry, islands and boundary effects. It derives global Moran's I as a normalized quadratic form of centered observations, interprets positive and negative association, and explains why its randomization expectation is usually −1/(n−1). Moran scatterplots connect standardized values with spatial lags. Analytical and permutation inference are compared, with the permutation scheme tied to the exchangeability null. The chapter distinguishes global I from local indicators of spatial association, Getis–Ord statistics and variograms, covering local high-high, low-low and spatial-outlier patterns with multiple testing. It shows how trends, population denominators, rates, heteroskedasticity and the modifiable areal unit problem affect interpretation. The lab constructs a rook weights matrix, computes I, runs a deterministic permutation test and verifies that spatially smooth values exceed shuffled arrangements. Production guidance versions geography and W, tests sensitivity, monitors residual dependence, handles islands, protects small-area data and separates descriptive clustering from causal explanation.",
+  "prerequisites": [
+    "expectation-variance",
+    "hypothesis-testing",
+    "spatial-joins"
+  ],
+  "learningObjectives": [
+    "Construct and audit spatial weights from process-relevant neighbor definitions.",
+    "Derive Moran's I, its randomization expectation and spatial-lag interpretation.",
+    "Perform permutation inference and distinguish global from local spatial diagnostics.",
+    "Use residual and sensitivity analysis without overstating cluster or causal claims."
+  ],
+  "deepSections": [
+    {
+      "id": "weights",
+      "title": "The weights matrix is the spatial hypothesis",
+      "body": "Rook contiguity links polygons sharing an edge; queen also counts shared vertices. Distance bands link points within a threshold, inverse distance weights closer pairs more, and kNN guarantees each location neighbors k others but can be asymmetric. Networks may encode travel or flow better than Euclidean proximity. Row standardization makes each row sum one, so a spatial lag is a neighbor average, but gives each location equal total influence and changes symmetry. Binary unstandardized weights give dense areas more total weight. Islands with no neighbors can be excluded, connected to nearest sites or retained with zero lag; each choice changes the estimand. Boundaries truncate neighbors and polygons of varying size alter contiguity. Build W from domain mechanisms and report sensitivity rather than selecting the version with the smallest p-value."
+    },
+    {
+      "id": "global-moran",
+      "title": "Moran's I compares neighboring covariance with overall dispersion",
+      "body": "Center observations so positive and negative deviations are comparable. The quadratic form zᵀWz is positive when linked deviations often share sign and negative when opposite signs connect. Divide by zᵀz and normalize by n/S0 so scales are comparable under the weight convention. I is not constrained exactly to [−1,1] for every W, and its magnitude has no universal effect-size meaning across different graphs. Under value randomization with fixed locations and W, expected I is −1/(n−1), making small negative values compatible with no spatial association. The statistic can reflect a broad trend rather than local interaction. Detrending may answer a different question; compare raw and residual structure explicitly. A significant I says the observed arrangement is unusual under the null, not why the pattern exists."
+    },
+    {
+      "id": "inference-local",
+      "title": "Permutation and local statistics need a declared null and multiplicity control",
+      "body": "A randomization test repeatedly permutes observed values across fixed locations, recomputes I and compares the observed statistic with the simulated distribution. This assumes exchangeability under the null; stratified populations, varying denominators or temporal structure may require restricted permutations or another model. Use enough permutations for the desired p-value resolution and record the random seed. A one-sided test targets positive or negative dependence; a two-sided statistic should compare deviations from the null consistently. Local Moran decomposes contributions and classifies high-high, low-low, high-low and low-high relative to a spatial lag. Mapping unadjusted local p-values across hundreds of regions creates false discoveries, so apply false-discovery control and assess stability. Cluster labels are conditional on centering, W and permutation design."
+    },
+    {
+      "id": "model-diagnostics",
+      "title": "Residual spatial dependence diagnoses missing structure but not one automatic fix",
+      "body": "Calculate Moran's I on model residuals using a predeclared W. Positive residual association suggests the model and uncertainty calculation have not captured spatial structure, potentially from omitted covariates, smooth latent processes, grouped measurement or leakage. Remedies differ: add defensible covariates, spatial random effects, Gaussian processes, autoregressive errors or redesign sampling and validation. Adding coordinates can interpolate but may fail transfer and obscure mechanisms. Rates from small populations have unequal variance and may need empirical Bayes stabilization or count models. Repeated measurements require space-time weights. Monitor W version, geography changes, islands, residual I, local anomalies and uncertainty calibration. Do not publish small-area cluster maps that can stigmatize communities without disclosure-control and domain review."
+    }
+  ],
+  "workedExamples": [
+    {
+      "title": "Trend-driven autocorrelation",
+      "body": "A north–south temperature gradient produces positive Moran's I even without local interaction; detrended residuals can answer whether dependence remains beyond the trend."
+    },
+    {
+      "title": "Weights sensitivity",
+      "body": "An island has no rook neighbors but several ferry connections. A travel-network W may represent exposure better than contiguity."
+    }
+  ],
+  "lab": {
+    "language": "python",
+    "goal": "Construct rook adjacency, compute Moran's I, and verify permutation inference for a spatial gradient.",
+    "buildIt": "import numpy as np\ndef rook(rows,cols):\n    n=rows*cols; W=np.zeros((n,n))\n    for r in range(rows):\n        for c in range(cols):\n            i=r*cols+c\n            for dr,dc in [(-1,0),(1,0),(0,-1),(0,1)]:\n                rr,cc=r+dr,c+dc\n                if 0<=rr<rows and 0<=cc<cols: W[i,rr*cols+cc]=1\n    return W\ndef moran(x,W):\n    z=np.asarray(x,dtype=float)-np.mean(x); return len(z)/W.sum()*(z@W@z)/(z@z)\nW=rook(6,6); values=np.repeat(np.arange(6,dtype=float),6); observed=moran(values,W)",
+    "useIt": "rng=np.random.default_rng(23); permutations=np.array([moran(rng.permutation(values),W) for _ in range(999)]); null=-1/(len(values)-1); p=(1+np.sum(permutations>=observed))/(1+len(permutations))",
+    "verifyIt": "assert np.allclose(W,W.T) and np.all(np.diag(W)==0)\nassert observed>.7 and p<=.01\nassert abs(permutations.mean()-null)<.03\nshuffled=moran(rng.permutation(values),W); assert observed>shuffled\nassert abs(moran(values*10+4,W)-observed)<1e-12\nconstant=np.ones(36); assert np.allclose(constant-constant.mean(),0)",
+    "shipIt": "Version W and geography, validate graph structure and islands, preserve permutation design, test plausible weights, monitor residual dependence, and govern local small-area outputs."
+  },
+  "exercises": [
+    {
+      "prompt": "Why is Moran's I scale-invariant?",
+      "solution": "Multiplying centered values scales numerator and denominator quadratically, so the factor cancels."
+    },
+    {
+      "prompt": "What does an island mean in W?",
+      "solution": "A location has no defined neighbors; exclusion, nearest connection or zero lag are distinct modeling choices."
+    },
+    {
+      "prompt": "Why adjust local p-values?",
+      "solution": "Testing many locations creates expected false discoveries even under the global null."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "scatter",
+      "title": "Moran scatterplot",
+      "series": [
+        {
+          "label": "high-high and low-low",
+          "points": [
+            [
+              0.12,
+              0.18
+            ],
+            [
+              0.22,
+              0.27
+            ],
+            [
+              0.35,
+              0.38
+            ],
+            [
+              0.65,
+              0.62
+            ],
+            [
+              0.77,
+              0.73
+            ],
+            [
+              0.9,
+              0.86
+            ]
+          ]
+        },
+        {
+          "label": "spatial outliers",
+          "points": [
+            [
+              0.2,
+              0.72
+            ],
+            [
+              0.8,
+              0.28
+            ]
+          ]
+        }
+      ],
+      "caption": "Conceptual normalized plot: centered value is compared with its weighted spatial lag.",
+      "afterSection": "global-moran"
+    },
+    {
+      "type": "flow",
+      "title": "Spatial dependence workflow",
+      "items": [
+        "Define process-relevant W",
+        "Audit neighbors and islands",
+        "Compute global statistic",
+        "Permute under declared null",
+        "Inspect local and residual patterns",
+        "Test sensitivity and govern outputs"
+      ],
+      "caption": "Inference is conditional on geography, weights and permutation design.",
+      "afterSection": "inference-local"
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "moran-1950",
+      "contribution": "Grounds the foundational statistic for continuous spatial dependence and its probabilistic motivation."
+    },
+    {
+      "resource": "pysal",
+      "contribution": "Supports modern spatial-weights construction, global and local statistics and permutation inference."
+    },
+    {
+      "resource": "geodata-science-book",
+      "contribution": "Provides applied interpretation of spatial lags, Moran scatterplots and geographic dependence."
+    }
+  ]
 }

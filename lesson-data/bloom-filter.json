@@ -7,33 +7,185 @@
     "de",
     "mle"
   ],
-  "interviewAnswer": "A Bloom filter is a compact probabilistic set-membership structure: it can return false positives but not false negatives under normal insert/query use.",
+  "interviewAnswer": "A Bloom filter is an insert-only approximate-membership structure with an m-bit array and k hash locations per key. Insert sets all k bits; lookup returns definitely absent if any bit is zero and possibly present if all are one. Under the model of independent uniform hashes after n distinct insertions, the false-positive probability is approximately (1−e^(−kn/m))^k and the optimal integer k is near (m/n)ln2. A correct ordinary filter has no false negatives only while its hash and bit-state contract is preserved and bits are never cleared. I size from expected cardinality and target error, version hashing and capacity, rebuild before saturation, verify positives against an authoritative store, and monitor fill ratio and empirical false positives. Deletion needs a counting or deletion-capable alternative, not clearing shared bits.",
   "keyPoints": [
-    "Bit array",
-    "Multiple hashes",
-    "False positives",
-    "Memory efficiency"
+    "Negative answers are definitive; positive answers require confirmation when correctness matters.",
+    "False positives arise because unrelated keys can collectively set every queried bit.",
+    "Capacity, bit count and hash count jointly determine error; overfilling invalidates the target rate.",
+    "The no-false-negative claim assumes stable hashing, completed writes, intact bits and no unsupported deletion.",
+    "Filters can reduce expensive negative I/O, but they are not key-value stores and cannot enumerate members."
   ],
   "resources": [
-    "stanford-cs246"
+    "stanford-cs246",
+    "bloom-1970-paper"
   ],
   "featured": false,
-  "why": "Bloom filters avoid expensive storage/cache lookups when a key definitely is absent.",
-  "intuition": "They answer “definitely not present” or “maybe present.”",
-  "deepDive": "Each inserted key sets k hash-selected bits; queries test those bits. Saturation raises false-positive probability.",
-  "math": "",
+  "why": "Many storage and network workloads ask about keys that are absent. Checking an authoritative database, disk block, remote service or large denylist for every miss is expensive. A Bloom filter uses a small memory-resident precheck to reject most nonmembers cheaply while allowing configurable false positives. Its value comes from asymmetric costs: a false positive merely performs the slower authoritative lookup, whereas a false negative could incorrectly skip real data and is therefore forbidden by the ordinary contract. The structure teaches how probabilistic error, capacity planning, hashing and operational consistency combine; a mathematically sized filter can still fail if it is overfilled, partially written, rebuilt under different seeds or used to authorize destructive actions without confirmation.",
+  "intuition": "Think of m lamps initially off. Each inserted key chooses k lamps and switches them on. A query checks the same positions. If one lamp is off, that key could never have been inserted under the current contract. If every lamp is on, the key may have set them—or other keys may have set them coincidentally. More hash locations initially reduce accidental agreement, but too many rapidly fill the array. The best k balances those forces for the planned number of distinct insertions.",
+  "deepDive": "Bloom filters exploit a one-sided error contract to avoid expensive negative work. Their textbook formula assumes a planned load and ideal hashes, while reliable deployments must preserve bit and hash versions, coordinate writes, avoid unsupported deletion and rebuild before saturation. The filter is an optimization layer whose positives are verified by an authoritative source.",
+  "math": "After kn independent bit assignments into m positions, a particular bit remains zero with probability (1−1/m)^(kn)≈e^(−kn/m). A query's k positions are all one with approximate probability p=(1−e^(−kn/m))^k. Minimizing p for fixed m,n gives k*=(m/n)ln2 and p*≈(0.6185)^(m/n). Rearranging gives m≈−n ln p/(ln2)^2 bits. These are model-based approximations: duplicate hashes, finite m, nonuniform inputs and dependent hash derivation affect exact behavior. Union by bitwise OR is valid only for identical m, k and hash family and corresponds to the union's larger load.",
   "code": "",
   "commonMistakes": [
-    "Saying Bloom filters have false negatives by design.",
-    "Deleting from a standard Bloom filter without a counting variant."
+    {
+      "misconception": "A positive means the key exists.",
+      "correction": "It means possibly present; confirm against the authoritative set when correctness matters."
+    },
+    {
+      "misconception": "Bloom filters never have false negatives under any deployment.",
+      "correction": "The claim depends on stable hashes, completed writes, intact state and no unsupported clearing."
+    },
+    {
+      "misconception": "More hash functions always reduce errors.",
+      "correction": "Past the load-dependent optimum they fill the array faster and increase both CPU and false positives."
+    },
+    {
+      "misconception": "Deleting means clearing the key's bits.",
+      "correction": "Bits are shared; clearing creates false negatives for other keys."
+    }
   ],
   "followUps": [
-    "How do k and array size affect false positives?",
-    "Counting Bloom filter?"
+    {
+      "question": "How do you choose m and k?",
+      "answer": "Use expected distinct n and target p: m≈−n ln p/(ln2)^2 and k≈(m/n)ln2, then round and test."
+    },
+    {
+      "question": "Can two Bloom filters be unioned?",
+      "answer": "Bitwise OR represents a union only when dimensions and every hash choice match; the resulting load determines its new error rate."
+    },
+    {
+      "question": "When is a Bloom filter a bad choice?",
+      "answer": "When exact positives are required without a backing check, members must be enumerated, deletions are ordinary, or the exact set already fits cheaply."
+    }
   ],
-  "production": "Size for expected cardinality and monitor saturation.",
-  "workedExample": "A storage engine can skip disk reads for keys the filter says are absent.",
+  "production": "Document n, target p, m, k, hash algorithm and seeds, key encoding, duplicate semantics and rebuild trigger. Put the filter only on a path where a negative safely skips work and a positive can consult authority. Build immutable checksummed snapshots from a known source watermark; overlay concurrent writes or dual-write, canary the snapshot, then atomically promote. During missing or stale state, bypass optimization instead of claiming absence. Monitor bit occupancy, estimated distinct load, negative rate, confirmed positives, empirical false-positive rate, hash CPU, snapshot age and rebuild duration. Alert before saturation. Use counting or another structure for deletion, and guard against counter errors. Keep the last good snapshot and configuration for independent rollback, with rate limiting or keyed hashes for hostile keys.",
+  "workedExample": "For one million expected distinct keys and target p=1%, m≈9.59 million bits, about 1.20 MB, and k≈6.64, so choose 7 hashes and evaluate the integer result. If two million keys are inserted without resizing, the false-positive rate rises dramatically even though lookups still execute. Fill ratio is therefore an operational signal, not just an implementation detail. A reported positive must still check the underlying store before returning a value or denying access.",
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "Bloom filters provide compact approximate membership with one-sided error. This chapter develops the bit-array and multi-hash mechanism, proves why a zero bit certifies absence, derives expected occupancy and the standard false-positive approximation, and obtains the near-optimal number of hashes and memory-sizing formula. It distinguishes planned distinct insertions from events, explains why overcapacity raises error, and examines finite-hash collisions, double hashing, stable serialization and adversarial keys. The no-false-negative guarantee is stated with its real assumptions: identical hash configuration, durable completed insertion, uncorrupted state and no clearing of shared bits. Variants include counting, scalable, blocked, partitioned and stable Bloom filters, plus Cuckoo and quotient filters, with attention to deletion and cache locality. The lab implements deterministic double hashing, checks every inserted key, measures empirical false positives against theory and verifies serialization-relevant determinism. Production design treats the filter as a negative cache in front of an authoritative store, monitors fill and observed error, rebuilds through versioned snapshots, coordinates updates, handles warmup and rollback, and protects against collision flooding. It also explains when a plain set, sorted structure or exact database index is a better choice.",
+  "prerequisites": [
+    "hash-tables",
+    "probability-basics",
+    "distributions"
+  ],
+  "learningObjectives": [
+    "Derive Bloom-filter occupancy, false-positive probability, memory sizing and optimal hash count.",
+    "Explain the precise assumptions behind one-sided error and why ordinary deletion is unsafe.",
+    "Choose among ordinary, counting, scalable, blocked, Cuckoo or exact membership structures.",
+    "Operate a versioned filter with empirical error monitoring, authoritative confirmation and safe rebuilds."
+  ],
+  "deepSections": [
+    {
+      "id": "mechanism-contract",
+      "title": "One-sided error follows from monotone bit updates",
+      "body": "An ordinary filter initializes every bit to zero. Insertion deterministically maps a key to k positions and changes those bits only from zero to one. Therefore, if a later lookup under the identical hash configuration finds a zero at any required position, that exact insertion could not have completed in the represented state. When all positions are one, membership remains uncertain because assignments from many other keys overlap. The often-repeated no-false-negative guarantee is conditional: a reader that uses different seeds, observes a stale replica before insertion, reads a corrupt snapshot, loses a write or clears a shared bit can return false negatives. The filter also cannot recover keys, store associated values or count exact frequency. It is an optimization for membership questions with asymmetric consequences, not a replacement for the authoritative set."
+    },
+    {
+      "id": "sizing",
+      "title": "Sizing balances occupancy, hash work and the expected distinct load",
+      "body": "Each of kn assignments misses a chosen bit with probability 1−1/m, producing expected zero fraction near exp(−kn/m). Assuming query locations behave independently, the false-positive rate is the kth power of the occupied fraction. For fixed bits per inserted key, too few hashes leave weak fingerprints and too many saturate the array; differentiating the approximation yields k=(m/n)ln2. Round to a practical positive integer and compute the achieved rate rather than blindly rounding. Capacity n refers to distinct inserted identities, although duplicates repeat work without changing bits. The model presumes uniform hashes and a planned load. Monitor actual fraction of one bits, infer effective load if useful, and benchmark with representative negative keys. If growth is uncertain, use scalable layers or rebuild; merely accepting arbitrary overfill abandons the service-level error target."
+    },
+    {
+      "id": "variants",
+      "title": "Deletion, locality and unbounded streams require different structures",
+      "body": "Clearing an ordinary bit during deletion can erase evidence shared by other keys and create false negatives. A counting Bloom filter replaces bits with small counters, increments and decrements positions, but needs more memory and must prevent overflow, underflow and duplicate-delete errors. Scalable Bloom filters append new layers as capacity grows and query all layers, allocating per-layer error so total false-positive probability remains bounded. Blocked filters map a key to a cache-line-sized region, improving locality with a different error profile. Stable filters intentionally forget old items for sliding streams and therefore allow false negatives relative to all history. Cuckoo filters store compact fingerprints in candidate buckets and support deletion under occupancy constraints; quotient filters offer other locality and resizing properties. Choose from update semantics, error asymmetry, enumeration needs, concurrency and hardware behavior—not name recognition."
+    },
+    {
+      "id": "operations",
+      "title": "Production correctness belongs to the filter-plus-store protocol",
+      "body": "A safe read path asks the filter first; negative skips the expensive store, while positive queries the authoritative store. Never use a positive alone to grant access, claim existence, bill a user or delete data. Define how writes update store and filter. Store-first then filter can temporarily cause extra I/O but preserves correctness; filter-first can advertise an uncommitted key. Rebuild into an immutable snapshot with configuration, expected count, actual count, fill ratio, checksum and source watermark, then atomically swap readers. During rebuild, overlay recent writes or dual-write to avoid false negatives. Replication lag and process restarts need explicit behavior, often bypassing the filter until ready. Monitor negative bypass rate, positive confirmation rate, empirical false positives, fill ratio, hash latency, snapshot age and authoritative misses. Rate-limit adversarial probes and consider keyed hashing where inputs are hostile."
+    }
+  ],
+  "workedExamples": [
+    {
+      "title": "SSTable negative lookup",
+      "body": "A storage engine checks each file's filter before touching its index and data blocks. A false positive costs an unnecessary read; a false negative would lose a real key and is unacceptable."
+    },
+    {
+      "title": "Unsafe deletion",
+      "body": "Keys A and B share one bit. Clearing A's positions also clears B's evidence, so B can appear absent; a counting or deletion-capable structure is required."
+    }
+  ],
+  "lab": {
+    "language": "python",
+    "goal": "Implement a deterministic Bloom filter, size it from an error target, and test one-sided membership and empirical false positives.",
+    "buildIt": "import hashlib, math\nclass BloomFilter:\n    def __init__(self,m,k): self.m,self.k,self.bits=m,k,bytearray(m)\n    def _indices(self,key):\n        raw=str(key).encode(); digest=hashlib.sha256(raw).digest(); h1=int.from_bytes(digest[:16],'big'); h2=int.from_bytes(digest[16:],'big')|1\n        return [(h1+i*h2)%self.m for i in range(self.k)]\n    def add(self,key):\n        for index in self._indices(key): self.bits[index]=1\n    def __contains__(self,key): return all(self.bits[index] for index in self._indices(key))\nn=2000; target=.02; m=math.ceil(-n*math.log(target)/(math.log(2)**2)); k=max(1,round(m/n*math.log(2))); bf=BloomFilter(m,k)\ninserted={f'known-{i}' for i in range(n)}\nfor key in inserted: bf.add(key)",
+    "useIt": "unseen=[f'unseen-{i}' for i in range(10000)]; false_positives=sum(key in bf for key in unseen); empirical=false_positives/len(unseen); theoretical=(1-math.exp(-k*n/m))**k\n# Positive answers are checked against the authoritative set.\ndef lookup(key):\n    if key not in bf: return 'definitely absent'\n    return 'present' if key in inserted else 'false positive'",
+    "verifyIt": "assert all(key in bf for key in inserted)\nassert lookup('known-19')=='present' and lookup('not-stored') in {'definitely absent','false positive'}\nassert abs(theoretical-target)<.005\nassert empirical<.04 and abs(empirical-theoretical)<.02\nassert bf._indices('known-19')==bf._indices('known-19')\nfill=sum(bf.bits)/m; expected_fill=1-math.exp(-k*n/m); assert abs(fill-expected_fill)<.03",
+    "shipIt": "Persist dimensions, key encoding and hash version with a checksummed source watermark; confirm positives in authority, monitor occupancy and empirical error, and atomically rebuild before saturation."
+  },
+  "exercises": [
+    {
+      "prompt": "Why is a zero bit definitive?",
+      "solution": "Insertion would have set every deterministic position; an intact zero proves that insertion is not represented."
+    },
+    {
+      "prompt": "What happens when n doubles without resizing?",
+      "solution": "Occupancy and false-positive probability rise beyond the designed target, though the lookup API still appears normal."
+    },
+    {
+      "prompt": "Why is store-first writing often safer?",
+      "solution": "A lagging filter causes extra authoritative reads, while a filter that advertises an uncommitted key can violate the protocol."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "flow",
+      "title": "Bloom-filter read path",
+      "items": [
+        "Encode key",
+        "Compute k positions",
+        "Any zero: skip authority",
+        "All one: query authority",
+        "Return exact store result",
+        "Record empirical filter outcome"
+      ],
+      "caption": "One-sided error is useful only when the authoritative confirmation path remains intact.",
+      "afterSection": "operations"
+    },
+    {
+      "type": "curve",
+      "title": "Hash-count trade-off",
+      "series": [
+        {
+          "label": "False-positive rate",
+          "points": [
+            [
+              0.05,
+              0.72
+            ],
+            [
+              0.25,
+              0.38
+            ],
+            [
+              0.5,
+              0.2
+            ],
+            [
+              0.68,
+              0.24
+            ],
+            [
+              0.9,
+              0.55
+            ]
+          ]
+        }
+      ],
+      "caption": "Conceptual normalized curve: too few or too many hashes are worse than the load-dependent optimum.",
+      "afterSection": "sizing"
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "bloom-1970-paper",
+      "contribution": "Grounds the original approximate-membership design and its explicit space, time and allowable-error trade-off."
+    },
+    {
+      "resource": "stanford-cs246",
+      "contribution": "Supports modern probability derivations, hashing implementation and streaming-system context."
+    }
+  ]
 }

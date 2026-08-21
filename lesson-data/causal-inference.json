@@ -7,40 +7,185 @@
     "ds",
     "as"
   ],
-  "interviewAnswer": "Prediction asks what will happen; causal inference asks what would happen if we intervene. A predictive feature can be highly correlated with an outcome without being a valid lever. Causal answers require assumptions about treatment assignment, confounding and counterfactuals.",
+  "interviewAnswer": "Prediction estimates outcomes or labels under the observed data-generating process; causal inference estimates contrasts between well-defined interventions. A model can predict treatment recipients have worse outcomes because sicker people receive treatment even when treatment helps. I begin with a target trial or causal question: population, treatment strategies, assignment, time zero, follow-up, outcome, estimand and analysis. Potential outcomes define effects such as E[Y(1)-Y(0)], while a DAG makes assumptions about confounding, mediation, selection and timing explicit. Identification asks whether the estimand is expressible from observed data under consistency, exchangeability, positivity and interference assumptions; estimation then fits that observed-data functional. Flexible ML improves nuisance prediction but cannot repair an unidentified effect. I report assumptions, overlap, sensitivity, uncertainty, diagnostics and the population to which the result transports, never causal language from predictive accuracy alone.",
   "keyPoints": [
-    "prediction ≠ causation",
-    "treatment/outcome",
-    "counterfactual",
-    "identification assumptions"
+    "Prediction concerns observed conditional distributions; causal inference concerns outcomes under interventions.",
+    "Define population, treatment versions, time zero, outcome horizon and estimand before choosing an estimator.",
+    "Identification assumptions connect unobserved counterfactual contrasts to observed-data quantities.",
+    "High predictive accuracy does not establish exchangeability, positivity, consistency or absence of interference.",
+    "Causal estimates require design diagnostics, sensitivity analysis and a stated target population, not only model metrics."
   ],
   "resources": [
-    "causal-neal",
-    "causal-mixtape"
+    "what-if-causal",
+    "pearl-diagrams",
+    "dml-paper"
   ],
   "featured": true,
-  "why": "Data Scientists are often asked “will X happen?” and “will changing X cause Y?” Those are different questions and require different validation.",
-  "intuition": "For each unit, causality imagines two potential outcomes—under treatment and under control—but we can observe only one. Experimental randomization or credible identification assumptions help estimate the missing counterfactual.",
-  "deepDive": "Randomized controlled trials balance confounders in expectation. With observational data, DAGs and designs such as matching, difference-in-differences or instrumental variables may identify effects under stronger assumptions.",
-  "workedExample": "A churn model may find support calls predict cancellation. Reducing support calls is not necessarily a causal intervention; both could be caused by underlying product problems.",
+  "why": "Many product and policy questions use verbs such as increase, prevent or cause, yet ordinary supervised learning only captures associations in historical behavior. A churn model may identify users who receive retention offers as high risk because the policy targets them; changing the offer cannot be evaluated by reading its coefficient. Confounding, reverse causation, selection, treatment timing and feedback all make observed comparisons differ from intervention effects. Conversely, causal estimation can sacrifice individual predictive accuracy while correctly estimating an average contrast. Separating question, identification and estimation prevents a powerful learner from hiding an impossible design. It also clarifies when randomized experiments, natural experiments, adjustment or partial identification are needed.",
+  "intuition": "Prediction asks what usually happens to people who look like this under the current world. Causal inference asks what would change for the same target population if a decision rule were replaced. The first can be checked against observed labels. The second compares worlds that cannot both be observed for one unit, so it needs a design and assumptions to construct a credible counterfactual.",
+  "deepDive": "Causal work is organized as question, estimand, identification, estimation and stress testing. Potential outcomes state intervention contrasts, DAGs encode structural assumptions and target-trial emulation aligns time and eligibility. Randomization supplies exchangeability by design; observational studies require defensible adjustment or quasi-experimental variation. Machine learning belongs inside nuisance estimation and heterogeneity analysis only after the causal functional is identified.",
+  "workedExample": "High-risk patients are more likely to receive a beneficial treatment. Treated patients can have higher observed mortality because their baseline risk was much greater. Comparing treated with untreated answers an association question; a randomized or validly adjusted contrast targets the treatment effect.",
   "commonMistakes": [
-    "Interpreting feature importance as causal effect.",
-    "Controlling for every available variable, including colliders or post-treatment variables."
+    {
+      "misconception": "A highly accurate outcome model yields a causal treatment effect.",
+      "correction": "Prediction quality does not establish exchangeability, positivity, consistency or a valid intervention."
+    },
+    {
+      "misconception": "Adding every available variable removes confounding.",
+      "correction": "Adjusting mediators or colliders can bias effects; choose covariates from temporal and causal structure."
+    },
+    {
+      "misconception": "A nonsignificant estimate proves no effect.",
+      "correction": "It may reflect imprecision, weak support or design failure; report interval, estimand and assumptions."
+    },
+    {
+      "misconception": "Machine learning replaces causal assumptions.",
+      "correction": "It can estimate nuisance functions flexibly after identification but cannot create missing counterfactual information."
+    }
   ],
   "followUps": [
-    "Why does randomization help causal inference?",
-    "What is a confounder?"
+    {
+      "question": "What is the difference between an estimand and estimator?",
+      "answer": "The estimand is the target causal quantity; the estimator is the data-based procedure used to approximate it under identification assumptions."
+    },
+    {
+      "question": "When is prediction sufficient?",
+      "answer": "When the decision only requires forecasting under a stable observed policy and no intervention claim is made, while feedback and distribution shift are still monitored."
+    },
+    {
+      "question": "Can observational data identify causal effects?",
+      "answer": "Yes under defensible adjustment or quasi-experimental assumptions and adequate support, with sensitivity analysis; the assumptions are not certified by fit alone."
+    }
   ],
-  "production": "Causal decisions should document assumptions and sensitivity; production recommendation/policy systems should not turn predictive correlations into interventions without evidence.",
-  "math": "Individual treatment effect: Y_i(1)-Y_i(0), but only one potential outcome is observed for each unit.",
+  "production": "Version the target trial, treatment versions, time zero, outcome horizon, estimand, DAG, adjustment set, population and estimator. Assert temporal availability and cohort eligibility, inspect overlap, balance, weights, adherence, interference and label maturity, and compute cluster-aware uncertainty. Report robustness and sensitivity rather than one model specification. Monitor treatment-policy and population drift, preserve randomized or exploratory evidence when possible, and require causal review before converting predictive signals into interventions. Retain the prior safe policy for rollback when overlap, outcome collection or assumed mechanisms change.",
+  "math": "For binary treatment A, unit i has potential outcomes Y_i(1) and Y_i(0), but observes Y_i=A_iY_i(1)+(1-A_i)Y_i(0) under consistency. The ATE is E[Y(1)-Y(0)]; ATT is E[Y(1)-Y(0)|A=1]. The observed association E[Y|A=1]-E[Y|A=0] generally differs from ATE. Under conditional exchangeability Y(a) independent of A given X, positivity 0<P(A=a|X)<1 and consistency, E[Y(a)]=E_X E[Y|A=a,X], the g-formula. Standard errors quantify sampling variation conditional on the design, not uncertainty that assumptions are true.",
   "lab": {
-    "goal": "Simulate confounding to show prediction is not intervention.",
     "language": "python",
-    "buildIt": "import numpy as np\nrng=np.random.default_rng(0); n=10000\nability=rng.normal(size=n)\ntraining=(ability+rng.normal(size=n)>.3).astype(int)\nsalary=2*ability + 1.5*training + rng.normal(size=n)\nnaive=salary[training==1].mean()-salary[training==0].mean()\nprint('naive association',naive,'true treatment effect',1.5)\n",
-    "useIt": "# Adjust for the confounder with a simple regression.\nfrom sklearn.linear_model import LinearRegression\nX=np.c_[training,ability]; m=LinearRegression().fit(X,salary)\nprint('adjusted training coefficient',m.coef_[0])\n",
-    "verifyIt": "assert abs(m.coef_[0]-1.5)<.1\nassert naive>m.coef_[0]\n"
+    "goal": "Simulate confounding by indication, show a predictive association with the wrong sign, and recover the average effect under observed-confounder adjustment.",
+    "buildIt": "import numpy as np\nfrom sklearn.linear_model import LinearRegression,LogisticRegression\nrng=np.random.default_rng(7); n=12000; risk=rng.normal(size=n); propensity=1/(1+np.exp(-1.7*risk)); treatment=rng.binomial(1,propensity); true_effect=-2.; outcome=4*risk+true_effect*treatment+rng.normal(scale=1,size=n)\nnaive=outcome[treatment==1].mean()-outcome[treatment==0].mean()\nadjusted=LinearRegression().fit(np.c_[treatment,risk],outcome).coef_[0]",
+    "useIt": "ps=LogisticRegression(max_iter=2000).fit(risk[:,None],treatment).predict_proba(risk[:,None])[:,1]\nweights=treatment/ps+(1-treatment)/(1-ps)\nweighted_treated=np.sum(weights*treatment*outcome)/np.sum(weights*treatment); weighted_control=np.sum(weights*(1-treatment)*outcome)/np.sum(weights*(1-treatment)); ipw=weighted_treated-weighted_control",
+    "verifyIt": "assert naive>0\nassert abs(adjusted-true_effect)<.08\nassert abs(ipw-true_effect)<.12\nassert np.all((ps>0)&(ps<1))\nassert abs(treatment.mean()-propensity.mean())<.02",
+    "shipIt": "Persist the causal question, cohort, propensity and outcome models, overlap diagnostics and sensitivity analyses; monitor assignment policy and keep counterfactual evidence alive."
   },
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "code": "ps=LogisticRegression(max_iter=2000).fit(risk[:,None],treatment).predict_proba(risk[:,None])[:,1]\nweights=treatment/ps+(1-treatment)/(1-ps)\nweighted_treated=np.sum(weights*treatment*outcome)/np.sum(weights*treatment); weighted_control=np.sum(weights*(1-treatment)*outcome)/np.sum(weights*(1-treatment)); ipw=weighted_treated-weighted_control",
+  "description": "Causal inference and prediction solve different statistical problems. This chapter contrasts forecasts under the observed policy with outcomes under explicit interventions and builds a workflow from target question to estimand, identification, estimation and sensitivity analysis. It introduces potential outcomes, average treatment effects, consistency, exchangeability, positivity, interference and causal DAGs; distinguishes total, direct, mediated, intention-to-treat and per-protocol questions; and uses target-trial emulation to align eligibility, assignment, time zero and follow-up. It explains why predictive importance, coefficients and high accuracy do not identify effects, while randomized and quasi-experimental designs can identify effects without maximizing prediction. Worked examples expose confounding by indication and treatment-policy feedback. The lab simulates a beneficial treatment preferentially assigned to high-risk units, shows the naive association has the wrong sign, and recovers the effect with covariate adjustment under the simulated assumptions. Production guidance versions causal questions and cohorts, monitors overlap and treatment policy, reports sensitivity and uncertainty, and prevents decision systems from retraining on their own interventions without evaluation design.",
+  "prerequisites": [
+    "experiment-design",
+    "selection-nonresponse-bias"
+  ],
+  "learningObjectives": [
+    "Translate a product or policy question into a target population, intervention, outcome horizon and estimand.",
+    "Separate identification assumptions from the statistical estimator used after identification.",
+    "Diagnose confounding, selection, timing, interference and policy-feedback failures in predictive analyses.",
+    "Design evidence and monitoring that support bounded causal claims and responsible decisions."
+  ],
+  "deepSections": [
+    {
+      "id": "question-estimand",
+      "title": "Start with the intervention and estimand",
+      "body": "Write the decision before the regression. Specify eligible units, treatment versions, comparator, assignment time, follow-up, outcome, censoring and summary contrast. The treatment must be actionable enough that Y(a) has a coherent meaning: 'lower blood pressure' is not one intervention if drugs, exercise and surgery have different pathways. ATE averages individual contrasts over a target population; ATT targets those actually treated; risk ratios, quantiles and policy value answer other questions. Intention-to-treat compares assigned strategies, while per-protocol effects require handling adherence. Total effects include mediated paths; controlled direct effects intervene on a mediator and need stronger assumptions. Changing the population or treatment version changes the estimand even if the same estimator code runs. A target-trial protocol exposes ambiguities before data analysis and prevents immortal-time and eligibility misalignment."
+    },
+    {
+      "id": "prediction-association",
+      "title": "Observed prediction can conflict with intervention effects",
+      "body": "A predictor estimates patterns such as E[Y|X,A] under the historical policy. If high-risk units are preferentially treated, treatment status predicts poor outcome even when treatment reduces risk. This confounding by indication is not fixed by higher accuracy or a more flexible learner. Conditioning on downstream variables can block part of the effect or open collider paths. Policy feedback creates another trap: a deployed score changes who receives action, so future labels reflect both risk and intervention. Feature importance describes model reliance, not how changing a feature changes outcomes. Predictive validation remains useful for nuisance functions and operational forecasts, but a causal question needs a counterfactual design. Ask whether the intended action changes the distribution, whether treatment is manipulable, and what current policy determines exposure."
+    },
+    {
+      "id": "identification-assumptions",
+      "title": "Identification is the bridge from counterfactuals to data",
+      "body": "Only one potential outcome is observed for each unit, the fundamental missing-data problem of causal inference. Random assignment makes treatment exchangeable in expectation, while observational adjustment assumes measured covariates block confounding. Consistency requires observed outcome under received treatment to equal the corresponding potential outcome and treatment versions to be well defined. Positivity requires each relevant covariate stratum to have a chance of each strategy; extreme propensities make estimates unstable and nonpositivity makes target contrasts unsupported. SUTVA-style assumptions address interference and treatment versions; network spillovers require exposure mappings and different estimands. DAGs help decide adjustment sets from causal assumptions, not correlations. Identification can also come from instruments, discontinuities, parallel trends or synthetic comparisons, each with a distinct local population and assumptions."
+    },
+    {
+      "id": "estimation-diagnostics",
+      "title": "Estimate the identified functional and diagnose its support",
+      "body": "Once the g-formula or another functional is identified, estimate outcome regressions, propensity scores or both. Standardization predicts outcomes under each treatment for every target unit and averages contrasts. Weighting creates a pseudo-population according to a target estimand. Doubly robust estimators combine nuisance models, and cross-fitting lets flexible ML estimate them with reduced overfitting bias under conditions. None of these methods measures unobserved confounding. Inspect covariate balance, propensity overlap, influential weights, missing data, time alignment and negative controls where defensible. Report estimates across plausible specifications and sensitivity parameters. Cluster and repeated-unit structure determine uncertainty. Pre-specify the primary estimand and avoid searching subgroups until an attractive causal story appears."
+    },
+    {
+      "id": "decision-lifecycle",
+      "title": "Causal evidence has a deployment lifecycle",
+      "body": "Translate an estimated effect into a policy only after considering transport to the deployment population, heterogeneous benefit, cost, capacity and harm. A historical ATE need not equal the effect under a new targeting rule or treatment saturation. Monitor eligibility, treatment propensity, overlap, adherence, interference, outcome maturity and effect-relevant covariates. Preserve exploration or randomized holdouts when policy feedback would eliminate counterfactual evidence. Version target-trial definitions, DAGs, assumptions, estimators and analysis populations. Triangulate experiments, quasi-experiments and observational results when possible. A failed overlap or policy-change alarm may require restricting the target population, redesigning data collection or reverting to a safe policy rather than automatically refitting a predictor."
+    }
+  ],
+  "workedExamples": [
+    {
+      "title": "Confounding by indication",
+      "body": "High-risk patients are more likely to receive a beneficial treatment. Treated patients can have higher observed mortality because their baseline risk was much greater. Comparing treated with untreated answers an association question; a randomized or validly adjusted contrast targets the treatment effect."
+    },
+    {
+      "title": "Time zero misalignment",
+      "body": "Users are classified as treated only after completing 30 days of a program, but untreated follow-up starts at signup. Treated users must survive 30 days to enter that group, creating immortal-time bias. Eligibility, assignment and follow-up must share time zero."
+    }
+  ],
+  "exercises": [
+    {
+      "prompt": "Why can treatment be positively associated with harm when it helps?",
+      "solution": "Higher-risk units may receive treatment, so baseline risk confounds the observed treated-versus-untreated comparison."
+    },
+    {
+      "prompt": "What assumptions identify the g-formula from measured covariates?",
+      "solution": "Consistency, conditional exchangeability given the adjustment set, positivity in the target population and an appropriate interference assumption."
+    },
+    {
+      "prompt": "Why is target-trial time zero important?",
+      "solution": "Eligibility, treatment assignment and follow-up must align so future survival or information does not determine treatment groups."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "compare",
+      "title": "Two statistical questions",
+      "left": {
+        "title": "Prediction",
+        "items": [
+          "Observed-world outcome",
+          "Optimize held-out forecast",
+          "Current policy may be a feature",
+          "Association can be sufficient"
+        ]
+      },
+      "right": {
+        "title": "Causal inference",
+        "items": [
+          "Intervention contrast",
+          "Identify a counterfactual estimand",
+          "Policy assignment is part of design",
+          "Assumptions bridge missing outcomes"
+        ]
+      },
+      "caption": "The same dataset can support a strong forecast while failing to identify an intervention effect.",
+      "afterSection": "prediction-association"
+    },
+    {
+      "type": "flow",
+      "title": "Causal analysis contract",
+      "items": [
+        "Specify target trial",
+        "Define estimand",
+        "State causal assumptions",
+        "Identify observed-data functional",
+        "Estimate and diagnose",
+        "Stress-test, transport and decide"
+      ],
+      "caption": "Estimation starts only after the causal question and identification bridge are explicit.",
+      "afterSection": "identification-assumptions"
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "what-if-causal",
+      "contribution": "Grounds potential outcomes, target trials, exchangeability, positivity, consistency and g-method reasoning."
+    },
+    {
+      "resource": "pearl-diagrams",
+      "contribution": "Grounds causal-diagram identification and the distinction between intervention and conditioning."
+    },
+    {
+      "resource": "dml-paper",
+      "contribution": "Supports the limited but valuable role of cross-fitted machine learning for causal nuisance estimation."
+    }
+  ]
 }

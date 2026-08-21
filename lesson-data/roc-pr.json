@@ -7,38 +7,59 @@
     "ds",
     "mle"
   ],
-  "interviewAnswer": "ROC-AUC measures ranking across true-positive and false-positive rates. PR-AUC focuses on precision/recall and is often more informative when the positive class is rare and practically important.",
+  "interviewAnswer": "ROC and precision-recall curves evaluate a ranking across thresholds, but they emphasize different consequences. ROC plots true-positive rate against false-positive rate; its area is the probability that a randomly chosen positive receives a higher score than a randomly chosen negative, with tie handling. PR plots precision against recall and directly exposes alert purity, so it is usually more informative when positives are rare and false-positive volume matters. ROC AUC is prevalence-invariant under fixed class-conditional score distributions, whereas precision and PR baselines change with prevalence. Average precision is a non-interpolated weighted mean of precisions over recall increments and is not identical to every trapezoidal PR area. Neither curve selects an operating threshold or proves calibration. I compare curves on the same untouched examples, add uncertainty over independent units, report partial or capacity-constrained regions, and choose a threshold using costs and constraints outside the final test set.",
   "keyPoints": [
-    "Class imbalance",
-    "Ranking metric",
-    "Threshold-independent summary",
-    "Inspect operating point too"
+    "ROC summarizes TPR versus FPR; PR summarizes precision versus recall over score thresholds.",
+    "ROC AUC has a pairwise ranking interpretation but may hide large absolute false-positive volume.",
+    "The no-skill PR precision baseline is prevalence, so PR results do not transport unchanged across populations.",
+    "Average precision and trapezoidal PR AUC use different interpolation assumptions and should be named precisely.",
+    "Curves evaluate ranking, not probability calibration, business utility or a deployed threshold by themselves."
   ],
   "resources": [
-    "sklearn",
-    "statquest",
-    "google-mlcc",
-    "google-mlcc-exercises"
+    "sklearn-model-evaluation",
+    "isl",
+    "openintro-stats"
   ],
   "featured": false,
-  "why": "ROC-AUC and PR-AUC are common interview traps because both summarize ranking across thresholds but behave very differently under class imbalance.",
-  "intuition": "ROC asks how well positives rank above negatives while comparing true-positive and false-positive rates. Precision–recall focuses directly on how many positive predictions are useful and how many real positives are found.",
-  "deepDive": "ROC-AUC is the probability interpretation that a randomly chosen positive tends to receive a higher score than a randomly chosen negative. With very rare positives, a low false-positive rate can still mean many false alarms, so ROC can look strong while precision is poor. PR curves expose that operational reality. Neither metric chooses the deployment threshold; inspect the operating point and business costs.",
-  "math": "TPR = TP/(TP+FN)\nFPR = FP/(FP+TN)\nPrecision = TP/(TP+FP)\nRecall = TP/(TP+FN)",
-  "workedExample": "If failures are 1% of cases, a model can have a small FPR yet still generate more false positives than true positives because negatives are so numerous. PR-AUC will reflect this more directly than ROC-AUC.",
-  "code": "from sklearn.metrics import roc_auc_score, average_precision_score\nprint(roc_auc_score(y_true, scores))\nprint(average_precision_score(y_true, scores))",
+  "why": "Many classification systems emit a score and defer the action threshold to a policy. A single precision or recall value cannot reveal whether one model is better across plausible policies. ROC and PR curves trace the available trade-offs, but careless summaries can mislead. At low prevalence, a small false-positive rate can still create an overwhelming review queue, while ROC AUC averages over thresholds the business would never use. PR precision changes with prevalence and is sensitive to false-positive volume, but its area depends on a convention. Curves also ignore calibration and error cost. Good evaluation therefore preserves threshold-level counts, focuses on the feasible operating region, quantifies paired uncertainty, and connects the chosen operating point to capacity or expected utility.",
+  "intuition": "Sort examples from highest score to lowest and move a threshold down the list. Each positive encountered increases recall; each negative contaminates the alert set and lowers precision. ROC instead divides false positives by all negatives, which can make contamination look small when negatives are enormous. The curves are two projections of the same ranked list. Their usefulness depends on which denominator matches the decision.",
+  "deepDive": "Threshold curves summarize discrimination without committing to one cutoff. Their axes, baselines, interpolation and averaging conventions determine the question being answered. Robust comparison keeps examples paired, reports clinically or operationally relevant regions, handles ties and sample weights explicitly, and separates ranking from probability estimation and threshold optimization.",
+  "math": "At threshold t, TPR(t)=TP(t)/(TP(t)+FN(t)), FPR(t)=FP(t)/(FP(t)+TN(t)), precision(t)=TP(t)/(TP(t)+FP(t)), and recall(t)=TPR(t). ROC AUC equals P(S+>S-)+0.5P(S+=S-) under standard tie handling. Average precision is sum_n (R_n-R_{n-1})P_n over successive thresholds in scikit-learn's non-interpolated definition. The random-ranking ROC baseline is 0.5; expected PR precision is prevalence pi. Partial AUC restricts the FPR range but requires a stated normalization convention.",
+  "workedExample": "Suppose one million cases contain 1,000 positives. At 90% TPR and 1% FPR, the model finds 900 positives but flags about 9,990 negatives. Precision is only 900/(900+9,990), about 8.3%, despite the visually small FPR.",
+  "code": "from sklearn.metrics import roc_auc_score,average_precision_score,roc_curve,precision_recall_curve\nsk_roc=roc_auc_score(y,s); sk_ap=average_precision_score(y,s); sk_fpr,sk_tpr,_=roc_curve(y,s)",
   "commonMistakes": [
-    "Saying PR-AUC is always better than ROC-AUC.",
-    "Using AUC as if it were the performance at the chosen production threshold.",
-    "Comparing PR-AUC across datasets with very different prevalences without context."
+    {
+      "misconception": "ROC AUC is the probability the classifier is correct.",
+      "correction": "It is a pairwise ranking probability, not classification accuracy or calibrated confidence."
+    },
+    {
+      "misconception": "PR AUC and average precision are always identical.",
+      "correction": "They can use different interpolation rules; name and document the exact summary."
+    },
+    {
+      "misconception": "ROC is immune to class imbalance and therefore sufficient.",
+      "correction": "Its rates omit absolute false-positive volume; inspect feasible regions and PR or capacity metrics."
+    },
+    {
+      "misconception": "The threshold with best test-set F1 is deployable evidence.",
+      "correction": "That reuses final labels for policy selection and gives an optimistic estimate."
+    }
   ],
   "followUps": [
-    "Why can ROC-AUC look good on imbalanced data?",
-    "How do you choose a threshold after looking at the curve?",
-    "What is average precision?",
-    "What happens to precision when prevalence changes?"
+    {
+      "question": "Why is ROC AUC invariant to a monotonic score transform?",
+      "answer": "The transform preserves every pairwise ordering and threshold ranking; only the numerical threshold values change."
+    },
+    {
+      "question": "When should partial AUC be used?",
+      "answer": "When only a constrained FPR or TPR region is operationally possible, with the range and normalization stated in advance."
+    },
+    {
+      "question": "Can high AUC coexist with poor calibration?",
+      "answer": "Yes. AUC depends on order, while calibration asks whether probability values match observed frequencies."
+    }
   ],
-  "production": "Use the metric that reflects the operational objective, then select a threshold under explicit recall/precision, capacity or cost constraints. Monitor prevalence because it changes precision even if ranking quality is unchanged.",
+  "production": "Version label query, positive class, score direction, eligibility, sample weights, tie handling, curve implementation and prediction cohort. Preserve threshold-level counts, compare models on paired untouched examples and compute uncertainty over independent entities. Report full curves only with operational summaries such as recall at a false-positive cap, precision at capacity, expected queue volume and cost. Select thresholds outside the final test set. Monitor prevalence, scores, queue size, confusion counts and calibration separately, backfill delayed labels by cohort, and trigger rollback when review capacity or critical error limits are breached.",
   "visual": {
     "type": "curve",
     "title": "ROC and precision–recall views",
@@ -91,6 +112,131 @@
     "yLabel": "true positive rate"
   },
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "lab": {
+    "language": "python",
+    "goal": "Build ROC and precision-recall points from ranked scores, verify standard areas, and demonstrate invariance and prevalence behavior.",
+    "buildIt": "import numpy as np\ny=np.array([1,0,1,0,1,0]); s=np.array([.95,.80,.70,.60,.40,.10])\ndef ranked_points(y,s):\n    order=np.argsort(-s,kind='stable'); yy=np.asarray(y)[order]; p=yy.sum(); n=len(yy)-p\n    tp=np.cumsum(yy==1); fp=np.cumsum(yy==0)\n    recall=tp/p; fpr=fp/n; precision=tp/(tp+fp)\n    return fpr,recall,precision\nfpr,tpr,precision=ranked_points(y,s)\nroc_auc=float(np.trapz(np.r_[0,tpr],np.r_[0,fpr]))\nap=float(np.sum(np.diff(np.r_[0,tpr])*precision))",
+    "useIt": "from sklearn.metrics import roc_auc_score,average_precision_score,roc_curve,precision_recall_curve\nsk_roc=roc_auc_score(y,s); sk_ap=average_precision_score(y,s); sk_fpr,sk_tpr,_=roc_curve(y,s)",
+    "verifyIt": "assert abs(roc_auc-sk_roc)<1e-12\nassert abs(ap-sk_ap)<1e-12\nassert abs(roc_auc_score(y,np.exp(s))-sk_roc)<1e-12\nassert abs(roc_auc_score(1-y,-s)-sk_roc)<1e-12\ny_more_neg=np.r_[y,np.zeros(20,dtype=int)]; s_more_neg=np.r_[s,np.linspace(.94,.41,20)]\nassert average_precision_score(y_more_neg,s_more_neg)<sk_ap\nassert np.all(np.diff(sk_fpr)>=0) and np.all(np.diff(sk_tpr)>=0)",
+    "shipIt": "Evaluate paired rankings on untouched cohorts, report feasible threshold regions and counts, choose policy from cost or capacity off-test, and monitor prevalence plus queue volume."
+  },
+  "description": "ROC and precision-recall analysis evaluates how a classifier ranks positives above negatives across possible thresholds. This chapter derives both curves from a sorted score list, explains their axes and baselines, and gives ROC AUC its pairwise probability interpretation. It shows why a seemingly tiny false-positive rate can overwhelm a rare-event system, why precision-recall curves expose alert purity, and why PR baselines move with prevalence. It distinguishes average precision from trapezoidal PR area, discusses ties, interpolation, sample weights, multiclass averaging, partial AUC and precision at a capacity limit. Worked examples calculate threshold points and translate rates into review counts. The lab builds curves from scratch, verifies AUC and average precision against scikit-learn, checks score-order invariance, and demonstrates the prevalence effect. Production guidance evaluates paired predictions on untouched cohorts, attaches cluster-aware uncertainty, focuses on feasible operating regions, checks calibration separately, and selects thresholds from costs or constraints without reusing final-test labels. Every reported point stays connected to its threshold, confusion counts and expected operational volume.",
+  "prerequisites": [
+    "classification-metrics",
+    "probability-basics"
+  ],
+  "learningObjectives": [
+    "Construct ROC and precision-recall points from ranked scores and threshold confusion counts.",
+    "Interpret ROC AUC, average precision, baselines and prevalence effects without overclaiming.",
+    "Compare models in an operationally feasible region using paired uncertainty and capacity constraints.",
+    "Separate ranking evaluation from calibration, threshold selection and downstream utility."
+  ],
+  "deepSections": [
+    {
+      "id": "construct-curves",
+      "title": "Both curves come from one ranked list",
+      "body": "Start with continuous scores where larger means more positive. Sort examples descending and sweep the threshold from above the maximum to below the minimum. When the sweep admits a positive, TP increases and FN decreases; admitting a negative increases FP and decreases TN. ROC records FPR and TPR after each distinct score, while PR records recall and precision. Tied scores must enter together because no threshold can separate them; arbitrary within-tie ordering invents resolution. Include endpoint conventions explicitly. Sample weights replace counts with weighted masses and change the target population. Scores need only preserve order for the curve, so any strictly increasing transformation leaves ROC and PR points unchanged. Reversing score direction, mishandling the positive label or computing curves from hard labels destroys most ranking information. Keep threshold arrays alongside points so a candidate operating region can be translated back to an implementable rule."
+    },
+    {
+      "id": "roc-interpretation",
+      "title": "ROC measures class-conditional ranking",
+      "body": "ROC compares sensitivity with the fraction of negatives falsely accepted. Its diagonal represents random ordering, and AUC integrates TPR over FPR. The pairwise interpretation is valuable: AUC is the probability a random positive outranks a random negative, with half credit for a tie. It is not the probability a prediction is correct, does not identify a threshold and does not encode prevalence or costs. Because FPR divides by all negatives, a value such as 1% can still mean ten thousand false alerts in a million-negative population. Full AUC also averages regions that may be unusable. In screening or fraud, report TPR at a maximum FPR, a standardized partial AUC, or false positives at the actual population scale. Two ROC curves can cross, so the preferred model depends on the allowed region rather than the global area alone."
+    },
+    {
+      "id": "pr-interpretation",
+      "title": "Precision-recall exposes alert purity",
+      "body": "PR places recall on the horizontal axis and precision on the vertical axis. Precision directly answers how much of the selected queue is relevant, making the curve sensitive to class prevalence and false-positive volume. A random ranking has expected precision equal to prevalence, not a universal horizontal value. That is useful in one deployment population but complicates comparison across datasets with different prevalence. Average precision commonly weights precision by each increase in recall without linearly interpolating across gaps. Trapezoidal integration can be optimistic because straight lines between PR points may represent unattainable behavior; always name the implementation. Precision at K, recall at K and lift can be more direct when capacity fixes the queue length. At recall zero, precision conventions vary. Report counts and threshold or K with every selected point rather than treating a curve coordinate as context-free."
+    },
+    {
+      "id": "comparison-uncertainty",
+      "title": "Compare paired rankings, not isolated decimals",
+      "body": "Evaluate candidate models on exactly the same untouched examples. AUC or AP differences are paired statistics because the scores share labels and units; confidence intervals should resample independent entities or suitable time blocks while keeping predictions paired. Naive row bootstraps understate uncertainty for repeated customers, images from the same subject or temporally correlated events. Rare positives can make PR estimates extremely variable, so show the number of positives and interval bands or bootstrap distributions. Use cross-validation predictions only when every score is produced out of fold, and do not pool incompatible folds without considering calibration and population differences. For multiclass tasks, choose one-vs-rest or one-vs-one and state macro, weighted or micro aggregation. A global curve can hide a harmful subgroup; slice analysis needs sufficient support and a prespecified interpretation to avoid noisy metric shopping."
+    },
+    {
+      "id": "operating-policy",
+      "title": "A curve is an input to policy, not the policy",
+      "body": "The deployed threshold follows expected benefit, false-positive and false-negative costs, review capacity, service-level constraints and sometimes fairness or safety requirements. Choose it on training or validation data, then lock it for final estimation. If the score is used as probability, assess calibration with proper scores and reliability diagnostics separately; strong ranking can coexist with biased probabilities. Re-estimate expected counts under production prevalence, since PR precision can fall after a population shift even when class-conditional ranking is stable. Monitor score distributions, prevalence, threshold-level confusion counts, queue size and delayed labels by prediction cohort. A policy may include multiple thresholds for accept, review and reject, each requiring explicit coverage and risk. Version score direction, positive label, tie rule, weights, curve implementation and selected threshold, and keep a rollback policy when workload or harm breaches limits."
+    }
+  ],
+  "workedExamples": [
+    {
+      "title": "A small FPR creates a large queue",
+      "body": "Suppose one million cases contain 1,000 positives. At 90% TPR and 1% FPR, the model finds 900 positives but flags about 9,990 negatives. Precision is only 900/(900+9,990), about 8.3%, despite the visually small FPR."
+    },
+    {
+      "title": "Manual ranking points",
+      "body": "Scores [0.9,0.8,0.7,0.1] with labels [1,0,1,0] yield precisions 1, 1/2, 2/3 and 1/2 as the queue grows, with recalls 1/2, 1/2, 1 and 1. Thresholds expose exactly where the negative enters the queue."
+    }
+  ],
+  "exercises": [
+    {
+      "prompt": "What is the expected precision of a random ranking at 2% prevalence?",
+      "solution": "Two percent in expectation; the PR baseline follows prevalence."
+    },
+    {
+      "prompt": "Why might partial ROC AUC be more useful than full AUC?",
+      "solution": "It restricts evaluation to the false-positive range the system can actually tolerate instead of averaging unusable thresholds."
+    },
+    {
+      "prompt": "A monotonic transform changes scores from logits to exponentials. What happens to AUC?",
+      "solution": "Nothing, provided order and ties are preserved; the thresholds change but the ranking does not."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "compare",
+      "title": "Two views of one ranking",
+      "left": {
+        "title": "ROC",
+        "items": [
+          "TPR versus FPR",
+          "Random baseline 0.5 AUC",
+          "Pairwise ordering",
+          "Can hide alert volume"
+        ]
+      },
+      "right": {
+        "title": "Precision-recall",
+        "items": [
+          "Precision versus recall",
+          "Baseline is prevalence",
+          "Shows queue purity",
+          "Population-sensitive"
+        ]
+      },
+      "caption": "Choose the projection whose denominators match the operational question.",
+      "afterSection": "roc-interpretation"
+    },
+    {
+      "type": "flow",
+      "title": "Ranking evaluation to threshold policy",
+      "items": [
+        "Freeze cohort and labels",
+        "Generate untouched scores",
+        "Trace threshold counts",
+        "Focus on feasible region",
+        "Choose threshold off-test",
+        "Monitor volume and delayed outcomes"
+      ],
+      "caption": "Curves characterize options; costs and constraints choose the deployed option.",
+      "afterSection": "operating-policy"
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "sklearn-model-evaluation",
+      "contribution": "Verifies ROC, precision-recall, average-precision and multiclass evaluation conventions."
+    },
+    {
+      "resource": "isl",
+      "contribution": "Supports threshold curves, sensitivity, specificity and test-set model assessment."
+    },
+    {
+      "resource": "openintro-stats",
+      "contribution": "Supports prevalence, conditional probability and sampling-uncertainty reasoning."
+    }
+  ]
 }

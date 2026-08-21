@@ -8,33 +8,176 @@
     "de",
     "as"
   ],
-  "interviewAnswer": "Association-rule mining finds frequent item combinations and rules A→B. Support measures frequency, confidence estimates P(B|A), and lift compares the rule with B’s baseline rate.",
+  "interviewAnswer": "Association-rule mining separates two tasks: enumerate itemsets whose empirical support exceeds a threshold, then derive implications X→Y and score them. Support is P(X∪Y), confidence is P(Y|X), and lift is confidence divided by P(Y). Apriori makes enumeration feasible by anti-monotonicity: if an itemset is infrequent, every superset is infrequent, so candidates with an infrequent subset are pruned before another database pass. I never treat a high-confidence rule as causal or automatically useful. I compare it with the consequent base rate, require enough absolute support, control redundant and multiply tested rules, evaluate on a later holdout period, and connect any selected rule to a decision and its cost.",
   "keyPoints": [
-    "Support",
-    "Confidence",
-    "Lift",
-    "Apriori pruning"
+    "Frequent-itemset discovery and association-rule generation are related but distinct stages.",
+    "Support is anti-monotone; confidence and lift are not, so they cannot drive the same pruning rule.",
+    "Lift corrects for consequent popularity but remains observational and can be unstable at low support.",
+    "Apriori trades repeated scans for aggressive pruning; FP-Growth and vertical layouts offer different trade-offs.",
+    "A production rule needs temporal validation, redundancy control, actionability, privacy review, and monitoring."
   ],
   "resources": [
-    "stanford-cs246"
+    "stanford-cs246",
+    "apriori-paper"
   ],
   "featured": false,
-  "why": "This is a classic data-mining pattern for market baskets and co-occurrence.",
-  "intuition": "Bread and butter appearing together is only interesting if the co-occurrence is frequent and stronger than what item popularity alone predicts.",
-  "deepDive": "Apriori uses downward closure: if an itemset is frequent, its subsets must be frequent, which prunes the exponential search.",
-  "math": "",
+  "why": "Co-occurrence discovery is useful when an organization has millions of sparse baskets, sessions, diagnoses, alerts, or feature activations but does not know which combinations deserve investigation. The hard part is not writing P(Y|X); it is searching a power set without drowning in candidates and misleading coincidences. Frequent-itemset methods expose the computational structure, while rule metrics expose the statistical structure. Together they teach several durable engineering ideas: exploit monotonic constraints, distinguish prevalence from conditional association, validate discoveries out of sample, and design summaries around downstream decisions. The method remains relevant in retail, catalog design, security-event correlation, clinical hypothesis generation and product journey analysis, provided that temporal order, exposure, selection and causal limits are made explicit.",
+  "intuition": "Imagine 100 baskets: bread appears in 80, milk in 70, and both in 60. The rule bread→milk has confidence 60/80=0.75, which sounds strong, but milk already appears in 70% of baskets, so lift is only 0.75/0.70≈1.07. Bread barely changes the baseline. A rarer pair can have higher lift yet occur too few times to trust. Search also explodes: d items define 2^d possible subsets. Apriori avoids exploring a branch once one of its subsets is below minimum support. It is like searching a family tree where a failed ancestor proves that every descendant must also fail the frequency test.",
+  "deepDive": "Association mining is a constrained enumeration problem followed by statistical filtering. Apriori's downward-closure property gives exact pruning for support, but thresholds determine both compute and scientific reliability. Rule metrics answer different questions and none supplies causality. Strong practice therefore joins algorithmic pruning with holdout evaluation, redundancy reduction, uncertainty, business utility and governance.",
+  "math": "For N transactions T_i and itemset A, supp(A)=N^{-1}Σ_i 1[A⊆T_i]. For disjoint X,Y, conf(X→Y)=supp(X∪Y)/supp(X)=P_hat(Y|X), lift=conf/supp(Y)=supp(X∪Y)/(supp(X)supp(Y)), leverage=supp(X∪Y)-supp(X)supp(Y), and conviction=(1-supp(Y))/(1-conf) when defined. If A⊆B then supp(B)≤supp(A), the Apriori anti-monotonicity property. Confidence and lift lack this property. Sampling uncertainty depends on the joint count, not only the displayed ratio, and searching many rules creates selection bias.",
   "code": "",
   "commonMistakes": [
-    "Using confidence without lift.",
-    "Interpreting association as causation."
+    {
+      "misconception": "High confidence proves a useful relationship.",
+      "correction": "Compare with consequent prevalence, absolute support, uncertainty and downstream decision value."
+    },
+    {
+      "misconception": "Lift above one means X causes Y.",
+      "correction": "Lift is symmetric observational association; causal claims need temporal and identification assumptions or experiments."
+    },
+    {
+      "misconception": "Lower minimum support always reveals more insight.",
+      "correction": "It can cause candidate explosion and unstable, multiply selected patterns."
+    },
+    {
+      "misconception": "Each transaction is naturally defined.",
+      "correction": "Basket boundaries, deduplication and exposure rules are modeling decisions that can dominate results."
+    }
   ],
   "followUps": [
-    "Apriori vs FP-Growth?",
-    "Why is support anti-monotonic?"
+    {
+      "question": "Why is support anti-monotone but confidence is not?",
+      "answer": "Adding items can only reduce matching transactions, while confidence is a ratio whose numerator and denominator change differently."
+    },
+    {
+      "question": "When does FP-Growth beat Apriori?",
+      "answer": "Often on dense data with many frequent patterns because it avoids explicit candidate generation, provided its conditional trees fit and partition well."
+    },
+    {
+      "question": "How would you validate a discovered rule?",
+      "answer": "Freeze it, score a later untouched period with counts and uncertainty, inspect cohorts and policy exposure, then test the linked action experimentally when feasible."
+    }
   ],
-  "production": "Control combinatorial explosion and validate discovered rules with domain context.",
-  "workedExample": "A rule can have high confidence because B is common; lift reveals whether A truly adds association.",
+  "production": "Treat the mining job as a versioned analytical product. Record the event contract, basket key, taxonomy, time range, filters, support denominator, thresholds and software revision. Separate discovery from chronological validation and require count, coverage, lift stability and an explicit action owner before promotion. Bound output size, eliminate dominated rules, and cache only an approved serving representation. Monitor input volume, basket-size distribution, singleton prevalence, candidate counts, runtime, rule churn, cohort stability and action outcomes. Rebuild or dual-run after taxonomy changes. Protect sensitive associations with minimum aggregation, authorization, audit logs and retention controls. Provide an empty-rule fallback and roll back the rule catalog independently of upstream mining. A promoted recommendation rule should still pass online utility and harm guardrails because observational association does not establish incremental effect.",
+  "workedExample": "In eight sessions, {search, product} occurs six times, {product, cart} four times, and all three occur three times. The rule {search, product}→{cart} has support 3/8, confidence 3/6, and lift (3/6)/(4/8)=1. It predicts cart no better than cart's base rate. The reverse {cart}→{search, product} has confidence 3/4 but the same lift. Direction changes confidence because antecedent prevalence changes; it does not change the symmetric departure from independence measured by lift.",
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "Frequent itemset and association-rule mining discover recurring co-occurrence structures in transactional data without fitting a conventional predictive model. This chapter defines transactions, itemsets, support, confidence, lift, leverage and conviction; derives the downward-closure property; and follows Apriori through candidate joining, subset pruning, database scans and rule generation. It explains why high confidence can merely reflect a popular consequent, why high lift at tiny support is unstable, and why association does not imply causation, complementarity or temporal influence. It compares Apriori with Eclat's vertical transaction-ID intersections and FP-Growth's compressed prefix tree, including memory, scan and parallelization trade-offs. Worked examples show how direction affects confidence but not lift and how threshold choice changes the search space. The lab implements Apriori and rule scoring from scratch and verifies anti-monotonicity and order invariance. Production guidance covers basket definition, time windows, bot and duplicate filtering, holdout periods, multiple discovery, redundant rules, privacy, serving freshness, business constraints and experiment-based confirmation. The result is a disciplined workflow for turning combinatorial pattern discovery into a reproducible decision aid rather than a list of seductive correlations.",
+  "prerequisites": [
+    "python-data-structures",
+    "probability-basics",
+    "hypothesis-testing"
+  ],
+  "learningObjectives": [
+    "Compute and interpret support, confidence, lift, leverage and conviction without confusing association with effect.",
+    "Derive Apriori's downward-closure pruning and trace candidate generation across database passes.",
+    "Choose among Apriori, Eclat and FP-Growth based on density, memory, scans and parallel execution.",
+    "Design temporal validation, redundancy control, governance and decision evaluation for mined rules."
+  ],
+  "deepSections": [
+    {
+      "id": "problem-metrics",
+      "title": "Transactions, itemsets and rule metrics answer different questions",
+      "body": "A transaction is a set after an explicit unit of analysis has been chosen: order, user-day, session, patient encounter or machine window. Multiplicity and order disappear unless they are encoded separately. An itemset is frequent when its empirical support reaches min_support. A rule X→Y normally requires disjoint X and Y and inherits the support of X∪Y. Confidence estimates the observed conditional frequency of Y among transactions containing X. Lift divides by Y's overall frequency, so lift one represents empirical independence, above one positive association and below one negative association. Leverage reports an absolute probability difference and can prevent a tiny but huge-lift rule from dominating. Conviction emphasizes missing consequents but becomes unstable near confidence one. Coverage, count and expected action value may be more operationally meaningful. Direction matters for confidence but not support, lift or leverage. Every metric is descriptive of the sampled baskets; none identifies an intervention because exposure, confounding, selection and time are absent from the rule."
+    },
+    {
+      "id": "apriori-mechanism",
+      "title": "Apriori converts anti-monotonic support into exact pruning",
+      "body": "If itemset B occurs in a transaction, every subset A⊂B also occurs there; therefore supp(B)≤supp(A). Apriori first counts singleton supports, retains frequent L1, and creates size-k candidates by joining compatible members of L_{k-1}. It discards any candidate whose size-(k-1) subset is not frequent, then scans transactions to count the survivors. The process stops when L_k is empty. This pruning is exact: no frequent itemset is removed. It can nevertheless be expensive when minimum support is low, baskets are dense or many items are genuinely frequent, because the border of candidates is enormous and repeated scans cost I/O. Hash-tree candidate indexes, transaction reduction, partitioning and sampling improve execution. Closed frequent itemsets remove sets that share support with a superset; maximal itemsets keep only those with no frequent superset. These condensed outputs reduce redundancy but discard information needed to recover every rule score."
+    },
+    {
+      "id": "alternatives-statistics",
+      "title": "Alternative enumeration does not remove the statistical discovery problem",
+      "body": "Eclat stores a transaction-ID set for each item and obtains a larger item's support by intersecting ID sets. It favors data where compressed vertical sets fit memory and avoids repeated full scans. FP-Growth performs two scans, orders frequent items, compresses transactions into an FP-tree and recursively mines conditional pattern bases without explicit candidate generation. It often wins on dense data but tree construction, partition balance and implementation complexity matter. Whichever algorithm enumerates candidates, thresholds selected after looking at results bias apparent strength. Thousands or millions of rules create false discoveries and near duplicates. Use minimum counts, confidence intervals or resampling, false-discovery controls where inferential claims are made, and a later time-based validation set. Prune rules dominated by simpler antecedents, cluster interchangeable items, and measure incremental predictive or decision value against a baseline. Simpson's paradox can reverse aggregate associations across stores, cohorts or seasons, so important rules need stratified analysis."
+    },
+    {
+      "id": "system-design",
+      "title": "Production mining starts with a defensible basket and ends with an action",
+      "body": "Define event-time cutoffs, entity identity, deduplication, returns, quantity treatment, taxonomy versions and whether unavailable items count as negative evidence. Sessionization can manufacture or erase co-occurrence. Bots, bulk buyers, bundles and recommendations already shown to users create strong but policy-induced rules. Compute discovery and validation on nonoverlapping chronological windows and compare by meaningful cohorts. Store counts and denominators with every score, plus algorithm version, thresholds and source snapshot. Incremental counting can update common itemsets, but taxonomy changes may require backfills. Serving should usually retrieve a compact approved rule set, not the raw mining output, and must define fallback behavior for unseen items. Monitor coverage, score drift, rule churn, latency, action rate and downstream value. Sensitive combinations can reveal health, identity or behavior, so enforce aggregation thresholds, access controls, retention limits and privacy review. If a rule changes recommendations or interventions, confirm value and guardrails in an experiment rather than calling observational lift an effect."
+    }
+  ],
+  "workedExamples": [
+    {
+      "title": "Popular-consequent trap",
+      "body": "Coffee appears in 90% of baskets. A croissant→coffee confidence of 92% looks impressive, but lift 1.02 adds almost no information beyond popularity."
+    },
+    {
+      "title": "Rare-rule trap",
+      "body": "Two specialty items co-occur twice and never appear separately, producing perfect confidence and large lift. The count is too small for stable deployment and likely will not survive a later window."
+    }
+  ],
+  "lab": {
+    "language": "python",
+    "goal": "Implement Apriori and association-rule scoring, then verify downward closure, metric identities, and transaction-order invariance.",
+    "buildIt": "from itertools import combinations\ntransactions=[{'bread','milk','eggs'},{'bread','milk'},{'bread','eggs'},{'milk','eggs'},{'bread','milk','eggs'},{'bread','butter'},{'milk','butter'},{'bread','milk','butter'}]\ndef support(itemset, rows=transactions):\n    target=frozenset(itemset)\n    return sum(target <= row for row in rows)/len(rows)\ndef apriori(rows, min_support):\n    singletons={frozenset([item]) for row in rows for item in row}\n    level={s for s in singletons if support(s,rows)>=min_support}\n    found={s:support(s,rows) for s in level}; k=2\n    while level:\n        candidates={a|b for a in level for b in level if len(a|b)==k}\n        candidates={c for c in candidates if all(frozenset(s) in level for s in combinations(c,k-1))}\n        level={c for c in candidates if support(c,rows)>=min_support}\n        found.update({c:support(c,rows) for c in level}); k+=1\n    return found\nfrequent=apriori(transactions,.25)",
+    "useIt": "rules=[]\nfor itemset,s_xy in frequent.items():\n    if len(itemset)<2: continue\n    for size in range(1,len(itemset)):\n        for parts in combinations(itemset,size):\n            x=frozenset(parts); y=itemset-x\n            conf=s_xy/frequent[x]; lift=conf/frequent[y]\n            rules.append({'antecedent':tuple(sorted(x)),'consequent':tuple(sorted(y)),'support':s_xy,'confidence':conf,'lift':lift})\ntop_rules=sorted(rules,key=lambda r:(-r['lift'],-r['support'],r['antecedent']))",
+    "verifyIt": "assert frequent[frozenset({'bread','milk'})]==.5\nassert all(frequent[sub] >= value for itemset,value in frequent.items() for size in range(1,len(itemset)) for sub in map(frozenset,combinations(itemset,size)))\nfor rule in rules:\n    x=frozenset(rule['antecedent']); y=frozenset(rule['consequent'])\n    assert abs(rule['confidence']-support(x|y)/support(x))<1e-12\n    assert abs(rule['lift']-support(x|y)/(support(x)*support(y)))<1e-12\nreversed_rows=list(reversed(transactions)); original=frequent; transactions[:]=reversed_rows; reordered=apriori(transactions,.25); assert reordered==original\nassert all(0 < r['support'] <= 1 and r['confidence'] <= 1 for r in rules)",
+    "shipIt": "Version basket construction and thresholds, persist counts with scores, validate on a later window, cap and deduplicate output, protect sensitive combinations, and experiment on the action before promotion."
+  },
+  "exercises": [
+    {
+      "prompt": "Prove Apriori's downward-closure property.",
+      "solution": "Every transaction containing B also contains each A⊂B, so B's indicator is never greater than A's; averaging preserves the inequality."
+    },
+    {
+      "prompt": "Why can X→Y and Y→X have different confidence but identical lift?",
+      "solution": "The confidence denominators use support(X) and support(Y), while lift divides the joint by their symmetric product."
+    },
+    {
+      "prompt": "A rule has lift 8 and support 0.00001. What should you inspect?",
+      "solution": "Absolute counts, uncertainty, multiple discovery, data errors, later-window replication, coverage and whether any action has positive expected value."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "flow",
+      "title": "Apriori level-wise search",
+      "items": [
+        "Count frequent singletons",
+        "Join frequent k−1 itemsets",
+        "Prune candidates with an infrequent subset",
+        "Scan and count survivors",
+        "Stop when the level is empty",
+        "Generate and validate rules"
+      ],
+      "caption": "Anti-monotonic support removes entire branches without losing a truly frequent itemset.",
+      "afterSection": "apriori-mechanism"
+    },
+    {
+      "type": "compare",
+      "title": "Confidence versus lift",
+      "left": {
+        "title": "Confidence",
+        "items": [
+          "Estimates P(Y|X)",
+          "Directional",
+          "Can reward popular Y",
+          "Needs count uncertainty"
+        ]
+      },
+      "right": {
+        "title": "Lift",
+        "items": [
+          "Divides by P(Y)",
+          "Symmetric association",
+          "One means independence",
+          "Still not causal"
+        ]
+      },
+      "caption": "Use several metrics because each removes a different source of misinterpretation.",
+      "afterSection": "problem-metrics"
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "apriori-paper",
+      "contribution": "Grounds Apriori candidate generation, subset pruning, repeated passes, and the original large-database framing."
+    },
+    {
+      "resource": "stanford-cs246",
+      "contribution": "Supports the modern course treatment of frequent itemsets, association rules, Apriori, and scalable alternatives."
+    }
+  ]
 }

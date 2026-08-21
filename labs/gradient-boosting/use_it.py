@@ -1,11 +1,21 @@
-from sklearn.datasets import make_classification
-from sklearn.model_selection import train_test_split
-X,y=make_classification(n_samples=1000,n_features=15,n_informative=7,random_state=1)
-Xtr,Xte,ytr,yte=train_test_split(X,y,test_size=.25,random_state=1,stratify=y)
+import numpy as np
+X=np.arange(12,dtype=float); y=np.array([0,0,1,1,2,2,5,5,7,8,8,9],float)
+def fit_regression_stump(x,target):
+    best=None
+    for t in (np.unique(x)[:-1]+np.unique(x)[1:])/2:
+        left=x<=t; lv=target[left].mean(); rv=target[~left].mean()
+        pred=np.where(left,lv,rv); loss=np.mean((target-pred)**2)
+        if best is None or loss<best[0]: best=(loss,float(t),float(lv),float(rv))
+    return best[1:]
+def stump_predict(x,s):
+    t,lv,rv=s; return np.where(x<=t,lv,rv)
+base=float(y.mean()); pred=np.full(len(y),base); rate=0.2; stumps=[]; losses=[float(np.mean((y-pred)**2))]
+for _ in range(30):
+    stump=fit_regression_stump(X,y-pred); update=stump_predict(X,stump)
+    pred=pred+rate*update; stumps.append(stump); losses.append(float(np.mean((y-pred)**2)))
+scratch_pred=pred.copy()
 
 # ---- Use it ----
-from sklearn.ensemble import HistGradientBoostingClassifier
-from sklearn.metrics import roc_auc_score
-m=HistGradientBoostingClassifier(max_iter=150,learning_rate=.08,max_leaf_nodes=31,random_state=1).fit(Xtr,ytr)
-auc=roc_auc_score(yte,m.predict_proba(Xte)[:,1])
-print(auc)
+from sklearn.ensemble import GradientBoostingRegressor
+model=GradientBoostingRegressor(n_estimators=30,learning_rate=0.2,max_depth=1,loss='squared_error',random_state=0).fit(X[:,None],y)
+sk_pred=model.predict(X[:,None])

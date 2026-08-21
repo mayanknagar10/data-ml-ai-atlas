@@ -8,34 +8,181 @@
     "de",
     "as"
   ],
-  "interviewAnswer": "Global spatial distance should respect Earth geometry or use an appropriate projection; raw Euclidean distance on latitude/longitude can be misleading.",
+  "interviewAnswer": "Distance must match the surface and decision. Euclidean distance in a suitable projected CRS is efficient and accurate within its design region; longitude–latitude degrees are not a metric. Great-circle or haversine distance models a sphere and is often adequate at moderate accuracy; ellipsoidal inverse geodesics use a reference ellipsoid and handle global and near-antipodal cases robustly. Network travel time, barriers and anisotropic cost surfaces may be more relevant than straight-line distance. For spatial kNN, I use an index whose metric matches the query—such as BallTree haversine on radians—retrieve candidates, apply exact ellipsoidal or route refinement, and define ties and maximum radius. I validate known pairs, symmetry, identical points, antimeridian and polar cases, and monitor units and coverage.",
   "keyPoints": [
-    "Geodesic/Haversine",
-    "Projected distance",
-    "Spatial kNN",
-    "Business distance"
+    "Longitude and latitude are angular coordinates; Euclidean degree distance has latitude-dependent meaning and wrap errors.",
+    "Haversine computes spherical central angle; ellipsoidal geodesics improve accuracy and robustness.",
+    "Straight-line, geodesic, network and cost distance answer different operational questions.",
+    "Nearest-neighbor indexes are metric-specific and approximate retrieval may require exact refinement.",
+    "Radians, axis order, Earth radius, antimeridian, poles, ties and duplicate points need explicit tests."
   ],
   "resources": [
+    "geodata-science-book",
     "geopandas-docs",
-    "geodata-science-book"
+    "karney-geodesics"
   ],
   "featured": false,
-  "why": "Distance choices affect clustering, nearest-neighbor features, logistics and service areas.",
-  "intuition": "One degree longitude represents different distances at different latitudes.",
-  "deepDive": "For regional work, a suitable projection often makes planar distance practical; global work needs geodesic formulas or libraries.",
-  "math": "",
+  "why": "Location models often depend on nearest facility, service radius, exposure decay or travel accessibility. A formula that returns a number is not enough: using Euclidean degrees near the dateline can call two adjacent points almost 360 degrees apart, while a straight-line hospital distance can ignore a river crossing. Distance choice defines the estimand and index. Small systematic errors may reorder close candidates; route time changes with transport mode and time; GPS uncertainty can exceed formula precision. A disciplined workflow identifies the physical surface, required accuracy and downstream consequence before optimizing search.",
+  "intuition": "On a paper city map, a ruler works if the projection is locally accurate. Across continents, the shortest surface path bends along the globe, and an ellipsoid is a closer Earth model than a sphere. Roads add another layer: the nearest point as the crow flies may be unreachable without a bridge. An index is like a shortlist generator. It can quickly nominate nearby points under its geometry, but the final decision may require a more accurate geodesic or routing engine.",
+  "deepDive": "Spatial distance is a model of movement or separation, not a universal column. Planar, spherical, ellipsoidal, network and cost distances have different assumptions and indexing strategies. Reliable nearest search couples the correct metric with candidate retrieval, exact refinement, edge-case tests and uncertainty-aware decisions.",
+  "math": "For latitudes φ1,φ2 and longitude difference Δλ wrapped to [−π,π], haversine central angle c=2 asin(sqrt(sin²((φ2−φ1)/2)+cosφ1 cosφ2 sin²(Δλ/2))) and spherical distance d=Rc. The spherical law of cosines is equivalent but can be numerically less stable for tiny distances. Ellipsoidal geodesics solve the inverse problem for shortest surface distance and forward/reverse azimuths on a specified ellipsoid. Planar Euclidean d=sqrt((x2−x1)²+(y2−y1)²) is valid when projected coordinates and distortion tolerance justify it. kNN returns indices minimizing the chosen d, with tie policy.",
   "code": "",
   "commonMistakes": [
-    "Using Euclidean distance on lon/lat globally.",
-    "Ignoring road/travel-time distance when it is the real objective."
+    {
+      "misconception": "Multiply degree distance by 111 km everywhere.",
+      "correction": "Longitude scale varies with latitude and wrap; use a suitable projection or geodesic."
+    },
+    {
+      "misconception": "Haversine is ellipsoidal distance.",
+      "correction": "It is a spherical formula whose accuracy depends on radius and use case."
+    },
+    {
+      "misconception": "Any kNN index can rank geodesic distance.",
+      "correction": "The pruning geometry must support the metric or act only as a conservative candidate stage."
+    },
+    {
+      "misconception": "More formula precision guarantees better location decisions.",
+      "correction": "Source coordinate uncertainty and the wrong movement model can dominate numerical error."
+    }
   ],
   "followUps": [
-    "Geodesic vs routing distance?",
-    "How would you accelerate spatial kNN?"
+    {
+      "question": "When is a local projection adequate?",
+      "answer": "When the region lies within its area of use and measured distortion is below the decision's error tolerance."
+    },
+    {
+      "question": "How do you query spherical kNN with BallTree?",
+      "answer": "Supply latitude-longitude in radians using the haversine metric, then multiply angular distances by the chosen radius."
+    },
+    {
+      "question": "Why refine candidates geodesically?",
+      "answer": "A cheaper index metric or bounding region can preserve recall but may misorder or admit distant candidates."
+    }
   ],
-  "production": "Use the metric that matches the physical/business process.",
-  "workedExample": "Choose the closest warehouse by projected/geodesic distance rather than raw degree difference.",
+  "production": "Define the decision metric, coordinate order and units, CRS, ellipsoid or radius, index and exact-refinement rule, tie and maximum-radius behavior. Version routing graph, mode and traffic timestamp separately. Regression-test known pairs, identical, dateline, polar and near-antipodal cases and audit kNN recall against brute force. Monitor distance distribution, candidate counts, tie and no-result rates, routing freshness, approximation error and latency. Include coordinate uncertainty in threshold actions. Protect precise query locations and provide an explicit degraded mode. Keep previous index and graph snapshots and metric configuration for rollback.",
+  "workedExample": "London to Paris is roughly 344 km geodesically. A naive Euclidean calculation on longitude and latitude yields a number in degrees, not kilometers. Multiplying all degrees by 111 km ignores that longitude scale shrinks by cos(latitude). Haversine with a mean Earth radius is close for this route; an ellipsoidal library gives a more defensible distance and azimuth. For delivery ETA, neither is enough—the road network and traffic are the appropriate metric.",
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "Spatial distance depends on the geometry of Earth and on what movement or exposure the application represents. This chapter contrasts Euclidean distance in projected coordinates, spherical great-circle distance, the haversine formula, ellipsoidal geodesics and chord distance, then extends the comparison to road-network travel time, barriers and raster cost distance. It derives the haversine central angle with longitude wrapping and explains Earth-radius conventions, ellipsoid choice, forward and inverse geodesic problems, azimuths and near-antipodal robustness. Projection distortion and local tangent approximations are tied to explicit error budgets. Spatial nearest-neighbor search is developed with brute force, kd-trees for suitable planar metrics, BallTree haversine search, cell and R-tree candidate filters, exact refinement, ties and radius constraints. The lab implements haversine, compares it with pyproj's ellipsoidal Geod and uses scikit-learn BallTree to recover nearest cities, testing symmetry, identity and antimeridian behavior. Production guidance covers units, radians, axis order, metric and index compatibility, routing freshness, uncertainty, caching, privacy, benchmarks, fallbacks and rollback. The final question is always whether the chosen distance corresponds to the decision, not merely whether the code is fast.",
+  "prerequisites": [
+    "crs-projections",
+    "knn",
+    "spatial-indexing"
+  ],
+  "learningObjectives": [
+    "Choose planar, spherical, ellipsoidal, network or cost distance from the spatial decision and error budget.",
+    "Derive and implement haversine distance with stable units and longitude wrapping.",
+    "Match kNN index geometry to the metric and apply exact or route-based refinement.",
+    "Validate global edge cases and operate a distance service with uncertainty, freshness and fallback controls."
+  ],
+  "deepSections": [
+    {
+      "id": "distance-models",
+      "title": "Different distances answer different scientific and operational questions",
+      "body": "Euclidean distance assumes a plane and inherits projection distortion. It works well for small regions under a suitable projected CRS, especially when error is quantified. Great-circle distance follows the shortest path on a sphere; haversine is a stable formula for its central angle. Earth is closer to an oblate ellipsoid, so accurate surveying and global routing use an ellipsoidal inverse geodesic, returning distance and azimuths. Three-dimensional chord distance through Earth is not surface travel. Network distance follows allowed graph edges with direction, turn restrictions and weights such as travel time. Cost distance accumulates friction over raster cells and may be anisotropic for slope or wind. Exposure may use decay, barriers or line of sight. State the physical process before selecting a formula."
+    },
+    {
+      "id": "global-edge-cases",
+      "title": "Longitude wrap, poles and antipodes expose naive formulas",
+      "body": "Longitude 179.9°E and 179.9°W are close, so wrap Δλ to the principal interval. Near the poles, longitudes converge and degree-based x distance becomes meaningless. Identical or extremely close points challenge inverse trigonometric precision; clamp floating intermediate values to valid ranges. Nearly antipodal points have multiple nearly equal paths and historically caused convergence problems for some iterative ellipsoidal methods; robust modern algorithms handle them. Coordinate order must be declared because many APIs use longitude-latitude while arrays are commonly latitude-longitude. Convert degrees to radians exactly once. Earth radius differs among mean, authalic and local choices; record it for spherical calculations. Altitude can matter for aviation but is often ignored by surface geodesics."
+    },
+    {
+      "id": "nearest-search",
+      "title": "Nearest-neighbor acceleration is only valid under its indexed metric",
+      "body": "A kd-tree partitions Euclidean coordinate space and performs well in low dimensions, but it does not directly understand longitude wrap or ellipsoidal geodesics. A BallTree can support haversine when inputs are radians and coordinate order is correct. Spatial grids or R-trees generate local candidates, after which exact geodesic distance filters and ranks them. Approximate neighbor structures expose a recall–latency trade-off and require audit against brute force. Radius search needs conservative cell coverage so candidates are not missed. Ties, duplicate coordinates and maximum distance require deterministic policy. For network distance, point candidates must be snapped to a versioned graph and shortest paths computed under mode and time weights. A two-stage straight-line shortlist can accelerate routing only if its bound preserves needed recall."
+    },
+    {
+      "id": "distance-operations",
+      "title": "Distance services need metric provenance and consequential fallbacks",
+      "body": "Store source CRS, coordinate order, units, formula or library, ellipsoid or radius, index parameters, network snapshot and traffic time. Test known geodesic pairs, symmetry, zero distance, dateline, poles and near-antipodes. Compare candidate retrieval with exact brute-force samples and track neighbor recall, distance error, no-result rate, ties, latency and routing fallback. GPS and geocoding uncertainty can dominate centimeter-level algorithm accuracy; propagate or bracket it for threshold decisions. Road closures and travel times need freshness and stale-data policy. Cache keys include metric and graph version. Precise coordinates and query trails are sensitive, so minimize retention and authorize access. If the routing service is unavailable, declare whether to return geodesic approximation, no result or last-known route based on harm."
+    }
+  ],
+  "workedExamples": [
+    {
+      "title": "Dateline neighbors",
+      "body": "Points at longitudes 179.9 and −179.9 differ by 0.2° after wrapping, not 359.8°; an unwrapped Euclidean index can miss them."
+    },
+    {
+      "title": "Barrier-aware facility",
+      "body": "A clinic 500 meters across a river may be farther by road than one two kilometers away; network time answers accessibility better than geodesic distance."
+    }
+  ],
+  "lab": {
+    "language": "python",
+    "goal": "Implement haversine distance, compare spherical and ellipsoidal results, and verify spherical nearest-neighbor retrieval.",
+    "buildIt": "import math, numpy as np\nR=6371.0088\ndef haversine(a,b):\n    lat1,lon1=map(math.radians,a); lat2,lon2=map(math.radians,b); dlat=lat2-lat1; dlon=(lon2-lon1+math.pi)%(2*math.pi)-math.pi\n    h=math.sin(dlat/2)**2+math.cos(lat1)*math.cos(lat2)*math.sin(dlon/2)**2\n    return 2*R*math.asin(math.sqrt(min(1,max(0,h))))\nlondon=(51.5074,-.1278); paris=(48.8566,2.3522); spherical=haversine(london,paris)",
+    "useIt": "from pyproj import Geod\nfrom sklearn.neighbors import BallTree\ngeod=Geod(ellps='WGS84'); _,_,meters=geod.inv(london[1],london[0],paris[1],paris[0]); ellipsoidal=meters/1000\ncities=np.radians(np.array([london,paris,(52.52,13.405),(40.7128,-74.006)])); tree=BallTree(cities,metric='haversine'); angular,indices=tree.query(np.radians([[50.0,1.0]]),k=2); nearest=indices[0].tolist()",
+    "verifyIt": "assert 340<spherical<350 and 340<ellipsoidal<350\nassert abs(spherical-ellipsoidal)/ellipsoidal<.01\nassert abs(haversine(london,paris)-haversine(paris,london))<1e-12 and haversine(london,london)==0\nassert haversine((0,179.9),(0,-179.9))<25\nassert nearest==[1,0] and np.all(np.diff(angular[0])>=0)\nassert abs(angular[0,0]*R-haversine((50.0,1.0),paris))<1e-9",
+    "shipIt": "Version coordinate and metric conventions, validate global edge cases and candidate recall, refine consequential results with ellipsoidal or route distance, and expose uncertainty and fallback behavior."
+  },
+  "exercises": [
+    {
+      "prompt": "Why wrap longitude difference?",
+      "solution": "The same meridian neighborhood spans −180/180; the principal difference represents the shorter angular separation."
+    },
+    {
+      "prompt": "What does an ellipsoidal inverse solution return?",
+      "solution": "Shortest surface distance and forward or reverse azimuths between two geodetic coordinates."
+    },
+    {
+      "prompt": "When is network distance necessary?",
+      "solution": "When permitted paths, barriers, direction, mode or travel-time weights define actual accessibility."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "compare",
+      "title": "Distance models",
+      "left": {
+        "title": "Geometric",
+        "items": [
+          "Projected Euclidean",
+          "Spherical great-circle",
+          "Ellipsoidal geodesic",
+          "Surface separation"
+        ]
+      },
+      "right": {
+        "title": "Operational",
+        "items": [
+          "Road or transit network",
+          "Barriers and direction",
+          "Time-dependent weights",
+          "Cost and accessibility"
+        ]
+      },
+      "caption": "The decision determines whether geometric separation or feasible movement is relevant.",
+      "afterSection": "distance-models"
+    },
+    {
+      "type": "flow",
+      "title": "Spatial kNN pipeline",
+      "items": [
+        "Normalize coordinates and metric",
+        "Retrieve conservative candidates",
+        "Wrap and handle global edge cases",
+        "Refine exact geodesic or route cost",
+        "Resolve ties and radius",
+        "Log recall and uncertainty"
+      ],
+      "caption": "Fast retrieval and decision-relevant distance can be separate stages.",
+      "afterSection": "nearest-search"
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "karney-geodesics",
+      "contribution": "Grounds robust and accurate direct and inverse geodesic algorithms on an ellipsoid."
+    },
+    {
+      "resource": "geodata-science-book",
+      "contribution": "Supports applied distance, neighborhood and spatial-nearest analysis across coordinate representations."
+    },
+    {
+      "resource": "geopandas-docs",
+      "contribution": "Provides practical geometry distance, nearest join and CRS-aware workflow guidance."
+    }
+  ]
 }

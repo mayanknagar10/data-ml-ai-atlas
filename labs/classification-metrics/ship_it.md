@@ -1,3 +1,3 @@
 # Ship it
 
-Monitor the metric at the operating threshold and across important slices. If labels arrive late, separate immediate system monitoring from delayed model-quality monitoring.
+Freeze label and unit semantics, expose counts and undefined denominators, monitor prevalence and critical slices, and keep threshold selection separate from final evaluation.

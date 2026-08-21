@@ -7,31 +7,185 @@
     "ds",
     "as"
   ],
-  "interviewAnswer": "A valid adjustment set blocks noncausal backdoor paths between treatment and outcome without conditioning on colliders or descendants that introduce bias. DAGs make these assumptions explicit.",
+  "interviewAnswer": "Backdoor adjustment identifies a treatment effect by conditioning on pretreatment variables that block every path entering treatment, while avoiding treatment descendants. If Z is valid, consistency, conditional exchangeability and positivity imply the g-formula E[Y(a)]=E_Z E[Y|A=a,Z]. I choose Z from a reviewed causal DAG rather than p-values or feature importance, prefer a minimal well-measured set with adequate overlap, and define the target population. I can estimate by outcome-regression standardization, stratification, matching, inverse weighting or doubly robust methods; estimator flexibility addresses functional form, not unmeasured confounding. I inspect overlap, balance, model residuals, influential observations and sensitivity to alternative defensible sets. For total effects I do not adjust mediators or post-treatment colliders. When no measured set closes all backdoor paths, I state nonidentification or use another design instead of calling a predictive regression causal.",
   "keyPoints": [
-    "Control confounders, not every available variable.",
-    "Conditioning on colliders can create associations.",
-    "Causal graph is an assumptions tool."
+    "A valid adjustment set is determined by the causal graph and target effect, not association screening.",
+    "The adjustment formula averages treatment-specific conditional outcomes over one declared target covariate distribution.",
+    "Outcome regression, weighting and matching estimate the same identified contrast through different modeling choices.",
+    "Positivity and measurement quality can favor one valid set over another even when both block confounding.",
+    "No estimator or balance table detects confounding by variables absent from the identification set."
   ],
   "resources": [
-    "harvard-causal-diagrams",
-    "causal-mixtape"
+    "pearl-diagrams",
+    "what-if-causal",
+    "dml-paper"
   ],
   "featured": false,
-  "why": "Backdoor Adjustment & Confounding Control appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
-  "intuition": "Control confounders, not every available variable.",
-  "deepDive": "A valid adjustment set blocks noncausal backdoor paths between treatment and outcome without conditioning on colliders or descendants that introduce bias. DAGs make these assumptions explicit. Conditioning on colliders can create associations. Causal graph is an assumptions tool. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
-  "workedExample": "Adjust for prior customer risk when studying intervention effect, but not for a post-treatment support interaction caused by the intervention.",
+  "why": "The phrase 'control for confounders' hides three distinct tasks: decide which causal paths must be blocked, identify the observed-data functional, and estimate it without excessive model bias or variance. Data-driven covariate selection can retain colliders, drop weakly predictive but important treatment causes, or include post-treatment variables. A correct set can still fail through near-nonoverlap or poor measurement. Conversely, a long regression may look robust while targeting an unclear conditional coefficient rather than a marginal effect. Backdoor adjustment becomes trustworthy when the graph, population averaging, treatment timing and diagnostics are explicit.",
+  "intuition": "Within each value of baseline severity, compare treated and untreated units who are exchangeable under the assumed graph. Then average those within-stratum contrasts using the target population's severity distribution. The first step removes the common-cause imbalance; the second returns from stratum-specific comparisons to the population effect of interest.",
+  "deepDive": "Backdoor adjustment combines graphical identification with standardization over a target population. It separates adjustment-set validity from estimator choice, emphasizes positivity and scale, and supports outcome, treatment and doubly robust estimators. Reliable applications use temporal feature lineage, overlap and balance diagnostics, cross-fitting for flexible nuisances, and explicit sensitivity to latent confounding.",
+  "workedExample": "If baseline risk Z is low for 60% and high for 40%, with treated-minus-control risks -0.02 and -0.10 within those strata, the standardized ATE is 0.6(-0.02)+0.4(-0.10)=-0.052 for that target population.",
   "commonMistakes": [
-    "Applying the method without checking its assumptions or data-generating process.",
-    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+    {
+      "misconception": "A variable must strongly predict outcome to be a confounder.",
+      "correction": "Confounding follows common-cause structure; weak marginal prediction does not make a required path disappear."
+    },
+    {
+      "misconception": "Balanced measured covariates prove exchangeability.",
+      "correction": "Balance checks the implemented design for measured variables, not latent common causes or graph correctness."
+    },
+    {
+      "misconception": "The treatment coefficient in an adjusted logistic regression is the marginal ATE.",
+      "correction": "It is a conditional log-odds parameter; standardize predictions to obtain marginal risk contrasts."
+    },
+    {
+      "misconception": "Doubly robust means valid if both nuisance models are wrong.",
+      "correction": "It protects against one correctly specified nuisance under assumptions, not arbitrary joint misspecification or unmeasured confounding."
+    }
   ],
   "followUps": [
-    "What assumptions does Backdoor Adjustment & Confounding Control make?",
-    "How would you validate or debug Backdoor Adjustment & Confounding Control in practice?"
+    {
+      "question": "What makes an adjustment set minimal?",
+      "answer": "It blocks all backdoor paths and no proper subset does, relative to the assumed graph and target effect."
+    },
+    {
+      "question": "Why can extreme propensity weights be a design warning?",
+      "answer": "They show some target units have little probability of the observed comparison treatment, making inference extrapolative and unstable."
+    },
+    {
+      "question": "When do standardization and IPW target different effects?",
+      "answer": "When they average over different populations or use trimming, stabilization or ATT/overlap weights; define weights and averaging explicitly."
+    }
   ],
-  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "production": "Version the causal DAG, effect, pretreatment adjustment set, target population, treatment and outcome definitions, source snapshot, nuisance learners, folds and weighting rules. Assert feature availability before treatment. Monitor propensity overlap, balance, effective sample size, extreme weights, unsupported prediction regions and target-population drift. Compare standardization, weighting and augmented estimates, attach cluster-aware uncertainty and sensitivity to unmeasured confounding, and declare every trim or restriction as an estimand change. Preserve exploration or a safe prior policy when deployment destroys overlap.",
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "math": "If Z blocks all backdoor paths from A to Y and contains no descendants of A, then p(y|do(a))=sum_z p(y|a,z)p(z). Thus ATE=sum_z [E(Y|A=1,z)-E(Y|A=0,z)]p(z), or the corresponding integral. Standardization plugs in an outcome model m(a,z). IPW uses e(z)=P(A=1|Z): E[AY/e(Z)-(1-A)Y/(1-e(Z))]. An augmented score combines m and e and is consistent if either nuisance model is correct under regularity and identification assumptions; cross-fitting reduces own-observation overfit bias.",
+  "code": "ps=LogisticRegression(max_iter=2000).fit(z[:,None],a).predict_proba(z[:,None])[:,1]\nipw=np.mean(a*y/ps-(1-a)*y/(1-ps)); effective=(np.sum(a/ps+(1-a)/(1-ps))**2)/np.sum((a/ps+(1-a)/(1-ps))**2)",
+  "lab": {
+    "language": "python",
+    "goal": "Estimate a known confounded treatment effect with g-computation and inverse weighting and verify the naive contrast remains biased.",
+    "buildIt": "import numpy as np\nfrom sklearn.linear_model import LinearRegression,LogisticRegression\nrng=np.random.default_rng(21); n=15000; z=rng.normal(size=n); e=1/(1+np.exp(-1.2*z)); a=rng.binomial(1,e); tau=1.5; y=2+2*z+tau*a+.5*a*z+rng.normal(size=n)\nnaive=y[a==1].mean()-y[a==0].mean(); outcome=LinearRegression().fit(np.c_[a,z,a*z],y); x1=np.c_[np.ones(n),z,z]; x0=np.c_[np.zeros(n),z,np.zeros(n)]; gcomp=np.mean(outcome.predict(x1)-outcome.predict(x0))",
+    "useIt": "ps=LogisticRegression(max_iter=2000).fit(z[:,None],a).predict_proba(z[:,None])[:,1]\nipw=np.mean(a*y/ps-(1-a)*y/(1-ps)); effective=(np.sum(a/ps+(1-a)/(1-ps))**2)/np.sum((a/ps+(1-a)/(1-ps))**2)",
+    "verifyIt": "assert abs(gcomp-tau)<.05\nassert abs(ipw-tau)<.1\nassert abs(naive-tau)>.8\nassert np.all((ps>0)&(ps<1))\nassert effective>n*.3\nassert abs(np.mean(.5*z))<.02",
+    "shipIt": "Persist the graph, target distribution and nuisance artifacts; gate on overlap, balance and weight stability; and publish sensitivity alongside the causal estimate."
+  },
+  "description": "Backdoor adjustment turns a causal DAG into an observed-data estimand. This chapter derives the adjustment formula from consistency, conditional exchangeability and positivity; distinguishes graphical validity from statistical estimation; and explains minimal versus sufficient sets, total versus direct effects, precision variables, instruments, proxies and M-bias. It develops stratification, regression standardization, inverse-probability weighting, matching and augmented doubly robust estimation as alternative implementations of the same target contrast. It covers nonlinearity, interactions, marginal versus conditional scales, target-population weighting, practical positivity, measurement error, flexible nuisance models and cross-fitting. Worked examples standardize stratum-specific risks and show why a post-treatment control changes the estimand. The lab simulates measured confounding, computes regression g-computation and inverse weighting, and verifies recovery of the known ATE while the naive difference is biased. Production guidance versions the DAG and adjustment set, asserts pretreatment availability, monitors overlap and weight tails, preserves target-population definitions and reports sensitivity to unmeasured confounding. Every restriction or trimming rule is reported as a population change rather than hidden as numerical cleanup.",
+  "prerequisites": [
+    "dag-confounding",
+    "potential-outcomes"
+  ],
+  "learningObjectives": [
+    "Derive the backdoor adjustment formula for a graph-validated covariate set.",
+    "Estimate marginal effects with standardization, weighting and doubly robust scores.",
+    "Diagnose adjustment-set, positivity, functional-form and target-population failures.",
+    "Separate robustness to nuisance estimation from sensitivity to unmeasured confounding."
+  ],
+  "deepSections": [
+    {
+      "id": "identify-set",
+      "title": "Choose adjustment variables from paths and timing",
+      "body": "Begin with the total or direct effect and a DAG containing measured and latent nodes. For total effects, find noncausal paths that enter treatment and select pretreatment nondescendants that block them. A minimal set avoids unnecessary conditioning; another sufficient set may improve measurement or overlap. Causes of outcome that do not affect treatment can improve precision. Pure instruments predict treatment but do not close confounding paths and can worsen variance or amplify residual confounding. Proxies may only partially control a latent cause. Mediators and treatment-induced confounders do not belong in ordinary total-effect backdoor adjustment. Selection filters behave like conditioning variables. Do not choose Z by stepwise significance, lasso outcome prediction or balance alone. Record why every included node blocks a named path and why every tempting post-treatment field is excluded."
+    },
+    {
+      "id": "g-formula",
+      "title": "Standardize conditional outcomes to one population",
+      "body": "Under the assumptions, estimate m(a,z)=E[Y|A=a,Z=z], predict each target unit twice—once setting A=1 and once A=0 while keeping baseline Z—and average the paired predictions. Their average difference estimates a marginal ATE for the covariate distribution used in averaging. Averaging only treated units targets ATT; an external covariate distribution targets transport. Include nonlinearities and treatment-covariate interactions needed for the conditional response rather than interpreting one regression coefficient automatically as ATE. For binary outcomes, standardization yields marginal risks, risk differences or ratios even when the outcome model uses a nonlinear link. Restrict predictions to supported treatment-covariate combinations. Bootstrap or influence-function inference must repeat nuisance fitting and respect clusters or time."
+    },
+    {
+      "id": "weighting-matching",
+      "title": "Treatment models reweight observed outcomes",
+      "body": "The propensity score e(Z) is a balancing score under conditional exchangeability. Inverse probability weights create a pseudo-population in which treatment is independent of measured Z for the targeted weighting scheme. ATE weights are A/e+(1-A)/(1-e); ATT, overlap and stabilized weights target different populations. Extreme scores produce unstable weights and reveal weak support, not merely a numerical nuisance. Trimming changes the target population and must be declared. Matching seeks comparable treated and controls, with replacement, calipers and distance choices affecting estimand and uncertainty. Balance after weighting or matching should be assessed on covariate distributions and important nonlinear terms, not by propensity prediction accuracy. Outcome information should not guide repeated design choices without accounting for selection."
+    },
+    {
+      "id": "doubly-robust",
+      "title": "Orthogonal scores reduce nuisance-model fragility",
+      "body": "Augmented IPW combines outcome predictions with weighted residual corrections. If either the propensity or outcome nuisance model is consistently estimated, the ATE estimator can remain consistent under the causal assumptions; this is double robustness, not immunity to two bad models or unmeasured confounding. Flexible machine learning can estimate nuisances, but naive reuse of the same observations may overfit residuals and bias the target. Cross-fitting trains nuisances on other folds and evaluates scores on held-out rows. Neyman-orthogonal scores reduce first-order sensitivity to nuisance error under rate and regularity conditions. Report nuisance performance, overlap and score tails, but do not select the causal estimate solely because one method gives a desired result. Compare standardization, weighting and augmented estimates as diagnostics tied to the same estimand."
+    },
+    {
+      "id": "sensitivity-operations",
+      "title": "Diagnostics test implementation, not the graph's truth",
+      "body": "Inspect propensity overlap by treatment, effective sample size, maximum and percentile weights, covariate balance, outcome residuals and influential rows. Evaluate missingness and measurement timing in Z; a covariate captured after treatment is invalid even if labeled baseline in a table. Negative controls and alternative valid sets can reveal inconsistencies under their own assumptions. Quantitative sensitivity analysis asks how strong unmeasured confounding must be to alter conclusions. E-values, bias formulas or Rosenbaum-style analyses answer different models and should be interpreted specifically. Version source snapshots, treatment mapping, adjustment set, nuisance learners, folds, target weights and estimand. When policy changes reduce overlap, restrict the population, restore exploration or redesign the study rather than extrapolating silently."
+    }
+  ],
+  "workedExamples": [
+    {
+      "title": "Discrete standardization",
+      "body": "If baseline risk Z is low for 60% and high for 40%, with treated-minus-control risks -0.02 and -0.10 within those strata, the standardized ATE is 0.6(-0.02)+0.4(-0.10)=-0.052 for that target population."
+    },
+    {
+      "title": "A post-treatment control",
+      "body": "Treatment changes adherence, which changes outcome. Adding adherence to a regression blocks part of the total effect and may open paths through unmeasured adherence-outcome causes. The coefficient no longer estimates the original total effect."
+    }
+  ],
+  "exercises": [
+    {
+      "prompt": "Why average standardized predictions over the same Z distribution for both treatments?",
+      "solution": "It creates comparable intervention worlds for one target population rather than comparing differently composed groups."
+    },
+    {
+      "prompt": "What does trimming propensity scores change?",
+      "solution": "It may improve stability but excludes units and therefore changes the target population and estimand."
+    },
+    {
+      "prompt": "Can outcome-model accuracy validate the backdoor set?",
+      "solution": "No. It assesses conditional prediction, while adjustment validity depends on causal paths and unmeasured confounding assumptions."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "flow",
+      "title": "Backdoor identification to estimate",
+      "items": [
+        "Draw causal graph",
+        "Choose valid pretreatment set",
+        "Check target-population support",
+        "Fit outcome or treatment nuisances",
+        "Standardize or reweight",
+        "Diagnose and stress-test"
+      ],
+      "caption": "Graphical identification and statistical estimation are separate stages with separate failure modes.",
+      "afterSection": "identify-set"
+    },
+    {
+      "type": "compare",
+      "title": "Two implementations of one estimand",
+      "left": {
+        "title": "Outcome standardization",
+        "items": [
+          "Model E[Y|A,Z]",
+          "Predict both treatments",
+          "Average over target Z",
+          "Sensitive to response model"
+        ]
+      },
+      "right": {
+        "title": "Inverse weighting",
+        "items": [
+          "Model P(A|Z)",
+          "Reweight factual outcomes",
+          "Create target pseudo-population",
+          "Sensitive to overlap and weights"
+        ]
+      },
+      "caption": "Augmented estimators combine both but do not change the causal assumptions.",
+      "afterSection": "doubly-robust"
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "pearl-diagrams",
+      "contribution": "Provides the graphical backdoor criterion and adjustment identification logic."
+    },
+    {
+      "resource": "what-if-causal",
+      "contribution": "Supports standardization, weighting, exchangeability, positivity and target-population causal contrasts."
+    },
+    {
+      "resource": "dml-paper",
+      "contribution": "Supports orthogonal scores and cross-fitting with flexible nuisance estimation."
+    }
+  ]
 }

@@ -1,3 +1,3 @@
 # Ship it
 
-Log the search space, folds, metric and winning configuration; keep the final test set isolated and cap tuning cost with sensible priors/search spaces.
+Persist trials, folds, seeds, constraints and failures; freeze the selection before final assessment; refit the chosen complete pipeline and monitor predictive plus resource metrics.

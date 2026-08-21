@@ -1,6 +1,6 @@
 # Difference-in-Differences — Code Lab
 
-Compute a simple 2x2 difference-in-differences estimate.
+Simulate a two-period panel, compute DID from group changes, and verify equivalence with a saturated interaction regression.
 
 ## 1. Build it
 

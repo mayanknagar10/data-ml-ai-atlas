@@ -6,34 +6,58 @@
   "roles": [
     "all"
   ],
-  "interviewAnswer": "Explain projects as problem → constraints → approach → your contribution → evaluation → result → limitations → what you would improve. Interviewers often care more about why you made a choice than the final architecture.",
+  "interviewAnswer": "I defend a project from the decision chain, not as a tour of artifacts. I start with the user or system problem, success and guardrail metrics, constraints and my ownership. Then I explain the baseline, the alternatives considered, the evidence that selected the design, and the end-to-end architecture at the level relevant to the interviewer. I separate offline validation from online or operational evidence, quantify failure modes and uncertainty, and state what did not work. For production I cover data contracts, reliability, latency, cost, security, monitoring, rollback and incident behavior. I close with outcome, limitations and the next experiment or redesign. Every claim links to an artifact or test, and I distinguish team decisions from my own. If challenged, I revisit assumptions and trade-offs rather than defending the original choice as universally optimal.",
   "keyPoints": [
-    "Separate “we” from “I”",
-    "Know every metric on your CV",
-    "State limitations before the interviewer discovers them",
-    "Be ready to productionize the prototype"
+    "A defensible project connects problem, requirements, alternatives, decision evidence, implementation and observed outcome.",
+    "Baselines and rejected options reveal judgment more clearly than a polished final architecture alone.",
+    "Offline metrics, online impact and system health are different evidence layers with different failure modes.",
+    "Ownership, uncertainty, limitations, security, cost, monitoring and rollback belong in the core story.",
+    "A defense is an evidence audit: changing assumptions can legitimately change the preferred design."
   ],
   "resources": [
     "stanford-cs329s",
-    "fsdl"
+    "fsdl",
+    "nasa-systems-engineering-handbook",
+    "google-technical-writing"
   ],
   "featured": true,
-  "why": "Most technical interviews spend more time probing projects than asking textbook definitions. A strong project answer proves ownership, reasoning, measurement and learning.",
-  "intuition": "Treat every project like a compact engineering story: problem → constraints → approach → your contribution → validation → result → limitations → what you would change.",
-  "deepDive": "Start from the real problem, not the model name. Separate what existed before you joined from what you personally changed. Explain why the selected architecture fit the data and constraints, name the metric and how it was measured, and volunteer one limitation before the interviewer finds it. Be able to zoom from a 60-second overview to implementation detail, productionization and alternative approaches.",
-  "workedExample": "Instead of “I used CycleGAN,” say: “We needed high-resolution 3D reconstruction without paired CT/SEM data. An existing CycleGAN pipeline handled unpaired translation; my contribution was improving the interpolation/refinement and final multi-plane fusion.”",
+  "why": "Technical interviews test whether a candidate can reason about a real system beyond its happy-path diagram. A project defense exposes problem formulation, data and evaluation judgment, engineering depth, communication and learning from failure. Candidates often overinvest in architecture vocabulary while leaving the decision unsupported: no baseline, unclear ownership, metrics unrelated to the product, or production claims without evidence. A structured defense turns a project into a traceable argument. It also protects against bluffing because each headline can be grounded in requirements, experiments, code, tests, dashboards or postmortems.",
+  "intuition": "Imagine a design review where reviewers can pause at any arrow and ask: why does this exist, what alternative did you reject, how do you know it works, and what happens when it fails? A strong project narrative already contains those answers. The architecture is the middle of the story. The beginning defines the problem and constraints; the end supplies evaluation, operations, impact and limitations. Removing either side leaves an impressive picture without a defensible engineering decision.",
+  "deepDive": "Project defense is traceability from stakeholder need to verified behavior. It reconstructs requirements, baselines, trade studies, data and evaluation, architecture, failure handling and results while making ownership and uncertainty explicit. The interviewer is invited to change assumptions and inspect whether reasoning still holds.",
+  "workedExample": "A support-routing project begins with excessive manual triage time and a guardrail against sending sensitive cases incorrectly. A keyword baseline establishes precision and coverage. Alternatives include a rules expansion, gradient boosting and an embedding classifier. Chronological validation and capacity-weighted thresholds select the embedding approach, but a low-confidence abstention path preserves the guardrail. The deployed design logs model and taxonomy versions, monitors coverage and subgroup errors, and can route all cases back to manual review. The outcome is presented with experiment scope and remaining label bias, not as 'AI automated support.'",
   "commonMistakes": [
-    "Speaking only in “we” so ownership is unclear.",
-    "Listing technologies before explaining the problem.",
-    "Quoting a metric without knowing its definition or evaluation set."
+    {
+      "misconception": "Start with a detailed architecture diagram.",
+      "correction": "First define problem, requirements, constraints, ownership and baseline so components have rationale."
+    },
+    {
+      "misconception": "Only discuss the successful final model.",
+      "correction": "Alternatives, failed tests and changed assumptions expose decision quality."
+    },
+    {
+      "misconception": "Use offline accuracy as proof of business impact.",
+      "correction": "Separate model evaluation, operational health and causal product evidence."
+    },
+    {
+      "misconception": "Say 'we' for every action.",
+      "correction": "Give team context and identify your specific decisions, implementation and influence."
+    }
   ],
   "followUps": [
-    "Why this model?",
-    "What exactly did you implement?",
-    "How did you validate success?",
-    "What failed and what would you change today?"
+    {
+      "question": "What if the interviewer changes a key constraint?",
+      "answer": "Restate the new assumption, identify which criteria change and reason through whether another design becomes preferable."
+    },
+    {
+      "question": "How much architecture detail should I give?",
+      "answer": "Begin at context and one request path, then deepen where the interviewer probes or where a key trade-off lives."
+    },
+    {
+      "question": "How do I discuss confidential metrics?",
+      "answer": "Use approved relative ranges or qualitative outcomes, emphasize method and never invent substitute numbers."
+    }
   ],
-  "production": "For each portfolio or work project, prepare an architecture diagram, exact inputs/outputs, dependencies, bottlenecks, deployment option, monitoring plan and one honest limitation.",
+  "production": "Maintain a project evidence pack: problem statement, requirement and ownership map, baseline, alternatives, experiment notes, diagrams, test matrix, SLOs, cost, risk register, rollout, dashboards, incidents and limitations. Remove confidential content and verify every number. Prepare five-, fifteen- and thirty-minute paths plus a one-page context diagram. Rehearse hostile but fair questions about data, failure, security, causality, cost and your contribution. Record assumptions made during practice. After interviews, update unclear explanations without changing facts. Keep artifacts versioned so the story remains traceable to what actually existed at the time.",
   "visual": {
     "type": "concept-map",
     "title": "Defend Any Resume Project",
@@ -46,6 +70,121 @@
     "caption": "A compact concept map for the most important ideas in this lesson."
   },
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "math": "A useful decision table lists alternatives a, criteria c, evidence-backed score s_ac and predeclared weight w_c, with weighted summary Σ_c w_c s_ac used only as an aid, not a manufactured proof. For ML, report a baseline metric M0, candidate M1, uncertainty or paired differences, slice results and a decision threshold tied to capacity or cost. For systems, decompose an SLO such as availability and latency into measured components and error budget. Never combine incomparable metrics into one number without explicit units and value judgments. Sensitivity analysis asks whether the decision changes when weights, traffic, cost or failure assumptions vary.",
+  "description": "A technical project defense is a traceable explanation of why a system was built, why its design was chosen, how it was verified and how it behaves under failure. This chapter organizes a defense around problem and stakeholder, success and guardrail requirements, constraints, personal ownership, data and baseline, considered alternatives, decision evidence, architecture, validation, operations, impact and limitations. It adapts systems-engineering practices such as requirement rationale, trade studies, verification matrices and risk registers to data, ML, analytics and platform projects. It separates model metrics from product outcomes and reliability indicators, and it shows how to discuss sampling, leakage, uncertainty, slices and causal limits. Architecture coverage includes interfaces, data contracts, state, scaling, latency, cost, privacy, security, observability, fallback and rollback. A worked example demonstrates decision traceability. The lab encodes claims and required evidence, audits missing links and performs sensitivity checks on a trade-off table. Guidance covers whiteboarding, audience levels, confidential details, artifact preparation, honest ownership, failed approaches, incident questions and follow-up pivots. The objective is not to prove the project perfect; it is to demonstrate evidence-based judgment and a realistic understanding of limitations.",
+  "prerequisites": [
+    "tell-me-about-yourself",
+    "system-design-framework"
+  ],
+  "learningObjectives": [
+    "Build a project narrative with traceability from problem and constraints through decision and outcome.",
+    "Defend alternatives, baselines, evaluation and architecture using evidence rather than hindsight.",
+    "Explain reliability, cost, security, monitoring, rollback and incident behavior at production depth.",
+    "Respond to changed assumptions and criticism by revisiting trade-offs, uncertainty and limitations."
+  ],
+  "deepSections": [
+    {
+      "id": "problem-requirements",
+      "title": "Define the decision before presenting the solution",
+      "body": "Name the user, operator or downstream system and the costly behavior that motivated work. Separate desired outcome from proposed implementation. State functional requirements, quality attributes such as latency or availability, constraints such as team size and data access, and safety or business guardrails. Define what success would look like and over what time horizon. Explain the baseline process and why it was insufficient. Clarify what you owned, influenced and inherited. NASA systems-engineering guidance emphasizes rationale, assumptions, constraints and verifiability; the same discipline prevents interview narratives from becoming solution-first. If the requirement changed during the project, show what evidence caused the update. Avoid retrofitting metrics after seeing results. A reviewer should be able to judge whether the eventual system solves the original problem. Name who approved each consequential requirement and how disagreements were resolved."
+    },
+    {
+      "id": "alternatives-evidence",
+      "title": "Alternatives and baselines make design judgment observable",
+      "body": "List credible alternatives, including doing nothing, improving the baseline and buying or reusing a service. Compare them on predeclared criteria: quality, data needs, latency, reliability, cost, interpretability, security, maintenance and time. Show the smallest experiment or prototype that reduced the key uncertainty. A trade table structures thinking but does not make subjective weights objective; explain sensitivity. For ML, distinguish feature and model comparisons from evaluation-design changes. Keep train, validation and final test roles clear and account for leakage, time, groups and decision thresholds. Report negative experiments and why they failed. A rejected approach may become preferable under different volume or privacy assumptions. This counterfactual flexibility demonstrates understanding better than claiming the final design was inevitable."
+    },
+    {
+      "id": "architecture-verification",
+      "title": "Walk architecture through contracts, state, scale and verification",
+      "body": "Start with a context diagram: producers, consumers, trust boundaries and external dependencies. Then follow one representative request or batch through data validation, transformations, storage, model or query, decision and feedback. Name interfaces, schemas, state ownership, idempotency and consistency requirements. Quantify traffic, data volume, latency budget, compute and storage where known. Explain tests at unit, integration, data, model and end-to-end levels and link each critical requirement to verification evidence. For ML, separate retrieval, prediction and policy; explain training-serving consistency and label maturity. For analytics, include metric definitions and backfill semantics. Whiteboard only detail needed for the current question, and mark assumed numbers rather than presenting invented precision."
+    },
+    {
+      "id": "operations-learning",
+      "title": "Failure behavior and learning complete the project story",
+      "body": "Describe schema failures, missing features, model degradation, dependency outages, overload, security abuse and bad deployments. State detection signals, alert ownership, fallback, retry or dead-letter behavior, feature flags, canaries and rollback boundaries. Monitoring includes input and output quality, product and guardrail outcomes, latency, cost and subgroup behavior, not one global model metric. Explain one incident or near miss through symptom, diagnosis, containment, repair and prevention. Quantify outcome with the strongest design available: randomized experiment, phased rollout, observational change with caveats or operational SLO. Close with limitations and what you would change given more time, traffic or labels. This is not self-criticism theatre; it shows that engineering knowledge is updated by evidence and that residual risks have owners."
+    }
+  ],
+  "workedExamples": [
+    {
+      "title": "Batch forecast defense",
+      "body": "Trace demand decision, naive seasonal baseline, chronological backtest, inventory-cost loss, batch SLA, missing-data fallback and forecast-bias monitoring rather than listing model layers."
+    },
+    {
+      "title": "Data platform defense",
+      "body": "Explain contract and consumer pain, build-versus-buy evidence, migration invariants, dual-run comparison, lineage, access control, cost and rollback before discussing orchestration syntax."
+    }
+  ],
+  "lab": {
+    "language": "python",
+    "goal": "Audit project claims for traceable evidence and compare architecture alternatives with sensitivity to decision weights.",
+    "buildIt": "claims=[{'id':'quality','requires':{'baseline','chronological-test','slice-results'}},{'id':'latency','requires':{'load-test','p95-dashboard'}},{'id':'reliability','requires':{'fallback-test','rollback-runbook'}},{'id':'impact','requires':{'experiment','guardrail-results'}}]\nevidence={'baseline','chronological-test','slice-results','load-test','p95-dashboard','fallback-test','rollback-runbook','guardrail-results'}\ndef missing(claims,evidence): return {c['id']:sorted(c['requires']-evidence) for c in claims if c['requires']-evidence}\nalternatives={'rules':{'quality':2,'latency':5,'cost':5},'embedding':{'quality':5,'latency':3,'cost':3},'large-model':{'quality':5,'latency':1,'cost':1}}\ndef rank(weights): return sorted(alternatives,key=lambda a:sum(weights[k]*alternatives[a][k] for k in weights),reverse=True)",
+    "useIt": "audit=missing(claims,evidence); balanced=rank({'quality':.5,'latency':.3,'cost':.2}); cost_sensitive=rank({'quality':.2,'latency':.3,'cost':.5})",
+    "verifyIt": "assert audit=={'impact':['experiment']}\nassert balanced[0]=='embedding' and cost_sensitive[0]=='rules'\nassert set(alternatives)==set(balanced)==set(cost_sensitive)\ncomplete=evidence|{'experiment'}; assert missing(claims,complete)=={}\nassert all(abs(sum(w.values())-1)<1e-12 for w in [{'quality':.5,'latency':.3,'cost':.2},{'quality':.2,'latency':.3,'cost':.5}])",
+    "shipIt": "Build a verified evidence pack, label assumptions and ownership, rehearse changed constraints, redact confidential details, and update architecture and incident narratives only from source artifacts."
+  },
+  "exercises": [
+    {
+      "prompt": "Defend a rejected alternative.",
+      "solution": "State why it was credible, which criterion it lost on, evidence for that judgment and the assumption under which it would win."
+    },
+    {
+      "prompt": "Map one requirement to verification.",
+      "solution": "Name the requirement, measurable acceptance criterion, test or experiment, observed result and remaining uncertainty."
+    },
+    {
+      "prompt": "Describe a failure path.",
+      "solution": "Follow detection, containment, fallback, recovery, rollback, user impact and prevention with ownership."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "flow",
+      "title": "Project defense decision chain",
+      "items": [
+        "Stakeholder problem and constraints",
+        "Success and guardrail requirements",
+        "Baseline and alternatives",
+        "Evidence-backed decision",
+        "Architecture and verification",
+        "Operations, outcome and limitations"
+      ],
+      "caption": "A design is defensible when each stage explains and verifies the next.",
+      "afterSection": "problem-requirements"
+    },
+    {
+      "type": "layers",
+      "title": "Evidence layers",
+      "items": [
+        "Problem and ownership artifacts",
+        "Data and baseline evidence",
+        "Offline evaluation and slices",
+        "System tests and SLOs",
+        "Online outcome and guardrails",
+        "Incidents, limitations and next work"
+      ],
+      "caption": "No single metric establishes full project success.",
+      "afterSection": "operations-learning"
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "nasa-systems-engineering-handbook",
+      "contribution": "Grounds requirements rationale, trade studies, verification, risk, decision reports and technical review discipline."
+    },
+    {
+      "resource": "fsdl",
+      "contribution": "Supports end-to-end ML project design, deployment, testing, monitoring and iterative production practice."
+    },
+    {
+      "resource": "stanford-cs329s",
+      "contribution": "Provides ML systems framing for data, training, serving, monitoring, failure and lifecycle trade-offs."
+    },
+    {
+      "resource": "google-technical-writing",
+      "contribution": "Supports audience-aware structure, clear terminology and front-loaded technical communication."
+    }
+  ]
 }

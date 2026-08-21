@@ -1,3 +1,3 @@
 # Ship it
 
-Clustering labels can drift with data/refits; if used operationally, define cluster stability and business meaning rather than relying on arbitrary IDs.
+Freeze transforms, centroids and mappings; repeat seeds and stability checks; monitor occupancy and distance support; align identities across retrains; retain a global fallback and prior artifact.

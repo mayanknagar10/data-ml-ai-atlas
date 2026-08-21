@@ -7,35 +7,59 @@
     "all",
     "as"
   ],
-  "interviewAnswer": "High bias means the model is too constrained and underfits; high variance means it fits training data but changes too much with the sample and generalizes poorly. Model complexity, regularization and data size shift this balance.",
+  "interviewAnswer": "Bias-variance decomposition explains expected squared prediction error at a fixed input. Across repeated training sets, error equals squared bias of the average predictor, variance of fitted predictors, and irreducible conditional noise. A rigid model can have high bias; a highly adaptive model can have high variance, but model class alone does not determine either, and modern curves need not be U-shaped. The decomposition is exact for squared loss under a defined data-generating process, not a universal formula for classification or distribution shift. I diagnose the practical trade-off with learning curves, repeated grouped or temporal validation, train-versus-validation gaps and error slices, then adjust representation, regularization, data volume or model class. I do not call label error or deployment shift 'variance' simply because performance is unstable.",
   "keyPoints": [
-    "Underfit vs overfit",
-    "Learning curves",
-    "Regularization",
-    "Cross-validation"
+    "Bias and variance are expectations over repeated training samples at a fixed prediction input.",
+    "Under squared loss, expected error decomposes into squared bias, estimator variance and irreducible noise.",
+    "Training error alone cannot estimate generalization or distinguish bias from variance.",
+    "More data often reduces variance but does not repair target misspecification or missing signal.",
+    "Distribution shift, leakage and optimization failure are separate causes, not terms to hide inside the decomposition."
   ],
   "resources": [
+    "isl",
     "stanford-cs229",
-    "statquest",
-    "google-mlcc"
+    "sklearn"
   ],
   "featured": true,
-  "why": "It connects model complexity, data size, regularization and generalization—so it is a compact test of ML maturity.",
-  "intuition": "High bias: both train and validation performance are poor. High variance: training is strong but validation is much worse.",
-  "deepDive": "Bias reflects systematic error from restrictive assumptions; variance reflects sensitivity to the sampled training set. More complex models typically reduce bias but can increase variance. Regularization, augmentation and more representative data often reduce variance.",
-  "math": "Expected test error can be decomposed conceptually into bias² + variance + irreducible noise (under squared-error assumptions).",
-  "code": "# Practical diagnostic: compare train and validation curves\n# High train error + high validation error -> likely high bias\n# Low train error + much higher validation error -> likely high variance",
+  "why": "Bias and variance provide a language for deciding whether to add flexibility, regularize, collect data or repair the problem definition. The concept is frequently reduced to a cartoon of two curves, which hides what is random, what is conditioned on and which loss permits the algebra. A rigorous view considers an algorithm trained on a random dataset and its prediction at a fixed x. That view clarifies why two equally accurate models can have different retraining stability, why averaging helps unstable learners, why more data primarily attacks estimation variance and why irreducible noise is not an excuse for poor labels. It also disciplines diagnosis: a widening train-validation gap suggests but does not prove variance; high error on both can arise from representation, optimization or target ambiguity; and temporal drift changes the distribution rather than adding a classical variance term. These distinctions guide real experiments instead of encouraging slogans.",
+  "intuition": "Imagine repeatedly collecting a new training sample, fitting the same algorithm and shooting an arrow at the true conditional mean for one input. Bias is how far the center of the arrow cloud lies from the target. Variance is how spread out the arrows are around their own center. Noise is the inherent spread of actual outcomes around the target even if its mean were known. A consistently wrong model makes a tight off-center cluster; an unstable model makes a wide cluster. One observed dataset gives only one arrow, so repeated resampling, folds or simulations are needed to learn about stability.",
+  "deepDive": "Bias-variance analysis concerns a complete learning algorithm—including preprocessing, tuning and sampling—not an estimator name in isolation. The squared-loss identity is a population expectation, while practical diagnostics are indirect finite-sample measurements. Good decisions separate approximation, estimation, optimization, measurement and shift, then choose an intervention whose mechanism matches the diagnosed source.",
+  "math": "Let μ(x)=E[Y|X=x], training set D be random, and f_D(x) the fitted prediction. With Y=μ(x)+ε, E[ε|x]=0 and Var(ε|x)=σ²(x): E_{D,Y}[(Y-f_D(x))²|x]=(μ(x)-E_D f_D(x))² + E_D[(f_D(x)-E_D f_D(x))²]+σ²(x). These are squared bias, variance and irreducible noise. Integrating over deployment X gives overall expected error. The cross terms vanish by centering; changing loss generally changes the decomposition.",
+  "code": "observed={}; rng_test=np.random.default_rng(99)\nfor d,P in preds.items():\n    y_test=truth+rng_test.normal(0,noise_sd,size=P.shape)\n    observed[d]=float(np.mean((y_test-P)**2))",
   "commonMistakes": [
-    "Saying “we want both bias and variance to be zero.” Irreducible noise and finite data prevent this ideal.",
-    "Calling every train/validation gap “overfitting” without checking split quality or leakage."
+    {
+      "misconception": "Bias is training error and variance is the train-test gap.",
+      "correction": "Bias and variance are repeated-sample quantities. Training levels and gaps are useful but indirect diagnostics influenced by noise, optimization and shift."
+    },
+    {
+      "misconception": "More data always reduces bias.",
+      "correction": "More representative independent data mainly reduces estimation variance; it does not make an incapable representation express the missing function."
+    },
+    {
+      "misconception": "Irreducible noise means label quality cannot improve.",
+      "correction": "Noise is conditional on the available information and measurement process. Better sensors, targets or features can change it."
+    },
+    {
+      "misconception": "Test error must be U-shaped in model complexity.",
+      "correction": "That is a useful classical heuristic, not a theorem for every learning regime; interpolation and double descent can produce other shapes."
+    }
   ],
   "followUps": [
-    "How does regularization affect bias and variance?",
-    "What do learning curves tell you?",
-    "Would more data help high bias or high variance more?"
+    {
+      "question": "Why is bias squared in the decomposition?",
+      "answer": "Squared loss expands the mean prediction error, and the systematic difference μ-Ef is itself squared after centered cross terms vanish."
+    },
+    {
+      "question": "Does regularization always increase bias?",
+      "answer": "Often it constrains the estimator and can increase approximation-like bias while reducing variance, but finite-sample behavior need not be monotone."
+    },
+    {
+      "question": "How does bagging reduce variance?",
+      "answer": "It averages fitted predictors so uncorrelated parts of their sampling fluctuations cancel; correlated error creates a nonzero floor."
+    }
   ],
-  "production": "Diagnose with train/validation curves and slices before changing architecture. Sometimes the “variance problem” is actually a bad split or domain shift.",
-  "workedExample": "A very shallow tree can underfit (high bias); an unrestricted tree can memorize training data (high variance); depth/regularization balances the two.",
+  "production": "Version the complete resampling, preprocessing, tuning and fitting algorithm, not only the final weights. On every candidate retrain, measure performance and calibration across honest time or entity splits, variation across seeds or folds, prediction churn, subgroup decisions and resource use. Monitor production feature and target drift separately from retraining instability, and backfill delayed errors by cohort. Keep learning-curve and stability evidence with the model lineage. Require code and convergence checks before interpreting high error as model bias. Canary promotions and compare individual decision changes, not only aggregate score. Retain the prior artifact and training snapshot for rollback. Set refresh cadence from measured process change and decision cost; neither permanent freezing nor automatic frequent retraining is universally low-variance or low-bias.",
+  "workedExample": "At x, the true conditional mean is 10 and outcome noise variance is 4. Across repeated training sets, model predictions average 8 with variance 3. Expected squared error is (10-8)^2+3+4=11. The 4 units of squared bias invite more appropriate representation; the 3 units of variance may respond to more data or averaging; no predictor of the conditional mean can remove the final 4 under the assumed information.",
   "visual": {
     "type": "curve",
     "title": "Bias–variance trade-off",
@@ -104,6 +128,131 @@
     "yLabel": "error"
   },
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "lab": {
+    "language": "python",
+    "goal": "Estimate bias squared, variance and noise across repeated polynomial fits and verify the squared-error decomposition empirically.",
+    "buildIt": "import numpy as np\nrng=np.random.default_rng(12); x_grid=np.linspace(-1,1,80); truth=np.sin(np.pi*x_grid); noise_sd=0.25\ndef fit_predict(degree):\n    x=rng.uniform(-1,1,35); y=np.sin(np.pi*x)+rng.normal(0,noise_sd,len(x))\n    coef=np.polyfit(x,y,degree); return np.polyval(coef,x_grid)\npreds={d:np.array([fit_predict(d) for _ in range(250)]) for d in (1,3,12)}\ndef parts(P):\n    mean=P.mean(axis=0); bias2=np.mean((mean-truth)**2); var=np.mean(np.var(P,axis=0)); return bias2,var\ndecomp={d:parts(P) for d,P in preds.items()}",
+    "useIt": "observed={}; rng_test=np.random.default_rng(99)\nfor d,P in preds.items():\n    y_test=truth+rng_test.normal(0,noise_sd,size=P.shape)\n    observed[d]=float(np.mean((y_test-P)**2))",
+    "verifyIt": "for d,(bias2,var) in decomp.items():\n    expected=bias2+var+noise_sd**2\n    assert abs(observed[d]-expected)<0.03\nassert decomp[1][0]>decomp[3][0]\nassert decomp[12][1]>decomp[3][1]\nassert all(np.isfinite(P).all() for P in preds.values())",
+    "shipIt": "Repeat the complete pipeline across realistic windows and entity splits, record prediction churn and calibration, distinguish drift from retraining variance, and keep prior artifacts for rollback."
+  },
+  "description": "Bias-variance decomposition separates expected squared prediction error into systematic error of the average fitted predictor, instability across training samples and irreducible outcome noise. This chapter derives the identity at a fixed input, defines every expectation, then integrates it over a deployment population. It distinguishes approximation, estimation, optimization, measurement and distribution-shift errors and explains why the familiar U-shaped curve is a heuristic rather than a law. Practical sections cover train-validation gaps, repeated cross-validation, learning curves, bootstrap stability, regularization, ensembling, more data, feature improvements, label quality and double descent. Worked examples compute a numeric decomposition and diagnose a model that appears high-bias only because optimization failed. The lab repeatedly fits polynomial regressions to simulated samples and verifies that empirical test error matches bias squared plus variance plus noise. Production guidance monitors retraining dispersion, segment errors, drift and decision stability. The result is an intervention framework: do not add complexity, data or regularization until evidence identifies the mechanism those changes can actually address.",
+  "prerequisites": [
+    "expectation-variance",
+    "cross-validation"
+  ],
+  "learningObjectives": [
+    "Derive the fixed-input squared-loss bias-variance-noise identity.",
+    "Distinguish approximation, estimation, optimization, measurement and shift errors.",
+    "Use repeated validation and learning curves without treating them as direct decomposition estimates.",
+    "Choose data, regularization, ensembling or representation interventions from a mechanism-based diagnosis."
+  ],
+  "deepSections": [
+    {
+      "id": "decomposition",
+      "title": "Define the randomness before decomposing error",
+      "body": "Fix an input x and let D denote a random training sample drawn by a specified process. Training algorithm A—including preprocessing and tuning—produces f_D(x). The target conditional mean is μ(x). Add and subtract E_D[f_D(x)] inside Y-f_D(x), square and take expectations. Centered cross terms vanish, leaving noise Var(Y|x), squared bias between μ and the average fitted prediction, and variance of fitted predictions around their average. Bias here is not social bias and not a single residual; variance is not outcome variance or metric variance from one split. Both depend on x, sample size, algorithm, hyperparameters and sampling process. Overall risk averages the conditional decomposition over the deployment distribution of X. If deployment changes, the weighting and possibly μ change. Absolute, logistic and ranking losses do not share this exact additive identity, though analogous stability and approximation questions remain useful."
+    },
+    {
+      "id": "sources-of-error",
+      "title": "Separate approximation, estimation and implementation failures",
+      "body": "Approximation bias arises because the hypothesis class or representation cannot express the relevant conditional mean. Estimation error arises because finite data choose an imperfect member of that class. Optimization error arises when training fails to find the intended empirical solution. Measurement error, leakage, selection and ambiguous labels alter the problem itself. A linear model with high training loss may lack nonlinear features, but it may also be under-optimized, heavily regularized, fed broken data or evaluated against stochastic labels. A flexible model with a large train-validation gap may be unstable, but related rows across folds can hide the gap and temporal shift can create one even for a stable estimator. Diagnose with controlled comparisons: verify code and convergence, compare training to honest validation, vary capacity and regularization, increase sample size, audit labels and features, and repeat across independent units. Name the mechanism before prescribing a remedy."
+    },
+    {
+      "id": "diagnostic-curves",
+      "title": "Learning and validation curves are indirect evidence",
+      "body": "A validation curve changes one capacity or regularization control and plots training and held-out performance. Converging poor scores can suggest insufficient representation or unavoidable noise; a persistent gap can suggest estimation variance. A learning curve increases training sample size while keeping an honest validation distribution. If validation improves and the gap narrows, more representative data may help. If both plateau badly, data volume alone may not repair specification. Curves need uncertainty across repeated grouped or chronological splits because one favorable partition can mislead. Every preprocessing and hyperparameter choice must be fit inside the training portion. Reusing the same validation set for many iterations adapts to it. Report metric variability and decision-level consequences, not only mean score. Curves describe the tested range and distribution; extrapolating their shape to much larger datasets or future regimes is an assumption."
+    },
+    {
+      "id": "interventions",
+      "title": "Match interventions to the error mechanism",
+      "body": "To reduce approximation bias, enrich features, change the model class, weaken excessive regularization or redefine a misspecified target. To reduce estimation variance, collect more independent representative units, strengthen regularization, simplify the class, average diverse models or remove unstable features. Better labels reduce measurement noise and may alter both apparent bias and irreducible noise. Ensembling correlated models has limited variance benefit; bagging helps unstable learners more than already stable ones. Cross-validation improves selection evidence but does not itself change the final estimator unless predictions are ensembled. More rows from the same entity may add less independent information than new entities. Modern overparameterized systems can exhibit interpolation and double-descent shapes, so complexity versus test error need not be a single U. The decomposition remains valid under its conditions even when the components vary non-monotonically."
+    },
+    {
+      "id": "production-stability",
+      "title": "Monitor the learning algorithm, not just one artifact",
+      "body": "A deployed model is periodically retrained, so operational risk includes variability across windows, seeds and data revisions. Version the full sampling and fitting algorithm. Before promotion, compare predictions, coefficients or feature reliance, calibration, subgroup decisions and resource use across plausible retrains. Large churn with similar aggregate score can destabilize individual decisions. Monitor input and target drift separately from retraining dispersion. Delayed labels require backfilled performance by cohort and time. Use champion-challenger and canary processes, retain previous data and model lineage, and define rollback thresholds for both quality and decision stability. Avoid freezing an outdated model solely because it is stable; stability around the wrong function is bias. Conversely, do not celebrate responsiveness to every small batch fluctuation. The refresh cadence and smoothing policy should reflect how quickly the real process changes and how costly decision churn is."
+    }
+  ],
+  "workedExamples": [
+    {
+      "title": "A numeric fixed-input decomposition",
+      "body": "At x, the true conditional mean is 10 and outcome noise variance is 4. Across repeated training sets, model predictions average 8 with variance 3. Expected squared error is (10-8)^2+3+4=11. The 4 units of squared bias invite more appropriate representation; the 3 units of variance may respond to more data or averaging; no predictor of the conditional mean can remove the final 4 under the assumed information."
+    },
+    {
+      "title": "Optimization masquerades as bias",
+      "body": "A neural model has high training and validation error, so the team proposes more layers. A gradient check reveals a zero learning rate after a configuration migration. The hypothesis class was expressive, but optimization error prevented fitting. Fixing the pipeline lowers both errors. The bias-variance slogan was not wrong; it was too coarse to diagnose the actual failure."
+    }
+  ],
+  "exercises": [
+    {
+      "prompt": "Bias is 2, variance is 5 and noise variance is 3. What is expected squared error?",
+      "solution": "Bias enters squared, so error is 2^2+5+3=12."
+    },
+    {
+      "prompt": "A learning curve gap narrows with more independent data. What does that suggest?",
+      "solution": "Estimation variance is likely material and more representative data may help, though the curve remains indirect evidence rather than a formal decomposition."
+    },
+    {
+      "prompt": "Why is one train-test split insufficient to measure estimator variance?",
+      "solution": "Variance concerns predictions across repeated training samples. One split supplies one fitted model and conflates sampling with the particular partition."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "compare",
+      "title": "Two repeated-sample error patterns",
+      "left": {
+        "title": "High squared bias",
+        "items": [
+          "Tight prediction cloud",
+          "Center misses truth",
+          "Stable but systematically wrong",
+          "Improve representation"
+        ]
+      },
+      "right": {
+        "title": "High variance",
+        "items": [
+          "Wide prediction cloud",
+          "Center may be accurate",
+          "Retraining instability",
+          "More data or averaging"
+        ]
+      },
+      "caption": "Bias and variance describe different aspects of predictions across repeated training sets.",
+      "afterSection": "decomposition"
+    },
+    {
+      "type": "flow",
+      "title": "Diagnosis before intervention",
+      "items": [
+        "Verify data and optimization",
+        "Measure honest train and validation behavior",
+        "Repeat across independent splits",
+        "Vary capacity and sample size",
+        "Name the error mechanism",
+        "Choose a matching intervention"
+      ],
+      "caption": "A train-validation gap is one clue inside a controlled diagnostic sequence.",
+      "afterSection": "diagnostic-curves"
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "isl",
+      "contribution": "Provides the statistical-learning decomposition, flexibility trade-off and resampling diagnostics."
+    },
+    {
+      "resource": "stanford-cs229",
+      "contribution": "Supports the generalization and regularization framing."
+    },
+    {
+      "resource": "sklearn",
+      "contribution": "Grounds practical learning-curve, validation and estimator-comparison workflows."
+    }
+  ]
 }

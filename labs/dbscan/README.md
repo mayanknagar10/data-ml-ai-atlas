@@ -1,6 +1,6 @@
 # DBSCAN & Density-based Clustering — Code Lab
 
-Recover density-based clusters and noise points.
+Implement DBSCAN expansion from a distance matrix, compare with scikit-learn, and verify core, noise and connectivity invariants.
 
 ## 1. Build it
 

@@ -8,33 +8,60 @@
     "de",
     "as"
   ],
-  "interviewAnswer": "Vector data represents discrete geometry as points, lines and polygons; raster data represents space as a grid of cells. The correct representation depends on the phenomenon and operations.",
+  "interviewAnswer": "Vector data represents discrete features as points, lines and polygons with attributes; raster data represents a regularly sampled field as cells in one or more bands. I choose from the phenomenon and operations, not from file extension. Boundaries, networks and identifiable objects often fit vector topology; imagery, elevation, temperature and continuous surfaces fit rasters. Resolution is a measurement and aggregation choice: a pixel records support over an area, not an infinitely precise point. Conversions are lossy—rasterization depends on grid alignment and inclusion rules, while polygonization inherits pixel stair-steps. In production I preserve CRS, extent, affine transform, resolution, nodata mask, band units, geometry validity and lineage; tile and window large rasters, spatially index vectors, and test mass or class conservation across transformations.",
   "keyPoints": [
-    "Points/lines/polygons",
-    "Raster grids",
-    "Resolution",
-    "Geometry attributes"
+    "Vector geometries model discrete objects; rasters model sampled fields on a grid, though many phenomena admit both views.",
+    "A raster cell has spatial support, resolution, alignment, CRS, bands, datatype and nodata semantics.",
+    "Vector validity and topology distinguish mere coordinate arrays from trustworthy spatial features.",
+    "Rasterization, resampling and polygonization introduce scale- and rule-dependent information loss.",
+    "Cloud-efficient processing depends on spatial windows, tiles, overviews, chunk alignment and metadata contracts."
   ],
   "resources": [
     "geopandas-docs",
-    "geodata-science-book"
+    "geodata-science-book",
+    "ogc-simple-features",
+    "rasterio-docs"
   ],
   "featured": false,
-  "why": "Spatial representation determines storage, joins, visualization and modeling choices.",
-  "intuition": "Roads and administrative boundaries are naturally vector; satellite imagery and elevation are naturally raster.",
-  "deepDive": "Vector analysis uses geometry/topology; raster analysis uses aligned grids. Converting between them can lose detail or introduce resolution assumptions.",
-  "math": "",
+  "why": "Spatial analysis starts with a representation choice that silently defines what can be measured. A coastline stored as a line supports length and adjacency reasoning; the same coast in a land-cover grid supports neighborhood filters and image models but its length changes with resolution. Treating a raster as a normal table loses cell footprint, alignment and nodata meaning. Treating polygons as arbitrary lists loses holes, rings, topology and validity. Understanding both models prevents invalid joins, biased zonal statistics, memory explosions and conversions that appear visually plausible while changing totals. It also guides system design: vectors favor feature and spatial-index access, while rasters favor tiled array operations and multiresolution reads.",
+  "intuition": "A vector map is like a collection of named cut-outs: a city point, a road path, a parcel boundary. A raster is like graph paper laid over the world, with each square storing a value such as elevation or reflectance. Finer graph paper shows smaller patterns but costs more storage and does not create information that the sensor never observed. Converting cut-outs to cells asks which cells count as covered; converting cells to polygons traces blocky boundaries. Neither is a neutral serialization change.",
+  "deepDive": "Vector and raster are data models with different error, topology and access patterns. Reliable work defines geometry or grid semantics, validates metadata and masks, chooses scale from the decision, and treats every conversion as an explicit measurement operation. Hybrid pipelines are normal, but alignment and lineage must remain visible.",
+  "math": "A raster geotransform maps pixel column c and row r to coordinates with an affine map: x=a c+b r+c0 and y=d c+e r+f0, commonly with b=d=0 and e<0 for north-up grids. Pixel-center and pixel-corner conventions differ by half a cell. A zonal total for density z_i over equal-area cells is Σ_i z_i A_i over included support, not merely Σ_i z_i. Vector polygon area and length are meaningful only in an appropriate metric CRS or geodesic calculation. Rasterization approximates indicator 1_G(x) over cells using center, all-touched or fractional coverage rules.",
   "code": "",
   "commonMistakes": [
-    "Treating longitude/latitude as ordinary Euclidean x/y.",
-    "Assuming higher raster resolution always means higher information quality."
+    {
+      "misconception": "A GeoTIFF is spatial because it has pixels.",
+      "correction": "Spatial meaning also requires a valid transform, CRS, band semantics and nodata contract."
+    },
+    {
+      "misconception": "Higher raster resolution always means higher accuracy.",
+      "correction": "It can oversample uncertain source data and increase cost without adding information."
+    },
+    {
+      "misconception": "Rasterization is reversible.",
+      "correction": "Grid alignment and inclusion discard boundary detail; polygonization cannot recover the original geometry."
+    },
+    {
+      "misconception": "Zero and nodata are interchangeable.",
+      "correction": "Zero may be a valid measurement; use explicit masks and variable semantics."
+    }
   ],
   "followUps": [
-    "When would you rasterize polygons?",
-    "How do vector indexes work?"
+    {
+      "question": "When would you choose raster over vector?",
+      "answer": "For regularly sampled continuous fields, imagery and neighborhood array operations, especially when tiled window access dominates."
+    },
+    {
+      "question": "What is the difference between pixel center and pixel area?",
+      "answer": "A center convention treats the value as located at one point; an area-support convention summarizes the entire cell footprint."
+    },
+    {
+      "question": "How do you validate a vector-to-raster conversion?",
+      "answer": "Check CRS and alignment, compare area or mass under the chosen rule, inspect boundary cases and quantify resolution sensitivity."
+    }
   ],
-  "production": "Choose formats/resolution based on query, model and scale.",
-  "workedExample": "Store shops as points and land cover as raster, then aggregate nearby raster cells around each shop.",
+  "production": "Publish a dataset contract containing feature or band semantics, CRS, bounds, geometry type or affine transform, resolution, dtype, units, scale, nodata and time. Reject missing or contradictory spatial metadata. For vectors, validate geometry and IDs and build a versioned index. For rasters, use tiled windows, masks, compression and overviews matched to access patterns. Every conversion records source checksum, target grid, inclusion or resampling rule and conservation tests. Monitor invalid or empty geometry, bounds drift, nodata share, pixel distributions, tile read amplification, file counts and lineage completeness. Restrict precise sensitive locations, aggregate with privacy review, and keep immutable source plus previous derived manifests for rollback.",
+  "workedExample": "A one-kilometer land-cover raster and a parcel polygon overlap at the parcel edge. Center-in-cell rasterization may assign zero boundary cells; all-touched includes every intersected cell and overstates small parcels; fractional coverage weights each cell by intersected area. For categorical labels, majority or mode may be appropriate. For population counts, area weighting can still be wrong if people are concentrated within cells, so ancillary dasymetric information may be required.",
   "visual": {
     "type": "compare",
     "title": "Vector and raster representations",
@@ -59,6 +86,146 @@
     "caption": "The representation changes which spatial operations are natural and efficient."
   },
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "Spatial data is commonly represented as vector features or raster grids, and the choice determines storage, operations and error. This chapter defines point, line, polygon, multi-geometry and geometry-collection models alongside raster width, height, bands, datatype, transform, CRS, resolution and nodata masks. It explains feature attributes, geometry validity, rings and holes, topology, dimensionality and the distinction between a conceptual feature and its file encoding. For rasters it covers pixel-center versus pixel-area interpretation, north-up affine transforms, multi-band imagery, categorical versus continuous values, masks, scale, offset and overviews. It compares vector indexing with raster tiling and window reads, and it analyzes rasterization, polygonization, vectorization, resampling and zonal statistics as lossy transformations with explicit inclusion rules. The lab creates a synthetic grid and polygon, performs center and fractional-style aggregation, and verifies affine coordinates, masks and area totals using NumPy and Shapely. Production guidance covers GeoPackage, Parquet and GeoTIFF-style metadata, cloud-optimized layouts, chunking, compression, schema and CRS validation, invalid geometries, nodata leakage, lineage, privacy and reversible rebuilds. The goal is to make representation a deliberate measurement decision rather than an accidental consequence of whichever file arrived first.",
+  "prerequisites": [
+    "numpy-vectorization",
+    "data-quality",
+    "vectors-matrices"
+  ],
+  "learningObjectives": [
+    "Choose vector, raster or a hybrid representation from phenomenon, query and error requirements.",
+    "Interpret affine transforms, resolution, pixel support, bands, datatype and nodata masks correctly.",
+    "Evaluate information loss and conservation when rasterizing, polygonizing, resampling or computing zonal summaries.",
+    "Design scalable tiled or indexed storage with validated spatial metadata and lineage."
+  ],
+  "deepSections": [
+    {
+      "id": "vector-model",
+      "title": "Vector features combine identity, attributes and valid geometry",
+      "body": "The OGC simple-feature model distinguishes Point, LineString, Polygon and multi-geometries. A polygon has an exterior ring and optional interior rings for holes; ring orientation conventions vary by format, but closure, non-self-intersection and nesting matter. A feature binds geometry to an identifier and attributes. Lines can represent paths without network connectivity unless nodes and direction are modeled. Boundaries shared by separately digitized polygons may contain gaps or overlaps, while topological models can encode shared edges explicitly. Z coordinates do not automatically turn planar predicates into 3D operations; many libraries remain 2D. Geometry validity repair can move boundaries or split features, so log and review it rather than silently applying a buffer trick. Use multipart geometry when one logical entity has disjoint pieces, and decide whether aggregation preserves or dissolves internal borders."
+    },
+    {
+      "id": "raster-model",
+      "title": "A raster is an array plus georeferencing and validity semantics",
+      "body": "An array alone is not a spatial raster. Width and height locate indices; an affine transform maps indices to coordinates; CRS gives those coordinates meaning; bands have variables, units, timestamps, scale and offset; a mask distinguishes invalid support from valid numeric zero. Pixel values may describe an area average, a point sample at the center, a class, a count or sensor response. Cell size in degrees is not constant metric area. Nodata can be a sentinel, alpha band, internal mask or external mask, and combining these incorrectly contaminates statistics. Rows typically increase downward while northing decreases, a common source of flipped outputs. Overviews precompute coarser levels for display or approximate analysis. Tiling and internal block size determine efficient windows; reading a tiny window may still read whole compressed blocks."
+    },
+    {
+      "id": "conversion-scale",
+      "title": "Conversions encode inclusion, interpolation and scale assumptions",
+      "body": "Rasterization asks which cells represent a geometry. Center inclusion is conservative for thin features; all-touched expands them; fractional coverage better preserves area but costs more. Lines need burn width or subpixel treatment. Polygonization groups connected equal-valued cells, with four- versus eight-neighbor connectivity changing components and boundaries inheriting grid stair-steps. Resampling continuous fields may use bilinear or cubic interpolation, while categorical codes require nearest neighbor or mode; averaging class IDs is meaningless. Aggregation can preserve sums, means or extrema depending on whether values are counts, densities or intensive variables. Reprojection changes grid shape and forces resampling. Modifiable areal unit and ecological fallacy problems mean conclusions can change with cell size and zoning. Always state the target support and conservation quantity."
+    },
+    {
+      "id": "storage-operations",
+      "title": "Efficient systems align access patterns with the data model",
+      "body": "Vector stores need stable feature IDs, geometry and attribute schemas, CRS, bounds and often an R-tree or similar index. Columnar geospatial formats reduce attribute scans but still need spatial partition metadata. Rasters scale through internal tiling, compression, overviews and window or chunk reads; cloud-optimized layouts place headers and tile offsets so range requests avoid full downloads. Chunk shapes should match common queries and compute frameworks, while too many tiny files overwhelm metadata services. Validate bounds, CRS, geometry types, validity, cell transform, band count, dtype, nodata and sample values at ingestion. Keep source and derived products immutable with a manifest, transformation parameters and checksums. Sensitive points may reveal homes or facilities; aggregation and masking require attack-aware privacy review, not visual obscurity alone."
+    }
+  ],
+  "workedExamples": [
+    {
+      "title": "Continuous elevation resampling",
+      "body": "Bilinear interpolation can produce a sensible smooth elevation estimate, but it must respect nodata and may smooth peaks."
+    },
+    {
+      "title": "Categorical land-cover resampling",
+      "body": "Nearest or majority preserves codes; bilinear interpolation would invent category numbers with no semantic meaning."
+    }
+  ],
+  "lab": {
+    "language": "python",
+    "goal": "Represent a raster grid and vector polygon, map cells through an affine transform, and verify masked zonal aggregation and area semantics.",
+    "buildIt": "import numpy as np\nfrom shapely.geometry import Point, Polygon\nraster=np.arange(1,26,dtype=float).reshape(5,5); valid=np.ones_like(raster,dtype=bool); valid[0,0]=False\nx0,y0,dx,dy=100.0,200.0,10.0,-10.0\ndef center(row,col): return x0+(col+.5)*dx, y0+(row+.5)*dy\nzone=Polygon([(110,190),(140,190),(140,160),(110,160)])\ninside=np.zeros_like(valid)\nfor row in range(raster.shape[0]):\n    for col in range(raster.shape[1]): inside[row,col]=zone.covers(Point(*center(row,col)))\nselected=inside&valid; zonal_sum=float(raster[selected].sum()); zonal_mean=float(raster[selected].mean())",
+    "useIt": "# Shapely supplies exact geometry predicates while NumPy performs masked array aggregation.\ncell_area=abs(dx*dy); represented_area=float(selected.sum()*cell_area); expected_bounds=(110.0,160.0,140.0,190.0)",
+    "verifyIt": "assert center(0,0)==(105.0,195.0) and center(4,4)==(145.0,155.0)\nassert zone.bounds==expected_bounds and selected.sum()==9\nassert represented_area==zone.area==900.0\nassert zonal_sum==117.0 and zonal_mean==13.0\nassert not selected[0,0] and raster[0,0]==1.0\n# Moving the grid changes which centers represent the polygon.\nold=center(1,1); x0+=5; shifted=center(1,1); assert shifted[0]-old[0]==5; x0-=5",
+    "shipIt": "Version CRS, transform, resolution, nodata and band semantics with every raster; record rasterization rules, window reads and conservation tests, and retain source geometry for reproducible rebuilds."
+  },
+  "exercises": [
+    {
+      "prompt": "Why is bilinear resampling inappropriate for land-cover codes?",
+      "solution": "Codes are categories without numeric distance; interpolation invents meaningless intermediate values."
+    },
+    {
+      "prompt": "What metadata maps a pixel to the world?",
+      "solution": "The affine transform plus CRS, with an explicit center or corner convention."
+    },
+    {
+      "prompt": "Why can coastline length change with raster resolution?",
+      "solution": "Finer grids resolve more boundary detail; discretized perimeter is scale-dependent."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "compare",
+      "title": "Vector and raster representations",
+      "left": {
+        "title": "Vector",
+        "items": [
+          "Feature identity",
+          "Points, lines, polygons",
+          "Exact-style boundaries",
+          "Spatial-index access"
+        ]
+      },
+      "right": {
+        "title": "Raster",
+        "items": [
+          "Regular cell support",
+          "Bands and masks",
+          "Resolution-dependent",
+          "Tiled array access"
+        ]
+      },
+      "caption": "The phenomenon and query determine which representation and error model fit.",
+      "afterSection": "conversion-scale"
+    },
+    {
+      "type": "matrix",
+      "title": "Raster cells and nodata",
+      "rows": [
+        "row 0",
+        "row 1",
+        "row 2"
+      ],
+      "cols": [
+        "col 0",
+        "col 1",
+        "col 2"
+      ],
+      "cells": [
+        [
+          "nodata",
+          "2",
+          "3"
+        ],
+        [
+          "6",
+          "7",
+          "8"
+        ],
+        [
+          "11",
+          "12",
+          "13"
+        ]
+      ],
+      "caption": "The numeric array needs a separate validity mask so a genuine zero is not mistaken for missing support.",
+      "afterSection": "raster-model"
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "ogc-simple-features",
+      "contribution": "Grounds interoperable vector geometry classes, spatial-reference association and topological feature concepts."
+    },
+    {
+      "resource": "rasterio-docs",
+      "contribution": "Supports raster transforms, windows, bands, masks, nodata, resampling and tiled processing behavior."
+    },
+    {
+      "resource": "geopandas-docs",
+      "contribution": "Provides the idiomatic vector-data model and geometry-aware tabular workflow used in Python."
+    }
+  ]
 }

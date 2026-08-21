@@ -7,36 +7,60 @@
     "cv",
     "mle"
   ],
-  "interviewAnswer": "Lead with the physical problem and downstream use, then explain the 2D/3D constraint, model stages, interpolation/fusion, your contribution and validation. Be explicit about hallucination risk and what the domain expert validated.",
+  "interviewAnswer": "I frame scientific reconstruction or super-resolution as an inverse problem, not image beautification. A latent high-resolution field x is observed through a forward operator y=H(x)+noise that includes optics, sampling, blur, missing angles or detector effects. I start with the scientific quantity and an honest baseline—interpolation, regularized inversion or domain software—then split by specimen, acquisition session and instrument to prevent patch leakage. Evaluation separates data consistency H(x_hat)≈y, full-reference fidelity where truth exists, task validity and perceptual realism. A GAN or diffusion prior may produce plausible high frequencies that are scientifically false, so uncertainty, blinded expert review and downstream measurements are required. Deployment preserves raw data, model and calibration versions, out-of-distribution detection, deterministic fallback and reconstruction audit trails. I never claim recovered detail beyond evidence supported by the acquisition process.",
   "keyPoints": [
-    "Problem before architecture",
-    "Why each stage exists",
-    "Own contribution",
-    "Domain validation"
+    "Define the physical forward model and scientific decision before selecting a network.",
+    "Patch-level random splits leak specimen and acquisition signatures; split at the independent experimental unit.",
+    "Pixel, structural, perceptual, data-consistency and downstream scientific metrics answer different questions.",
+    "Perceptual realism is not factual or physical correctness; generative priors can hallucinate convincing structures.",
+    "Reproducible deployment versions calibration, preprocessing, model, uncertainty, raw inputs and fallback."
   ],
   "resources": [
     "stanford-cs231n",
     "fsdl",
     "stanford-cs329s",
-    "paper-cyclegan"
+    "paper-cyclegan",
+    "srgan-paper",
+    "ssim-paper"
   ],
   "featured": false,
-  "why": "This case demonstrates the trade-offs in scientific 3D reconstruction: fidelity, cross-slice consistency, compute cost, uncertainty and downstream validation.",
-  "intuition": "Start from the sensing/measurement gap, then compare 2D slice-wise, 3D patch-wise and learned upsampling strategies. The important question is not only whether output looks sharper, but whether it preserves structures required by downstream measurement or simulation.",
-  "deepDive": "A defensible design separates acquisition constraints from modeling choices. A pipeline may use deterministic interpolation as a baseline, 2D or 3D neural enhancement, multi-view fusion, uncertainty estimates and domain-specific validation. Patch-wise 3D models improve volumetric context but increase memory and stitching complexity. Generative models may recover realistic detail but require explicit checks against hallucinated or physically inconsistent structure. Evaluation should combine image metrics with downstream domain metrics and comparison to simple baselines.",
-  "workedExample": "A low-resolution volumetric scan can be reconstructed through plane-wise or patch-wise enhancement, interpolation or learned upsampling, cross-view fusion and domain-specific validation before downstream simulation or measurement.",
+  "why": "Reconstruction systems sit between measurement hardware and scientific conclusions. A sharper image can change counts, morphology, diagnosis or physical interpretation, yet the inverse problem may have many high-resolution solutions consistent with the low-resolution observation. This makes ordinary visual demos dangerous. The case study integrates computer vision, experimental design, inverse problems, uncertainty and production ML. It teaches a transferable habit: model the data-generating and degradation process, preserve independent evaluation units, verify both observation consistency and decision utility, and make unsupported detail visible rather than hiding it behind perceptual quality.",
+  "intuition": "A blurred, downsampled image is like hearing a chord through a muffled microphone. Many original sounds could produce the recording. A learned prior proposes likely originals from past examples, but likelihood in the training domain is not proof about this specimen. The reconstruction should fit the recorded measurements, remain stable to perturbations and preserve the scientific quantities that matter. When several plausible outputs differ, that disagreement is information, not an inconvenience to average away silently.",
+  "deepDive": "This case study treats learned reconstruction as a constrained scientific inference pipeline. It joins the physical observation model, leakage-resistant datasets, diverse baselines, fidelity and task metrics, uncertainty and operational provenance. Generative sharpness is evaluated separately from evidence-backed structure, with safe fallbacks and raw-data preservation.",
+  "workedExample": "A microscopy project cuts 3D volumes into thousands of overlapping patches. Random patch splitting produces spectacular validation because adjacent patches from the same specimen share structures and acquisition noise. Re-splitting by specimen and microscope session lowers PSNR and exposes a calibration shift. A perceptual model looks sharper than bicubic interpolation but invents thin filaments in blank regions. The team promotes a regularized model with slightly lower visual sharpness, a data-consistency check, uncertainty map and bicubic fallback for unfamiliar sessions.",
   "commonMistakes": [
-    "Treating visual sharpness as proof of scientific correctness.",
-    "Ignoring interpolation or bicubic/trilinear baselines.",
-    "Evaluating random neighboring patches across train/test and leaking spatial structure."
+    {
+      "misconception": "Randomly split extracted patches.",
+      "correction": "Split independent specimens and sessions first, then generate patches within folds."
+    },
+    {
+      "misconception": "Use sharper appearance as scientific proof.",
+      "correction": "Validate against observation physics, independent truth and downstream measurements."
+    },
+    {
+      "misconception": "Treat CycleGAN correspondence as paired supervision.",
+      "correction": "Cycle consistency constrains domains but does not guarantee sample-specific factual preservation."
+    },
+    {
+      "misconception": "Discard raw data after reconstruction.",
+      "correction": "Keep immutable measurements and full provenance so outputs can be audited and regenerated."
+    }
   ],
   "followUps": [
-    "When would you prefer a 2D model to a 3D model?",
-    "How would you quantify uncertainty in reconstructed regions?",
-    "Which image metrics can disagree with downstream scientific validity?",
-    "How would you productionize a large-volume reconstruction pipeline?"
+    {
+      "question": "Why can PSNR reward blur?",
+      "answer": "Squared error favors an average of plausible fine details, which reduces pixel error but smooths uncertain structure."
+    },
+    {
+      "question": "How do you detect hallucination?",
+      "answer": "Use phantoms, negative controls, forward consistency, stochastic disagreement, independent modalities and task-specific expert review."
+    },
+    {
+      "question": "What is the safest fallback?",
+      "answer": "A validated deterministic reconstruction or raw-data workflow whose limitations are known and whose output is clearly labeled."
+    }
   ],
-  "production": "For production, use a versioned batch pipeline: validate volume metadata, tile or patch consistently, run deterministic preprocessing and a versioned GPU model, stitch/postprocess outputs, record provenance and uncertainty, run domain quality gates, store the reconstructed volume and expose job status/results through an API or internal application.",
+  "production": "Version the acquisition contract, calibration, specimen split, patch generator, degradation simulation, model, dependencies and evaluation suite. Preserve raw measurements and derived lineage. Gate inputs on instrument, shape, intensity, noise and metadata; compute forward residual and uncertainty; route unsupported cases to a deterministic baseline or expert review. Shadow and canary new models on phantoms and stable controls. Monitor data consistency, spectra, downstream measurements, site and specimen slices, runtime and memory. Provide one-click rollback and a mechanism to identify every analysis produced by a faulty version. Label reconstructions as derived and restrict sensitive imaging data.",
   "visual": {
     "type": "flow",
     "title": "Scientific 3D reconstruction case",
@@ -53,6 +77,132 @@
     "orientation": "horizontal"
   },
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "math": "Write y=Hx+ε for a linearized degradation, or y=H(x;θ)+ε with calibration θ. Classical reconstruction minimizes ||H(x)-y||²_{Σ^{-1}}+λR(x). A learned model fφ(y) replaces or parameterizes the prior. MSE=n^{-1}||x_hat-x||² and PSNR=10log10(L²/MSE) measure pixel error; SSIM compares local luminance, contrast and structure but remains full-reference and task-dependent. Data consistency uses ||H(x_hat)-y|| relative to noise. For stochastic outputs, calibration tests whether intervals or ensembles cover held-out truth. Downstream metrics evaluate measurements g(x_hat), not only appearance.",
+  "description": "Scientific 3D reconstruction and super-resolution are inverse problems in which incomplete or degraded measurements are mapped to a higher-resolution latent field. This case study begins with the acquisition operator, point-spread function, sampling geometry, noise and calibration, then defines the scientific measurement or decision that reconstruction must support. It builds baselines from interpolation and regularized inversion before learned residual, adversarial or unpaired approaches. Dataset design covers specimen, patient, site, session and instrument grouping, patch extraction after splitting, synthetic degradation mismatch and paired versus unpaired supervision. Evaluation separates MSE and PSNR, SSIM, perceptual preference, forward-model consistency, morphology, counts and blinded domain review. It highlights the perception–distortion trade-off and the distinction between plausible realism and factual physical correctness. The lab simulates blur and downsampling, compares nearest and regularized reconstructions, verifies observation consistency and shows that an unconstrained sharpened result can worsen physical agreement. Production design versions raw measurements, calibration, preprocessing and model; computes uncertainty and OOD signals; uses canaries, fallbacks and audit artifacts; and monitors instrument drift and downstream bias. The chapter concludes with a defense framework covering alternatives, negative results, limitations and claims that remain scientifically warranted.",
+  "prerequisites": [
+    "cnn",
+    "vae",
+    "project-defense-framework"
+  ],
+  "learningObjectives": [
+    "Model reconstruction through an acquisition operator, noise and calibration rather than treating it as generic image translation.",
+    "Create specimen- and acquisition-level splits that prevent patch and instrument leakage.",
+    "Evaluate pixel fidelity, structure, data consistency, uncertainty and downstream scientific validity separately.",
+    "Design an auditable deployment that distinguishes perceptual realism from supported physical detail."
+  ],
+  "deepSections": [
+    {
+      "id": "problem-forward",
+      "title": "The forward model defines what information the instrument actually contains",
+      "body": "Start from the latent quantity, sensor and scientific use. H may blur with a point-spread function, integrate over detector pixels, subsample slices, project along angles, clip, quantize or introduce missing data. Calibration parameters can differ across instrument, magnification and session. Noise may be Gaussian, Poisson, signal-dependent or structured. If H is many-to-one, exact inversion is impossible without prior assumptions. Document which spatial frequencies and structures are identifiable. Synthetic low-resolution generation is useful only when its degradation distribution resembles reality; bicubic downsampling alone often yields an unrealistically clean benchmark. Measure calibration on phantoms and held-out acquisitions. Preserve raw observations because a future forward model or scientific question may invalidate today's reconstruction. Treat each calibration estimate as uncertain rather than exact: perturb blur width, alignment, gain and noise parameters, rerun reconstruction, and report how scientifically relevant measurements move. Sensitivity to plausible calibration error can reveal brittle detail even when a nominal data-consistency score looks excellent."
+    },
+    {
+      "id": "data-training",
+      "title": "Experimental units, pairing and priors determine generalization",
+      "body": "Split patients, specimens or independent scenes before patch extraction. Also isolate sessions, sites and instruments when deployment crosses them. Overlapping patches, repeated fields of view and paired modalities can otherwise leak near-identical structures. Paired supervision requires registration quality; small misalignment punishes correct high-frequency detail under pixel loss. Unpaired translation such as cycle consistency supplies distribution constraints but does not prove sample-specific correspondence and can alter content. Learned priors inherit prevalence and artifacts from training. Include negative controls, blank regions, rare morphology and acquisition failures. Compare a physics-only baseline, simple interpolation and deterministic learned model before adding a generative objective. Log augmentations and degradation parameters, and test whether the model exploits scale bars, borders or acquisition metadata."
+    },
+    {
+      "id": "evaluation-truth",
+      "title": "Sharpness, fidelity and scientific validity require distinct evidence",
+      "body": "MSE and PSNR favor conditional means and can look smooth; SSIM captures local structural comparison but depends on window and reference. Perceptual or adversarial losses can improve human realism while increasing distortion from the actual target. Data consistency re-applies H to the output and asks whether the observed measurement is reproduced within noise, but multiple false solutions can still pass. Evaluate downstream quantities such as segmentation, volume, filament count, localization or clinician decision with uncertainty and subgroup slices. Use phantoms or higher-quality instruments where available, and blinded reader studies with predefined questions. Inspect worst cases and difference images. A generated structure that is common in training but absent from the sample is a factual error even if experts rate the image realistic."
+    },
+    {
+      "id": "deployment-governance",
+      "title": "A scientific reconstruction is a versioned derived measurement",
+      "body": "Store raw input, calibration, preprocessing, model snapshot, random seed if relevant, output, uncertainty and quality flags. Refuse or fall back on unsupported shapes, instruments or missing metadata. Monitor input intensity, noise, frequency spectra, calibration residual, data consistency, uncertainty, downstream measurements and expert override by site. Run new versions in shadow on fixed phantoms and longitudinal controls, then canary with reversible routing. Keep a simple deterministic baseline available. Clearly label reconstructed data and never overwrite originals. Security includes access to sensitive images and model supply chain. Governance defines who can release a model for scientific or clinical use, how incidents retract derived results and how papers or analyses cite the exact reconstruction version."
+    }
+  ],
+  "workedExamples": [
+    {
+      "title": "Perceptual hallucination",
+      "body": "An adversarial output restores visually plausible texture but creates extra puncta. PSNR may be competitive and reader realism high, while object-count bias makes it unusable for biology."
+    },
+    {
+      "title": "Forward-consistent ambiguity",
+      "body": "Two reconstructions downsample to nearly the same observation but differ in fine structure. Report uncertainty or alternatives; data consistency alone cannot choose the true one."
+    }
+  ],
+  "lab": {
+    "language": "python",
+    "goal": "Simulate a one-dimensional reconstruction problem and compare apparent sharpness with measurement consistency.",
+    "buildIt": "import numpy as np\nfrom scipy.ndimage import gaussian_filter1d\nrng=np.random.default_rng(41); x=np.zeros(128); x[25:42]=1; x[72:77]=.7; x[95:110]=.4\ndef forward(signal): return gaussian_filter1d(signal,2)[::4]\ny=forward(x)+rng.normal(0,.005,32)\nnearest=np.repeat(y,4)\n# Tikhonov reconstruction under the known linear forward operator.\nH=np.zeros((32,128))\nfor j in range(128):\n    basis=np.zeros(128); basis[j]=1; H[:,j]=forward(basis)\nlam=.03; regularized=np.linalg.solve(H.T@H+lam*np.eye(128),H.T@y)\n# Deliberately over-sharpen to expose the fidelity/appearance trade-off.\nsharpened=np.clip(regularized+20.0*(regularized-gaussian_filter1d(regularized,1)),0,1)",
+    "useIt": "def mse(a,b): return float(np.mean((a-b)**2))\ndef consistency(candidate): return mse(forward(candidate),y)\nmetrics={name:{'truth_mse':mse(candidate,x),'consistency':consistency(candidate),'roughness':float(np.mean(np.diff(candidate)**2))} for name,candidate in {'nearest':nearest,'regularized':regularized,'sharpened':sharpened}.items()}",
+    "verifyIt": "assert metrics['regularized']['truth_mse']<metrics['nearest']['truth_mse']\nassert metrics['regularized']['consistency']<metrics['nearest']['consistency']\nassert metrics['sharpened']['roughness']>metrics['regularized']['roughness']\nassert metrics['sharpened']['consistency']>metrics['regularized']['consistency']\nassert np.isfinite(list(v for row in metrics.values() for v in row.values())).all()",
+    "shipIt": "Version forward model and calibration, split by specimen and acquisition, report consistency and task metrics, retain raw inputs, expose uncertainty, and fall back on unsupported data."
+  },
+  "exercises": [
+    {
+      "prompt": "Design a leakage-safe split for 3D volumes.",
+      "solution": "Hold out specimens and acquisition sessions before extracting correlated slices or patches."
+    },
+    {
+      "prompt": "Name three evidence layers for a reconstruction.",
+      "solution": "Reference fidelity where available, forward-model consistency, and downstream scientific or clinical measurement with uncertainty."
+    },
+    {
+      "prompt": "Why preserve a simple baseline?",
+      "solution": "It provides a known fallback, regression anchor and evidence that added model complexity is warranted."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "flow",
+      "title": "Scientific reconstruction evidence chain",
+      "items": [
+        "Raw measurement and calibration",
+        "Forward degradation model",
+        "Independent-unit training split",
+        "Baseline and learned reconstruction",
+        "Data consistency and uncertainty",
+        "Downstream scientific validation and audit"
+      ],
+      "caption": "Plausible detail becomes usable evidence only after physics and task validation.",
+      "afterSection": "evaluation-truth"
+    },
+    {
+      "type": "compare",
+      "title": "Perceptual realism versus factual support",
+      "left": {
+        "title": "Looks realistic",
+        "items": [
+          "Sharp texture",
+          "Natural-image prior",
+          "Reader preference",
+          "May hallucinate"
+        ]
+      },
+      "right": {
+        "title": "Scientifically supported",
+        "items": [
+          "Matches acquisition",
+          "Stable on controls",
+          "Preserves measurements",
+          "Uncertainty disclosed"
+        ]
+      },
+      "caption": "A realistic image can still be physically or factually wrong.",
+      "afterSection": "problem-forward"
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "srgan-paper",
+      "contribution": "Grounds adversarial and perceptual super-resolution and the perception-oriented objective trade-off."
+    },
+    {
+      "resource": "ssim-paper",
+      "contribution": "Supports structural image-quality assessment beyond simple squared pixel error."
+    },
+    {
+      "resource": "fsdl",
+      "contribution": "Provides end-to-end ML data, evaluation, deployment and monitoring practice."
+    },
+    {
+      "resource": "stanford-cs329s",
+      "contribution": "Supports production ML failure, distribution shift, testing and lifecycle design."
+    }
+  ]
 }

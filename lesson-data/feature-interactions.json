@@ -6,31 +6,185 @@
   "roles": [
     "ds"
   ],
-  "interviewAnswer": "Feature engineering can expose known structure—ratios, interactions, lags, log transforms or domain aggregations—especially for simpler models. Every feature must be available at prediction time.",
+  "interviewAnswer": "A feature interaction means the effect of one feature depends on another. In a linear predictor, adding x1*x2 makes the slope with respect to x1 equal beta1+beta12*x2, so main effects should usually remain for hierarchy and interpretation. Polynomial features capture smooth curvature and interactions but expand combinatorially, increase collinearity and extrapolate aggressively; scaling and regularization are essential. Splines model nonlinear main effects with local basis functions, and tree or neural models can learn interactions implicitly, though capacity and data support still matter. I propose interactions from domain mechanisms, fit their generation inside the pipeline, compare against a main-effects baseline on legal validation splits, and inspect support across the joint feature space. I avoid target-guided interaction mining outside CV and do not interpret a predictive interaction causally without an identification argument.",
   "keyPoints": [
-    "Interactions encode conditional effects.",
-    "Transform skewed multiplicative scales carefully.",
-    "Availability/leakage beats cleverness."
+    "Interactions encode conditional effects; nonlinear main effects should not be mistaken for interactions.",
+    "Respect hierarchy by retaining constituent main effects when including their product unless a strong constraint says otherwise.",
+    "Polynomial degree and interaction count grow rapidly, requiring scaling, regularization and sufficient joint support.",
+    "Domain-motivated interactions are easier to validate and govern than exhaustive target-guided crosses.",
+    "Predictive interaction, statistical significance and causal effect modification are different claims."
   ],
   "resources": [
+    "sklearn-preprocessing-guide",
     "isl",
-    "google-mlcc"
+    "sklearn-cross-validation"
   ],
   "featured": false,
-  "why": "Interactions & Domain Feature Engineering is a recurring foundation across data science and machine learning because it affects both theoretical correctness and practical system behavior.",
-  "intuition": "Interactions encode conditional effects.",
-  "deepDive": "Feature engineering can expose known structure—ratios, interactions, lags, log transforms or domain aggregations—especially for simpler models. Every feature must be available at prediction time. Transform skewed multiplicative scales carefully. Availability/leakage beats cleverness. The interview-level skill is not merely recalling the definition: explain the assumptions, what diagnostic evidence you would inspect, and what alternative you would choose when those assumptions fail.",
-  "workedExample": "For pricing, include price per unit and price×customer-segment interactions rather than raw price alone.",
+  "why": "Additive models assume each feature contributes independently on the model's link scale. Many systems violate that assumption: a discount matters differently by price, medication effect depends on dosage and patient state, and temperature interacts with humidity. Ignoring an interaction can leave structured residuals and poor subgroup predictions. Adding every pair is not a safe cure: thousands of noisy crosses inflate variance, create sparse categories, magnify leakage and make extrapolation unstable. A disciplined workflow distinguishes curvature from interaction, uses domain hypotheses and hierarchical bases, regularizes, validates on the intended groups or future periods, and checks whether the data contain examples in every joint region needed for deployment.",
+  "intuition": "If extra study hours help beginners more than advanced students, one universal slope is wrong. A product term lets the study-hours slope change with prior knowledge. On a response surface, additivity looks like parallel slices; an interaction makes the slices tilt differently. The interaction coefficient describes that change on the chosen scale, not a standalone universal effect.",
+  "deepDive": "Feature interactions extend additive representations with products, crosses, basis expansions or learned conditional structure. Interpretation depends on centering, link function and hierarchy. Reliable use controls dimensionality and leakage, evaluates joint support and stability, and separates predictive gains from causal effect-modification claims.",
+  "workedExample": "For yhat=2+3x1+x2+4x1x2, the x1 slope is 3+4x2. At x2=0 it is 3; at x2=2 it is 11. The product coefficient says how the x1 slope changes per unit of x2.",
   "commonMistakes": [
-    "Using the concept mechanically without checking assumptions or data semantics.",
-    "Reporting one metric/result without examining uncertainty, slices or failure modes."
+    {
+      "misconception": "A significant product coefficient proves causal effect modification.",
+      "correction": "It is a model-scale association; causal interaction requires identification, treatment and confounding assumptions."
+    },
+    {
+      "misconception": "Trees eliminate the need to think about interactions.",
+      "correction": "They can represent interactions, but data support, depth, regularization and evaluation still determine whether they learn useful ones."
+    },
+    {
+      "misconception": "Scaling is unnecessary because products are deterministic.",
+      "correction": "Scale changes conditioning and regularization strength across polynomial terms and can destabilize optimization."
+    },
+    {
+      "misconception": "Partial dependence always reveals an interaction safely.",
+      "correction": "It may average predictions over feature combinations that are absent or implausible when predictors correlate."
+    }
   ],
   "followUps": [
-    "What assumptions or limitations does Interactions & Domain Feature Engineering have?",
-    "How would you validate Interactions & Domain Feature Engineering on a real dataset?"
+    {
+      "question": "Why center variables before interaction regression?",
+      "answer": "It makes main effects correspond to slopes near meaningful reference values and often improves conditioning without changing the full model's fitted space."
+    },
+    {
+      "question": "What is model hierarchy?",
+      "answer": "The principle that lower-order constituent terms remain when a higher-order product or polynomial term is included."
+    },
+    {
+      "question": "How do you test whether an interaction helps?",
+      "answer": "Compare a prespecified interaction pipeline with a main-effects baseline using paired, deployment-faithful validation and inspect joint-region residuals and stability."
+    }
   ],
-  "production": "In production, make assumptions explicit, validate on representative slices, compare with a simple baseline and monitor the signals that can drift.",
+  "production": "Version selected pairs, degree, hierarchy rule, centering, scaling, spline knots, vocabularies, feature names and output order with the estimator. Generate all data-dependent choices inside folds and record search breadth. Test manual products, feature counts, extremes, missing values and unknown category crosses. Monitor joint-support occupancy, basis magnitude, extrapolation, slice residuals and sensitivity. Canary against an additive baseline, route unsupported combinations safely and retain the simpler bundle for rollback when high-order drift or instability appears.",
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "math": "For eta=beta0+beta1 x1+beta2 x2+beta12 x1x2, partial eta/partial x1=beta1+beta12 x2 and the mixed derivative is beta12. Centering x1 and x2 changes the meaning of beta1 and beta2 but not fitted values when all terms are retained. Degree-d polynomial expansion in p variables has binomial(p+d,d) terms including the intercept. In logistic regression interaction is additive on log-odds; probability-scale effects vary nonlinearly even without an explicit product. Regularization shrinks correlated basis coefficients but does not restore unsupported joint regions.",
+  "code": "from sklearn.preprocessing import PolynomialFeatures\npoly=PolynomialFeatures(degree=2,include_bias=True).fit(X[train]); generated=poly.transform(X); names=poly.get_feature_names_out(['x1','x2'])",
+  "lab": {
+    "language": "python",
+    "goal": "Construct quadratic and interaction features manually, verify library output, and test their predictive value against an additive baseline.",
+    "buildIt": "import numpy as np\nfrom sklearn.linear_model import LinearRegression\nfrom sklearn.metrics import mean_squared_error\nrng=np.random.default_rng(3); X=rng.uniform(-2,2,size=(300,2)); y=1+2*X[:,0]-X[:,1]+4*X[:,0]*X[:,1]+rng.normal(scale=.2,size=300)\nmanual=np.c_[np.ones(len(X)),X[:,0],X[:,1],X[:,0]**2,X[:,0]*X[:,1],X[:,1]**2]\ntrain=np.arange(220); test=np.arange(220,300); additive=LinearRegression().fit(X[train],y[train]); interaction=LinearRegression().fit(manual[train,1:],y[train])\nmae_add=mean_squared_error(y[test],additive.predict(X[test])); mse_int=mean_squared_error(y[test],interaction.predict(manual[test,1:]))",
+    "useIt": "from sklearn.preprocessing import PolynomialFeatures\npoly=PolynomialFeatures(degree=2,include_bias=True).fit(X[train]); generated=poly.transform(X); names=poly.get_feature_names_out(['x1','x2'])",
+    "verifyIt": "assert np.allclose(manual,generated)\nassert names.tolist()==['1','x1','x2','x1^2','x1 x2','x2^2']\nassert mse_int<mae_add*.05\nassert abs(interaction.coef_[3]-4)<.1\nassert manual.shape==(300,6)",
+    "shipIt": "Persist the fitted basis and feature order, validate joint support and extreme magnitudes, and monitor interaction-region residuals against an additive fallback."
+  },
+  "description": "Feature interactions represent situations where one predictor's contribution depends on another. This chapter derives product terms, marginal slopes and mixed derivatives; explains hierarchy, centering and interpretation on linear and logistic link scales; and distinguishes interaction from nonlinear main effects. It compares pairwise crosses, polynomial bases, splines, categorical interactions, tree partitions and neural representations while quantifying combinatorial feature growth, collinearity and sparse joint support. It develops domain-driven screening, hierarchical regularization, fold-local generation and nested selection so exhaustive target-guided crosses do not leak. Worked examples show a product term changing a slope and a missing joint quadrant causing dangerous extrapolation. The lab builds manual quadratic terms, verifies PolynomialFeatures output and shows that the interaction model recovers a synthetic response better than an additive baseline. Production guidance versions basis definitions and feature names, monitors joint-support and range drift, tests unknown category combinations, and retains an additive fallback when high-order behavior becomes unstable. Interpretation always stays tied to the model's link scale and observed joint data support.",
+  "prerequisites": [
+    "linear-regression",
+    "encoding-scaling"
+  ],
+  "learningObjectives": [
+    "Derive and interpret continuous and categorical interaction terms under model hierarchy.",
+    "Distinguish conditional interaction from nonlinear main effects and link-scale artifacts.",
+    "Generate, regularize and validate interaction bases without target or split leakage.",
+    "Diagnose joint-support, extrapolation, stability and production drift risks."
+  ],
+  "deepSections": [
+    {
+      "id": "meaning-hierarchy",
+      "title": "An interaction changes a conditional slope",
+      "body": "In an additive linear model, changing x1 by one unit has the same fitted effect at every x2. Adding x1x2 lets that effect vary linearly with x2. The coefficient beta1 now represents the x1 slope when x2=0, which may be meaningless unless x2 is centered at a useful reference. Centering improves interpretation and numerical conditioning but does not remove the interaction. The hierarchy principle retains both main effects with the product so the model can express ordinary marginal structure and remains invariant to many recodings. Exceptions exist when physics dictates a pure product or constraints demand otherwise, but they need justification. In generalized linear models, coefficients operate on the link scale: a logistic model can show probability-scale effect variation even without a product, and beta12 describes additional log-odds interaction. Plot predicted surfaces and marginal contrasts, not the coefficient alone."
+    },
+    {
+      "id": "basis-options",
+      "title": "Curvature and interaction use related but distinct bases",
+      "body": "A squared term x1^2 models curvature in one variable; x1x2 models cross-variable dependence. PolynomialFeatures can generate both, or interaction-only products. Degree grows quickly: with many features, even degree two adds every pair and squared term. Splines provide local nonlinear main-effect bases and tensor products can represent smooth interactions with controlled knots. Categorical crosses create an indicator for each level combination, useful when combinations have enough support but explosive for high cardinality. Trees learn stepwise interactions by splitting one feature within a branch defined by another; boosted trees build richer conditional surfaces. Neural networks learn distributed interactions implicitly. Implicit capacity does not guarantee the right interaction is learned or interpretable, so compare with simple explicit hypotheses and inspect conditional performance."
+    },
+    {
+      "id": "selection-regularization",
+      "title": "Control the search rather than crossing everything",
+      "body": "Start from a mechanism: exposure times susceptibility, price times discount, or treatment times baseline risk. Predeclare plausible pairs and transformations where possible. Standardize continuous features before regularized polynomial regression so penalty strength is comparable. Ridge stabilizes correlated bases; lasso can select terms but may violate hierarchy by retaining a product while dropping a main effect. Hierarchical penalties or grouped selection enforce stronger structure. If interactions are screened by target association, repeat screening inside every training fold and include it in nested selection. Report the number of candidates tried because the winning validation gain inherits search optimism. Use learning curves and repeated paired splits to distinguish stable signal from a lucky sparse cell. Prefer the lowest-degree surface that captures residual structure and meets error constraints."
+    },
+    {
+      "id": "support-evaluation",
+      "title": "A fitted surface is credible only where joint data exist",
+      "body": "Marginal distributions can look well covered while combinations are absent: older users may only appear at high income, or one treatment may never occur in a subgroup. Product models extrapolate algebraically into missing quadrants; trees inherit the nearest observed partitions. Plot two-dimensional support, counts or density for important pairs and overlay deployment requests. Evaluate residuals and metrics by bins of both variables, not each separately. Group or temporal CV should match future novelty, because random splits can preserve every rare combination while deployment introduces a new one. Partial dependence can average over unrealistic combinations when features correlate; conditional plots or accumulated local effects may be safer but still observational. Stress-test ranges and category combinations, and abstain or route to a fallback outside validated support."
+    },
+    {
+      "id": "production-governance",
+      "title": "Version the basis and monitor joint behavior",
+      "body": "Persist centering and scaling values, polynomial degree, interaction-only choice, spline knots, category vocabularies, selected pairs, output order and estimator together. Test algebraic fixtures, feature counts, names and invariance to batch ordering. Numeric overflow can arise when high-degree terms meet extreme values; bound or transform inputs based on domain rules and record clipping. Monitor base-feature ranges, joint occupancy, unseen crosses, basis magnitudes, prediction sensitivity and slice residuals. A new product-category combination may map to no learned cross or a poorly supported coefficient. Canary interaction-heavy models against an additive baseline and keep that simpler artifact for rollback. Review interpretation after feature-distribution shifts because main-effect coefficients and marginal summaries depend on the reference distribution."
+    }
+  ],
+  "workedExamples": [
+    {
+      "title": "Conditional slope",
+      "body": "For yhat=2+3x1+x2+4x1x2, the x1 slope is 3+4x2. At x2=0 it is 3; at x2=2 it is 11. The product coefficient says how the x1 slope changes per unit of x2."
+    },
+    {
+      "title": "Unsupported quadrant",
+      "body": "Training data contain low-age/low-income and high-age/high-income cases but no high-age/low-income cases. A polynomial surface can still emit precise-looking predictions there; those are extrapolations unsupported by the joint sample."
+    }
+  ],
+  "exercises": [
+    {
+      "prompt": "In yhat=b0+b1x+b2z+b3xz, what is the x slope?",
+      "solution": "b1+b3z, so b3 is the change in the x slope for a one-unit increase in z."
+    },
+    {
+      "prompt": "Why keep x and z when adding xz?",
+      "solution": "Hierarchy preserves ordinary marginal effects, stable interpretation and invariance to changing reference origins."
+    },
+    {
+      "prompt": "How can a categorical cross fail in production?",
+      "solution": "New or rare level combinations may have no fitted evidence, producing all-zero, pooled or unstable behavior that must be explicitly handled."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "compare",
+      "title": "Additive versus interacting surface",
+      "left": {
+        "title": "Additive",
+        "items": [
+          "Parallel conditional slices",
+          "One slope per feature",
+          "Simpler support needs",
+          "Easier extrapolation audit"
+        ]
+      },
+      "right": {
+        "title": "Interaction",
+        "items": [
+          "Slope changes with context",
+          "Curved or crossed surface",
+          "More joint data required",
+          "Higher variance and drift risk"
+        ]
+      },
+      "caption": "An interaction adds conditional flexibility only where joint evidence supports it.",
+      "afterSection": "meaning-hierarchy"
+    },
+    {
+      "type": "flow",
+      "title": "Interaction development",
+      "items": [
+        "Propose mechanism",
+        "Check joint support",
+        "Build fold-local basis",
+        "Regularize with hierarchy",
+        "Compare paired to additive baseline",
+        "Monitor joint regions and extrapolation"
+      ],
+      "caption": "Domain hypotheses and support checks keep interaction search from becoming uncontrolled feature mining.",
+      "afterSection": "selection-regularization"
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "sklearn-preprocessing-guide",
+      "contribution": "Verifies polynomial feature generation, scaling and representation mechanics."
+    },
+    {
+      "resource": "isl",
+      "contribution": "Supports interaction interpretation, polynomial regression, hierarchy and nonlinear modeling concepts."
+    },
+    {
+      "resource": "sklearn-cross-validation",
+      "contribution": "Supports fold-local feature generation and honest comparison with main-effects baselines."
+    }
+  ]
 }

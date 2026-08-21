@@ -7,44 +7,67 @@
     "ds",
     "as"
   ],
-  "interviewAnswer": "K-means alternates between assigning points to the nearest centroid and updating each centroid to the mean of its assigned points. It works best for roughly spherical clusters under the chosen distance metric.",
+  "interviewAnswer": "K-means partitions observations into k groups by minimizing within-cluster squared Euclidean distance to cluster centroids. Lloyd's algorithm alternates assignment to the nearest centroid and recomputation of each centroid as its assigned mean; each step cannot increase inertia, but convergence is only to a local optimum. The objective favors compact, roughly spherical, similar-scale groups and is sensitive to units, outliers, initialization and the chosen k. k-means++ spreads initial centers to improve starting quality, and multiple runs reduce local-optimum risk. I fit scaling inside the analysis pipeline, inspect stability across seeds and resamples, compare inertia with silhouette and downstream usefulness, and treat cluster IDs as arbitrary labels rather than discovered truth. In production I version centroids and transforms, monitor distance and occupancy, and route unsupported points safely.",
   "keyPoints": [
-    "Initialization",
-    "Scale features",
-    "Choose k",
-    "Local optimum"
+    "The objective is squared Euclidean distortion, so feature units and outliers directly shape the partition.",
+    "Assignment and centroid updates monotonically reduce or preserve inertia but need not reach the global minimum.",
+    "k-means++ and repeated initializations address optimization variability, not model misspecification.",
+    "Choosing k requires stability, geometry and use-case evidence; an elbow alone is subjective.",
+    "Cluster numbers are permutation-invariant and should not be treated as semantic classes without validation."
   ],
   "resources": [
-    "stanford-cs229",
-    "statquest",
-    "google-mlcc",
-    "isl"
+    "sklearn-clustering",
+    "kmeans-plus-plus-paper",
+    "isl",
+    "stanford-cs229"
   ],
   "featured": false,
-  "why": "K-means tests unsupervised reasoning, objectives, initialization, scaling and whether the cluster shape assumptions fit.",
-  "intuition": "Alternate between assigning each point to its nearest centroid and moving each centroid to the mean of its assigned points.",
-  "deepDive": "K-means minimizes within-cluster squared Euclidean distance. The objective is non-convex, so initialization matters; k-means++ improves starts. It assumes roughly spherical/equal-scale clusters under Euclidean geometry and is sensitive to feature scaling/outliers. Choosing k from elbow/silhouette is heuristic and should connect to the downstream purpose.",
-  "math": "min_{C,μ} Σ_i ||x_i - μ_{c_i}||²",
-  "workedExample": "Clustering customers with raw annual income and a 0–1 engagement score without scaling makes income dominate Euclidean distance.",
-  "code": "from sklearn.pipeline import make_pipeline\nfrom sklearn.preprocessing import StandardScaler\nfrom sklearn.cluster import KMeans\nm=make_pipeline(StandardScaler(),KMeans(n_clusters=5,n_init='auto',random_state=0))",
+  "why": "K-means is the baseline for prototype learning, segmentation, vector quantization and initialization of richer mixture models. Its simple objective exposes the entire unsupervised modeling contract: a representation defines distance, an objective defines what counts as a good grouping, an optimizer finds one local solution, and interpretation supplies meaning not present in the algorithm. This separation prevents common errors such as naming clusters from a few examples, selecting k from one attractive plot, or treating a lower inertia as evidence of business value. K-means also teaches operational patterns: centroids are compact deployable prototypes, assignment distance can signal weak support, minibatches trade optimization fidelity for scale, and cluster identities must be aligned across retrains. Understanding both its geometry and limitations makes it a useful benchmark even when density, hierarchy or probabilistic membership eventually calls for another method.",
+  "intuition": "Place k representatives in the feature space. Every point joins the closest representative, then each representative moves to the average of its members. Repeat until assignments or movement stabilize. The representatives settle where they reduce total squared travel. A far outlier has a large squared pull, and a feature measured in thousands can outweigh one measured between zero and one. Crescent-shaped or unequal-density groups may be cut unnaturally because a centroid summarizes only a spherical neighborhood. Different initial representatives can lead to different stable partitions, so a single run is one optimization outcome rather than the unique structure of the data.",
+  "deepDive": "K-means is a quantization objective plus a local alternating optimizer. Statistical interpretation, optimization quality and semantic usefulness are distinct. A credible workflow fixes representation and independent units, repeats initialization and resampling, evaluates stability and downstream consequence, and deploys centroids with explicit distance, occupancy and identity-alignment contracts.",
+  "math": "Given points x_i∈R^d and assignments z_i∈{1,...,k}, minimize J=Σ_i||x_i-μ_{z_i}||². For fixed centroids, nearest-center assignment minimizes each term. For fixed assignments, derivative of Σ_{i:z_i=j}||x_i-μ_j||² gives μ_j as that cluster's mean. Lloyd iterations monotonically decrease J and terminate at a fixed partition because finitely many assignments exist. Inertia always weakly decreases with larger k, reaching zero at k=n for distinct points, so it cannot select k alone.",
+  "workedExample": "Points [0,1,9,10] start with centers 0 and 9. Assignments are {0,1} and {9,10}. Updated means are 0.5 and 9.5. Inertia changes from 0²+1²+0²+1²=2 to four deviations of 0.5 squared, totaling 1. The next assignment is unchanged, so this run has converged.",
+  "code": "from sklearn.cluster import KMeans\nmodel=KMeans(n_clusters=2,n_init=20,random_state=0).fit(X)\nsk_inertia=float(model.inertia_)",
   "commonMistakes": [
-    "Treating clusters as discovered “truth” rather than model-dependent structure.",
-    "Ignoring scaling/outliers.",
-    "Using k-means for arbitrary non-spherical clusters."
+    {
+      "misconception": "K-means discovers the true groups in data.",
+      "correction": "It optimizes squared distortion under a chosen representation and k. Semantic groups require external evidence."
+    },
+    {
+      "misconception": "The elbow gives an objective best k.",
+      "correction": "Inertia always falls with k and elbows are subjective. Combine stability, downstream purpose and domain constraints."
+    },
+    {
+      "misconception": "Multiple restarts fix non-spherical clusters.",
+      "correction": "Restarts address local optimization. They do not change the centroid objective or its geometric bias."
+    },
+    {
+      "misconception": "Cluster 0 means the same thing after retraining.",
+      "correction": "Labels are arbitrary and can permute, split or merge. Align centroids and review semantics before publishing IDs."
+    }
   ],
   "followUps": [
-    "How choose k?",
-    "Why k-means++?",
-    "K-means vs DBSCAN?",
-    "Why is the objective non-convex?"
+    {
+      "question": "Why is the mean the centroid update?",
+      "answer": "Differentiating within-cluster squared distance with respect to the centroid and setting it to zero yields the arithmetic mean."
+    },
+    {
+      "question": "Why does k-means++ help?",
+      "answer": "It spreads initial centers toward poorly covered regions using squared distance, reducing bad starts; it does not guarantee the global optimum."
+    },
+    {
+      "question": "What can distance to the nearest centroid indicate?",
+      "answer": "It is a support or quantization-error diagnostic under the training geometry, not automatically a calibrated anomaly probability."
+    }
   ],
-  "production": "Clustering labels can drift with data/refits; if used operationally, define cluster stability and business meaning rather than relying on arbitrary IDs.",
+  "production": "Version feature extraction, units, scaling, missing policy, sample weights, k, initialization, random seed, stopping rule and centroids. Test transform parity, finite distances, deterministic fixtures and label-permutation-aware comparisons. Benchmark assignment throughput for the intended k and dimension. Monitor feature drift, cluster occupancy, nearest-centroid distance, assignment entropy, unsupported rate and downstream segment outcomes, including protected groups. Align new centroids to the deployed identities and require semantic review before changing consumer-facing labels. Do not expose stigmatizing names derived from exploratory patterns. Canary replacements, retain the prior centroids and mapping, and use a global or rule-based fallback when features fail or points lie outside validated support.",
   "lab": {
-    "goal": "Implement K-means assignment/update steps and compare with sklearn.",
     "language": "python",
-    "buildIt": "import numpy as np\nrng=np.random.default_rng(0)\nX=np.r_[rng.normal([-2,0],.4,(80,2)),rng.normal([2,0],.4,(80,2))]\ncenters=X[[0,-1]].copy()\nfor _ in range(20):\n    d=((X[:,None,:]-centers[None,:,:])**2).sum(2)\n    labels=d.argmin(1)\n    centers=np.array([X[labels==k].mean(0) for k in range(2)])\nprint(centers)\n",
-    "useIt": "from sklearn.cluster import KMeans\nm=KMeans(n_clusters=2,n_init='auto',random_state=0).fit(X)\nprint(m.cluster_centers_)\n",
-    "verifyIt": "assert np.linalg.norm(np.sort(centers[:,0])-np.array([-2,2]))<.5\n"
+    "goal": "Implement Lloyd's k-means with repeated starts, compare with scikit-learn, and verify monotone inertia and centroid invariants.",
+    "buildIt": "import numpy as np\nX=np.array([[0,0],[0,1],[1,0],[8,8],[8,9],[9,8]],float)\ndef run_kmeans(X,k,seed,max_iter=50):\n    rng=np.random.default_rng(seed); centers=X[rng.choice(len(X),k,replace=False)].copy(); history=[]\n    for _ in range(max_iter):\n        dist=((X[:,None,:]-centers[None,:,:])**2).sum(axis=2); labels=dist.argmin(axis=1); inertia=float(dist[np.arange(len(X)),labels].sum()); history.append(inertia)\n        new=np.array([X[labels==j].mean(axis=0) if np.any(labels==j) else centers[j] for j in range(k)])\n        if np.allclose(new,centers): centers=new; break\n        centers=new\n    dist=((X[:,None,:]-centers[None,:,:])**2).sum(axis=2); labels=dist.argmin(axis=1); history.append(float(dist[np.arange(len(X)),labels].sum()))\n    return centers,labels,history\nruns=[run_kmeans(X,2,s) for s in range(8)]; centers,labels,history=min(runs,key=lambda r:r[2][-1])",
+    "useIt": "from sklearn.cluster import KMeans\nmodel=KMeans(n_clusters=2,n_init=20,random_state=0).fit(X)\nsk_inertia=float(model.inertia_)",
+    "verifyIt": "assert all(b<=a+1e-12 for a,b in zip(history,history[1:]))\nfor j in range(2): assert np.allclose(centers[j],X[labels==j].mean(axis=0))\nassert abs(history[-1]-sk_inertia)<1e-10\nassert set(np.bincount(labels))=={3}\nperm=1-labels; assert sum(((X[perm==j]-centers[1-j])**2).sum() for j in range(2))==history[-1]\nassert np.isfinite(centers).all()",
+    "shipIt": "Freeze transforms, centroids and mappings; repeat seeds and stability checks; monitor occupancy and distance support; align identities across retrains; retain a global fallback and prior artifact."
   },
   "visual": {
     "type": "scatter",
@@ -119,6 +142,123 @@
     "yLabel": "feature 2"
   },
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "K-means clustering represents a dataset with k centroids and assigns each observation to its nearest centroid under squared Euclidean distance. This chapter derives the distortion objective and both steps of Lloyd's algorithm, proves monotone descent, and explains why the solution is local and cluster labels are arbitrary. It covers scaling, whitening, outliers, k-means++ initialization, empty clusters, repeated starts, minibatch updates, high dimension, sparse vectors, spherical assumptions, selecting k, silhouette limitations, stability and downstream validation. Worked examples calculate one assignment-update round and show how units reverse a segmentation. The lab implements Lloyd's algorithm and k-means++-style restarts, compares inertia with scikit-learn, and verifies nonincreasing objective, centroid means and label-permutation invariance. Production guidance versions transforms and centroids, aligns identities across retrains, monitors distance and occupancy, handles empty or unsupported regions, and retains a safe fallback. The method is treated as a useful compression model, not an oracle that reveals natural categories. You will also learn why multiple starts solve an optimization problem rather than a geometry problem, how minibatches alter the fitted prototypes, and how unsupported assignment should be exposed instead of silently named.",
+  "prerequisites": [
+    "norms-distances",
+    "expectation-variance"
+  ],
+  "learningObjectives": [
+    "Derive the k-means objective and alternating assignment and centroid updates.",
+    "Explain sensitivity to scaling, initialization, outliers, shape and high dimension.",
+    "Select and validate k using stability, geometry and intended use rather than inertia alone.",
+    "Deploy versioned centroids with identity, support, monitoring and rollback controls."
+  ],
+  "deepSections": [
+    {
+      "id": "objective-updates",
+      "title": "Squared distortion determines both updates",
+      "body": "For fixed centroids, each observation contributes independently to the objective, so assigning it to the closest centroid is optimal. For fixed assignments, the arithmetic mean uniquely minimizes squared distance within a nonempty cluster. These two exact conditional optimizations form Lloyd's algorithm. Inertia cannot increase, but the joint problem is nonconvex and different starts reach different fixed points. Stop using assignment stability, centroid movement or relative objective change under a tolerance, and cap iterations. Empty clusters occur when no point chooses a centroid; implementations may relocate it to a distant point or retain a prior center, changing reproducibility. Weighted k-means replaces counts with sample-weight sums and changes centroids and objective. Cluster numbers have no meaning: swapping every label and matching centroid leaves the same solution."
+    },
+    {
+      "id": "geometry-representation",
+      "title": "The representation defines a spherical notion of cluster",
+      "body": "Squared Euclidean distance creates Voronoi cells separated by hyperplanes and favors compact, convex, similar-variance groups. Standardization often prevents large-unit features from dominating, but it gives every feature equal variance weight whether or not that matches the domain. Fit transforms on the intended training population and preserve them. One-hot categories make mismatches additive but can overweight high-cardinality fields. Cosine-like text grouping is often approached through normalized vectors or spherical k-means rather than raw Euclidean counts. Outliers exert quadratic influence on centroids; robust preprocessing or k-medoids may be preferable. In high dimensions, distance concentration and irrelevant features weaken assignments. Dimensionality reduction can help only if fit and selected without leaking downstream labels or the evaluation sample."
+    },
+    {
+      "id": "initialization-scale",
+      "title": "Initialization and scalable variants solve optimization, not semantics",
+      "body": "Random initial centers can duplicate one region and miss another. k-means++ chooses the first center randomly and later centers with probability proportional to squared distance from the nearest chosen center, spreading coverage and providing an expected approximation guarantee for initialization. Multiple independent starts remain useful. Report the best objective and variability across starts. MiniBatchKMeans updates centroids from small batches and scales to large or streaming-like data, but order, batch size and reassignment settings affect the result. Reservoir or weighted sampling must represent the target population. A low final inertia only says the optimizer compressed the chosen representation well for that k. It does not show that clusters are stable, interpretable, fair or useful. Recheck all those questions after any scale-oriented approximation."
+    },
+    {
+      "id": "selection-validation",
+      "title": "There is no universal true k in exploratory data",
+      "body": "Inertia decreases with k, so elbow selection looks for diminishing returns and is inherently judgmental. Silhouette compares within-cluster cohesion to the nearest other cluster, but favors certain shapes and can be expensive. Gap statistics compare with a reference distribution whose choice matters. Stability under bootstrap, subsampling, time windows and seeds asks whether similar partitions recur; align labels before comparison using centroid matching or adjusted Rand-like metrics. External labels may validate usefulness but turn the exercise into supervised evaluation and should remain held out. Most important is the intended action: do segments receive distinct policies, compress vectors within an error budget, or initialize another model? Evaluate that consequence and inspect subgroup composition. A visually appealing two-dimensional projection is insufficient because projection can invent separation."
+    },
+    {
+      "id": "centroid-service",
+      "title": "Deploy centroids as a versioned quantizer",
+      "body": "Persist the feature schema, scaling, missing policy, k, initialization settings, centroids and label-to-semantic mapping. At inference, transform identically and assign by distance. Monitor cluster occupancy, centroid distance, distance percentiles, feature drift, missingness, assignment entropy and downstream outcomes. A query much farther from every centroid than training points is unsupported even though nearest assignment always returns a number. Retraining permutes or splits clusters, so align new centroids to old ones and review semantics before changing IDs consumed by other systems. Avoid encoding protected-group stereotypes into segment names or policies. Canary new centroids, preserve the prior artifact and use a global or rule-based fallback when the feature pipeline fails or support thresholds are exceeded."
+    }
+  ],
+  "workedExamples": [
+    {
+      "title": "One Lloyd iteration",
+      "body": "Points [0,1,9,10] start with centers 0 and 9. Assignments are {0,1} and {9,10}. Updated means are 0.5 and 9.5. Inertia changes from 0²+1²+0²+1²=2 to four deviations of 0.5 squared, totaling 1. The next assignment is unchanged, so this run has converged."
+    },
+    {
+      "title": "Units change customer segments",
+      "body": "Features are annual spend in dollars and visits per month. Without scaling, a $1,000 spend difference overwhelms a ten-visit difference, so clusters are almost spend bands. After a domain-approved scaling, engagement matters. Neither result is automatically correct; the team evaluates whether segment-specific actions improve outcomes and reports sensitivity to the representation."
+    }
+  ],
+  "exercises": [
+    {
+      "prompt": "Why can inertia not choose k by simple minimization?",
+      "solution": "It weakly decreases as k increases and can reach zero when each distinct point has its own cluster."
+    },
+    {
+      "prompt": "What objective issue do outliers create?",
+      "solution": "Squared distance gives far points disproportionate influence and can drag centroids or consume an entire cluster."
+    },
+    {
+      "prompt": "How should clusters be compared across retrains?",
+      "solution": "Match centroids or memberships with a permutation-invariant method, inspect splits and merges, and revalidate semantics before publishing IDs."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "flow",
+      "title": "Lloyd's alternating optimization",
+      "items": [
+        "Initialize k centroids",
+        "Assign every point to its nearest center",
+        "Replace each center by its cluster mean",
+        "Measure inertia",
+        "Repeat until stable",
+        "Validate the partition externally"
+      ],
+      "caption": "Each conditional step improves squared distortion; the joint solution remains local.",
+      "afterSection": "objective-updates"
+    },
+    {
+      "type": "compare",
+      "title": "Optimization and model mismatch",
+      "left": {
+        "title": "Bad local start",
+        "items": [
+          "Same objective",
+          "Different initial centers",
+          "Restarts can help",
+          "Compare final inertia"
+        ]
+      },
+      "right": {
+        "title": "Wrong cluster geometry",
+        "items": [
+          "Spherical centroid assumption fails",
+          "Restarts cannot repair",
+          "Change representation or method",
+          "Validate intended use"
+        ]
+      },
+      "caption": "Initialization and geometric misspecification require different remedies.",
+      "afterSection": "initialization-scale"
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "sklearn-clustering",
+      "contribution": "Verifies current k-means objective, implementation behavior and scalable variants."
+    },
+    {
+      "resource": "kmeans-plus-plus-paper",
+      "contribution": "Grounds the distance-weighted initialization and its approximation analysis."
+    },
+    {
+      "resource": "isl",
+      "contribution": "Supports the clustering, scaling and validation perspective."
+    }
+  ]
 }

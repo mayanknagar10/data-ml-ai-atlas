@@ -8,34 +8,190 @@
     "de",
     "as"
   ],
-  "interviewAnswer": "A CRS defines how coordinates map to Earth. Longitude/latitude is angular; projected CRSs map locations to a plane for meaningful distance/area calculations over a suitable region.",
+  "interviewAnswer": "A coordinate reference system gives coordinates meaning through a datum or reference frame, ellipsoid, coordinate system, axes, units and possibly a map projection. Geographic longitude–latitude coordinates are angular; a projected CRS maps the curved Earth to a plane and introduces distortion in some combination of area, shape, distance and direction. I assign a CRS only when metadata is known; I reproject when transforming coordinates. For measurement I choose a local or regional projected CRS whose distortion properties suit the task, or use ellipsoidal geodesics. I never compute meters directly from EPSG:4326 degrees or assume Web Mercator is metric everywhere. In production I persist authoritative WKT or authority code, axis order, coordinate epoch, transformation pipeline and grids, test known control points and round trips, and fail closed on missing CRS.",
   "keyPoints": [
-    "CRS/EPSG",
-    "Geographic vs projected",
-    "Distance",
-    "Distortion"
+    "Coordinates without a CRS are ambiguous numbers; assigning and transforming are different operations.",
+    "A datum or reference frame locates the ellipsoid relative to Earth and can vary with time.",
+    "Every planar projection distorts; choose properties and area of use from the operation.",
+    "Longitude–latitude axis order, units and antimeridian behavior are common silent failure modes.",
+    "Transformation accuracy depends on the selected operation, grids, software database and coordinate epoch."
   ],
   "resources": [
     "geopandas-docs",
-    "geodata-science-book"
+    "geodata-science-book",
+    "proj-docs"
   ],
   "featured": false,
-  "why": "CRS mistakes can produce plausible-looking but numerically wrong spatial analysis.",
-  "intuition": "One degree of longitude is not the same ground distance everywhere.",
-  "deepDive": "Every map projection preserves some properties and distorts others; choose based on spatial extent and measurement needs.",
-  "math": "",
+  "why": "The same numeric pair can describe a place in degrees, meters, feet or a local engineering grid. Joining, buffering or measuring incompatible coordinates can yield plausible but catastrophically wrong outputs. CRS literacy connects geometry to geodesy: Earth is approximated by an ellipsoid, a reference frame anchors it, geographic coordinates parameterize it, and projections flatten it for particular purposes. The choice is not cosmetic. Equal-area analysis, conformal mapping, local distance, continental visualization and global routing require different compromises. Modern datums can also move with tectonic time, and high-accuracy transformations may require grid files. A reliable pipeline makes those choices explicit and testable.",
+  "intuition": "Flattening an orange peel requires stretching, tearing or overlapping it. A map projection chooses where and how that distortion occurs. Web Mercator preserves local angles but expands high latitudes; an equal-area projection preserves area while altering shapes. A CRS is more than the flattening recipe: it also says which Earth model, origin, axes and units produced the coordinates. Relabeling numbers with a new CRS is like changing the unit label on a ruler without converting the marks; reprojection actually calculates new coordinates.",
+  "deepDive": "CRS work separates coordinate metadata, reference frames, projection mathematics and coordinate operations. There is no globally distortion-free plane, so analysis chooses an area of use and preserved property or stays geodesic. Reproducibility requires the exact operation and supporting grids, not only source and target names.",
+  "math": "For a sphere of radius R, Web Mercator maps longitude λ and latitude φ in radians to x=Rλ and y=R ln[tan(π/4+φ/2)], with inverse λ=x/R and φ=2 arctan(e^{y/R})−π/2. Its local scale factor on a sphere is sec φ, diverging toward the poles, so areas inflate roughly by sec²φ. Real geodetic work uses ellipsoids and datum transformations. A conformal projection preserves local angles, an equal-area projection preserves area, an equidistant projection preserves specified distances, and an azimuthal projection may preserve directions from a center; none preserves everything globally.",
   "code": "",
   "commonMistakes": [
-    "Computing kilometer distances directly in degrees.",
-    "Assigning a CRS label instead of transforming coordinates."
+    {
+      "misconception": "EPSG:4326 coordinates are meters.",
+      "correction": "They are angular geographic coordinates; use an appropriate projection or geodesic algorithm for metric work."
+    },
+    {
+      "misconception": "Setting a new CRS reprojects the data.",
+      "correction": "Assignment changes metadata only; transformation recalculates coordinates."
+    },
+    {
+      "misconception": "Web Mercator is accurate because web maps use it.",
+      "correction": "It is convenient for global tiles but has severe scale and area distortion at high latitude."
+    },
+    {
+      "misconception": "A source and target EPSG code fully reproduce every transformation.",
+      "correction": "Selected operation, grids, database version, axis policy and epoch can affect results."
+    }
   ],
   "followUps": [
-    "What is EPSG:4326?",
-    "Which projection for area?"
+    {
+      "question": "How would you choose a CRS for area calculation?",
+      "answer": "Prefer an equal-area CRS whose area of use covers the data, or calculate ellipsoidal geodesic area when global or cross-zone."
+    },
+    {
+      "question": "Why can longitude and latitude be swapped?",
+      "answer": "Authority axis order and common x-y API conventions differ; declare and test the chosen convention."
+    },
+    {
+      "question": "What does a datum transformation do?",
+      "answer": "It converts coordinates between reference frames, potentially using Helmert parameters, deformation models or spatial grids."
+    }
   ],
-  "production": "Store CRS metadata and make transformations explicit/reproducible.",
-  "workedExample": "Before buffering points by 5 km, reproject EPSG:4326 coordinates to an appropriate projected CRS.",
+  "production": "Require a complete source CRS and intended coordinate epoch; never silently guess or relabel. Store WKT or authority definition, I/O axis convention, source and target area of use, selected PROJ operation, grid resources and software database versions. Validate bounds, units and known control points; run forward and reverse tolerance tests and compare critical measurements geodesically. Densify or split dateline-crossing geometry with explicit policy. Dual-run transformation upgrades and diff coordinates by region. Monitor out-of-bounds rates, transform fallbacks, missing grids and displacement quantiles. Preserve original coordinates and the previous transformation runtime so bad metadata or resource upgrades can be rolled back and regenerated.",
+  "workedExample": "A team buffers customer points by 1,000 while coordinates are longitude and latitude. The software interprets 1,000 degrees, not one kilometer. Reprojecting a city-scale dataset to an appropriate local metric CRS makes a 1,000-meter planar buffer reasonable within its area of use; a global service may instead use geodesic buffers or region-specific projections. Simply setting the CRS field to the local code moves the interpreted locations and is not a conversion.",
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "Coordinate reference systems connect numeric coordinates to positions on and around Earth. This chapter separates ellipsoid, geoid, datum or dynamic reference frame, geographic coordinate system, projected coordinate system, vertical CRS and compound CRS. It explains authority identifiers and WKT, axis order and units, area of use, coordinate epoch and why EPSG:4326, CRS84 and Web Mercator are not interchangeable labels. Projection families are compared through conformal, equal-area, equidistant and azimuthal properties, with Tissot-style distortion reasoning and the special limits of EPSG:3857. The chapter distinguishes assigning missing metadata from transforming coordinates and follows a modern PROJ-style operation pipeline through inverse projection, datum transformation and forward projection. It covers grid shifts, operation selection, missing resources, antimeridian and polar issues, and metric versus geodesic measurement. The lab implements spherical Mercator, validates inverse round trips, compares against pyproj and quantifies scale growth with latitude. Production guidance requires authoritative CRS metadata, always-XY policy where appropriate, transformation and database versions, control points, bounds and round-trip tests, precision, epoch handling, lineage and rollback. The result is a workflow in which coordinates remain physically interpretable across files, services and analyses.",
+  "prerequisites": [
+    "vectors-matrices",
+    "probability-basics",
+    "vector-raster-spatial-data"
+  ],
+  "learningObjectives": [
+    "Decompose a CRS into reference frame, ellipsoid, axes, units and projection components.",
+    "Choose a projected or geodesic method from area of use and distortion requirements.",
+    "Distinguish CRS assignment from coordinate transformation and verify an operation pipeline.",
+    "Prevent axis, unit, epoch, grid and antimeridian failures in production spatial systems."
+  ],
+  "deepSections": [
+    {
+      "id": "reference-components",
+      "title": "A CRS is a complete coordinate contract, not an EPSG nickname",
+      "body": "An ellipsoid approximates Earth's shape with semi-major axis and flattening. A geodetic datum or reference frame positions and orients that ellipsoid relative to Earth; modern dynamic frames can include a coordinate epoch because crustal positions change. Geographic coordinates usually use longitude and latitude on the ellipsoid, with angular units. A projected CRS adds a mathematical conversion to planar eastings and northings, false origins and linear units. Vertical height may be ellipsoidal or referenced to a gravity-based geoid, a difference that matters for engineering. Compound CRS combines horizontal and vertical components. Authority codes are useful identifiers but should resolve to complete definitions. Axis order can be latitude-longitude by authority while many software APIs expect x-y longitude-latitude. Persist the definition and explicit I/O convention rather than trusting visual coordinate magnitude."
+    },
+    {
+      "id": "projection-choice",
+      "title": "Projection choice is an error-budget decision",
+      "body": "Gauss's result implies no plane map can preserve all local geometry of a curved surface. Conformal projections preserve local angles and shapes at infinitesimal scale, useful for navigation and many base maps, but distort area. Equal-area projections support density, land share and areal totals, while shapes vary. Equidistant designs preserve distance only along specified lines or from centers, not all pairwise distances. UTM zones provide low distortion across narrow longitude ranges but are awkward across zones and polar regions. National grids encode local accuracy and datum choices. Web Mercator is optimized for tiled display, clips polar latitudes and strongly inflates high-latitude size. Choose from spatial extent, latitude, required metric, tolerance and official practice. Quantify distortion across the actual data bounds instead of choosing from habit."
+    },
+    {
+      "id": "coordinate-operations",
+      "title": "Reprojection may be a multi-step datum operation with external resources",
+      "body": "Assigning a CRS records the meaning of unchanged numbers. Transforming computes new numbers. A source projected coordinate may be inversely projected to geographic, converted to geocentric coordinates, shifted or deformed between reference frames, and forward projected to the target. PROJ selects operations using CRS definitions, area of interest, accuracy metadata and available grids. A missing grid can cause a lower-accuracy fallback or failure depending on configuration. Transformation results can change with database and grid versions, especially when ambiguous legacy strings omit datum detail. High-accuracy work records the selected pipeline, software and resource versions and epoch. Transform densified lines or antimeridian-crossing geometries carefully because projecting vertices alone may not preserve the intended curved boundary. Z values need a vertical transformation, not merely passage through a 2D API."
+    },
+    {
+      "id": "crs-quality",
+      "title": "Control points, bounds and invariant tests catch silent coordinate corruption",
+      "body": "At ingestion, require CRS or quarantine the dataset; guessing from ranges is evidence, not proof. Check coordinates against the CRS area of use and expected business region, units, axis order and plausible extent. Transform several known control points and compare with an independent trusted result. Round-trip source to target and back within tolerance, recognizing that a round trip can still share the same wrong metadata. Measure local distances or areas against geodesic calculations on representative points. Persist original coordinates and transform provenance. Coordinate precision should match source accuracy; excess decimals do not add truth. Watch for swapped latitude and longitude, degrees treated as radians, feet treated as meters, dateline-wrapping bounds and invalid polar coordinates. Deploy new grid or PROJ versions through dual-run diffs and retain the previous transformation environment for rollback."
+    }
+  ],
+  "workedExamples": [
+    {
+      "title": "High-latitude Web Mercator",
+      "body": "At 60° latitude, spherical Mercator's local scale factor is two, so a map-space measurement can be twice the local ground scale and area inflation about four."
+    },
+    {
+      "title": "Assign versus reproject",
+      "body": "Coordinates −73.99,40.73 are degrees near New York. Assigning a meter-based UTM CRS mislocates them; transforming from the correct geographic CRS produces large meter coordinates."
+    }
+  ],
+  "lab": {
+    "language": "python",
+    "goal": "Implement spherical Mercator forward and inverse transforms, compare with pyproj, and quantify latitude-dependent scale distortion.",
+    "buildIt": "import math, numpy as np\nR=6378137.0\ndef mercator(lon_deg,lat_deg):\n    if not -85.05112878<=lat_deg<=85.05112878: raise ValueError('outside Web Mercator latitude domain')\n    lon,lat=map(math.radians,(lon_deg,lat_deg)); return R*lon,R*math.log(math.tan(math.pi/4+lat/2))\ndef inverse(x,y): return math.degrees(x/R),math.degrees(2*math.atan(math.exp(y/R))-math.pi/2)\npoints=[(0,0),(-73.9857,40.7484),(12.4924,41.8902),(151.2093,-33.8688)]; projected=[mercator(*p) for p in points]; roundtrips=[inverse(*p) for p in projected]",
+    "useIt": "from pyproj import Transformer\ntransformer=Transformer.from_crs('EPSG:4326','EPSG:3857',always_xy=True); library=[transformer.transform(*p) for p in points]\nscale_0=1/math.cos(math.radians(0)); scale_60=1/math.cos(math.radians(60))",
+    "verifyIt": "assert np.allclose(roundtrips,points,atol=1e-9)\nassert np.allclose(projected,library,atol=1e-6)\nassert abs(scale_0-1)<1e-12 and abs(scale_60-2)<1e-12\nx1,_=mercator(1,0); x2,_=mercator(2,0); assert abs((x2-x1)-R*math.radians(1))<1e-7\ntry: mercator(0,89)\nexcept ValueError: pass\nelse: raise AssertionError('projection domain must be enforced')",
+    "shipIt": "Persist full CRS and coordinate-operation metadata, use explicit axis order, verify control points and distortion, pin grids and databases, and retain original coordinates for rebuild and rollback."
+  },
+  "exercises": [
+    {
+      "prompt": "Why can no global projection preserve area and shape everywhere?",
+      "solution": "Flattening a curved surface into a plane requires distortion; projections choose which properties and locations to favor."
+    },
+    {
+      "prompt": "What is wrong with buffering EPSG:4326 coordinates by 500?",
+      "solution": "The numeric unit is degrees, so 500 does not mean meters and varies physically with latitude."
+    },
+    {
+      "prompt": "What extra field can a dynamic reference frame require?",
+      "solution": "Coordinate epoch, because positions in the frame change with tectonic motion over time."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "flow",
+      "title": "Coordinate-operation pipeline",
+      "items": [
+        "Read source CRS and epoch",
+        "Normalize axis and units",
+        "Inverse source projection",
+        "Transform reference frame with grids",
+        "Forward target projection",
+        "Validate control points and bounds"
+      ],
+      "caption": "A reprojection can be a sequence of geodetic operations rather than one formula.",
+      "afterSection": "coordinate-operations"
+    },
+    {
+      "type": "curve",
+      "title": "Web Mercator scale with latitude",
+      "series": [
+        {
+          "label": "local scale factor",
+          "points": [
+            [
+              0,
+              0.08
+            ],
+            [
+              0.25,
+              0.12
+            ],
+            [
+              0.5,
+              0.25
+            ],
+            [
+              0.72,
+              0.5
+            ],
+            [
+              0.9,
+              0.92
+            ]
+          ]
+        }
+      ],
+      "caption": "Conceptual normalized curve: scale grows as sec(latitude) and becomes extreme toward the projection limit.",
+      "afterSection": "projection-choice"
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "proj-docs",
+      "contribution": "Grounds coordinate-operation pipelines, datum transformations, grid shifts, axis behavior and reproducible implementation details."
+    },
+    {
+      "resource": "geopandas-docs",
+      "contribution": "Supports practical CRS assignment, transformation and geometry workflows in the Python ecosystem."
+    },
+    {
+      "resource": "geodata-science-book",
+      "contribution": "Provides pedagogical treatment of geographic and projected CRS choices for spatial analysis."
+    }
+  ]
 }

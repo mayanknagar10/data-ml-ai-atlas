@@ -7,30 +7,185 @@
     "ds",
     "as"
   ],
-  "interviewAnswer": "The propensity score is the probability of treatment given observed covariates. Matching or inverse-probability weighting can balance observed confounders, but cannot repair unmeasured confounding or poor overlap.",
+  "interviewAnswer": "The propensity score e(X)=P(A=1|X) is the probability of treatment given a valid pretreatment adjustment set. Under conditional exchangeability, conditioning on the true score balances the distribution of X between treatment groups, reducing a multivariate design problem to a scalar balancing score. It does not balance unmeasured confounders and its purpose is causal design, not treatment prediction accuracy. I choose X from a DAG, estimate scores without post-treatment variables, inspect common support, then match, stratify or weight for an explicitly chosen estimand. ATE, ATT, overlap and stabilized weights are different. I check standardized mean differences and distributions after design, effective sample size and extreme weights; iterate the design without outcome-driven cherry-picking. Outcome analysis respects matching or weights and uncertainty. Poor overlap leads to population restriction or redesign, not silent clipping, and sensitivity analysis addresses residual unmeasured confounding.",
   "keyPoints": [
-    "Check common support/positivity.",
-    "Assess covariate balance after adjustment.",
-    "Extreme weights increase variance."
+    "The propensity score balances measured pretreatment covariates under its causal assumptions; it is not a causal effect.",
+    "Covariate choice follows confounding structure, while treatment-model flexibility follows balance and overlap diagnostics.",
+    "Matching, subclassification, ATE, ATT and overlap weighting target different populations and require matching inference.",
+    "Extreme scores expose weak support; trimming, calipers and clipping change either the population or the estimator.",
+    "Good balance on measured X cannot certify exchangeability with respect to unmeasured causes."
   ],
   "resources": [
-    "causal-mixtape"
+    "propensity-score-paper",
+    "what-if-causal",
+    "dml-paper"
   ],
   "featured": false,
-  "why": "Propensity Scores, Matching & Weighting appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
-  "intuition": "Check common support/positivity.",
-  "deepDive": "The propensity score is the probability of treatment given observed covariates. Matching or inverse-probability weighting can balance observed confounders, but cannot repair unmeasured confounding or poor overlap. Assess covariate balance after adjustment. Extreme weights increase variance. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
-  "workedExample": "Weight observational treatment records so measured pre-treatment characteristics resemble a randomized comparison.",
+  "why": "Observed treatment groups often differ across many baseline variables. Direct regression can hide extrapolation and functional-form dependence. Propensity designs make the treatment-assignment comparison visible: do treated and control units exist at similar covariate values, and what target population can their overlap support? But a high-AUC treatment model can worsen weights, and a perfectly balanced score can still omit the true common cause. Matching discards or reuses units according to a design, while weighting can concentrate the estimate on a few observations. The method is credible only when estimand, covariates, support, balance, uncertainty and sensitivity are declared together.",
+  "intuition": "Two people with the same propensity score can have different covariates, but under the true score their treatment assignment has the same probability and the covariate distribution balances within score levels. Matching or weighting uses this property to construct treated and control groups that resemble the target population on measured baseline information. It is a design for comparability, not a guarantee of randomization.",
+  "deepDive": "Propensity scores connect conditional exchangeability to balancing designs. Their use requires graph-based covariates, target-specific weights, overlap-aware estimation and post-design balance checks. Flexible estimation, cross-fitting and augmented outcomes can reduce nuisance error but do not replace measured-confounding or positivity assumptions.",
+  "workedExample": "A treated unit with e=0.2 receives ATE weight 1/0.2=5 but ATT weight 1. A control with e=0.2 receives ATE weight 1/0.8=1.25 and ATT weight 0.2/0.8=0.25. The resulting pseudo-populations target different covariate distributions.",
   "commonMistakes": [
-    "Applying the method without checking its assumptions or data-generating process.",
-    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+    {
+      "misconception": "A correctly predicted treatment assignment proves a good propensity model.",
+      "correction": "The design goal is measured covariate balance with overlap, not maximum classification accuracy."
+    },
+    {
+      "misconception": "Matching on the score automatically balances all observed variables in the sample.",
+      "correction": "The theorem concerns the true score; finite-sample estimated designs require direct covariate balance checks."
+    },
+    {
+      "misconception": "Clipping weights leaves the ATE unchanged.",
+      "correction": "It changes contributions and introduces an approximation; trimming explicitly changes the target population."
+    },
+    {
+      "misconception": "Good propensity balance removes all confounding.",
+      "correction": "It addresses measured covariates only and depends on causal set, consistency and positivity assumptions."
+    }
   ],
   "followUps": [
-    "What assumptions does Propensity Scores, Matching & Weighting make?",
-    "How would you validate or debug Propensity Scores, Matching & Weighting in practice?"
+    {
+      "question": "Why not include post-treatment variables in the propensity model?",
+      "answer": "They can mediate treatment or act as colliders, changing or biasing the total-effect estimand."
+    },
+    {
+      "question": "What does overlap weighting estimate?",
+      "answer": "An effect in a population emphasizing units whose propensity is near one half, where treatment assignment has the most equipoise."
+    },
+    {
+      "question": "How do you evaluate propensity model quality?",
+      "answer": "Primarily through support, weighted or matched balance, effective sample size and influence for the chosen estimand, not predictive AUC alone."
+    }
   ],
-  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "production": "Version the reviewed pretreatment covariate set, treatment definition, score model, folds, matching or weight formula, calipers, replacement, trims and target estimand. Persist score distributions, balance tables, unmatched counts, effective sample size and weight quantiles. Assert temporal availability and group independence. Use outcome inference that respects design construction, attach augmented or sensitivity analyses and monitor assignment-policy drift. Any clipping, exclusion or overlap restriction creates a documented estimand change, and a loss of support triggers new data or policy design rather than silent extrapolation.",
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "math": "e(X)=P(A=1|X). If Y(a) is independent of A given X, then Y(a) is independent of A given e(X) under the propensity-score result. ATE weights are A/e+(1-A)/(1-e); ATT weights are A+(1-A)e/(1-e); overlap weights are A(1-e)+(1-A)e and target units with equipoise. Stabilized ATE weights multiply numerators by marginal treatment probabilities. Effective sample size is (sum w)^2/sum w^2. A standardized mean difference compares weighted covariate means divided by a declared pooled or reference standard deviation and should be checked beyond means for important variables.",
+  "code": "weighted_effect=weighted_mean(y,w,a==1)-weighted_mean(y,w,a==0); naive=y[a==1].mean()-y[a==0].mean(); effective=w.sum()**2/np.sum(w**2); overlap=np.mean((ps>.05)&(ps<.95))",
+  "lab": {
+    "language": "python",
+    "goal": "Estimate propensity scores, construct ATE weights, and verify improved measured balance and treatment-effect recovery.",
+    "buildIt": "import numpy as np\nfrom sklearn.linear_model import LogisticRegression\nrng=np.random.default_rng(31); n=14000; x=rng.normal(size=(n,2)); logits=1.1*x[:,0]-.8*x[:,1]; true_ps=1/(1+np.exp(-logits)); a=rng.binomial(1,true_ps); tau=2.; y=tau*a+2*x[:,0]-x[:,1]+rng.normal(size=n)\nps=LogisticRegression(max_iter=2000).fit(x,a).predict_proba(x)[:,1]; w=a/ps+(1-a)/(1-ps)\ndef weighted_mean(v,weight,mask): return np.sum(weight[mask]*v[mask])/np.sum(weight[mask])\ndef smd(v,weight):\n    m1=weighted_mean(v,weight,a==1); m0=weighted_mean(v,weight,a==0); pooled=np.sqrt((np.var(v[a==1])+np.var(v[a==0]))/2); return (m1-m0)/pooled\nbefore=np.array([smd(x[:,j],np.ones(n)) for j in range(2)]); after=np.array([smd(x[:,j],w) for j in range(2)])",
+    "useIt": "weighted_effect=weighted_mean(y,w,a==1)-weighted_mean(y,w,a==0); naive=y[a==1].mean()-y[a==0].mean(); effective=w.sum()**2/np.sum(w**2); overlap=np.mean((ps>.05)&(ps<.95))",
+    "verifyIt": "assert np.max(np.abs(after))<.04\nassert np.max(np.abs(before))>.5\nassert abs(weighted_effect-tau)<.08\nassert abs(naive-tau)>.8\nassert effective>n*.35 and overlap>.9\nassert np.all((ps>0)&(ps<1))",
+    "shipIt": "Persist propensity, balance, support and influence reports with the estimator; gate release on target-specific overlap and measured balance; and publish latent-confounding sensitivity."
+  },
+  "description": "Propensity scores support observational-study design by balancing measured pretreatment covariates across treatment groups. This chapter derives the balancing-score result, separates causal covariate selection from statistical score estimation, and explains why treatment-prediction accuracy is not the objective. It compares nearest-neighbor, caliper, exact and full matching; subclassification; inverse-probability, stabilized, ATT and overlap weighting; and augmented doubly robust estimators. It covers common support, extreme weights, effective sample size, replacement, matching ratios, trimming, clipping, balance metrics, cross-fitting and variance estimation. Worked examples derive ATE and ATT weights and show a high treatment-model AUC signaling deterministic assignment rather than a successful design. The lab simulates measured confounding, estimates propensity scores, verifies inverse weighting reduces standardized imbalance and recovers the known effect. Production guidance versions treatment assignment, covariates, score model, target weights and exclusions, monitors overlap and weight tails, and pairs measured-balance evidence with sensitivity to unmeasured confounding. Design quality is judged on the covariates and population the effect actually requires.",
+  "prerequisites": [
+    "backdoor-adjustment",
+    "logistic-regression"
+  ],
+  "learningObjectives": [
+    "Derive the propensity score's balancing role under conditional exchangeability.",
+    "Choose matching, stratification or target-specific weights for a declared population estimand.",
+    "Evaluate common support, balance, weight influence and effective sample size after design.",
+    "Combine propensity designs with outcome estimation, uncertainty and unmeasured-confounding sensitivity."
+  ],
+  "deepSections": [
+    {
+      "id": "balancing-role",
+      "title": "The score summarizes measured assignment probability",
+      "body": "The true propensity score is a balancing score: within its levels, measured X has the same distribution in treated and controls. If treatment is conditionally exchangeable given X, it remains so given the score. This result motivates design but does not make an estimated score magical. Include common causes and strong outcome predictors from a pretreatment causal set; exclude descendants of treatment and avoid adding instruments solely to improve treatment prediction. A variable weakly related to treatment can still matter for outcome precision. Treatment-model ROC AUC is not a success metric: perfect discrimination often means no overlap and no credible comparison. Fit flexible interactions or nonlinearities when balance requires them. Blinding outcome analysis during design reduces the temptation to choose a specification that yields a preferred effect."
+    },
+    {
+      "id": "matching-strata",
+      "title": "Matching constructs a supported comparison sample",
+      "body": "Nearest-neighbor matching pairs units close in propensity or covariate distance. A caliper rejects poor matches, improving comparability while changing which units are represented. Matching with replacement lets a strong control serve multiple treated units and requires reused-unit dependence in uncertainty; without replacement, order and scarcity matter. One-to-many matching trades bias and precision. Exact or coarsened matching preserves critical covariates before score distance. Full matching and subclassification retain more units with group weights. Always inspect raw covariates after matching, because close scores do not guarantee every important distribution is balanced in finite samples or under model misspecification. Report unmatched units, matching ratio, replacement, distance, caliper and target estimand. Analyze outcomes using the matched structure rather than treating the constructed sample as ordinary independent rows."
+    },
+    {
+      "id": "weighting-targets",
+      "title": "Weight formulas define the target population",
+      "body": "ATE weighting expands treated and controls to the full covariate distribution, assigning large weights to treated units with low e and controls with high e. ATT keeps treated weight one and reweights controls toward treated covariates. ATC reverses the target. Overlap weights emphasize units with treatment equipoise and are bounded, yielding a different and often more supported population. Stabilization can reduce variance while preserving the estimand when defined correctly. Normalization affects finite-sample form. Truncating weights limits influence but introduces bias; trimming score regions removes target units. Neither is mere numerical hygiene. Report the weighted covariate distribution, effective sample size and maximum influence. If stakeholders want an effect for unsupported units, additional data or assumptions are required."
+    },
+    {
+      "id": "balance-overlap",
+      "title": "Judge the design by balance and support, not fit",
+      "body": "Plot score distributions by treatment and identify regions with only one group. Compute standardized mean differences before and after design for covariates, nonlinear transforms and interactions that matter. Inspect variance ratios, quantiles and empirical distributions, not only means. Conventional thresholds such as absolute SMD below 0.1 are heuristics, not proof. Balance should use design weights and the chosen target standardization. Effective sample size reveals whether a large nominal sample collapses under variable weights. Check subgroup support and repeated entities. Iterate treatment-model specification when measured imbalance remains, while documenting the search. Do not test outcome differences during each iteration and then present nominal inference as if design were fixed. After balance, outcome regression can improve precision and augmented estimation can protect against one nuisance misspecification."
+    },
+    {
+      "id": "inference-sensitivity",
+      "title": "Design diagnostics cannot see latent confounding",
+      "body": "Estimate outcomes with weighted means, weighted regression, matched-set analysis or augmented scores consistent with the design. Standard errors must reflect estimated weights, matching reuse, clusters and cross-fitting; naive weighted least-squares errors are often insufficient. Bootstrap the full design when appropriate, recognizing that some matching algorithms are nonsmooth. Negative controls can reveal residual bias under specific assumptions. Sensitivity methods quantify how an unmeasured factor's treatment and outcome associations could change the conclusion. Report estimates across reasonable calipers, trimming rules and valid covariate sets as design sensitivity, without selecting the favorite. Preserve propensity and balance reports with the causal result. When assignment policy changes, scores and target population must be re-estimated and the identification argument revisited."
+    }
+  ],
+  "workedExamples": [
+    {
+      "title": "ATE versus ATT weights",
+      "body": "A treated unit with e=0.2 receives ATE weight 1/0.2=5 but ATT weight 1. A control with e=0.2 receives ATE weight 1/0.8=1.25 and ATT weight 0.2/0.8=0.25. The resulting pseudo-populations target different covariate distributions."
+    },
+    {
+      "title": "High AUC is a warning",
+      "body": "If treatment is almost deterministic from eligibility score, the propensity model can achieve near-perfect AUC. That means treated and controls barely overlap, so causal comparison relies on extrapolation or enormous weights rather than a successful design."
+    }
+  ],
+  "exercises": [
+    {
+      "prompt": "What population do ATT weights represent?",
+      "solution": "The observed treated population; controls are reweighted to resemble its baseline covariate distribution."
+    },
+    {
+      "prompt": "Why inspect effective sample size?",
+      "solution": "Highly variable weights can make a large dataset behave like a much smaller comparison and yield unstable inference."
+    },
+    {
+      "prompt": "What should happen when a covariate stratum contains no controls?",
+      "solution": "The ATE there is unsupported by observed comparison; restrict the estimand, collect data or adopt stronger transparent assumptions rather than rely on infinite weights."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "flow",
+      "title": "Propensity design workflow",
+      "items": [
+        "Choose causal covariates",
+        "Estimate assignment score",
+        "Inspect common support",
+        "Match, stratify or weight",
+        "Check raw-covariate balance",
+        "Analyze outcomes and sensitivity"
+      ],
+      "caption": "Outcome estimation follows a documented design that already established measured comparability.",
+      "afterSection": "balance-overlap"
+    },
+    {
+      "type": "compare",
+      "title": "Target-specific designs",
+      "left": {
+        "title": "ATE weighting",
+        "items": [
+          "Targets full population",
+          "Treated weight 1/e",
+          "Control weight 1/(1-e)",
+          "Extreme tails can dominate"
+        ]
+      },
+      "right": {
+        "title": "Overlap weighting",
+        "items": [
+          "Targets equipoise population",
+          "Treated weight 1-e",
+          "Control weight e",
+          "Bounded but different estimand"
+        ]
+      },
+      "caption": "Stable weights are not interchangeable when they describe different causal populations.",
+      "afterSection": "weighting-targets"
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "propensity-score-paper",
+      "contribution": "Provides the balancing-score theorem and foundational matching, subclassification and adjustment role."
+    },
+    {
+      "resource": "what-if-causal",
+      "contribution": "Supports inverse-probability weighting, positivity, target estimands and observational identification."
+    },
+    {
+      "resource": "dml-paper",
+      "contribution": "Supports augmented orthogonal estimation and cross-fitting with propensity nuisance models."
+    }
+  ]
 }

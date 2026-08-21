@@ -6,45 +6,66 @@
   "roles": [
     "all"
   ],
-  "interviewAnswer": "Precision asks: of predicted positives, how many were correct? Recall asks: of actual positives, how many did we find? F1 is the harmonic mean and is useful when both matter, but the right metric depends on error costs.",
+  "interviewAnswer": "Classification metrics start from the decision and the evaluation population. Accuracy is the fraction correct, but it hides which class is harmed and can look excellent under imbalance. A confusion matrix separates false positives and false negatives. Precision asks, among predicted positives, how many were positive; recall or sensitivity asks, among actual positives, how many were found; specificity measures rejection of negatives. F-beta combines precision and recall with a declared trade-off, while balanced accuracy and macro averaging prevent large classes from dominating. For probabilistic models I also evaluate log loss, Brier score and calibration because threshold metrics discard probability quality. I freeze label semantics, positive class, threshold, averaging rule, sample unit and abstention policy, then report uncertainty and operational slices. No single classification metric is universally sufficient.",
   "keyPoints": [
-    "Confusion matrix",
-    "False positive vs false negative cost",
-    "Threshold dependence",
-    "Macro/micro averaging"
+    "The confusion matrix is the accounting identity behind thresholded classification metrics.",
+    "Precision depends on prevalence as well as model behavior; recall and specificity condition on actual class.",
+    "Micro, macro, weighted and per-class averages answer different population questions.",
+    "Threshold metrics evaluate a decision rule; proper probability scores evaluate the forecast before thresholding.",
+    "Undefined denominators, abstentions, repeated entities and delayed labels require explicit policies."
   ],
   "resources": [
-    "google-mlcc",
-    "statquest",
-    "sklearn",
+    "sklearn-model-evaluation",
     "isl",
-    "google-mlcc-exercises"
+    "openintro-stats"
   ],
   "featured": true,
-  "why": "Precision/recall questions appear constantly in interviews because real systems rarely value false positives and false negatives equally.",
-  "intuition": "For a “failure” detector, recall asks “of all actual failures, how many did we catch?” Precision asks “of all alerts, how many were truly failures?”",
-  "deepDive": "Accuracy can look excellent on imbalanced data while the model detects nothing useful. Precision and recall change with the decision threshold. F1 summarizes both using a harmonic mean, but should not replace explicit thinking about business costs.",
-  "math": "Precision = TP/(TP+FP)\nRecall = TP/(TP+FN)\nF1 = 2·Precision·Recall/(Precision+Recall)",
-  "code": "from sklearn.metrics import precision_score, recall_score, f1_score\ny_true = [1,1,1,0,0,0,0,0]\ny_pred = [1,1,0,1,0,0,0,0]\nprint(precision_score(y_true, y_pred))\nprint(recall_score(y_true, y_pred))\nprint(f1_score(y_true, y_pred))",
+  "why": "A classifier rarely makes a cost-free symmetric decision. Fraud review has limited capacity, medical screening values missed disease differently from unnecessary follow-up, and content moderation may allow abstention. Accuracy compresses all of those consequences into one count. Even precision and recall are not intrinsic constants: precision changes when deployment prevalence changes, and both depend on the threshold and population. Multiclass averaging can quietly move the weight from examples to classes. Probability quality matters when scores drive ranking, pricing or later decisions. A defensible evaluation therefore begins with the action, constructs a complete confusion matrix, preserves per-class and per-slice evidence, and adds calibrated probability metrics and decision cost where appropriate.",
+  "intuition": "Imagine 1,000 cases with ten positives. Predicting every case negative is 99% accurate and operationally useless if finding positives is the purpose. The confusion matrix exposes the zero true positives. Precision looks from the alert queue inward; recall looks from all positives outward. Changing the threshold changes both queues. A metric is a particular view of this flow, so choose the view that matches who acts and who bears each error.",
+  "deepDive": "Rigorous classification evaluation links confusion counts, conditioning direction, averaging, probability quality and downstream utility. It treats the label and unit of analysis as data contracts, distinguishes threshold selection from final estimation, and reports uncertainty over independent entities. Multiclass, multilabel and selective systems require additional bookkeeping rather than automatic reuse of a binary headline score.",
+  "math": "For positive label 1, precision=TP/(TP+FP), recall=TP/(TP+FN), specificity=TN/(TN+FP), accuracy=(TP+TN)/N, and F_beta=(1+beta^2)PR/(beta^2 P+R). Balanced accuracy is the unweighted mean of class recalls in binary classification. Micro averaging pools confusion counts before division; macro averaging computes each class metric then averages. Log loss is -N^-1 sum_i [y_i log p_i+(1-y_i)log(1-p_i)], and Brier loss is N^-1 sum_i(p_i-y_i)^2. Confidence intervals must reflect the independent sampling unit.",
+  "code": "from sklearn.metrics import confusion_matrix,accuracy_score,precision_score,recall_score,f1_score\ncm=confusion_matrix(y,pred,labels=[0,1]); sk=(accuracy_score(y,pred),precision_score(y,pred),recall_score(y,pred),f1_score(y,pred))",
   "commonMistakes": [
-    "Choosing accuracy for a 1% positive class without checking class balance.",
-    "Saying “recall is true positives” without defining its denominator.",
-    "Selecting the threshold solely because precision and recall cross."
+    {
+      "misconception": "High accuracy proves a useful classifier.",
+      "correction": "Accuracy can be dominated by a common class. Inspect confusion counts, class-specific metrics and decision utility."
+    },
+    {
+      "misconception": "Precision is a fixed property of the model.",
+      "correction": "It changes with threshold, prevalence and population composition."
+    },
+    {
+      "misconception": "Macro and micro F1 are interchangeable summaries.",
+      "correction": "Macro weights classes equally; micro pools decisions and gives common classes more influence."
+    },
+    {
+      "misconception": "A good F1 score means probabilities are trustworthy.",
+      "correction": "F1 evaluates one threshold and says nothing directly about calibration or proper probability quality."
+    }
   ],
   "followUps": [
-    "When is PR-AUC preferable to ROC-AUC?",
-    "How would you choose the threshold?",
-    "Macro vs micro F1?",
-    "How do class weights affect training?"
+    {
+      "question": "When is balanced accuracy useful?",
+      "answer": "When class frequencies are unequal and equal class recall is the intended weighting; still report each class recall and support."
+    },
+    {
+      "question": "How do you handle precision when there are no predicted positives?",
+      "answer": "Treat it as undefined, expose the zero denominator and counts, and choose an explicit reporting policy rather than silently interpreting zero as evidence."
+    },
+    {
+      "question": "Why can micro F1 equal accuracy?",
+      "answer": "In single-label multiclass classification every error contributes one false positive and one false negative, so pooled micro precision and recall reduce to the fraction correct."
+    }
   ],
-  "production": "Monitor the metric at the operating threshold and across important slices. If labels arrive late, separate immediate system monitoring from delayed model-quality monitoring.",
-  "workedExample": "For safety-critical failure detection, require a minimum recall first, then maximize precision among thresholds meeting that safety constraint.",
+  "production": "Version labels, eligibility, prediction horizon, positive class, sample unit, threshold, weights, averaging and abstention. Unit-test confusion counts, swapped labels and zero denominators. Report counts and support with accuracy, per-class recall and precision, chosen aggregates, probability scores, calibration, operational cost and uncertainty over independent entities. Track prevalence and score drift because predictive values can change without model-code changes. Backfill by prediction cohort as delayed outcomes arrive. Select thresholds away from the final test set, gate releases on prespecified critical slices and capacity constraints, and retain the previous policy and model for rollback.",
+  "workedExample": "Among 1,000 transactions, ten are fraudulent. Predicting all as legitimate yields TN=990, FN=10, TP=FP=0 and accuracy 99%. Recall is 0, and precision is undefined because no alerts exist. The counts reveal that the system performs no detection work.",
   "lab": {
-    "goal": "Compute the confusion matrix metrics manually and with sklearn.",
     "language": "python",
-    "buildIt": "y=[1,1,1,0,0,0]; pred=[1,0,1,1,0,0]\ntp=sum(a==1 and b==1 for a,b in zip(y,pred)); fn=sum(a==1 and b==0 for a,b in zip(y,pred))\nfp=sum(a==0 and b==1 for a,b in zip(y,pred))\nprecision=tp/(tp+fp); recall=tp/(tp+fn); f1=2*precision*recall/(precision+recall)\nprint(tp,fp,fn,precision,recall,f1)\n",
-    "useIt": "from sklearn.metrics import classification_report\nprint(classification_report(y,pred,digits=3))\n",
-    "verifyIt": "assert round(precision,3)==.667 and round(recall,3)==.667\n"
+    "goal": "Implement confusion counts and core binary metrics, compare them with scikit-learn, and verify denominator and label invariants.",
+    "buildIt": "import numpy as np\ny=np.array([1,1,1,0,0,0,0,0]); pred=np.array([1,0,1,1,0,0,0,0])\ndef counts(y,p):\n    y=np.asarray(y); p=np.asarray(p)\n    return {'tp':int(((y==1)&(p==1)).sum()),'fp':int(((y==0)&(p==1)).sum()),'fn':int(((y==1)&(p==0)).sum()),'tn':int(((y==0)&(p==0)).sum())}\ndef metrics(y,p):\n    c=counts(y,p); tp,fp,fn,tn=(c[k] for k in ('tp','fp','fn','tn'))\n    div=lambda a,b: float('nan') if b==0 else a/b\n    return c|{'accuracy':(tp+tn)/len(y),'precision':div(tp,tp+fp),'recall':div(tp,tp+fn),'specificity':div(tn,tn+fp),'f1':div(2*tp,2*tp+fp+fn)}\nm=metrics(y,pred)",
+    "useIt": "from sklearn.metrics import confusion_matrix,accuracy_score,precision_score,recall_score,f1_score\ncm=confusion_matrix(y,pred,labels=[0,1]); sk=(accuracy_score(y,pred),precision_score(y,pred),recall_score(y,pred),f1_score(y,pred))",
+    "verifyIt": "assert m['tp']==2 and m['fp']==1 and m['fn']==1 and m['tn']==4\nassert np.allclose([m['accuracy'],m['precision'],m['recall'],m['f1']],sk)\nassert cm.tolist()==[[m['tn'],m['fp']],[m['fn'],m['tp']]]\nassert metrics(y,y)['accuracy']==1 and metrics(y,y)['f1']==1\nall_negative=np.zeros_like(y); assert np.isnan(metrics(y,all_negative)['precision'])",
+    "shipIt": "Freeze label and unit semantics, expose counts and undefined denominators, monitor prevalence and critical slices, and keep threshold selection separate from final evaluation."
   },
   "visual": {
     "type": "matrix",
@@ -70,6 +91,120 @@
     "caption": "Precision focuses on positive predictions; recall focuses on actual positives. The matrix makes the error types explicit."
   },
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "Classification metrics translate predictions into evidence about errors, probability quality and decision consequences. This chapter derives accuracy, precision, recall, specificity, negative predictive value, F-beta, balanced accuracy, Matthews correlation and multiclass averaging from the confusion matrix. It explains why prevalence and threshold alter predictive values, why accuracy can fail under imbalance, and how micro, macro, weighted and per-class reporting answer different questions. It separates hard-label evaluation from log loss, Brier score and calibration, covers top-k and multilabel settings, and treats abstention as an explicit outcome. Worked examples show a 99%-accurate useless classifier and a prevalence shift that changes precision without changing sensitivity or specificity. The lab implements binary counts and metrics, verifies them against scikit-learn, and checks invariants. Production guidance versions label definitions, positive-class orientation, thresholds, missing-label and abstention policies, evaluates independent entities and operational slices, and connects metrics to review capacity and error costs. Denominators and raw counts remain visible so small or undefined cells cannot masquerade as certainty.",
+  "prerequisites": [
+    "probability-basics",
+    "logistic-regression"
+  ],
+  "learningObjectives": [
+    "Derive binary classification metrics from confusion counts and explain their conditioning direction.",
+    "Select per-class, micro, macro and weighted summaries for a declared evaluation population.",
+    "Separate thresholded decision quality from ranking and probability-forecast quality.",
+    "Build a production scorecard that handles prevalence, abstention, uncertainty and operational cost."
+  ],
+  "deepSections": [
+    {
+      "id": "confusion-accounting",
+      "title": "Start with complete error accounting",
+      "body": "A binary confusion matrix cross-tabulates actual and predicted labels into TP, FP, FN and TN. Every hard-label metric is a transformation of these four counts, so inspecting the counts prevents denominator mistakes. Recall conditions on actual positives and answers coverage; specificity conditions on actual negatives. Precision conditions on predicted positives and describes alert purity; negative predictive value does the same for predicted negatives. Accuracy weights the two correct cells by their observed prevalence. Balanced accuracy instead averages class recalls, giving each class equal weight. Matthews correlation uses all four cells and remains informative in many imbalanced settings, but its interpretation is less direct for operations. Always state which label is positive: swapping it changes precision, recall and the meaning of harm. When predictions or outcomes can be unknown, deferred or abstained, add explicit states rather than forcing them into negative. Report denominators alongside ratios, since 90% precision from nine of ten alerts is different evidence from 900 of 1,000."
+    },
+    {
+      "id": "prevalence-threshold",
+      "title": "Prevalence and threshold change the operating point",
+      "body": "Sensitivity and specificity describe class-conditional behavior on a fixed distribution, while predictive values also depend on prevalence. Through Bayes' rule, precision equals sensitivity times prevalence divided by the overall predicted-positive rate. A screening test moved from a high-risk clinic to a general population can therefore keep the same sensitivity and specificity yet lose precision sharply. A score threshold creates the predicted labels; lowering it usually increases recall and false positives, while raising it usually increases precision and specificity. The right threshold depends on false-negative cost, false-positive cost, capacity and sometimes benefit per true positive. Select it using training or validation data, then estimate final performance on untouched data. Re-choosing a threshold on the test set leaks outcome information. If prevalence or costs change in production, re-evaluate expected utility rather than assuming an old F1 optimum remains valid."
+    },
+    {
+      "id": "averaging-structure",
+      "title": "Averaging defines whose performance counts",
+      "body": "For multiclass classification, one-vs-rest counts can be computed for every class. Macro averaging gives every class equal weight and highlights rare-class failures; weighted macro weights by class support and can resemble majority performance; micro averaging pools decisions and is dominated by common examples. In single-label multiclass problems, micro precision, recall and F1 equal accuracy, so reporting all four creates no new evidence. Multilabel tasks add multiple decisions per example; sample averaging emphasizes people or documents, while label averaging emphasizes labels. Hierarchical taxonomies may need distance-aware costs because confusing two sibling species is not equivalent to crossing a broad category. Top-k accuracy is appropriate only when the interface truly presents k candidates. Preserve the full confusion matrix and per-class support, then add an aggregate whose weighting matches the deployment claim. Slice by relevant cohorts without using tiny noisy cells as definitive rankings."
+    },
+    {
+      "id": "probabilities-decisions",
+      "title": "Scores, probabilities and decisions are different objects",
+      "body": "A classifier may rank examples well yet produce poorly calibrated probabilities, or be calibrated on average while ranking weakly. Hard-label metrics observe only one threshold and discard confidence. Log loss is a strictly proper score that heavily penalizes confident wrong probabilities; Brier loss is squared probability error and is easier to decompose, though its value reflects prevalence and refinement as well as calibration. Reliability diagrams diagnose calibration but require careful binning and uncertainty. ROC and precision-recall curves describe threshold sweeps, not probability calibration. Evaluate the artifact needed by the consumer: ranking metrics for a queue, proper scores and calibration for risk estimates, and threshold metrics plus utility for an automated action. Post-hoc calibration must be fitted without touching the final test set. Never call an arbitrary score a probability unless its empirical meaning has been checked."
+    },
+    {
+      "id": "production-scorecard",
+      "title": "Make the scorecard a versioned decision contract",
+      "body": "Freeze label query, observation window, prediction horizon, positive class, eligibility rules, sample unit, threshold, weighting, abstention behavior and averaging. Test confusion counts on hand-calculated fixtures and define zero-denominator behavior rather than accepting library defaults silently. Compare with naive, current-production and policy baselines. Compute uncertainty by patient, customer, session or another independent entity; ordinary row bootstraps are optimistic when entities repeat. Monitor label coverage and delay, prevalence, score distribution, confusion counts, per-class metrics, probability scores, calibration and decision cost. Capacity metrics such as precision among the top K may be more actionable than unconstrained recall. Backfill metrics by prediction cohort when labels mature. Promotion gates should be prespecified across critical slices, and rollback should remain possible when costs, calibration or data quality deteriorate."
+    }
+  ],
+  "workedExamples": [
+    {
+      "title": "Accuracy hides a failed detector",
+      "body": "Among 1,000 transactions, ten are fraudulent. Predicting all as legitimate yields TN=990, FN=10, TP=FP=0 and accuracy 99%. Recall is 0, and precision is undefined because no alerts exist. The counts reveal that the system performs no detection work."
+    },
+    {
+      "title": "Prevalence changes precision",
+      "body": "With 90% sensitivity, 90% specificity and 50% prevalence, precision is 0.9. At 1% prevalence, the same class-conditional rates give precision 0.009/(0.009+0.099), about 8.3%. Deployment population matters even when the test mechanism is unchanged."
+    }
+  ],
+  "exercises": [
+    {
+      "prompt": "For TP=30, FP=10, FN=20 and TN=40, compute precision and recall.",
+      "solution": "Precision is 30/(30+10)=0.75; recall is 30/(30+20)=0.60."
+    },
+    {
+      "prompt": "Which average should expose failure on a rare but equally important class?",
+      "solution": "Per-class results plus macro averaging, because macro gives each class equal weight rather than letting support dominate."
+    },
+    {
+      "prompt": "Why should a threshold be selected before the final test?",
+      "solution": "Searching thresholds uses labels and overfits the reported metric. Select on training or validation data and estimate once on untouched test data."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "compare",
+      "title": "Conditioning direction",
+      "left": {
+        "title": "Actual-class view",
+        "items": [
+          "Recall: positives found",
+          "Specificity: negatives rejected",
+          "Class support is denominator"
+        ]
+      },
+      "right": {
+        "title": "Predicted-class view",
+        "items": [
+          "Precision: alerts correct",
+          "NPV: clearances correct",
+          "Queue size is denominator"
+        ]
+      },
+      "caption": "The same confusion counts answer different questions depending on the denominator.",
+      "afterSection": "confusion-accounting"
+    },
+    {
+      "type": "flow",
+      "title": "From score to production action",
+      "items": [
+        "Define labels and independent units",
+        "Measure score and probability quality",
+        "Select threshold from costs and capacity",
+        "Estimate on untouched data",
+        "Monitor counts, slices and label delay"
+      ],
+      "caption": "Separate forecast quality, policy selection and final estimation to prevent optimistic claims.",
+      "afterSection": "production-scorecard"
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "sklearn-model-evaluation",
+      "contribution": "Verifies metric formulas, averaging conventions, zero-division behavior and probability scores."
+    },
+    {
+      "resource": "isl",
+      "contribution": "Supports confusion-matrix evaluation, class boundaries and test-error reasoning."
+    },
+    {
+      "resource": "openintro-stats",
+      "contribution": "Supports conditional probability, prevalence reasoning and uncertainty interpretation."
+    }
+  ]
 }

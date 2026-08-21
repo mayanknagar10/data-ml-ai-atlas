@@ -1,3 +1,3 @@
 # Ship it
 
-Version features and forest hyperparameters; monitor score calibration and feature/data drift rather than relying only on training feature importance.
+Persist sampling, seed, feature and leaf settings; benchmark model size and tail latency; monitor calibration, disagreement and subgroup error; retain a cheaper fallback and prior forest.

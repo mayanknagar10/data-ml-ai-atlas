@@ -7,34 +7,186 @@
     "ds",
     "as"
   ],
-  "interviewAnswer": "ICA decomposes observed mixtures into latent components that are statistically independent, typically relying on non-Gaussianity; unlike PCA, the objective is independence rather than just uncorrelated variance directions.",
+  "interviewAnswer": "ICA assumes observed centered signals are linear mixtures x=As of statistically independent, mostly non-Gaussian sources and estimates an unmixing W so s_hat=Wx has maximally independent components. Centering and whitening remove mean and second-order correlation; ICA then uses higher-order non-Gaussianity through negentropy-like contrasts, kurtosis or fixed-point FastICA updates. Identifiability is only up to permutation and scale or sign, and at most one source may be Gaussian in the classical model. Independence is stronger than uncorrelatedness. I choose component count and nonlinearity, inspect convergence and source stability across seeds, validate separation with domain or synthetic mixtures, and reject causal source labels without evidence. In production I version whitening and unmixing together, align components across refits and monitor reconstruction, independence diagnostics and drift.",
   "keyPoints": [
-    "Source separation",
-    "Independence",
-    "Non-Gaussianity",
-    "Whitening"
+    "ICA seeks statistically independent latent sources, while PCA only decorrelates orthogonal directions.",
+    "Whitening reduces the remaining mixing to an orthogonal rotation but does not itself create independence.",
+    "Non-Gaussianity enables source identification; multiple Gaussian sources are rotationally indistinguishable.",
+    "Recovered components have arbitrary order, sign and scale and must be aligned before comparison.",
+    "Convergence, independence contrasts and domain separation all need validation because the linear noiseless model can fail."
   ],
   "resources": [
-    "stanford-cs229",
-    "probml-book"
+    "sklearn-decomposition",
+    "probml-book",
+    "stanford-cs229"
   ],
   "featured": false,
-  "why": "ICA is a classic blind-source-separation method and deepens understanding of latent representations.",
-  "intuition": "Multiple microphones record mixtures of the same speakers; ICA tries to recover the original independent sources.",
-  "deepDive": "After centering/whitening, ICA optimizes a measure of non-Gaussianity or independence. Components are identifiable only up to permutation and scale/sign under standard assumptions.",
-  "math": "",
-  "code": "",
+  "why": "Independent component analysis is a powerful model for blind source separation, artifact removal and exploratory latent signals. It demonstrates why uncorrelated variables need not be independent and how higher-order distribution shape can identify a rotation left unresolved by PCA. The classic cocktail-party example is memorable, but the assumptions are demanding: instantaneous linear mixing, independent sources, non-Gaussianity, adequate samples and often equal source and sensor dimension. Real audio has delays and reverberation, biological signals may have dependent artifacts, and arbitrary component signs invite post-hoc stories. A rigorous treatment covers centering, whitening, contrast functions, FastICA, identifiability, component alignment, reconstruction and stability, then frames source interpretation and production use with the same caution as any learned latent representation.",
+  "intuition": "Two microphones record different weighted sums of two speakers. Correlation can whiten the recordings into an uncorrelated circular cloud, but any rotation of a Gaussian circle looks the same. Human speech is non-Gaussian: most samples are near quiet with occasional structured extremes. Rotate the whitened cloud until projections look maximally non-Gaussian and mutually independent; those directions can recover speakers. Each recovered waveform may be negated or rescaled and sources can swap order without changing the model. Echoes or dependent speakers violate the simple instantaneous mixture and limit separation.",
+  "deepDive": "ICA identifies a non-Gaussian independent-source rotation after centering and whitening. Its objective, preprocessing and identifiability conditions form one model. Reliable use aligns ambiguous components, tests convergence and independence, measures reconstruction and external separation, and preserves the entire whitening-unmixing artifact in service.",
+  "math": "With x=As and independent sources, estimate W≈A^-1. Center x and whiten z=V(x-μ) so Cov(z)=I; remaining mixing is orthogonal under standardized sources. FastICA for one component iterates w_new=E[z g(w^Tz)]-E[g'(w^Tz)]w, then normalizes and decorrelates multiple w vectors. Nonlinearities approximate negentropy. Identifiability permits permutation and reciprocal scaling: AP^-1D^-1 times DPs gives the same x. If two or more sources are Gaussian, rotations within their Gaussian subspace are not identifiable.",
+  "code": "from sklearn.decomposition import FastICA\nmodel=FastICA(n_components=2,whiten='unit-variance',random_state=2,max_iter=2000,tol=1e-5).fit(X); recovered=model.transform(X); recon=model.inverse_transform(recovered)\ncorr=np.corrcoef(S.T,recovered.T)[:2,2:]",
   "commonMistakes": [
-    "Equating independence with zero correlation.",
-    "Assuming ICA can separate Gaussian sources uniquely."
+    {
+      "misconception": "Whitened PCA components are independent.",
+      "correction": "They are uncorrelated with unit variance. Nonlinear or higher-order dependence can remain."
+    },
+    {
+      "misconception": "ICA recovers source order and sign.",
+      "correction": "Permutation, sign and scale are intrinsically ambiguous and require alignment or external calibration."
+    },
+    {
+      "misconception": "Every recovered component is a physical causal source.",
+      "correction": "It is a direction optimizing the assumed independence contrast under a simplified mixing model; domain validation is required."
+    },
+    {
+      "misconception": "More components always produce finer source separation.",
+      "correction": "Weak directions can amplify noise, overcomplete separation needs other assumptions, and component count must be validated."
+    }
   ],
   "followUps": [
-    "ICA vs PCA?",
-    "Why is non-Gaussianity important?"
+    {
+      "question": "Why can only one Gaussian source be identified?",
+      "answer": "Multiple Gaussian sources have rotationally symmetric standardized joint distributions, so rotations within their subspace remain equally independent."
+    },
+    {
+      "question": "PCA versus ICA?",
+      "answer": "PCA finds orthogonal maximum-variance directions using second moments; ICA rotates whitened data toward statistically independent non-Gaussian sources."
+    },
+    {
+      "question": "How do you compare ICA refits?",
+      "answer": "Normalize and match components by maximum absolute correlation or domain templates, then resolve signs and inspect ambiguous mappings."
+    }
   ],
-  "production": "Check component stability and physical interpretability; preprocessing strongly affects results.",
-  "workedExample": "Separate mixed audio signals recorded by several sensors without knowing the mixing coefficients.",
+  "production": "Version sensor and feature order, mean, whitening and retained rank, ICA algorithm, nonlinearity, tolerance, seed, unmixing, inverse mixing and component alignment. Test whitened covariance, transform-inverse reconstruction and fixed signal outputs. Monitor channel distributions, source variance and shape, dependence proxies, reconstruction residual, fit convergence and mapping confidence across refits. Sensor gain or preprocessing changes require full revalidation. Treat recovered sources as sensitive, restrict logs and downstream access, and validate any component removal on the actual task. Canary the whole transform, retain the previous artifact and provide raw, PCA or no-removal fallbacks when alignment, reconstruction or source health fails.",
+  "workedExample": "If x=A s, replace source s1 by -2s1 and divide A's first column by -2. The observations are identical. ICA can recover the waveform shape but not its original amplitude or sign without external calibration. Evaluation therefore uses absolute correlation after scale normalization and permutation matching.",
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "lab": {
+    "language": "python",
+    "goal": "Separate known non-Gaussian mixtures with FastICA and verify aligned source recovery, decorrelation and reconstruction.",
+    "buildIt": "import numpy as np\nrng=np.random.default_rng(13); n=1200; S=np.column_stack([rng.laplace(size=n),rng.uniform(-np.sqrt(3),np.sqrt(3),n)]); S=(S-S.mean(axis=0))/S.std(axis=0); A=np.array([[1,.6],[.4,1.2]]); X=S@A.T",
+    "useIt": "from sklearn.decomposition import FastICA\nmodel=FastICA(n_components=2,whiten='unit-variance',random_state=2,max_iter=2000,tol=1e-5).fit(X); recovered=model.transform(X); recon=model.inverse_transform(recovered)\ncorr=np.corrcoef(S.T,recovered.T)[:2,2:]",
+    "verifyIt": "from scipy.optimize import linear_sum_assignment\nrows,cols=linear_sum_assignment(-np.abs(corr)); matched=np.abs(corr[rows,cols])\nassert np.all(matched>0.95)\nassert np.max(np.abs(np.corrcoef(recovered.T)-np.eye(2)))<1e-10\nassert np.mean((X-recon)**2)<1e-20\nassert recovered.shape==S.shape\nassert np.isfinite(model.components_).all()",
+    "shipIt": "Freeze centering, whitening, unmixing and alignment; verify reconstruction and source stability; monitor sensor and independence drift; protect latent signals; retain raw or PCA fallback."
+  },
+  "description": "Independent component analysis separates a linear mixture into statistically independent, non-Gaussian latent sources. This chapter derives the mixing and unmixing model, distinguishes independence from zero covariance, and explains why centering and PCA whitening leave an orthogonal rotation to identify. It develops non-Gaussianity, kurtosis, negentropy approximations and symmetric FastICA fixed-point updates, including normalization and decorrelation. Practical sections cover component count, noise, over- and undercomplete mixtures, multiple Gaussian sources, scale, sign and permutation ambiguity, convergence, seed stability, temporal mixtures, artifact removal and leakage. Worked examples unmix synthetic Laplace and uniform sources and show why Gaussian rotations are unidentified. The lab uses scikit-learn FastICA on a known mixture, aligns recovered components by correlation and verifies reconstruction, decorrelation and source recovery. Production guidance versions centering, whitening and unmixing, aligns refits, monitors reconstruction and independence, protects sensitive sources and supports rollback. Recovered components are treated as model-dependent signals, not automatically causal generators. You will also learn why whitening alone cannot separate non-Gaussian sources, how sign and permutation matching prevents false drift, and when reverberation, dependence or sensor noise invalidates the instantaneous linear mixture.",
+  "prerequisites": [
+    "pca",
+    "independence",
+    "distributions"
+  ],
+  "learningObjectives": [
+    "State the ICA source model and its independence and non-Gaussian identifiability assumptions.",
+    "Explain centering, whitening, negentropy contrasts and FastICA updates.",
+    "Align components under sign, scale and permutation ambiguity and evaluate separation.",
+    "Deploy a complete whitening-unmixing pipeline with reconstruction, drift and privacy controls."
+  ],
+  "deepSections": [
+    {
+      "id": "source-model",
+      "title": "Linear mixtures are identifiable only under strong assumptions",
+      "body": "Let s contain independent latent sources and A be an invertible instantaneous mixing matrix. Observations x=As do not identify the absolute scale of a source because scaling one source and inversely scaling its column of A leaves x unchanged; signs and order are similarly arbitrary. If sources are non-Gaussian and at most one is Gaussian, independence can identify the unmixing up to these ambiguities under regularity conditions. Zero correlation is weaker: nonlinear dependence can remain after covariance vanishes. Additive sensor noise, more sources than sensors, fewer sources than sensors or time-delayed convolution require extensions. State the observation and source dimension, mixing physics and stationarity assumptions before interpreting a component. A successful matrix factorization alone does not show that the assumed source process generated the data."
+    },
+    {
+      "id": "whitening",
+      "title": "Whitening removes second-order structure, not dependence",
+      "body": "Center observations, eigendecompose or SVD the covariance, and transform retained directions to unit variance. If sources are standardized and mixing is square, the remaining mixing after whitening is orthogonal, reducing the search to rotations. Small eigenvalues amplify noise during whitening, so component truncation and regularization matter. PCA components are uncorrelated and ordered by variance; any orthogonal rotation of whitened coordinates remains uncorrelated. ICA chooses among those rotations using higher-order distribution shape. Fit centering and whitening only on training or reference data and preserve it with W. Different whitening conventions change scale and numerical outputs. Test covariance near identity, finite transforms and reconstruction before attributing failure to the ICA optimizer."
+    },
+    {
+      "id": "contrast-fastica",
+      "title": "Non-Gaussian contrasts choose an independent rotation",
+      "body": "The central limit heuristic says mixtures often look more Gaussian than independent sources, so seeking non-Gaussian projections can recover sources. Kurtosis is simple but outlier-sensitive. Negentropy measures distance from Gaussian entropy but is estimated through robust nonlinear functions such as log cosh. FastICA uses a fixed-point approximation to maximize a contrast: update w from expectations of z g(w^Tz) and derivative correction, normalize, and for multiple components orthogonalize rows symmetrically or deflate sequentially. Nonlinearity should match super-Gaussian or sub-Gaussian behavior. The objective is nonconvex; seeds and initial matrices affect ordering and possibly solutions. Check convergence warnings, iterations and repeated-run alignment rather than trusting one decomposition."
+    },
+    {
+      "id": "validation-interpretation",
+      "title": "Separation quality needs more than a contrast value",
+      "body": "On synthetic mixtures with known sources, align recovered and true components using maximum absolute correlation, then report correlation, signal-to-interference ratio and reconstruction. On real data, use domain references, artifact markers, independence diagnostics, stability across windows and downstream ablation. Mutual information estimates are difficult in high dimension; zero cross-correlation is necessary after whitening but insufficient. Inspect temporal autocorrelation and spectral structure when relevant. A component correlated with an eye-blink channel may be a removable artifact, but deleting it can also remove brain signal; validate downstream consequences. Never choose components using the final outcome labels and report performance on the same data. Component names are hypotheses, and sign or order has no semantic meaning."
+    },
+    {
+      "id": "unmixing-service",
+      "title": "Serve and monitor the complete linear transform",
+      "body": "Persist feature or sensor order, centering mean, whitening matrix, retained rank, ICA nonlinearity, random state, unmixing, mixing inverse and alignment map. Test transform-inverse reconstruction and fixed signals across runtimes. Monitor raw channel health, whitened covariance, source distributions, kurtosis or contrast, pairwise dependence proxies, reconstruction residual and convergence on refits. Sensor gain changes alter mixing and may invalidate W. Align new components by signed correlation or domain templates before updating IDs; ambiguous matches require review. Latent signals can reveal sensitive health or behavior, so restrict storage and access. Canary updated transforms, retain the prior full pipeline and provide raw, PCA or no-removal fallbacks when source or reconstruction health fails."
+    }
+  ],
+  "workedExamples": [
+    {
+      "title": "Scale and sign cannot be recovered",
+      "body": "If x=A s, replace source s1 by -2s1 and divide A's first column by -2. The observations are identical. ICA can recover the waveform shape but not its original amplitude or sign without external calibration. Evaluation therefore uses absolute correlation after scale normalization and permutation matching."
+    },
+    {
+      "title": "Gaussian sources remain rotationally ambiguous",
+      "body": "Two independent standard Gaussian sources have a circular joint density. Any orthogonal rotation is also independent standard Gaussian, so no higher-order direction identifies the originals. Non-Gaussianity is not a cosmetic assumption; it breaks this rotational symmetry and enables classical ICA identification."
+    }
+  ],
+  "exercises": [
+    {
+      "prompt": "Why is uncorrelatedness insufficient for ICA?",
+      "solution": "Variables can have zero covariance yet remain nonlinearly dependent; ICA targets stronger joint-factorization independence using higher-order information."
+    },
+    {
+      "prompt": "What does whitening accomplish?",
+      "solution": "It centers and rescales covariance to identity, reducing a square standardized mixing problem to finding an orthogonal rotation."
+    },
+    {
+      "prompt": "How should recovered sources be scored against truth?",
+      "solution": "Normalize, solve a permutation match using absolute similarity, resolve signs, then report separation and reconstruction metrics."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "flow",
+      "title": "ICA separation pipeline",
+      "items": [
+        "Center sensor mixtures",
+        "Whiten covariance",
+        "Search a non-Gaussian rotation",
+        "Normalize and decorrelate components",
+        "Align sign and permutation",
+        "Validate reconstruction and source evidence"
+      ],
+      "caption": "Whitening removes second-order mixing; ICA uses higher-order shape to choose the remaining rotation.",
+      "afterSection": "contrast-fastica"
+    },
+    {
+      "type": "compare",
+      "title": "PCA and ICA identifiability",
+      "left": {
+        "title": "PCA",
+        "items": [
+          "Second-order covariance",
+          "Orthogonal variance order",
+          "Gaussian data sufficient",
+          "Sign ambiguity"
+        ]
+      },
+      "right": {
+        "title": "ICA",
+        "items": [
+          "Higher-order independence",
+          "No variance ordering",
+          "Needs non-Gaussian sources",
+          "Sign, scale and permutation ambiguity"
+        ]
+      },
+      "caption": "ICA imposes stronger assumptions to identify a rotation PCA intentionally leaves unresolved.",
+      "afterSection": "whitening"
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "sklearn-decomposition",
+      "contribution": "Verifies current FastICA preprocessing, whitening, transform and convergence behavior."
+    },
+    {
+      "resource": "probml-book",
+      "contribution": "Grounds independent-source identifiability and latent linear modeling."
+    },
+    {
+      "resource": "stanford-cs229",
+      "contribution": "Supports ICA contrast, whitening and fixed-point algorithm treatment."
+    }
+  ]
 }

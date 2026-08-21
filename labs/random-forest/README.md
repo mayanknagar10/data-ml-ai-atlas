@@ -1,6 +1,6 @@
 # Random Forest — Code Lab
 
-Train and validate a Random Forest classifier.
+Build a bootstrap ensemble of randomized decision stumps and verify diversity, voting and a library forest baseline.
 
 ## 1. Build it
 

@@ -7,33 +7,185 @@
     "de",
     "ds"
   ],
-  "interviewAnswer": "HyperLogLog estimates the number of distinct elements from hashed leading-zero statistics, giving low relative error with very small memory and easy merging.",
+  "interviewAnswer": "HyperLogLog estimates the number of distinct elements using a uniform hash and m=2^p registers. The first p hash bits select a register; the remaining bits provide a rank equal to the position of the first one. Each register stores its maximum observed rank. Rare long zero prefixes imply many distinct trials. HLL combines registers with a bias-corrected harmonic-mean estimator, applies small-range correction such as linear counting when many registers are zero, and has standard error roughly 1.04/√m in its classical regime. Compatible sketches merge by register-wise maximum, so duplicates and partitions do not double count. I version precision, hash and encoding, monitor zero registers and saturation, validate against exact samples, and rebuild rather than merge incompatible sketches. It estimates cardinality, not identities, membership, frequency, intersections without extra machinery, or deletions.",
   "keyPoints": [
-    "Cardinality",
-    "Registers",
-    "Hashing",
-    "Mergeability"
+    "Hash prefixes assign independent-looking substreams; suffix ranks encode rare-event evidence.",
+    "Register maxima are duplicate-insensitive and merge through elementwise maximum.",
+    "The harmonic mean limits domination by exceptionally large registers.",
+    "Precision p sets m=2^p, relative error near 1.04/√m, and memory that grows linearly in m.",
+    "Small-range, bias and large-range corrections are part of a practical implementation, not optional decoration."
   ],
   "resources": [
-    "stanford-cs246"
+    "stanford-cs246",
+    "hyperloglog-paper"
   ],
   "featured": false,
-  "why": "Unique-user and cardinality queries are common analytics operations that become expensive with exact sets.",
-  "intuition": "A long leading-zero run is unlikely unless many distinct hashes were observed; many registers stabilize the estimate.",
-  "deepDive": "Distributed HLL sketches can merge register-wise without exchanging raw identifiers.",
-  "math": "",
+  "why": "Counting distinct users, devices, queries, products or flows exactly can require a distributed set whose memory and shuffle costs scale with cardinality. HyperLogLog summarizes the same question in fixed memory, tolerates duplicates and merges naturally across workers and time partitions. It is one of the clearest demonstrations that a carefully chosen random statistic can retain useful global information while discarding identities. The price is controlled uncertainty and a strict compatibility contract. A robust service must understand hashing, corrections, precision, small cardinalities, merge semantics and privacy—not merely call an estimate method and assume that every cardinality-related query is now solved.",
+  "intuition": "A fair binary hash begins with one zero half the time, two zeros one quarter, ten zeros roughly once in 1,024 trials. Seeing a very long zero run suggests that many distinct hashes were tried. One maximum is volatile, so HLL splits the stream into many registers using prefix bits. Each register observes its own suffix-rank maximum. Combining many substream estimates with a harmonic-mean form reduces variance and prevents one freak register from dominating. Repeated elements reproduce the same register and rank, leaving state unchanged.",
+  "deepDive": "HyperLogLog performs stochastic averaging over hash-partitioned substreams and encodes each substream by a maximum geometric rank. Its estimator, range corrections and constants form one algorithmic contract. Compatibility and hash quality are essential to mergeability, while exact audits and uncertainty are essential to decisions.",
+  "math": "Let m=2^p registers M_j. A uniform L-bit hash chooses j with p bits and rank ρ from the remaining q=L−p bits, where P(ρ≥r)=2^{-(r-1)}. Update M_j=max(M_j,ρ). The raw estimate is E=α_m m² /(Σ_j 2^{-M_j}), with α_m approaching about 0.7213/(1+1.079/m) for common m. When V registers are zero and the range is small, linear counting uses m ln(m/V). Classical relative standard error is approximately 1.04/√m. Register-wise max computes set union for compatible sketches. Inclusion–exclusion estimates intersections by |A|+|B|−|A∪B| but can be extremely noisy when overlap is small.",
   "code": "",
   "commonMistakes": [
-    "Expecting exact counts.",
-    "Using poor hashes."
+    {
+      "misconception": "HLL estimates event volume.",
+      "correction": "It estimates distinct canonical hashes; use counters for total events or frequencies."
+    },
+    {
+      "misconception": "Sketch estimates can be added across partitions.",
+      "correction": "Merge registers by maximum; adding estimates double counts overlap."
+    },
+    {
+      "misconception": "Any precisions or hash seeds can merge.",
+      "correction": "Compatibility is part of the data schema; reject or use a mathematically supported conversion."
+    },
+    {
+      "misconception": "Inclusion–exclusion makes every intersection accurate.",
+      "correction": "Subtracting noisy large estimates is unstable for small overlaps."
+    }
   ],
   "followUps": [
-    "Why is HLL mergeable?",
-    "How does memory affect error?"
+    {
+      "question": "Why use a harmonic mean?",
+      "answer": "It aggregates reciprocal register scales and limits domination by unusually large maximum ranks."
+    },
+    {
+      "question": "What does increasing p do?",
+      "answer": "It doubles registers and memory per bit while reducing standard error by roughly √2."
+    },
+    {
+      "question": "How do HLL sketches merge?",
+      "answer": "For identical schemas, take the elementwise maximum register because each register stores a union-compatible maximum."
+    }
   ],
-  "production": "Use exact counting for small sets and sketches when scale justifies approximation.",
-  "workedExample": "Services can estimate global daily active users by merging local sketches.",
+  "production": "Treat identity definition and sketch format as a versioned metric contract. Persist precision, register width, full hash and seed, byte encoding, rank and correction conventions, source window and checksum. Reject incompatible merges and validate any downsampling path. Handle late data and time windows through explicit bucket policy rather than deleting from a monolithic sketch. Monitor zero-register fraction, register histogram, maximum rank, sparse/dense transitions, merge rejections, snapshot age and relative error against exact audit slices. Attach uncertainty to alerts and confirm financially or legally consequential thresholds exactly. Restrict access because hashes and sketches can leak membership. Retain a prior snapshot and exact fallback for bounded cohorts so a bad hash rollout or serialization change can be rolled back.",
+  "workedExample": "With p=10 there are 1,024 registers and classical relative standard error about 3.25%. A true cardinality of one million therefore has a typical error scale of tens of thousands, not an exact last digit. Increasing to p=14 uses sixteen times as many registers and reduces standard error by four. Two daily sketches with the same hash contract merge by maximum to estimate distinct users across both days, automatically deduplicating users present on both days.",
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "HyperLogLog is a fixed-memory probabilistic algorithm for distinct counting. This chapter builds from the probability of leading-zero runs in uniform hashes to stochastic averaging across 2^p registers. It specifies register selection and rank calculation, explains maximum updates and duplicate invariance, derives the raw harmonic-mean estimator and interprets its normalization constant. It covers linear-counting correction for small ranges, empirical bias correction in modern variants, finite hash-width behavior and the classical relative standard error near 1.04/√m. It proves union merge as register-wise maximum and explains why differences, deletions and small intersections are not directly supported. Comparisons with exact sets, bitmaps, linear counting and bottom-k sketches clarify when HLL is appropriate. The lab implements a deterministic 64-bit version with small-range correction, verifies duplicate invariance and partition merge equality, and compares estimates with exact cardinality. Production guidance covers precision and hash versioning, sparse-to-dense storage, serialization, distributed aggregation, register saturation, exact audits, uncertainty-aware thresholds, privacy, corrupted state and rollback. The emphasis is on the full sketch contract: cardinality semantics, canonical identities, uniform hashes, compatible registers and corrections must all align.",
+  "prerequisites": [
+    "hash-tables",
+    "distributions",
+    "sampling-streaming-algorithms"
+  ],
+  "learningObjectives": [
+    "Implement register indexing, leading-zero rank updates, raw estimation and small-range correction.",
+    "Explain the 1.04/√m precision law and choose p from memory and decision uncertainty.",
+    "Prove duplicate invariance and compatible union merge while recognizing unsupported deletion and difference queries.",
+    "Operate versioned sketches with exact audits, serialization checks, privacy controls and rollback."
+  ],
+  "deepSections": [
+    {
+      "id": "rare-events",
+      "title": "Leading-zero ranks turn uniform hashes into cardinality evidence",
+      "body": "A uniformly distributed binary hash behaves like repeated fair coin flips. The probability that its suffix begins with r−1 zeros is 2^{-(r-1)}, so the largest observed rank grows logarithmically with the number of distinct trials. Duplicate keys reproduce the same full hash and cannot increase a maximum twice. A single global maximum has large variance. Earlier algorithms averaged multiple estimators; HLL uses stochastic averaging by dedicating p hash bits to one of m registers and computing a rank from the remaining bits. Each register summarizes a random substream. Uniformity and sufficient hash width are fundamental. Sequential IDs must be hashed, key encodings must be canonical, and domain separation prevents unintended reuse. A poor hash that clusters prefixes or suffixes biases register assignment or ranks and defeats the statistical model."
+    },
+    {
+      "id": "estimator",
+      "title": "The harmonic-mean estimator and corrections cover different cardinality regimes",
+      "body": "Each register M_j corresponds roughly to a substream cardinality proportional to 2^{M_j}. HLL aggregates through the reciprocal sum Σ2^{-M_j}, a harmonic-mean-like construction less sensitive than an arithmetic mean to a few extreme ranks. Multiplying by α_m m² corrects systematic bias in the asymptotic model. At small cardinalities many registers remain zero and the raw estimate is biased; linear counting m ln(m/V), where V is the zero-register count, uses occupancy information more effectively. Production variants such as HyperLogLog++ add empirically calibrated bias tables, sparse representations and refined range logic. At enormous cardinalities finite hash spaces cause collisions and registers can saturate, requiring large-range correction or a wider hash. Corrections must match implementation constants and serialization version; mixing formulas from different variants produces subtle drift."
+    },
+    {
+      "id": "precision-queries",
+      "title": "Precision is predictable, but not every set query is stable",
+      "body": "In the classical operating range the standard error is about 1.04/√m, and m doubles in the exponent p. One extra precision bit doubles memory but reduces standard error by only √2. Choose p from the uncertainty tolerable for the decision, and use replicated experiments or implementation guidance for tails and small ranges. HLL returns cardinality, not a confidence guarantee for every adversarial stream. Union is natural: each union register is the maximum of component registers. Intersection via inclusion–exclusion subtracts three noisy large estimates; when overlap is small, error can be comparable to or larger than the result, even producing negative raw differences. Direct joint estimators or other sketches may be necessary. Set difference and deletion cannot undo maxima without retaining more state or time-bucketed sketches."
+    },
+    {
+      "id": "hll-operations",
+      "title": "Distributed distinct counting is a schema-governed aggregation service",
+      "body": "Define the counted identity, event eligibility, time boundary, late-data policy and canonical byte encoding before sketching. Persist p, register width, hash algorithm and seed, rank convention, correction version, format version and source epoch. Merge only exact matches; downsampling higher precision may be possible with a proven implementation, while upsampling cannot recreate lost information. Use sparse storage for low cardinalities and switch deterministically to dense state. Snapshot checksums and register histograms reveal corruption and saturation. Audit against exact sets on sampled tenants or bounded windows and track signed relative error, not only average absolute error. Thresholds for billing, privacy release or capacity decisions should include uncertainty or exact confirmation. Hashing identifiers does not anonymize them against membership inference, so restrict sketches and apply retention and aggregation policy."
+    }
+  ],
+  "workedExamples": [
+    {
+      "title": "Union without double counting",
+      "body": "Worker sketches share a user seen on both partitions. Max-merge preserves the same register evidence, whereas summing daily cardinality estimates would count the user twice."
+    },
+    {
+      "title": "Unstable small intersection",
+      "body": "Two sets each near one million have union 1.99 million. Subtracting noisy HLL estimates to infer a ten-thousand overlap can have error comparable to the overlap."
+    }
+  ],
+  "lab": {
+    "language": "python",
+    "goal": "Implement a 64-bit HyperLogLog with small-range correction, then verify duplicates, accuracy and max-merge semantics.",
+    "buildIt": "import hashlib, math, numpy as np\nclass HyperLogLog:\n    def __init__(self,p=10): self.p=p; self.m=1<<p; self.q=64-p; self.registers=np.zeros(self.m,dtype=np.uint8)\n    def _hash64(self,value): return int.from_bytes(hashlib.blake2b(str(value).encode(),digest_size=8).digest(),'big')\n    def add(self,value):\n        h=self._hash64(value); index=h>>self.q; suffix=h&((1<<self.q)-1); rank=self.q-suffix.bit_length()+1 if suffix else self.q+1\n        if rank>self.registers[index]: self.registers[index]=rank\n    def estimate(self):\n        m=self.m; alpha=.7213/(1+1.079/m); raw=alpha*m*m/np.sum(np.exp2(-self.registers.astype(float))); zeros=int(np.count_nonzero(self.registers==0))\n        return m*math.log(m/zeros) if zeros and raw<=2.5*m else raw\n    def merge(self,other):\n        assert self.p==other.p\n        out=HyperLogLog(self.p); out.registers=np.maximum(self.registers,other.registers); return out\nvalues=[f'user-{i}' for i in range(50000)]",
+    "useIt": "left,right,whole=HyperLogLog(10),HyperLogLog(10),HyperLogLog(10)\nfor value in values[:25000]: left.add(value)\nfor value in values[25000:]: right.add(value)\nfor value in values+values[:5000]: whole.add(value)\ncombined=left.merge(right); estimate=whole.estimate(); exact=len(set(values))",
+    "verifyIt": "assert np.array_equal(combined.registers,whole.registers)\nassert abs(estimate-exact)/exact<.10\nbefore=whole.registers.copy(); [whole.add(v) for v in values[:1000]]; assert np.array_equal(before,whole.registers)\nempty=HyperLogLog(10); assert empty.estimate()==0.0\nsmall=HyperLogLog(10); [small.add(i) for i in range(100)]; assert abs(small.estimate()-100)/100<.15\ntry: left.merge(HyperLogLog(11))\nexcept AssertionError: pass\nelse: raise AssertionError('precision mismatch must not merge')",
+    "shipIt": "Freeze identity, hash and estimator versions, reject incompatible state, monitor register distributions and exact audit error, and attach uncertainty or exact confirmation to consequential thresholds."
+  },
+  "exercises": [
+    {
+      "prompt": "Why do duplicates not change a sketch?",
+      "solution": "The same key selects the same register and rank, and max with the stored value is idempotent."
+    },
+    {
+      "prompt": "How does memory scale with precision p?",
+      "solution": "Registers m=2^p, so each extra bit doubles memory and improves standard error only by about √2."
+    },
+    {
+      "prompt": "Why is subtraction unsupported?",
+      "solution": "A maximum does not retain which element created it or the next-largest rank, so removing an element cannot reconstruct prior state."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "flow",
+      "title": "HyperLogLog update",
+      "items": [
+        "Canonicalize distinct identity",
+        "Hash to a fixed-width word",
+        "Prefix selects one register",
+        "Suffix yields leading-zero rank",
+        "Store register maximum",
+        "Estimate with corrections"
+      ],
+      "caption": "One hash supplies both stochastic partitioning and rare-event evidence.",
+      "afterSection": "rare-events"
+    },
+    {
+      "type": "curve",
+      "title": "Precision versus register count",
+      "series": [
+        {
+          "label": "Relative standard error",
+          "points": [
+            [
+              0.08,
+              0.9
+            ],
+            [
+              0.25,
+              0.64
+            ],
+            [
+              0.48,
+              0.43
+            ],
+            [
+              0.72,
+              0.29
+            ],
+            [
+              0.94,
+              0.2
+            ]
+          ]
+        }
+      ],
+      "caption": "Conceptual normalized curve: error falls with the square root of the number of registers.",
+      "afterSection": "precision-queries"
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "hyperloglog-paper",
+      "contribution": "Grounds stochastic averaging, the harmonic-mean estimator, correction regimes and classical precision analysis."
+    },
+    {
+      "resource": "stanford-cs246",
+      "contribution": "Supports the streaming distinct-count context, hashing intuition and comparison with other sketches."
+    }
+  ]
 }

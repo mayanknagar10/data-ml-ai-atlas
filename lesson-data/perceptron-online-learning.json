@@ -8,33 +8,185 @@
     "mle",
     "as"
   ],
-  "interviewAnswer": "The perceptron is an online linear classifier that updates weights only when an example is misclassified. Under linear separability it has a finite mistake bound tied to the margin.",
+  "interviewAnswer": "The perceptron is an online linear classifier for labels ±1. For each example, it predicts sign(wᵀx+b); if y(wᵀx+b)≤0, it updates w←w+ηyx and b←b+ηy. On linearly separable data with ||x||≤R and separator margin γ, the classic mistake bound is at most (R/γ)² under the normalized setup. On nonseparable data it may cycle and has no calibrated probability. Averaging weight vectors often improves stability, while margin-based passive-aggressive or regularized SGD methods handle noisy streams more deliberately. In production I define event order, feature and label timing, update eligibility, checkpointing and rollback; evaluate prequentially before learning each label; monitor mistake and update rates, margins, drift, delayed labels and poisoning risk; and keep a frozen fallback.",
   "keyPoints": [
-    "Online updates",
-    "Linear classifier",
-    "Mistake-driven learning",
-    "Margin"
+    "The perceptron updates only on mistakes or nonpositive margins, making training naturally online.",
+    "Its finite mistake bound requires linear separability, bounded feature norm and a positive margin.",
+    "Data order affects the fitted vector, especially when classes overlap.",
+    "Averaging reduces oscillation, but perceptron scores remain uncalibrated.",
+    "Online learning requires pre-update evaluation, temporal feature correctness and secure update governance."
   ],
   "resources": [
-    "stanford-cs229"
+    "perceptron-paper",
+    "stanford-cs229",
+    "sklearn"
   ],
   "featured": false,
-  "why": "The perceptron is a simple foundation for online learning and linear decision rules.",
-  "intuition": "Process one example at a time: if the current separator is wrong, nudge it toward the correct class.",
-  "deepDive": "For labels ±1, update w←w+ηyx when y(w·x)≤0. The classical convergence theorem assumes separability; noisy data can cause ongoing updates.",
-  "math": "",
-  "code": "",
+  "why": "The perceptron is the simplest complete example of an online learning system: predict, observe, measure, update and continue. Its geometry shows how mistakes rotate a hyperplane toward the correct example, and its convergence theorem introduces margin-based guarantees without probabilistic assumptions. The theorem's conditions are as important as the result; nonseparable or noisy streams can cause endless oscillation, feature scaling changes R and the margin, and shuffled batch accuracy can hide time-order failures. The algorithm also opens practical topics that static training avoids: delayed labels, state checkpoints, idempotent events, drift adaptation, catastrophic updates, poisoning and rollback. Averaged perceptrons connect online iterates to stable batch predictors, while hinge-loss SGD and passive-aggressive methods show how the idea evolves. Mastery means understanding both the proof mechanism and the operational state machine.",
+  "intuition": "A separating line makes a mistake on a positive point. Adding that point's vector to the weights increases its future score; subtracting a misclassified negative point decreases its score. Each correction pushes the boundary in a helpful direction. If a fixed margin separator exists, progress toward it accumulates faster than weight length can grow, so only finitely many mistakes fit those inequalities. If contradictory examples share the same features, updates undo one another forever. Averaging the sequence records the region visited most often instead of trusting the final swing.",
+  "deepDive": "Perceptron learning is a stateful online update with a geometric convergence argument under separability. The useful production object includes feature transforms, event order, current and averaged weights, update count and checkpoint lineage. Evaluation must score an event before consuming its label and must separate adaptation to legitimate drift from instability, leakage or adversarial updates.",
+  "math": "For score f_t(x)=w_t^T x+b_t and y_t∈{-1,+1}, if y_t f_t(x_t)≤0 update w_{t+1}=w_t+η y_t x_t and b_{t+1}=b_t+ηy_t; otherwise keep state. If ||x_t||≤R and a unit vector u satisfies y_t u^T x_t≥γ for all examples, the number of mistakes M≤(R/γ)² for the homogeneous normalized theorem. Proof compares growth of u^T w after mistakes with ||w||≤R√M. Averaged perceptron predicts using an average of iterates rather than only the last.",
+  "code": "from sklearn.linear_model import Perceptron\nmodel=Perceptron(max_iter=1000,tol=1e-6,shuffle=False,eta0=1.0,random_state=0).fit(X,y)\nsk_pred=model.predict(X)",
   "commonMistakes": [
-    "Assuming convergence on nonseparable data.",
-    "Confusing perceptron probabilities with logistic regression."
+    {
+      "misconception": "The perceptron always converges.",
+      "correction": "The finite mistake guarantee requires a linearly separable sequence with bounded norm and positive margin. Noisy data can cycle."
+    },
+    {
+      "misconception": "Its score is a probability.",
+      "correction": "It is an uncalibrated linear score with arbitrary scale determined by updates and representation."
+    },
+    {
+      "misconception": "Online evaluation can score after updating on the same label.",
+      "correction": "That leaks the outcome into its own prediction. Record loss before applying the update."
+    },
+    {
+      "misconception": "Automatic updates always solve drift.",
+      "correction": "They can chase noise, delayed labels or attacks. Adaptation needs provenance, replay evidence, monitoring, checkpoints and rollback."
+    }
   ],
   "followUps": [
-    "Perceptron vs logistic regression?",
-    "What is the mistake bound?"
+    {
+      "question": "What determines the perceptron mistake bound?",
+      "answer": "The squared ratio of maximum feature norm R to the achievable separator margin gamma under the theorem's normalized setup."
+    },
+    {
+      "question": "Why average perceptron weights?",
+      "answer": "Averaging reduces dependence on the last noisy updates and emphasizes weight vectors that persisted across many examples."
+    },
+    {
+      "question": "Perceptron versus logistic regression?",
+      "answer": "Perceptron updates on margin errors without a probabilistic loss; logistic regression optimizes log loss and can support probability estimation under validation."
+    }
   ],
-  "production": "Online updates require drift handling, learning-rate/version controls and protection from bad/adversarial labels.",
-  "workedExample": "A streaming spam classifier can update after each newly labeled message rather than retraining from scratch.",
+  "production": "Version the feature transform and scaling, label and tie mapping, event-time contract, learning rate, margin rule, current weights, averaged accumulators, counters and last processed event. Predict and log before applying a label update. Make updates idempotent and checkpoint atomically with finite-value and norm checks. Monitor rolling mistake and update rates, score and margin distributions, norm, class and feature drift, label delay and duplicate-event rate. Authenticate label sources, rate-limit updates and inspect unusual concentrated feature directions to reduce poisoning risk. Shadow new update policies against historical replay, keep a frozen champion and retain checkpoint lineage for rollback to an exact event offset. Define explicit fallback during label, feature, checkpoint or drift incidents.",
+  "workedExample": "Start w=[0,0], b=0 and predict positive on ties. For x1=[2,1], y1=-1, the prediction is wrong, so w=[-2,-1], b=-1. For x2=[1,2], y2=+1, score is -5 and another mistake updates w=[-1,1], b=0. The second positive point now has score 1. The state depends on order even though each update follows the same rule.",
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "lab": {
+    "language": "python",
+    "goal": "Implement standard and averaged perceptrons, compare with scikit-learn, and verify separable convergence and deterministic replay.",
+    "buildIt": "import numpy as np\nX=np.array([[-3,-1],[-2,-2],[-1,-2],[1,2],[2,1],[3,2]],float); y=np.array([-1,-1,-1,1,1,1])\ndef train(X,y,epochs=20):\n    w=np.zeros(X.shape[1]); b=0.0; wsum=np.zeros_like(w); bsum=0.0; steps=0; mistakes=[]\n    for _ in range(epochs):\n        count=0\n        for xi,yi in zip(X,y):\n            if yi*(xi@w+b)<=0: w+=yi*xi; b+=yi; count+=1\n            wsum+=w; bsum+=b; steps+=1\n        mistakes.append(count)\n    return w,b,wsum/steps,bsum/steps,mistakes\nw,b,wavg,bavg,mistakes=train(X,y); scratch_pred=np.where(X@wavg+bavg>=0,1,-1)",
+    "useIt": "from sklearn.linear_model import Perceptron\nmodel=Perceptron(max_iter=1000,tol=1e-6,shuffle=False,eta0=1.0,random_state=0).fit(X,y)\nsk_pred=model.predict(X)",
+    "verifyIt": "assert np.array_equal(scratch_pred,y)\nassert np.array_equal(sk_pred,y)\nassert mistakes[-1]==0\nassert np.min(y*(X@w+b))>0\nw2,b2,wa2,ba2,m2=train(X,y); assert np.allclose(w,w2) and b==b2 and np.allclose(wavg,wa2) and bavg==ba2 and mistakes==m2\nassert np.isfinite(wavg).all()",
+    "shipIt": "Freeze event and label timing, make updates idempotent, checkpoint all online state, score before learning, monitor margins and update rate, defend label provenance, and keep a frozen rollback model."
+  },
+  "description": "The perceptron learns a linear boundary from a stream by updating only when an example is misclassified or has nonpositive margin. This chapter derives the update geometrically and proves the classical finite mistake bound under bounded norm and positive separability margin. It explains bias terms, feature scaling, data order, nonseparable cycling, pocket and averaged variants, multiclass updates, kernel perceptrons, hinge-loss SGD and passive-aggressive learning. Worked examples trace updates and construct contradictory points that force oscillation. The lab implements standard and averaged perceptrons from scratch, compares with scikit-learn and verifies separable convergence, deterministic replay and margin signs. Production coverage designs a prequential predict-then-update loop with event-time features, delayed labels, idempotency, checkpointing, update-rate and margin monitoring, drift policy, privacy, poisoning defense, canaries and rollback. The perceptron is deliberately simple so the core online-learning contract is impossible to miss: every update changes future decisions and therefore needs the same lineage and safety controls as a deployment.",
+  "prerequisites": [
+    "vectors-matrices",
+    "norms-distances"
+  ],
+  "learningObjectives": [
+    "Implement the perceptron update and explain its effect on signed margin.",
+    "Prove the mistake bound and state every separability, norm and margin condition.",
+    "Compare final, pocket, averaged and margin-based online linear learners.",
+    "Build leakage-free prequential evaluation and checkpointed update operations."
+  ],
+  "deepSections": [
+    {
+      "id": "online-update",
+      "title": "Predict first, then update from the revealed label",
+      "body": "At step t, compute score w^T x+b and emit a label under a declared zero-score tie rule. Only after the true label becomes available may the state change. If the signed margin y(w^T x+b) is nonpositive, add ηyx to w and ηy to b. For a mistaken positive example, this raises its own score by η||x||² plus the bias contribution; for a mistaken negative, it lowers the score. The standard perceptron update is scale sensitive and does not minimize a smooth probabilistic loss. A margin perceptron can update when y f(x) falls below a positive threshold, not just on mistakes. Shuffle order in offline epochs only if it represents the intended algorithm; in a real stream, order contains temporal information. Persist the label encoding and tie behavior because changing either changes updates."
+    },
+    {
+      "id": "mistake-proof",
+      "title": "The convergence proof is a progress-versus-growth argument",
+      "body": "Assume a homogeneous separator u with unit norm gives every example signed margin at least γ and every feature vector has norm at most R. After each mistake, projection u^T w increases by at least γ. After M mistakes it is at least Mγ. Meanwhile, because the update occurs when y w^T x≤0, squared norm grows by at most R² per mistake, so ||w||≤R√M. Cauchy-Schwarz gives Mγ≤u^T w≤||w||≤R√M, hence M≤(R/γ)². The proof guarantees a finite number of mistakes on a separable sequence; it does not give calibrated probabilities, good margin, robustness to noise or a unique solution. Bias can be incorporated by augmenting x with a constant, which changes R. Feature scaling therefore changes the bound and practical convergence."
+    },
+    {
+      "id": "nonseparable-variants",
+      "title": "Noisy streams require a different objective or state summary",
+      "body": "If identical features arrive with opposing labels, no separator exists and the perceptron can alternate forever. The final iterate depends on order and may be poor even when an earlier vector performed well. The pocket algorithm retains the best observed vector under a validation or training criterion. Averaged perceptron accumulates iterates, giving states that survive longer more influence and often improving generalization. Voted perceptron retains multiple vectors and durations. Multiclass perceptron adds features to the true class weight and subtracts them from the predicted class. Kernel perceptron replaces dot products but accumulates example coefficients and inherits scaling costs. Regularized hinge-loss SGD and passive-aggressive updates provide explicit objectives or minimum-change margin corrections. Select a variant based on noise, drift, memory and evaluation evidence rather than relying on the separable theorem outside its domain."
+    },
+    {
+      "id": "prequential-evaluation",
+      "title": "Online evaluation must preserve causality",
+      "body": "Prequential evaluation predicts each event using state available before its label, records the loss, and only then updates. If labels arrive late, store the original prediction and feature/event identifiers, then update when a valid label is matched; never rebuild features using future information. Rolling metrics expose adaptation and forgetting but need uncertainty and cohort context. Compare with a frozen model and simple prevalence baseline. Track cumulative mistakes, windowed error, update rate, margin distribution, class frequency and weight norm. A sudden drop in update rate can mean improvement, stuck features or label outage. Hyperparameters and drift rules still need an outer historical replay or shadow evaluation. Resetting after observing bad outcomes is itself a policy decision and must be included in reported simulation."
+    },
+    {
+      "id": "stateful-production",
+      "title": "Treat online weights as mutable production state",
+      "body": "Version feature code, scaling, label map, learning rate, margin rule, update eligibility, current weights, averaged accumulators, counters and event offset. Updates must be idempotent so replayed labels do not apply twice. Create atomic checkpoints with lineage and validate finite norms before promotion. Gate labels by provenance, freshness and abuse controls; online learners create a direct poisoning surface. Separate tenants or cohorts when appropriate and minimize feature and label logs. Monitor update and mistake rates, scores, margins, norm, feature drift, delayed-label age and checkpoint health. Use shadow updates before enabling automatic adaptation. Keep a frozen champion and rollback to a known event offset. Define behavior during label outage, feature outage, corrupted checkpoint and detected drift; adaptation without a safe stop is an uncontrolled feedback loop."
+    }
+  ],
+  "workedExamples": [
+    {
+      "title": "Trace two mistakes",
+      "body": "Start w=[0,0], b=0 and predict positive on ties. For x1=[2,1], y1=-1, the prediction is wrong, so w=[-2,-1], b=-1. For x2=[1,2], y2=+1, score is -5 and another mistake updates w=[-1,1], b=0. The second positive point now has score 1. The state depends on order even though each update follows the same rule."
+    },
+    {
+      "title": "Contradictory labels force cycling",
+      "body": "The stream alternates x=[1,0] with y=+1 and the same x with y=-1. Any deterministic linear score assigns one sign, so one label remains wrong. Updates push w1 up and down and no finite mistake bound applies because positive margin separability is impossible. Averaging may stabilize near zero but cannot create missing information."
+    }
+  ],
+  "exercises": [
+    {
+      "prompt": "If R=3 and gamma=0.5, what mistake bound follows?",
+      "solution": "(R/gamma)^2=(3/0.5)^2=36 under the theorem's assumptions."
+    },
+    {
+      "prompt": "Why does feature scaling affect the theorem?",
+      "solution": "It changes both maximum norm R and achievable margin gamma, as well as practical update magnitudes."
+    },
+    {
+      "prompt": "How should a delayed label be processed?",
+      "solution": "Match it to the stored pre-update prediction and event-time features, record loss, then apply one idempotent update according to policy."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "flow",
+      "title": "Online perceptron loop",
+      "items": [
+        "Receive event-time features",
+        "Predict with current checkpoint",
+        "Record score and version",
+        "Receive and validate label",
+        "Measure pre-update mistake",
+        "Apply one idempotent update"
+      ],
+      "caption": "Evaluation precedes learning; reversing those steps leaks each label into its own prediction.",
+      "afterSection": "prequential-evaluation"
+    },
+    {
+      "type": "compare",
+      "title": "Separable and nonseparable streams",
+      "left": {
+        "title": "Positive-margin separable",
+        "items": [
+          "Finite mistake bound",
+          "Updates eventually stop",
+          "Order changes solution",
+          "No probability guarantee"
+        ]
+      },
+      "right": {
+        "title": "Overlapping or contradictory",
+        "items": [
+          "May update forever",
+          "Final iterate unstable",
+          "Average or new objective helps",
+          "Information limit remains"
+        ]
+      },
+      "caption": "The convergence theorem is powerful precisely because its assumptions are explicit.",
+      "afterSection": "nonseparable-variants"
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "perceptron-paper",
+      "contribution": "Provides the foundational perceptron learning-system model."
+    },
+    {
+      "resource": "stanford-cs229",
+      "contribution": "Supports the online update, separability and margin-bound derivation."
+    },
+    {
+      "resource": "sklearn",
+      "contribution": "Verifies current perceptron estimator behavior and practical linear-model integration."
+    }
+  ]
 }

@@ -1,3 +1,3 @@
 # Ship it
 
-Causal decisions should document assumptions and sensitivity; production recommendation/policy systems should not turn predictive correlations into interventions without evidence.
+Persist the causal question, cohort, propensity and outcome models, overlap diagnostics and sensitivity analyses; monitor assignment policy and keep counterfactual evidence alive.

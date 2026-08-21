@@ -8,33 +8,201 @@
     "ds",
     "mle"
   ],
-  "interviewAnswer": "Count-Min Sketch approximates frequencies in streams with multiple hash tables; queries take the minimum counter and overestimate nonnegative frequencies within probabilistic error bounds.",
+  "interviewAnswer": "A Count-Min sketch summarizes a nonnegative frequency vector in a d×w counter table. Each update adds its amount to one bucket per hash row; a point query returns the minimum of those counters. In a cash-register stream the estimate never undercounts, because each chosen counter contains the target frequency plus collision mass. With width about e/ε and depth about ln(1/δ), the overestimate is at most ε times total stream mass with probability at least 1−δ under the standard hash assumptions. Rows reduce failure probability; width reduces collision error. Sketches with identical dimensions and hashes merge by elementwise addition. I distinguish this contract from signed turnstile streams, version the hashes, prevent overflow, validate heavy hitters against exact samples, and monitor error as distribution and total mass change.",
   "keyPoints": [
-    "Streaming counts",
-    "Sublinear memory",
-    "Collisions",
-    "Heavy hitters"
+    "The minimum removes rows with unusually large positive collision noise.",
+    "Nonnegative updates give one-sided overestimation; signed updates need a different analysis or sketch.",
+    "Width controls additive error and depth controls the probability that every row is bad.",
+    "Linearity enables merge only when counter shape, hash family, encoding and update semantics match.",
+    "Heavy-hitter discovery also needs a candidate mechanism because the sketch cannot enumerate original keys."
   ],
   "resources": [
-    "stanford-cs246"
+    "stanford-cs246",
+    "count-min-paper"
   ],
   "featured": false,
-  "why": "Sketches estimate large-stream frequencies without storing every key.",
-  "intuition": "Several compressed counters see each event; the minimum reduces collision inflation.",
-  "deepDive": "Width controls additive error and depth controls failure probability.",
-  "math": "",
+  "why": "High-rate streams often contain too many distinct keys to maintain an exact counter map on every worker. Operators still need approximate frequencies, heavy hitters, join-size signals or anomaly features with fixed memory and mergeable state. Count-Min offers constant update and query time relative to the key universe and a clear additive-error guarantee. Its simplicity can be deceptive: it does not retain keys, small frequencies can have terrible relative error, signed deletions alter the guarantee, and incompatible sketches cannot be merged. Learning the exact model—frequency vector, update semantics, total mass and hash assumptions—prevents a useful sketch from becoming an undocumented approximate database.",
+  "intuition": "Each row is a row of shared counting bins. An event increments one bin in every row. Querying a key finds counters that contain its true count plus counts from keys that collided there. All are too high in a nonnegative stream, but different rows have different collisions; taking the minimum chooses the least contaminated view. Wider rows give keys more space, while additional independent rows give more chances to find a clean-ish bucket.",
+  "deepDive": "Count-Min is a linear randomized summary of a frequency vector. Its one-sided point estimate and epsilon-delta bound belong to nonnegative updates and compatible hashes, not every stream imaginable. Successful systems pair it with candidate tracking, explicit merge schemas, overflow protection, exact audit samples and capacity choices based on absolute error.",
+  "math": "Let f_i≥0 and total mass ||f||_1=Σ_i f_i. Row j stores C[j,h_j(i)] plus collisions. Query f_hat_i=min_j C[j,h_j(i)], so f_hat_i≥f_i. With w=ceil(e/ε), one row's expected collision mass is at most ||f||_1/w and Markov bounds a row as bad with probability at most 1/e; d=ceil(ln(1/δ)) independent rows make all rows bad with probability at most δ. Thus f_hat_i≤f_i+ε||f||_1 with probability at least 1−δ. Constants vary by convention. Pairwise-independent hashing suffices for the common proof; merge is elementwise addition for identical hash mappings.",
   "code": "",
   "commonMistakes": [
-    "Treating estimates as exact.",
-    "Using the basic sketch for arbitrary negative updates."
+    {
+      "misconception": "The sketch returns an unbiased exact-like count.",
+      "correction": "In nonnegative streams the minimum is generally upward biased by collisions and has an additive probabilistic bound."
+    },
+    {
+      "misconception": "Depth improves numerical precision.",
+      "correction": "Depth mainly lowers failure probability; width reduces collision magnitude."
+    },
+    {
+      "misconception": "The sketch can return all heavy hitters by itself.",
+      "correction": "It stores counters but no keys, so pair it with candidate tracking."
+    },
+    {
+      "misconception": "Any same-sized sketches can be added.",
+      "correction": "Every hash, encoding, counter and epoch parameter must match."
+    }
   ],
   "followUps": [
-    "How do you recover heavy-hitter keys?",
-    "Count-Min vs hash map?"
+    {
+      "question": "Why take the minimum rather than the mean?",
+      "answer": "Every row has nonnegative collision noise; the minimum selects the least contaminated row."
+    },
+    {
+      "question": "What does ε control?",
+      "answer": "An additive error scale relative to total stream L1 mass, primarily through width."
+    },
+    {
+      "question": "Count-Min or Count Sketch for signed updates?",
+      "answer": "Count Sketch is usually the principled choice for general signed turnstile streams and L2-style error; state the stream model first."
+    }
   ],
-  "production": "Use when approximate counts are acceptable and throughput/memory dominate exactness.",
-  "workedExample": "Telemetry can estimate popular URLs across billions of requests in bounded memory.",
+  "production": "Define the stream model, unit and deduplication contract; set ε, δ, counter width, hash algorithm and seeds from the allowed absolute error and traffic horizon. Include these in an immutable merge schema and reject mismatches. Pair the sketch with a bounded candidate tracker and exact confirmation for alerts, billing or blocking. Monitor total mass, update rate, candidate churn, table occupancy proxy, maximum counters, overflow headroom, sampled exact error, merge lag and replay rates. Rotate by time bucket for windows and rebuild when schemas change. Use keyed hashing and rate limits for hostile keys. Snapshot with checksums and source watermarks, retain a previous epoch, and fall back to exact or degraded aggregation if state is corrupt rather than serving unqualified estimates.",
+  "workedExample": "A stream has one million events and ε=0.001. The guarantee allows additive error up to 1,000 with high probability. That may be excellent for a key occurring 100,000 times but useless for a key occurring 5 times. The bound is additive in total mass, not relative to each key. A top-k system can use the sketch to score candidates tracked by a heap or sampled dictionary, then verify promoted keys exactly when action costs are high.",
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "The Count-Min sketch is a fixed-memory streaming summary for approximate point frequencies and related aggregate queries. This chapter models a stream as updates to a frequency vector, constructs the depth-by-width counter array, and explains why querying the minimum yields a one-sided estimate under nonnegative updates. It derives the standard width and depth choices from ε additive error and δ failure probability, clarifies constants and hash-independence assumptions, and interprets error relative to total L1 mass rather than individual count. It covers weighted updates, conservative update, inner-product and merge operations, and distinguishes the cash-register model from strict and general turnstile streams. It explains why a sketch cannot enumerate keys, so heavy-hitter systems need a candidate structure, and why negative updates, counter overflow and incompatible hash versions can invalidate expectations. The lab implements deterministic rows, compares estimates with exact Counter values, verifies non-underestimation and merge equivalence, and checks a practical error envelope. Production guidance addresses parameter budgets, key encoding, distributed merge manifests, skew, candidate tracking, exact audits, saturation, concurrency, adversarial hashes, privacy and rollback. Comparisons with Bloom filters, Count Sketch, Misra–Gries and HyperLogLog reinforce that each structure answers a different query.",
+  "prerequisites": [
+    "hash-tables",
+    "probability-basics",
+    "sampling-streaming-algorithms"
+  ],
+  "learningObjectives": [
+    "Implement Count-Min updates, point queries and compatible merges from the frequency-vector model.",
+    "Derive and correctly interpret the ε||f||1 additive-error and δ failure guarantee.",
+    "Distinguish nonnegative, strict-turnstile and signed-stream behavior and select alternatives when needed.",
+    "Build a heavy-hitter service with candidate tracking, exact audits, versioned schemas and safe failure behavior."
+  ],
+  "deepSections": [
+    {
+      "id": "table-mechanism",
+      "title": "Every counter is truth plus collision noise",
+      "body": "Choose d hash functions mapping the key universe into w columns. An update (i,Δ) adds Δ to C[j,h_j(i)] for every row. In a nonnegative cash-register stream, the queried cell equals f_i plus frequencies of other keys mapped to the same column. It cannot be below f_i, and the minimum across rows chooses the smallest collision sum. Update and query take O(d), memory is O(dw), independent of universe size, and the sketch stores no key identities. Weighted positive updates work naturally. Conservative update increments only counters at the current minimum level and often reduces practical overestimation, but its merge and signed-update properties need separate care. Keys must have canonical byte encoding, and persistent services need deterministic, domain-separated hashes rather than runtime-randomized language hashes."
+    },
+    {
+      "id": "error-proof",
+      "title": "Width bounds collision magnitude while depth suppresses bad luck",
+      "body": "For a target key in one row, each other key collides with probability about 1/w, so expected collision mass is at most ||f||1/w. With w=e/ε, Markov's inequality says the probability this row's noise exceeds ε||f||1 is at most 1/e. The estimate fails only if every independent row has excessive noise, yielding e^(−d) and d≈ln(1/δ). This is a per-query probabilistic statement under the hash model; simultaneous guarantees over many adaptive queries require adjusted reasoning. The bound includes target mass in some presentations or uses residual mass in tighter forms, but remains additive. Large total volume raises absolute error even at fixed key frequency. More depth does not shrink typical collision size; more width does. Empirical errors can be far smaller than the worst-case bound, yet parameter selection must match the consequence of error."
+    },
+    {
+      "id": "stream-models",
+      "title": "Update semantics determine which estimator and guarantee apply",
+      "body": "Cash-register streams only add nonnegative mass. Strict turnstile streams permit negative updates while every true frequency remains nonnegative; individual counters can change in complex ways, and the simple never-underestimate argument is not automatically preserved for arbitrary operational mistakes. General turnstile vectors may have negative frequencies and often use Count Sketch, which applies random signs and a median estimator to obtain different L2-style guarantees. Count-Min can represent signed updates algebraically, but users must not quote the cash-register one-sided claim unchanged. Counter width must handle total increments without overflow; saturating silently biases results, while wrapping is catastrophic. Deduplication and exactly-once semantics matter because replayed events legitimately increase the sketch. Sliding windows require bucketed sketches, decay or another time-aware design rather than deleting events casually."
+    },
+    {
+      "id": "heavy-hitters-operations",
+      "title": "Heavy hitters need identities, compatible merges and exact audit paths",
+      "body": "The table cannot list which keys generated its counters. A heavy-hitter service therefore tracks candidates through Misra–Gries, Space-Saving, a bounded heap updated from observed keys, or upstream sampling, then queries the sketch for scores. Distributed sketches merge by elementwise addition only when width, depth, seed order, key encoding, counter type and epoch match. A manifest should reject incompatible state instead of producing plausible nonsense. Compare candidate estimates with exact counts on sampled partitions or a promoted shortlist and report upper-biased uncertainty. Monitor total mass, distinct-candidate rate, collision error, table saturation, counter maxima, merge rejection and distribution shifts. Hash-flooding attackers can force collisions if mappings are predictable, so threat models may require keyed hashing and rate limits. Sketches can leak approximate activity and should inherit data access and retention controls."
+    }
+  ],
+  "workedExamples": [
+    {
+      "title": "Good absolute, poor relative accuracy",
+      "body": "An error ceiling of 500 is negligible for a million-count key but overwhelms a ten-count key; report the guarantee in the scale of the decision."
+    },
+    {
+      "title": "Invalid merge",
+      "body": "Two workers use different seeds. Adding their corresponding cells mixes unrelated buckets, so every resulting query is undefined despite matching array dimensions."
+    }
+  ],
+  "lab": {
+    "language": "python",
+    "goal": "Implement Count-Min frequency estimates, verify their one-sided behavior, and prove compatible distributed merge equivalence.",
+    "buildIt": "import hashlib, math, numpy as np\nfrom collections import Counter\nclass CountMin:\n    def __init__(self,width,depth,seeds=None):\n        self.width,self.depth=width,depth; self.seeds=list(range(depth)) if seeds is None else list(seeds); self.table=np.zeros((depth,width),dtype=np.int64); self.total=0\n    def _column(self,key,seed):\n        raw=f'{seed}|{key}'.encode(); return int.from_bytes(hashlib.blake2b(raw,digest_size=8).digest(),'big')%self.width\n    def update(self,key,amount=1):\n        if amount<0: raise ValueError('lab uses nonnegative cash-register updates')\n        for row,seed in enumerate(self.seeds): self.table[row,self._column(key,seed)]+=amount\n        self.total+=amount\n    def query(self,key): return int(min(self.table[row,self._column(key,seed)] for row,seed in enumerate(self.seeds)))\n    def merge(self,other):\n        assert (self.width,self.depth,self.seeds)==(other.width,other.depth,other.seeds)\n        out=CountMin(self.width,self.depth,self.seeds); out.table=self.table+other.table; out.total=self.total+other.total; return out\nepsilon,delta=.01,.01; width=math.ceil(math.e/epsilon); depth=math.ceil(math.log(1/delta)); stream=['heavy']*5000+[f'key-{i%700}' for i in range(15000)]; exact=Counter(stream)",
+    "useIt": "left,right=CountMin(width,depth),CountMin(width,depth)\nfor key in stream[:10000]: left.update(key)\nfor key in stream[10000:]: right.update(key)\nmerged=left.merge(right); single=CountMin(width,depth)\nfor key in stream: single.update(key)\nestimated_heavy=merged.query('heavy'); top_candidates=sorted(exact,key=merged.query,reverse=True)[:5]",
+    "verifyIt": "assert merged.total==len(stream) and np.array_equal(merged.table,single.table)\nassert all(merged.query(key)>=count for key,count in exact.items())\nerrors=[merged.query(key)-count for key,count in exact.items()]; assert max(errors)<=epsilon*len(stream)\nassert estimated_heavy>=exact['heavy'] and top_candidates[0]=='heavy'\ntry: merged.update('bad',-1)\nexcept ValueError: pass\nelse: raise AssertionError('stream model must reject negative updates')\nbad=CountMin(width,depth,[99+i for i in range(depth)])\ntry: merged.merge(bad)\nexcept AssertionError: pass\nelse: raise AssertionError('incompatible hashes must not merge')",
+    "shipIt": "Version the stream and hash schema, reject incompatible merges, track candidates separately, audit estimates against exact samples, protect counters from overflow, and rotate or roll back complete epochs."
+  },
+  "exercises": [
+    {
+      "prompt": "Sketch the ε–δ proof for a point query.",
+      "solution": "Expected one-row collision is bounded by total mass over width; Markov bounds one row, and independent depth exponentially reduces all-rows failure."
+    },
+    {
+      "prompt": "Why can a rare key have poor relative error?",
+      "solution": "The guarantee is additive in total stream mass, not proportional to that key's true count."
+    },
+    {
+      "prompt": "What metadata must match before merge?",
+      "solution": "Width, depth, ordered hash seeds and algorithm, key encoding, counter semantics and time or source epoch."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "matrix",
+      "title": "Count-Min counter table",
+      "rows": [
+        "Hash row 1",
+        "Hash row 2",
+        "Hash row 3",
+        "Hash row 4"
+      ],
+      "cols": [
+        "Bucket A",
+        "Bucket B",
+        "Bucket C",
+        "Bucket D",
+        "Bucket E"
+      ],
+      "cells": [
+        [
+          1,
+          8,
+          2,
+          0,
+          3
+        ],
+        [
+          0,
+          2,
+          9,
+          1,
+          2
+        ],
+        [
+          3,
+          1,
+          1,
+          10,
+          0
+        ],
+        [
+          2,
+          0,
+          8,
+          2,
+          1
+        ]
+      ],
+      "caption": "A key touches one bucket per row; query returns the least collision-contaminated counter.",
+      "afterSection": "table-mechanism"
+    },
+    {
+      "type": "flow",
+      "title": "Streaming heavy-hitter service",
+      "items": [
+        "Canonicalize event key",
+        "Update one counter per row",
+        "Track bounded key candidates",
+        "Query candidate estimates",
+        "Confirm promoted keys exactly",
+        "Merge only compatible epochs"
+      ],
+      "caption": "The sketch estimates counts; a separate component preserves candidate identities.",
+      "afterSection": "heavy-hitters-operations"
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "count-min-paper",
+      "contribution": "Grounds the sketch construction, epsilon-delta point-query guarantee, linearity and streaming applications."
+    },
+    {
+      "resource": "stanford-cs246",
+      "contribution": "Supports the data-stream model, hashing analysis and relationship to heavy-hitter algorithms."
+    }
+  ]
 }

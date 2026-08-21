@@ -8,38 +8,60 @@
     "mle",
     "as"
   ],
-  "interviewAnswer": "An SVM finds a decision boundary with maximum margin. Kernel functions allow nonlinear boundaries by computing similarity in an implicit higher-dimensional feature space.",
+  "interviewAnswer": "A support vector machine learns a maximum-margin decision boundary. For binary labels y in {-1,+1}, the soft-margin linear SVM minimizes 0.5||w||² + C Σ_i max(0,1-y_i(wᵀx_i+b)); only points on or inside the margin have nonzero hinge loss and determine the solution. Feature scaling matters because the norm and distances define the margin. In the dual, predictions depend on support-vector inner products, which kernels replace with valid similarities such as the RBF kernel. C trades margin width against violations, while RBF gamma controls locality. I tune both inside leakage-safe validation, check class weights, calibration and threshold utility separately, and avoid kernel SVC when quadratic-or-worse scaling, support-vector count or serving latency violates the budget.",
   "keyPoints": [
-    "Margin",
-    "Support vectors",
-    "C parameter",
-    "Kernel trick"
+    "The geometric margin is tied to feature scale, regularization and the norm of the separating vector.",
+    "Soft margin uses hinge loss and slack to trade violations against a wider boundary.",
+    "Only support vectors have nonzero dual influence, but many support vectors can make inference expensive.",
+    "A kernel must produce a valid positive-semidefinite Gram matrix for the standard convex formulation.",
+    "SVM decision scores are not probabilities; calibration and decision thresholds are separate stages."
   ],
   "resources": [
+    "svm-paper",
+    "sklearn-svm",
     "stanford-cs229",
-    "statquest",
-    "google-mlcc",
     "isl"
   ],
   "featured": false,
-  "why": "SVMs test geometric reasoning, margins, kernels and regularization trade-offs.",
-  "intuition": "A linear SVM chooses a separating hyperplane with the widest margin to the closest training points. Only support vectors determine the boundary.",
-  "deepDive": "Soft-margin SVM allows violations controlled by C: large C penalizes mistakes strongly and can reduce margin; small C regularizes more. Kernel SVM uses similarity functions to represent nonlinear boundaries implicitly through the kernel trick. Feature scaling matters because distances/dot products drive the geometry. Kernel methods scale poorly to very large n.",
-  "math": "min 1/2||w||² + C Σ ξ_i subject to y_i(wᵀx_i+b) ≥ 1-ξ_i",
-  "workedExample": "An RBF SVM can model a curved decision boundary on a medium-size dataset, but on millions of rows gradient boosting or linear methods may be much more practical.",
-  "code": "from sklearn.svm import SVC\nm=SVC(kernel='rbf',C=1,gamma='scale',probability=True)\nm.fit(X_train,y_train)",
+  "why": "Support vector machines connect geometry, convex optimization, regularization and kernel methods in one precise model. The maximum-margin principle explains why the final classifier can ignore many correctly classified points while depending critically on a boundary subset. Soft margins show how regularization and surrogate loss replace an impossible demand for perfect separability. The dual formulation motivates kernels and reveals the inference cost of support vectors. SVMs remain useful for medium-sized, high-dimensional problems, sparse text, scientific datasets and strong nonlinear baselines, but they are sensitive to scaling, C and kernel parameters. They also expose recurring engineering lessons: preprocessing must be learned inside validation, model scores are not probabilities, multiclass wrappers alter semantics, and algorithmic complexity can dominate an otherwise accurate model. A rigorous SVM chapter therefore strengthens both theory and production judgment.",
+  "intuition": "Many lines may separate two classes, but choose the one with the widest empty corridor between them. Points far beyond the corridor do not change its walls; the nearest or violating points hold the boundary in place and become support vectors. When overlap makes a perfect corridor impossible, pay a penalty for points entering or crossing it instead of twisting the boundary without limit. A kernel redraws the geometry by defining similarity in another feature space. An RBF kernel can create very local neighborhoods: too local and the boundary memorizes islands; too broad and it behaves almost linearly. Scaling the axes changes every distance, so it changes the learned corridor itself.",
+  "deepDive": "The SVM is a convex regularized risk minimizer whose geometric and dual views answer different questions. The primal exposes margin and hinge violations; the dual exposes support vectors and kernels. Practical success depends on a pipeline that scales features without leakage, tunes capacity under the deployment split, evaluates decision scores and calibration correctly, and respects solver, memory and inference constraints.",
+  "math": "Hard margin solves min_{w,b} 0.5||w||² subject to y_i(wᵀx_i+b)≥1, giving geometric margin 2/||w|| between canonical planes. Soft margin minimizes 0.5||w||²+CΣ_i ξ_i with ξ_i≥0 and y_i f(x_i)≥1-ξ_i, equivalent to hinge loss. The dual maximizes Σ_i α_i-0.5Σ_{i,j}α_iα_j y_i y_j K(x_i,x_j), subject to 0≤α_i≤C and Σ_i α_i y_i=0. Prediction is sign(Σ_i α_i y_i K(x_i,x)+b).",
+  "workedExample": "For w=[3,4] and b=0, ||w||=5, so the distance between canonical planes f(x)=±1 is 2/5=0.4 in the scaled feature geometry. If the second feature is converted from meters to centimeters without compensating preprocessing, distances and the regularization penalty change. The same numeric C now expresses a different preference, and the boundary must be retuned.",
+  "code": "from sklearn.pipeline import make_pipeline\nfrom sklearn.preprocessing import StandardScaler\nfrom sklearn.svm import LinearSVC\nmodel=make_pipeline(StandardScaler(),LinearSVC(C=1.0,dual='auto',random_state=0,max_iter=10000)).fit(X,y)\nsk_pred=model.predict(X)",
   "commonMistakes": [
-    "Calling C the regularization strength in the same direction as lambda; larger C means weaker regularization.",
-    "Skipping feature scaling for distance-based kernels.",
-    "Assuming SVM probability outputs are native margins without calibration."
+    {
+      "misconception": "SVMs do not need feature scaling.",
+      "correction": "The margin norm and kernels use geometry. Different units can dominate distances and regularization, so scaling must be fitted inside the pipeline."
+    },
+    {
+      "misconception": "Only misclassified points are support vectors.",
+      "correction": "Points on the margin and correctly classified points inside it can also have nonzero dual coefficients."
+    },
+    {
+      "misconception": "The decision score is a probability.",
+      "correction": "It is a signed margin-related score. Probability calibration is a separate fitted and evaluated layer."
+    },
+    {
+      "misconception": "The kernel trick makes nonlinear SVMs computationally cheap.",
+      "correction": "It avoids explicit high-dimensional features but can require an expensive Gram matrix in training and many support-vector evaluations at inference."
+    }
   ],
   "followUps": [
-    "What are support vectors?",
-    "What does C control?",
-    "What is the kernel trick?",
-    "Linear vs RBF SVM?"
+    {
+      "question": "What happens as C increases?",
+      "answer": "Violations become more expensive relative to the norm penalty, typically producing a narrower margin and closer training fit; exact behavior depends on scaling and formulation."
+    },
+    {
+      "question": "How do C and RBF gamma interact?",
+      "answer": "Gamma controls locality and boundary flexibility; C controls the penalty for violations. A local high-gamma model with high C can memorize, while low values can underfit."
+    },
+    {
+      "question": "When would you choose LinearSVC over SVC?",
+      "answer": "For large sample counts or high-dimensional sparse inputs where a linear boundary is adequate and kernel Gram-matrix or support-vector costs are prohibitive."
+    }
   ],
-  "production": "Kernel SVM training/inference can become expensive with many support vectors. Monitor scale and calibration if probabilities are needed.",
+  "production": "Version imputation, encoding, feature order, scaling means and variances, kernel, C, gamma, class weights, solver tolerance, multiclass strategy, calibration method, threshold and library version. Enforce the exact transformation graph at serving and test parity of decision scores across environments. Benchmark peak fit memory, support-vector count, serialized size, cold load, batch throughput and p95/p99 latency. Monitor raw and standardized feature distributions, missingness, score and predicted-class prevalence, delayed loss, calibration and subgroup actions. Limit sensitive support-vector or explanation access because support vectors are training examples and may reveal private data. Canary updates and retain a linear or policy fallback. Roll back when schema mismatch, latency, calibration, resource use or safety outcomes exceed declared limits, even if aggregate validation accuracy remains high.",
   "visual": {
     "type": "scatter",
     "title": "Maximum-margin classifier",
@@ -113,6 +135,131 @@
     "yLabel": "feature 2"
   },
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "lab": {
+    "language": "python",
+    "goal": "Train a linear soft-margin classifier with hinge-loss subgradients, compare with LinearSVC, and verify margin and scaling behavior.",
+    "buildIt": "import numpy as np\nX=np.array([[-3,-2],[-2,-2],[-2,-1],[1,1],[2,1],[2,3]],float); y=np.array([-1,-1,-1,1,1,1],float)\nmean=X.mean(axis=0); scale=X.std(axis=0); Z=(X-mean)/scale\nw=np.zeros(2); b=0.0; lam=0.02\nfor epoch in range(3000):\n    i=epoch%len(Z); margin=y[i]*(Z[i]@w+b); eta=0.05/(1+epoch/1000)\n    if margin<1:\n        w-=eta*(lam*w-y[i]*Z[i]); b+=eta*y[i]\n    else:\n        w-=eta*lam*w\nscores=Z@w+b; scratch_pred=np.where(scores>=0,1,-1)",
+    "useIt": "from sklearn.pipeline import make_pipeline\nfrom sklearn.preprocessing import StandardScaler\nfrom sklearn.svm import LinearSVC\nmodel=make_pipeline(StandardScaler(),LinearSVC(C=1.0,dual='auto',random_state=0,max_iter=10000)).fit(X,y)\nsk_pred=model.predict(X)",
+    "verifyIt": "assert np.array_equal(scratch_pred,y)\nassert np.array_equal(sk_pred,y)\nassert np.min(y*scores)>0\nassert np.linalg.norm(w)>0\nraw_dot=(X[0]-X[-1])@(X[0]-X[-1]); scaled_dot=(Z[0]-Z[-1])@(Z[0]-Z[-1])\nassert raw_dot!=scaled_dot\nassert np.isfinite(scores).all()",
+    "shipIt": "Persist the complete scaler and SVM, benchmark support-vector or dot-product cost, calibrate independently when needed, monitor scores and drift, and retain a latency-safe fallback."
+  },
+  "description": "Support vector machines learn regularized maximum-margin boundaries and extend linear separation through kernels. This chapter derives hard- and soft-margin objectives, hinge loss, slack variables, KKT support-vector conditions and the dual prediction rule. It explains why standardization changes the geometry, how C and RBF gamma interact, what makes a kernel valid, how multiclass one-vs-one or one-vs-rest wrappers work, and why decision_function values are not calibrated probabilities. Worked examples calculate a margin and diagnose an apparently accurate but operationally infeasible RBF model with tens of thousands of support vectors. The lab trains a linear hinge-loss model from scratch, compares its labels with LinearSVC, and verifies positive margins and scaling sensitivity. Production guidance covers sparse versus dense solvers, fit complexity, kernel-matrix memory, support-vector inference cost, calibration, thresholds, schema parity, drift, privacy and rollback. The aim is not to memorize 'maximize the margin,' but to connect the margin to units, regularization, data overlap and the actual serving budget.",
+  "prerequisites": [
+    "convexity",
+    "norms-distances"
+  ],
+  "learningObjectives": [
+    "Derive the hard- and soft-margin primal objectives and interpret hinge loss and slack.",
+    "Explain support vectors, dual coefficients and kernelized prediction.",
+    "Tune scaling, C and kernel parameters using an honest validation design.",
+    "Choose an SVM solver and probability or threshold layer that meets production constraints."
+  ],
+  "deepSections": [
+    {
+      "id": "margin-primal",
+      "title": "The primal turns separation into regularized optimization",
+      "body": "For a linear score f(x)=w^T x+b and labels ±1, the signed functional margin is y f(x). Rescaling w and b rescales that number without changing the boundary, so the hard-margin convention constrains every signed score to at least one and minimizes ||w||. The distance between the two canonical planes is 2/||w||. This problem is convex, but it is feasible only when the data are linearly separable in the chosen representation. Soft margin introduces slack ξ_i=max(0,1-y_i f(x_i)) and penalizes its sum. Points beyond the margin have zero hinge loss; points inside pay linearly, including correctly classified points with insufficient margin. C sets the relative cost of violations under a particular objective convention, while some libraries use an inverse-regularization or averaged-loss convention. Feature scaling changes ||w|| and distances, so standardization is part of the model, not cosmetic preprocessing."
+    },
+    {
+      "id": "support-dual",
+      "title": "The dual reveals support vectors",
+      "body": "Lagrange multipliers α_i enforce margin constraints. At the optimum, w is a weighted combination Σ_i α_i y_i x_i. Observations with α_i=0 do not appear in the decision function; those with positive coefficients are support vectors. Under soft margin, 0<α_i<C commonly identifies points on the margin and α_i=C can identify active violations, subject to formulation details. KKT conditions connect primal feasibility, dual feasibility and complementary slackness and provide useful solver checks. Sparsity is data dependent: overlapping classes or an overly local kernel can make a large fraction of training rows support vectors. Training a kernel SVM requires pairwise similarities and can scale poorly in sample count; prediction cost grows with support vectors and kernel evaluation. A linear primal or approximate kernel method may be preferable even when an exact RBF SVC scores slightly higher offline."
+    },
+    {
+      "id": "kernel-geometry",
+      "title": "Kernels define an implicit feature-space geometry",
+      "body": "If K(x,z)=φ(x)^T φ(z), the dual can operate on inner products without explicitly materializing φ. The linear kernel retains the original representation; a polynomial kernel introduces interactions; the RBF kernel exp(-γ||x-z||²) assigns local similarity. A valid Gram matrix must be symmetric positive semidefinite for the standard convex kernel construction. Arbitrary similarity functions can violate this and break the theory or solver behavior. For RBF models, small gamma makes similarity vary slowly and produces a smoother boundary; large gamma makes influence local and can surround individual points. C and gamma therefore interact. Search them on logarithmic scales inside a pipeline that learns scaling per training fold. Domain-specific kernels encode invariances only when their similarity corresponds to the task; they still need evaluation against linear and simpler nonlinear baselines."
+    },
+    {
+      "id": "scores-multiclass",
+      "title": "Scores, multiclass wrappers and probabilities",
+      "body": "The signed decision value indicates side of the boundary and relative margin under the fitted scale, but it is not a posterior probability. Probability estimates in common SVC implementations may fit a sigmoid-like calibration using additional internal data and can differ from raw-score ordering in edge cases. If calibrated risk matters, reserve appropriate calibration data or use nested cross-validation and evaluate log loss, Brier score and reliability. Binary thresholds should reflect costs, prevalence and capacity rather than defaulting to score zero. Multiclass SVMs are commonly assembled one-vs-rest or one-vs-one; the resulting score shapes, training cost and tie handling differ. Class weights modify penalties and boundary placement, not just a post-hoc threshold. Report per-class and subgroup results and inspect how imbalance or a changing population affects both margins and downstream actions."
+    },
+    {
+      "id": "evaluation-serving",
+      "title": "Match the solver and evaluation to deployment",
+      "body": "Build one pipeline containing imputation, encoding, scaling and the estimator so no fold learns statistics from held-out data. Group or order observations as deployment requires. Tune C, gamma, kernel and class weights on validation only; use a final untouched set for comparison and calibration. Report accuracy or ranking metrics together with calibration and the operational threshold result. Measure training wall time and peak memory, model size, number of support vectors, kernel evaluations, batch throughput and p99 latency. At serving, enforce feature order and scaling constants and reject nonfinite values. Monitor standardized feature drift, score distribution, support-vector similarity or distance diagnostics, delayed loss, calibration and subgroup decisions. Version all pipeline state and solver settings. Canary replacements and keep a linear or rule-based fallback when kernel latency, feature outages or domain shift exceed limits."
+    }
+  ],
+  "workedExamples": [
+    {
+      "title": "Margin depends on units",
+      "body": "For w=[3,4] and b=0, ||w||=5, so the distance between canonical planes f(x)=±1 is 2/5=0.4 in the scaled feature geometry. If the second feature is converted from meters to centimeters without compensating preprocessing, distances and the regularization penalty change. The same numeric C now expresses a different preference, and the boundary must be retuned."
+    },
+    {
+      "title": "An accurate kernel model misses the latency budget",
+      "body": "An RBF SVC reaches 0.94 AUC on 200,000 rows but retains 85,000 support vectors. Each request requires tens of thousands of kernel evaluations and misses p99 latency. A linear model on engineered features reaches 0.935 AUC with one dot product. The production choice may favor the linear model, or use kernel approximation, distillation or a batch-only route."
+    }
+  ],
+  "exercises": [
+    {
+      "prompt": "A point has y f(x)=1.7. What is its hinge loss?",
+      "solution": "max(0,1-1.7)=0. It is correctly classified beyond the canonical margin."
+    },
+    {
+      "prompt": "A point has y f(x)=-0.3. Interpret its slack.",
+      "solution": "Its hinge loss and minimum slack are 1.3. The negative signed score means it is misclassified, not merely inside the margin."
+    },
+    {
+      "prompt": "Why search C and gamma logarithmically?",
+      "solution": "Their useful scales often span orders of magnitude, and multiplicative changes correspond more naturally to changes in regularization and RBF length scale."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "compare",
+      "title": "Hard and soft margin",
+      "left": {
+        "title": "Hard margin",
+        "items": [
+          "No violations allowed",
+          "Requires separability",
+          "Maximizes empty corridor",
+          "Sensitive to outliers"
+        ]
+      },
+      "right": {
+        "title": "Soft margin",
+        "items": [
+          "Uses hinge slack",
+          "Allows overlap",
+          "C prices violations",
+          "Regularized compromise"
+        ]
+      },
+      "caption": "Soft margin preserves maximum-margin geometry while permitting costly violations.",
+      "afterSection": "margin-primal"
+    },
+    {
+      "type": "flow",
+      "title": "Kernel SVM prediction",
+      "items": [
+        "Fit preprocessing",
+        "Compute support-vector similarities",
+        "Weight by dual coefficient and label",
+        "Add the intercept",
+        "Return a signed score",
+        "Calibrate or threshold separately"
+      ],
+      "caption": "The kernel decision function depends only on support vectors, but their count determines inference cost.",
+      "afterSection": "support-dual"
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "svm-paper",
+      "contribution": "Grounds the soft-margin support-vector formulation and kernelized classifier."
+    },
+    {
+      "resource": "sklearn-svm",
+      "contribution": "Verifies current API behavior, multiclass handling, scaling limits and practical guidance."
+    },
+    {
+      "resource": "stanford-cs229",
+      "contribution": "Supports the primal-dual derivation, KKT interpretation and kernel validity discussion."
+    }
+  ]
 }

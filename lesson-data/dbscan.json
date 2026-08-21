@@ -7,36 +7,64 @@
     "ds",
     "as"
   ],
-  "interviewAnswer": "DBSCAN defines clusters as dense regions connected through neighborhoods, can identify noise points, and does not require a fixed number of clusters. It struggles when cluster densities vary strongly.",
+  "interviewAnswer": "DBSCAN defines dense regions using an epsilon neighborhood and min_samples. A core point has at least min_samples total weight or points in its eps-neighborhood, commonly including itself. Clusters expand through chains of core points; border points lie within eps of a core but are not themselves core, and remaining points are labeled noise. This finds irregular shapes and does not require k, but one global density threshold struggles with varying densities. Scaling and metric are part of the model, eps is unit-dependent, and border assignment can be order-sensitive. I inspect k-distance plots only as diagnostics, tune with stability and intended use, distinguish noise from anomaly, benchmark neighbor-search memory, and monitor core fraction, noise rate and support drift.",
   "keyPoints": [
-    "eps and min_samples define density.",
-    "Scaling/distance choice matters.",
-    "Can find non-spherical clusters."
+    "Core, border and noise are density-reachability roles under one metric, eps and min_samples.",
+    "Clusters can follow arbitrary connected shapes because expansion chains through core neighborhoods.",
+    "A global eps cannot represent all varying-density structures, and high dimension weakens neighborhoods.",
+    "Noise means not density-reachable under the fitted settings, not inherently fraudulent or erroneous.",
+    "Neighbor-search implementation and eps can produce quadratic memory or latency at scale."
   ],
   "resources": [
-    "sklearn"
+    "dbscan-paper",
+    "sklearn-clustering",
+    "sklearn-neighbors"
   ],
   "featured": false,
-  "why": "DBSCAN & Density-based Clustering appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
-  "intuition": "eps and min_samples define density.",
-  "deepDive": "DBSCAN defines clusters as dense regions connected through neighborhoods, can identify noise points, and does not require a fixed number of clusters. It struggles when cluster densities vary strongly. Scaling/distance choice matters. Can find non-spherical clusters. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
-  "workedExample": "Detect spatial event clusters while labeling isolated coordinates as noise.",
+  "why": "DBSCAN changes the clustering question from 'which centroid is closest?' to 'which observations belong to a connected dense region?' That makes it valuable for spatial shapes, noise filtering and exploratory discovery when groups are not spherical. It also makes assumptions highly visible: distance, scale, neighborhood radius and minimum density determine every result. A single eps can merge clusters through bridges, fragment a sparse group or label a meaningful rare cohort as noise. Border points and implementation details complicate reproducibility, while neighbor construction can dominate memory. Learning DBSCAN well teaches how local density, connectivity and anomaly language differ, when OPTICS or HDBSCAN-like approaches are more appropriate, and how a clustering algorithm without a natural predict method must be operationalized deliberately.",
+  "intuition": "Stand at a point and count neighbors within radius eps. If the neighborhood is crowded enough, the point is a core. Walk from core to overlapping core neighborhood and keep expanding; all reachable dense ground belongs together, even if it bends like a crescent. A point on the edge can join as a border without opening a new path. Isolated points become noise. Increase eps and separate islands connect; decrease it and one island shatters. In a region with both a dense city and sparse village, one radius may not describe both fairly.",
+  "deepDive": "DBSCAN is connectivity over a thresholded neighborhood graph with special core semantics. It separates dense support from sparse points without a centroid objective. Reliability depends on unit-correct neighborhoods, density variation, border conventions, neighbor-search scale and an explicit extension for new observations.",
+  "workedExample": "Points are [0,0.1,0.2,2.0] with eps=0.15 and min_samples=2 including self. The first three are linked through core neighborhoods: 0 sees {0,0.1}, 0.1 sees all three, and 0.2 sees {0.1,0.2}. Point 2.0 sees only itself and is noise. The cluster spans 0.2 even though endpoints are farther than eps because reachability is transitive through cores.",
   "commonMistakes": [
-    "Applying the method without checking its assumptions or data-generating process.",
-    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+    {
+      "misconception": "DBSCAN noise points are confirmed anomalies.",
+      "correction": "They merely fail density reachability under selected parameters and representation. Validate anomaly meaning separately."
+    },
+    {
+      "misconception": "DBSCAN needs no parameter selection because it does not need k.",
+      "correction": "eps, min_samples, metric and scaling are consequential model choices."
+    },
+    {
+      "misconception": "A larger eps only reduces noise.",
+      "correction": "It also changes core status and can merge distinct groups through bridges."
+    },
+    {
+      "misconception": "The fitted algorithm naturally predicts clusters for future points.",
+      "correction": "Classic DBSCAN is transductive; define and validate an extension such as assignment to nearby core points."
+    }
   ],
   "followUps": [
-    "What assumptions does DBSCAN & Density-based Clustering make?",
-    "How would you validate or debug DBSCAN & Density-based Clustering in practice?"
+    {
+      "question": "Core versus border point?",
+      "answer": "A core has enough neighbors and can expand connectivity; a border is within eps of a core but lacks enough neighbors itself."
+    },
+    {
+      "question": "Why can border assignment be ambiguous?",
+      "answer": "A noncore point may lie within eps of core points from multiple otherwise separate clusters, so traversal order can choose its label."
+    },
+    {
+      "question": "When use OPTICS?",
+      "answer": "When structure exists across multiple density scales and choosing one global eps is inadequate; validate reachability extraction for the use case."
+    }
   ],
-  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "production": "Version feature transformation, units, metric, eps, min_samples, weighting, neighbor algorithm, reference cutoff, core set and label mapping. Test neighborhood inclusion at boundaries, duplicate behavior, core and noise fixtures and permutation-invariant membership. Benchmark radius-neighbor graph memory and runtime under projected density. If serving new points, define a deterministic core-based assignment and unsupported result, then validate it separately. Monitor neighborhood counts, core, border and noise rates, occupancy, support distance, latency and subgroup outcomes. Protect reference data and gate additions against poisoning. Canary refits, align clusters, retain the prior core set and provide a global or support-only fallback.",
   "lab": {
-    "goal": "Recover density-based clusters and noise points.",
     "language": "python",
-    "buildIt": "from sklearn.datasets import make_moons\nX,_=make_moons(n_samples=400,noise=.06,random_state=0)\n",
-    "useIt": "from sklearn.cluster import DBSCAN\nfrom sklearn.preprocessing import StandardScaler\nZ=StandardScaler().fit_transform(X)\nlabels=DBSCAN(eps=.25,min_samples=6).fit_predict(Z)\nprint('clusters',set(labels),'noise',(labels==-1).sum())\n",
-    "verifyIt": "assert len(set(labels)-{-1}) >= 2\n",
-    "shipIt": "Scale features consistently and tune eps/min_samples against domain meaning; do not treat noise labels as automatically fraudulent or wrong."
+    "goal": "Implement DBSCAN expansion from a distance matrix, compare with scikit-learn, and verify core, noise and connectivity invariants.",
+    "buildIt": "import numpy as np\nX=np.array([[0,0],[0,.1],[.1,0],[3,3],[3.1,3],[3,3.1],[8,8]],float); eps=.2; min_samples=3\nD=np.sqrt(((X[:,None,:]-X[None,:,:])**2).sum(axis=2)); neighbors=[np.flatnonzero(D[i]<=eps) for i in range(len(X))]; core=np.array([len(n)>=min_samples for n in neighbors]); labels=np.full(len(X),-1,int); cluster=0\nfor i in range(len(X)):\n    if labels[i]!=-1 or not core[i]: continue\n    labels[i]=cluster; queue=list(neighbors[i]); seen=set(queue)\n    while queue:\n        j=queue.pop(0)\n        if labels[j]==-1: labels[j]=cluster\n        if core[j]:\n            for h in neighbors[j]:\n                if h not in seen: seen.add(int(h)); queue.append(int(h))\n    cluster+=1",
+    "useIt": "from sklearn.cluster import DBSCAN\nmodel=DBSCAN(eps=eps,min_samples=min_samples).fit(X); sk=model.labels_",
+    "verifyIt": "assert core.sum()==6\nassert labels[-1]==-1 and sk[-1]==-1\nassert labels[0]==labels[1]==labels[2]\nassert labels[3]==labels[4]==labels[5]\nassert labels[0]!=labels[3]\nassert np.array_equal(labels==labels[:,None],sk==sk[:,None])\nassert set(model.core_sample_indices_)==set(np.flatnonzero(core))",
+    "shipIt": "Freeze metric and density semantics, benchmark neighbor memory, define new-point core assignment, monitor core and noise rates, protect reference data, and retain a support fallback and prior model."
   },
   "visual": {
     "type": "scatter",
@@ -119,6 +147,125 @@
     "yLabel": "feature 2"
   },
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "math": "N_eps(p)={q:d(p,q)≤eps}. Point p is core when |N_eps(p)|≥min_samples under the implementation's self and weight convention. q is directly density-reachable from core p when q∈N_eps(p). Density reachability is the transitive closure through core points; density-connected points share a core-reachable origin. A border point is reachable but noncore. Noise belongs to no discovered cluster. These definitions make cluster identity invariant to label permutation but border assignment may vary when a border touches multiple clusters.",
+  "code": "from sklearn.cluster import DBSCAN\nmodel=DBSCAN(eps=eps,min_samples=min_samples).fit(X); sk=model.labels_",
+  "description": "DBSCAN discovers clusters as connected regions of sufficient local density and labels unsupported observations as noise. This chapter defines epsilon neighborhoods, core, border, direct density reachability, density connectivity and noise, then relates the algorithm to a radius-neighbor graph. It explains arbitrary-shape recovery, bridge effects, varying densities, scaling, custom metrics, high-dimensional distance concentration, sample weights, duplicate points, border ambiguity and parameter diagnostics. Worked examples expand a cluster by hand and show why one global eps cannot serve dense and sparse regions. The lab implements DBSCAN from a distance matrix, compares labels with scikit-learn and verifies core, noise, permutation and connectivity invariants. Production guidance covers neighbor-index memory, fit-only prediction semantics, reference-set versioning, support scores, monitoring, poisoning, fallbacks and rollback. Noise is interpreted carefully as failure to satisfy the chosen density model, not a universal anomaly label. You will also learn why border assignments can be ambiguous, how oversampling changes local density, and how a conservative core-based rule can extend a transductive fit to future queries.",
+  "prerequisites": [
+    "norms-distances",
+    "knn"
+  ],
+  "learningObjectives": [
+    "Apply core, border, reachability and noise definitions to a neighborhood graph.",
+    "Explain eps, min_samples, metric, scaling and density-variation effects.",
+    "Implement and validate DBSCAN while respecting border and label ambiguity.",
+    "Design scalable neighbor search and explicit new-point assignment with monitoring and fallback."
+  ],
+  "deepSections": [
+    {
+      "id": "density-definitions",
+      "title": "Core connectivity creates clusters",
+      "body": "Compute every point's eps-neighborhood under a declared metric. A core point meets the minimum count or weight, including itself in common implementations. Starting from an unvisited core, add its neighborhood, then recursively expand through every newly found core. Border points are included but do not propagate expansion. Unreached noncore points are noise. Core-to-core connectivity is stable to traversal order, while a border point within two clusters may be assigned to the one expanded first; DBSCAN* variants omit border assignments. Duplicate points can instantly create density. Negative or weighted samples change core status under library-specific contracts. Labels are arbitrary. Validate partitions through pairwise membership and explicit core sets rather than expecting numeric IDs to match another run."
+    },
+    {
+      "id": "parameters-geometry",
+      "title": "eps and min_samples define one density scale",
+      "body": "eps has feature and metric units. Standardization or domain weighting must be fit and documented before selecting it. min_samples raises the evidence required for a core and often increases with dimension, though no universal formula exists. A sorted k-nearest-neighbor distance curve can suggest a transition, but its elbow is subjective and depends on k, sample size and mixture of densities. Small eps fragments clusters and raises noise; large eps merges groups through dense bridges and can make every point one cluster. One global pair cannot represent a dense cluster and a valid sparse cluster simultaneously. OPTICS records reachability across radii, and HDBSCAN-like methods seek density hierarchies; these alternatives still need metric and stability evaluation. Do not tune parameters until a desired picture appears and then report that same picture as validation."
+    },
+    {
+      "id": "dimension-metric",
+      "title": "Distance support deteriorates in unsuitable representations",
+      "body": "Euclidean DBSCAN works naturally for compact continuous coordinates after intentional scaling. Geographic longitude and latitude need geodesic treatment or a suitable projection; sparse text may use cosine distance with an algorithm supporting it. High dimension makes radius neighborhoods either empty or enormous as distances concentrate. Feature selection or an embedding can help, but fitting it with labels or the full test data leaks. Precomputed matrices must be finite, aligned and metric-compatible where search structures assume triangle inequalities. Missingness needs an explicit transform. Inspect neighborhood-count and distance distributions by subgroup. A cluster composed primarily of one batch can reflect data acquisition rather than a phenomenon. Density is always relative to the representation and sampling process; oversampling one cohort changes the model."
+    },
+    {
+      "id": "validation-meaning",
+      "title": "Validate structure and resist anomaly overclaiming",
+      "body": "There may be no ground-truth clustering. Measure stability across resamples, seeds of upstream embeddings, time and plausible parameter ranges. Internal metrics such as silhouette can punish irregular clusters DBSCAN is designed to find. Inspect connectivity, core support, domain coherence and downstream utility. A noise label means the point was not density-reachable at the selected scale. It may be an error, a rare valid case, an emerging cohort or a boundary point. If using noise for anomaly triage, evaluate labeled incidents, false-positive costs and subgroup rates separately. Border points have weaker support than cores and should not inherit the same confidence. Preserve an independent sample when external outcomes influence selection, and compare against k-means, hierarchical clustering and simple density thresholds."
+    },
+    {
+      "id": "scale-serving",
+      "title": "Neighbor computation and new points need explicit contracts",
+      "body": "DBSCAN fitting can require many radius neighbors; a large eps and low min_samples may create dense O(n²) neighborhoods and memory use in some implementations. Benchmark graph construction, memory and runtime. Classic DBSCAN is transductive and does not define a universal predict method for new points. A conservative extension may assign a query only when it lies within eps of a deployed core, with deterministic handling of multiple clusters; otherwise return noise or unsupported. Validate that rule separately. Version reference data, transform, metric, eps, min_samples, core points and mapping. Monitor neighborhood counts, core and noise fractions, cluster occupancy, query support, latency and cohort outcomes. Protect reference examples, guard online additions against poisoning, canary refits and retain a simpler support or global fallback."
+    }
+  ],
+  "workedExamples": [
+    {
+      "title": "Expand a one-dimensional cluster",
+      "body": "Points are [0,0.1,0.2,2.0] with eps=0.15 and min_samples=2 including self. The first three are linked through core neighborhoods: 0 sees {0,0.1}, 0.1 sees all three, and 0.2 sees {0.1,0.2}. Point 2.0 sees only itself and is noise. The cluster spans 0.2 even though endpoints are farther than eps because reachability is transitive through cores."
+    },
+    {
+      "title": "One radius cannot fit two densities",
+      "body": "A dense urban cluster has neighbor spacings near 0.01 while a legitimate rural cluster has spacings near 0.2. eps=0.05 finds the city and calls the village noise; eps=0.25 keeps the village but connects the city to a nearby group through a bridge. A multiscale density method or domain segmentation is more appropriate than searching for a magical eps."
+    }
+  ],
+  "exercises": [
+    {
+      "prompt": "Can two points in one DBSCAN cluster be farther apart than eps?",
+      "solution": "Yes. They can be connected by a transitive chain of core neighborhoods even when their direct distance exceeds eps."
+    },
+    {
+      "prompt": "Why does oversampling one cohort alter DBSCAN?",
+      "solution": "Density is measured by local counts or weight, so sampling frequency changes which points become core."
+    },
+    {
+      "prompt": "What is a conservative rule for a new query?",
+      "solution": "Assign only if it lies within eps of a deployed core point, resolve multiple clusters deterministically, otherwise return unsupported or noise."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "flow",
+      "title": "DBSCAN expansion",
+      "items": [
+        "Build eps neighborhoods",
+        "Mark core points",
+        "Choose an unvisited core",
+        "Expand through core neighbors",
+        "Attach reachable border points",
+        "Leave unreached points as noise"
+      ],
+      "caption": "Clusters are connected components under core-mediated density reachability.",
+      "afterSection": "density-definitions"
+    },
+    {
+      "type": "compare",
+      "title": "Core and noise semantics",
+      "left": {
+        "title": "Core-supported",
+        "items": [
+          "Enough local neighbors",
+          "Can extend a cluster",
+          "Density evidence at eps",
+          "Still representation-dependent"
+        ]
+      },
+      "right": {
+        "title": "Noise label",
+        "items": [
+          "Not density-reachable",
+          "May be rare or erroneous",
+          "Not an anomaly proof",
+          "Needs separate triage evidence"
+        ]
+      },
+      "caption": "DBSCAN support roles should not be promoted into domain conclusions without validation.",
+      "afterSection": "validation-meaning"
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "dbscan-paper",
+      "contribution": "Provides original core, reachability, connectivity and noise definitions."
+    },
+    {
+      "resource": "sklearn-clustering",
+      "contribution": "Verifies current DBSCAN behavior, parameters and memory cautions."
+    },
+    {
+      "resource": "sklearn-neighbors",
+      "contribution": "Supports radius-neighbor search and dimensionality trade-offs."
+    }
+  ]
 }

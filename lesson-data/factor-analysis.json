@@ -7,34 +7,186 @@
     "ds",
     "as"
   ],
-  "interviewAnswer": "Factor analysis models observed variables as linear combinations of a smaller number of latent factors plus variable-specific noise, focusing on shared covariance structure.",
+  "interviewAnswer": "Factor analysis models centered observations as x=Λz+ε, where low-dimensional latent factors z explain shared covariance and feature-specific noise ε has diagonal covariance Ψ. Under the standard Gaussian model, Cov(x)=ΛΛᵀ+Ψ. Unlike PCA, FA does not seek maximum total variance or minimum reconstruction error; it separates common variance from uniqueness. Loadings are rotationally non-identifiable: ΛR gives the same covariance for orthogonal R, so varimax or oblique rotations aid interpretation but do not prove latent causes. I choose factor count using held-out likelihood, parallel analysis and stability, check residual correlations and uniqueness, fit preprocessing inside validation, and avoid causal or psychological labels without measurement-theory evidence and invariance across groups.",
   "keyPoints": [
-    "Latent factors",
-    "Shared covariance",
-    "Specific noise",
-    "Probabilistic model"
+    "FA explains covariance through common latent factors plus diagonal feature-specific uniqueness.",
+    "PCA decomposes total variance for reconstruction; factor analysis is a probabilistic covariance model.",
+    "Loadings are not uniquely oriented, so rotations change interpretation while preserving fit under corresponding assumptions.",
+    "Factor count, communalities and residual covariance require model checks and independent evidence.",
+    "Latent factors are statistical constructs, not automatically causal entities or fair scores."
   ],
   "resources": [
-    "stanford-cs229",
-    "probml-book"
+    "sklearn-decomposition",
+    "probml-book",
+    "stanford-stats202"
   ],
   "featured": false,
-  "why": "Factor analysis is a classic latent-variable model distinct from PCA.",
-  "intuition": "Several measured variables may move together because of a smaller hidden cause, while each retains its own measurement noise.",
-  "deepDive": "The model x=Λz+ε assumes latent factors z and diagonal/specific noise ε; maximum-likelihood or Bayesian methods estimate loadings and uncertainty.",
-  "math": "",
-  "code": "",
+  "why": "Factor analysis is foundational in psychometrics, measurement, finance and scientific latent-variable modeling because it asks which covariance is shared across measurements and which is feature-specific noise. That is a different question from PCA's compression objective. The distinction matters whenever people name components as traits, risks or biological processes. Rotational non-identifiability means many loading matrices imply the same observed covariance, while group differences, ordinal scales, missingness and correlated errors can invalidate the simple model. A rigorous chapter connects the Gaussian likelihood, covariance decomposition, posterior factor scores, rotations, factor-count selection and residual checks, then adds measurement invariance, uncertainty and production governance. The result is a tool for testing a latent measurement hypothesis rather than manufacturing labels from a loading table.",
+  "intuition": "Several observed tests move together because a smaller set of hidden influences affects them, while each test also has its own noise. Factor analysis tries to explain cross-feature correlations through those shared influences and leaves a unique variance for each measurement. Rotating the hidden coordinate axes can describe the same covariance equally well, like choosing north-east versus north-west coordinates on the same plane. A convenient rotation may make loadings sparse and names easier, but the data alone did not choose those names or prove the hidden variables exist as causes.",
+  "deepDive": "Factor analysis is a probabilistic covariance model with latent scores, uniqueness and rotational ambiguity. Model fit is judged through likelihood and residual covariance, while interpretation needs rotation disclosure, stability, measurement invariance and domain theory. Scoring and deployment require preserving feature contracts and recognizing posterior uncertainty.",
+  "math": "Let z~N(0,I_q), ε~N(0,Ψ) independent with diagonal Ψ, and x=μ+Λz+ε. Then x~N(μ,Σ) with Σ=ΛΛ^T+Ψ. Communality for standardized feature j is Σ_l λ_jl² and uniqueness ψ_j. For known parameters, E[z|x]=Λ^T(ΛΛ^T+Ψ)^-1(x-μ), equivalently a stable solved form. For orthogonal R, (ΛR)(ΛR)^T=ΛΛ^T, demonstrating rotational non-identifiability.",
+  "code": "from sklearn.decomposition import FactorAnalysis\nfa=FactorAnalysis(n_components=2,random_state=0).fit(train); scores=fa.transform(test); cov_fa=fa.components_.T@fa.components_+np.diag(fa.noise_variance_)\nmean=train.mean(axis=0); var=train.var(axis=0); ll_diag=float(np.mean(-.5*np.sum(np.log(2*np.pi*var)+(test-mean)**2/var,axis=1))); ll_fa=float(fa.score(test))",
   "commonMistakes": [
-    "Calling factor analysis identical to PCA.",
-    "Interpreting rotated factors as uniquely determined truths."
+    {
+      "misconception": "Factor analysis and PCA are interchangeable dimensionality reduction.",
+      "correction": "PCA optimizes total-variance reconstruction; FA models shared covariance plus feature-specific noise."
+    },
+    {
+      "misconception": "The loading matrix is uniquely identified by data.",
+      "correction": "Rotations, signs and permutations can represent the same covariance; orientation needs conventions or substantive constraints."
+    },
+    {
+      "misconception": "A high loading proves an item measures the named causal trait.",
+      "correction": "It is a model association. Construct validity requires theory, external evidence, replication and invariance."
+    },
+    {
+      "misconception": "Factor scores are observed true latent values.",
+      "correction": "They are method-dependent posterior or linear estimates with uncertainty and possible indeterminacy."
+    }
   ],
   "followUps": [
-    "Factor analysis vs PCA?",
-    "What is factor rotation?"
+    {
+      "question": "Why is Psi usually diagonal?",
+      "answer": "It encodes local independence so residual covariance is feature-specific; allowing arbitrary residual covariance can absorb all structure and undermine factor identification."
+    },
+    {
+      "question": "What is a Heywood case?",
+      "answer": "An estimated uniqueness at or below zero or a communality beyond plausible bounds, often indicating sampling or model problems."
+    },
+    {
+      "question": "Why test measurement invariance?",
+      "answer": "Without comparable loadings and item behavior, group or time differences in factor scores may reflect changed measurement rather than latent differences."
+    }
   ],
-  "production": "Use domain interpretation and stability checks; latent factors can be non-identifiable up to rotations/signs.",
-  "workedExample": "Survey questions about similar behaviors may load on a small number of latent traits.",
+  "production": "Version instrument and item wording, coding and order, transform, missing policy, factor count, loading and uniqueness matrices, rotation and score rule. Test positive uniqueness, covariance reconstruction, aligned signs and score parity. Monitor item and missingness distributions, factor scores and uncertainty, held-out likelihood, residual correlations and invariance by group and time. Treat latent scores as sensitive; minimize retention, control access and review downstream decisions for discrimination. Canary instrument and model changes together, align factors before comparison, retain the prior compatible artifact and provide validated item-level or aggregate fallback when invariance, schema or health checks fail.",
+  "workedExample": "With one factor loadings [0.8,0.6] and uniqueness [0.36,0.64], covariance is [[0.64+0.36,0.48],[0.48,0.36+0.64]]=[[1,0.48],[0.48,1]]. The factor explains the cross-covariance 0.48. Both observed variables have unit variance but different communalities 0.64 and 0.36.",
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "lab": {
+    "language": "python",
+    "goal": "Simulate a factor model, fit FactorAnalysis, and verify uniqueness, covariance fit and held-out likelihood against an independence model.",
+    "buildIt": "import numpy as np\nrng=np.random.default_rng(10); load=np.array([[.9,0],[.7,.1],[0,.8],[.1,.7]]); psi=np.array([.2,.3,.25,.3]); Z=rng.normal(size=(600,2)); X=Z@load.T+rng.normal(size=(600,4))*np.sqrt(psi); train,test=X[:450],X[450:]",
+    "useIt": "from sklearn.decomposition import FactorAnalysis\nfa=FactorAnalysis(n_components=2,random_state=0).fit(train); scores=fa.transform(test); cov_fa=fa.components_.T@fa.components_+np.diag(fa.noise_variance_)\nmean=train.mean(axis=0); var=train.var(axis=0); ll_diag=float(np.mean(-.5*np.sum(np.log(2*np.pi*var)+(test-mean)**2/var,axis=1))); ll_fa=float(fa.score(test))",
+    "verifyIt": "assert scores.shape==(len(test),2)\nassert np.all(fa.noise_variance_>0)\nassert np.linalg.eigvalsh(cov_fa).min()>0\nassert ll_fa>ll_diag\nassert np.mean((np.cov(train,rowvar=False)-cov_fa)**2)<0.03\nassert np.isfinite(scores).all()",
+    "shipIt": "Freeze item coding, loadings, uniqueness, rotation and scoring; monitor residual covariance and invariance; protect scores; align refits and retain a compatible item-level fallback."
+  },
+  "description": "Factor analysis explains observed covariance through a small number of Gaussian latent factors and feature-specific noise. This chapter derives x=mu+Lambda z+epsilon, the covariance Lambda Lambda transpose plus Psi, posterior factor scores, communalities and uniqueness. It contrasts FA with PCA, probabilistic PCA and ICA; explains maximum-likelihood or EM estimation, diagonal-noise assumptions, Heywood cases, rotational non-identifiability, varimax and oblique rotation, factor-count selection, parallel analysis, residual covariance and confirmatory structure. Worked examples reconstruct a covariance matrix and show two rotated loading solutions with identical fit. The lab simulates known factors, fits scikit-learn FactorAnalysis, verifies positive uniqueness, covariance approximation and improved held-out likelihood over a diagonal Gaussian. Production guidance versions item coding and loadings, monitors score and residual drift, checks measurement invariance, protects sensitive latent scores and supports rollback. Factor names are treated as hypotheses supported by theory and replication, not facts created by an optimizer. You will also learn why posterior scores remain uncertain, how residual correlations expose local dependence, and why group comparisons are invalid until the measurement model demonstrates sufficient invariance.",
+  "prerequisites": [
+    "expectation-variance",
+    "eigen-svd",
+    "gmm"
+  ],
+  "learningObjectives": [
+    "Derive the factor-analysis covariance and posterior score formulas.",
+    "Distinguish shared communality, uniqueness, PCA variance and probabilistic assumptions.",
+    "Explain rotational ambiguity and use rotations without overclaiming identification.",
+    "Select, check and deploy a factor model with invariance, uncertainty and privacy controls."
+  ],
+  "deepSections": [
+    {
+      "id": "covariance-model",
+      "title": "Common factors explain off-diagonal covariance",
+      "body": "Assume q latent factors with unit covariance and independent feature noise with diagonal Ψ. Marginal covariance is ΛΛ^T+Ψ. Off-diagonal associations must pass through factors, while each diagonal also includes unique variance. For standardized data, communality is the loading-squared sum and uniqueness is residual variance, though estimates and rotation conventions matter. A full residual covariance would make the factor part weakly identified, so diagonal Ψ is a substantive local-independence assumption. Ordinal survey items may need threshold and polychoric models rather than treating integer responses as Gaussian. Centering, reverse coding, missingness and sampling weights define the measurement model. Correlated method effects or repeated wording appear as residual covariance and should be modeled or acknowledged rather than forced into a named factor."
+    },
+    {
+      "id": "estimation-scores",
+      "title": "Likelihood estimates parameters; scores remain uncertain",
+      "body": "Maximum-likelihood FA optimizes the marginal Gaussian covariance and can use EM or matrix optimization. Initialization and local solutions matter. Uniqueness estimates near zero can create Heywood-like boundary cases, often signaling too many factors, small samples or misspecification. Regularization or constraints may stabilize fit but change the model. Given parameters, regression factor scores are posterior means, linear in centered observations. Bartlett and other scoring rules optimize different criteria. Scores are estimates with posterior uncertainty and can be indeterminate across methods. Do not use training factor scores as if observed ground truth. For new data, apply the exact item coding, centering and loading model. Held-out log likelihood evaluates covariance prediction; scoring reliability and downstream validity need separate checks."
+    },
+    {
+      "id": "rotation-identification",
+      "title": "Rotation changes the story without changing covariance",
+      "body": "If R is orthogonal, ΛR gives identical ΛΛ^T, so the likelihood cannot distinguish orientations. Varimax chooses an orthogonal rotation encouraging columns with a few large loadings and many small ones. Oblique rotations permit correlated factors and require distinguishing pattern from structure matrices. Rotation improves simple interpretation but does not create identification. Signs and factor order are arbitrary. Anchor constraints, confirmatory models or theory can orient factors, yet those assumptions should be explicit and tested. Compare loading subspaces and aligned rotations across resamples rather than raw columns. Naming a factor after its largest items is a hypothesis vulnerable to researcher degrees of freedom. Replication, external validity and measurement invariance provide stronger evidence."
+    },
+    {
+      "id": "selection-checks",
+      "title": "Choose factor count by prediction and residual structure",
+      "body": "A scree plot or eigenvalue-above-one rule is not sufficient. Parallel analysis compares observed eigenvalues with those from an appropriate null, but still depends on data type and sampling. Likelihood-ratio tests can be oversensitive and rely on regularity; AIC, BIC and held-out likelihood address different trade-offs. Inspect residual correlation matrices: systematic blocks show local dependence or missing factors. Evaluate loading and score stability under resampling, item removal and plausible factor counts. Cross-validate any downstream prediction using a pipeline that fits FA only on training folds. Confirmatory analysis should test prespecified zero patterns on new data. For groups or time, measurement invariance asks whether loadings, intercepts and residuals are comparable before comparing factor means. Lack of invariance can turn score differences into measurement artifacts."
+    },
+    {
+      "id": "measurement-operations",
+      "title": "Deploy scores as sensitive model outputs",
+      "body": "Version item wording and coding, feature order, missing policy, centering, factor count, loadings, uniqueness, rotation, scoring rule and alignment mapping. Test covariance reconstruction, finite uniqueness and score parity. Monitor item distributions, missingness, factor-score and posterior-uncertainty distributions, residual correlations, held-out likelihood and invariance diagnostics by cohort. A loading drift can reflect population change or measurement changes. Factor scores may encode health, ability or socioeconomic traits, so minimize logging, restrict access and review downstream fairness and legal use. Canary revised instruments and factor models together. Retain the prior compatible scoring artifact and use item-level or validated aggregate fallbacks when invariance, feature or model-health checks fail."
+    }
+  ],
+  "workedExamples": [
+    {
+      "title": "Reconstruct shared covariance",
+      "body": "With one factor loadings [0.8,0.6] and uniqueness [0.36,0.64], covariance is [[0.64+0.36,0.48],[0.48,0.36+0.64]]=[[1,0.48],[0.48,1]]. The factor explains the cross-covariance 0.48. Both observed variables have unit variance but different communalities 0.64 and 0.36."
+    },
+    {
+      "title": "Rotation preserves fit",
+      "body": "For a two-factor loading matrix Λ and any orthogonal rotation R, ΛR(R^TΛ^T)=ΛΛ^T. A 45-degree rotation can turn moderate cross-loadings into a simpler pattern while observed covariance and likelihood remain unchanged. The rotated labels are interpretive conventions that must be disclosed and replicated."
+    }
+  ],
+  "exercises": [
+    {
+      "prompt": "What covariance does the one-factor model imply between features j and m?",
+      "solution": "Their loading inner product; with one factor it is lambda_j lambda_m because diagonal uniqueness contributes no off-diagonal covariance."
+    },
+    {
+      "prompt": "Why does varimax not prove the factors are independent causes?",
+      "solution": "It selects a convenient loading orientation under a criterion; identical observed covariance is compatible with many rotations and causal structures."
+    },
+    {
+      "prompt": "What should residual correlation reveal?",
+      "solution": "Remaining systematic association not explained by the factor model, suggesting local dependence, missing factors or preprocessing issues."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "flow",
+      "title": "Factor-analysis generative model",
+      "items": [
+        "Sample latent factors",
+        "Mix them through loadings",
+        "Add feature-specific noise",
+        "Observe correlated measurements",
+        "Infer posterior factor scores",
+        "Check residual covariance and invariance"
+      ],
+      "caption": "Shared factors create cross-feature covariance while uniqueness remains on each measurement.",
+      "afterSection": "covariance-model"
+    },
+    {
+      "type": "compare",
+      "title": "PCA and factor analysis",
+      "left": {
+        "title": "PCA",
+        "items": [
+          "Decomposes total variance",
+          "Orthogonal reconstruction",
+          "No explicit unique noise",
+          "Scores optimize compression"
+        ]
+      },
+      "right": {
+        "title": "Factor analysis",
+        "items": [
+          "Models shared covariance",
+          "Diagonal uniqueness",
+          "Rotational ambiguity",
+          "Scores are posterior estimates"
+        ]
+      },
+      "caption": "The methods can produce similar plots while answering different statistical questions.",
+      "afterSection": "selection-checks"
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "sklearn-decomposition",
+      "contribution": "Verifies current factor-analysis likelihood, scoring and implementation behavior."
+    },
+    {
+      "resource": "probml-book",
+      "contribution": "Grounds latent Gaussian covariance models and posterior inference."
+    },
+    {
+      "resource": "stanford-stats202",
+      "contribution": "Supports statistical latent-factor interpretation and model checking."
+    }
+  ]
 }

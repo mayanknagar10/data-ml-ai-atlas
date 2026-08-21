@@ -1,6 +1,6 @@
 # PCA — Code Lab
 
-Derive PCA from covariance eigenvectors and compare with sklearn.
+Implement PCA with SVD, compare with scikit-learn, and verify orthogonality, reconstruction and sign-invariant subspaces.
 
 ## 1. Build it
 

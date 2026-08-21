@@ -6,30 +6,57 @@
   "roles": [
     "ds"
   ],
-  "interviewAnswer": "Nested cross-validation separates hyperparameter/model selection in an inner loop from unbiased performance estimation in an outer loop. It is useful when datasets are small and tuning would otherwise contaminate evaluation.",
+  "interviewAnswer": "Nested cross-validation separates model selection from performance estimation. For each outer split, I treat the outer validation fold as unseen, run the entire search—including preprocessing, feature selection, hyperparameters, calibration and threshold policy—only within the outer training data, fit the selected procedure on that outer training set, and score it once on the outer holdout. Inner scores choose; outer scores estimate the generalization of the selection algorithm. Tuning once on all data and then evaluating the chosen configuration with ordinary CV is not nested because outer folds have already influenced the choice. I use group- or time-aware splitters at both levels where needed, record selected configurations and out-of-fold outer predictions, and aggregate at the independent unit. Nested CV is computationally expensive and does not create a permanent test set, but it is valuable when data are limited and search adaptivity would bias a single CV estimate.",
   "keyPoints": [
-    "Inner CV selects; outer CV estimates.",
-    "Computational cost is higher.",
-    "Final deployment can refit after evaluation protocol is complete."
+    "The complete selection process is repeated independently inside every outer training fold.",
+    "Inner validation chooses a procedure; outer holdouts estimate the procedure's post-selection performance.",
+    "Outer observations must not influence preprocessing, search space adaptation, early stopping, calibration or thresholding.",
+    "Different outer folds may select different configurations; this is evidence about selection stability, not an error.",
+    "Group, time, label-horizon and independent-unit constraints apply to both nesting levels."
   ],
   "resources": [
-    "isl",
-    "sklearn"
+    "nested-cv-selection-paper",
+    "sklearn-cross-validation",
+    "sklearn-grid-search"
   ],
   "featured": false,
-  "why": "Nested Cross-validation is a standard part of a broad data/ML curriculum because it changes how models are selected, evaluated or operated in real systems.",
-  "intuition": "Inner CV selects; outer CV estimates.",
-  "deepDive": "Nested cross-validation separates hyperparameter/model selection in an inner loop from unbiased performance estimation in an outer loop. It is useful when datasets are small and tuning would otherwise contaminate evaluation. Computational cost is higher. Final deployment can refit after evaluation protocol is complete. A strong answer connects the formal idea to validation, data requirements and failure modes instead of treating the method as a recipe.",
-  "workedExample": "Compare several model families on a small biomedical dataset without reporting the same CV score used for tuning.",
+  "why": "Cross-validation estimates a fixed procedure, but hyperparameter search adapts that procedure to the same fold outcomes. Reporting the maximum internal score confuses selection evidence with assessment evidence and is optimistic, especially when data are small, candidates numerous or score differences noisy. A single holdout can solve this separation but may be too costly in limited samples. Nested CV rotates the assessment role across outer folds while isolating each outer outcome from the inner search. The price is many fits, more complex uncertainty and a result that describes a selection algorithm rather than one universal parameter setting. Correct nesting is essential; a visually nested loop is still invalid if features, search bounds or thresholds were chosen using all data.",
+  "intuition": "Imagine several sealed exams. For each outer exam, study and choose your method using only the remaining data and their inner practice tests. Open the sealed exam once, record the score, and never use its answers to revise that fold's method. Repeating across sealed exams estimates how the whole study-and-selection strategy works on new data.",
+  "deepDive": "Nested CV evaluates an adaptive algorithm by inserting an independent assessment boundary around selection. Its validity depends on re-running every learned and human-specified choice that consumed outcome evidence, respecting structure at both levels, and reporting outer predictions rather than the seductive inner winner. Compute planning, stability analysis and final refitting are part of the design.",
+  "workedExample": "Five outer folds, four inner folds and 20 candidates require about 5×4×20=400 candidate fits, plus five outer refits and a final development-data search or refit. Compute and failure policy should be designed before launch.",
   "commonMistakes": [
-    "Choosing the technique without checking whether its assumptions match the problem.",
-    "Optimizing an offline metric without checking realistic validation slices or operational constraints."
+    {
+      "misconception": "Two sequential CV runs are nested CV.",
+      "correction": "The search must be rerun inside each outer training fold without any outer-holdout influence."
+    },
+    {
+      "misconception": "Only estimator hyperparameters need nesting.",
+      "correction": "All data- or label-informed preprocessing, features, calibration, thresholds and model choices belong inside."
+    },
+    {
+      "misconception": "Outer folds should select the same parameters.",
+      "correction": "Variation is expected and reveals selection stability; outer scores evaluate the adaptive procedure."
+    },
+    {
+      "misconception": "The mean inner best score is the nested estimate.",
+      "correction": "Only scores on untouched outer holdouts estimate post-selection generalization."
+    }
   ],
   "followUps": [
-    "When would you not use Nested Cross-validation?",
-    "How would you validate or tune Nested Cross-validation?"
+    {
+      "question": "Do you need nested CV with a large untouched test set?",
+      "answer": "Not necessarily; development CV can select and the untouched test can estimate once. Nested CV is valuable when a separate holdout is too costly or for robustness analysis."
+    },
+    {
+      "question": "How do you choose final hyperparameters after nested CV?",
+      "answer": "Use a documented rule, commonly rerunning the same search on all development data, while recognizing nested CV evaluated that selection procedure rather than one fixed value."
+    },
+    {
+      "question": "Can nested CV tune a threshold?",
+      "answer": "Yes, but threshold selection must occur from inner out-of-fold predictions within each outer training set before scoring the locked outer holdout."
+    }
   ],
-  "production": "In production, validate on realistic slices, track latency/cost when relevant, and monitor for distribution changes or failure modes that the offline metric can hide.",
+  "production": "Freeze eligible raw data, group or time split manifests, complete pipeline, candidate space, primary metric, budget and selection rule before outer evaluation. For every outer fold, log inner trials, selected configuration, refit artifact, outer predictions, failures and compute. Assert no outer IDs, timestamps or transformations enter the inner process. Aggregate outer evidence at the independent unit and inspect configuration stability. Document how the final deployment configuration is chosen and refit on all development data. Preserve truly external test evidence when available and retain the prior production artifact for rollback.",
   "visual": {
     "type": "layers",
     "title": "Nested cross-validation",
@@ -41,6 +68,133 @@
     "caption": "The inner loop selects the model; the outer loop estimates generalization without reusing the same validation data."
   },
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "math": "For outer folds O_k, define lambda_k=argmin_lambda CV_inner(D without O_k,lambda). Fit f_k using lambda_k on D without O_k and evaluate L_k on O_k. The nested estimate aggregates only L_k, not the inner minima. Each observation receives one outer out-of-fold prediction. Approximate fit count is K_outer times N_candidates times K_inner, plus refits. Outer folds overlap in training data, so their scores are dependent; uncertainty should respect groups or time and should not use a naive t interval mechanically.",
+  "code": "from sklearn.model_selection import cross_val_predict\nwrapped=GridSearchCV(base,grid,cv=inner,scoring='roc_auc')\nlib_oof=cross_val_predict(wrapped,X,y,cv=outer,method='predict_proba')[:,1]\nlib_auc=roc_auc_score(y,lib_oof)",
+  "lab": {
+    "language": "python",
+    "goal": "Implement genuine nested cross-validation, verify the library composition, and prove complete outer holdout coverage.",
+    "buildIt": "import numpy as np\nfrom sklearn.datasets import make_classification\nfrom sklearn.model_selection import StratifiedKFold,GridSearchCV\nfrom sklearn.pipeline import make_pipeline\nfrom sklearn.preprocessing import StandardScaler\nfrom sklearn.linear_model import LogisticRegression\nfrom sklearn.metrics import roc_auc_score\nX,y=make_classification(n_samples=240,n_features=10,n_informative=5,random_state=8)\nouter=StratifiedKFold(4,shuffle=True,random_state=1); inner=StratifiedKFold(3,shuffle=True,random_state=2)\nbase=make_pipeline(StandardScaler(),LogisticRegression(max_iter=2000)); grid={'logisticregression__C':[.01,.1,1.,10.]}; oof=np.full(len(y),np.nan); chosen=[]\nfor train,test in outer.split(X,y):\n    search=GridSearchCV(base,grid,cv=inner,scoring='roc_auc').fit(X[train],y[train])\n    oof[test]=search.predict_proba(X[test])[:,1]; chosen.append(search.best_params_['logisticregression__C'])\nnested_auc=roc_auc_score(y,oof)",
+    "useIt": "from sklearn.model_selection import cross_val_predict\nwrapped=GridSearchCV(base,grid,cv=inner,scoring='roc_auc')\nlib_oof=cross_val_predict(wrapped,X,y,cv=outer,method='predict_proba')[:,1]\nlib_auc=roc_auc_score(y,lib_oof)",
+    "verifyIt": "assert not np.isnan(oof).any() and len(chosen)==4\nassert np.allclose(oof,lib_oof) and abs(nested_auc-lib_auc)<1e-12\nfor train,test in outer.split(X,y): assert set(train).isdisjoint(test)\nassert set(chosen).issubset({.01,.1,1.,10.})\nassert 0<=nested_auc<=1",
+    "shipIt": "Persist every outer split and prediction plus its inner search record, assert structured boundaries at both levels, and document the separate final-refit rule."
+  },
+  "description": "Nested cross-validation evaluates a model-selection procedure without reporting the optimistic score that selected its winner. This chapter constructs outer assessment and inner selection loops, specifies exactly which preprocessing, feature engineering, search, early stopping, calibration and threshold decisions must be nested, and explains why tuning globally before outer evaluation is invalid. It adapts the design to grouped entities and ordered time, estimates computational cost, distinguishes outer predictions from inner scores, and interprets varying selected hyperparameters as stability evidence. Worked examples trace a three-by-four nested search and expose a fake nested design. The lab performs manual nested CV for a scaled logistic-regression search, verifies scikit-learn's nested result and asserts complete, disjoint outer predictions. Production guidance freezes search spaces before nesting, logs every inner and outer artifact, aggregates by independent unit, compares selection algorithms on shared outer folds, refits a documented final configuration on all development data and preserves truly external evidence when available.",
+  "prerequisites": [
+    "cross-validation",
+    "hyperparameter-tuning"
+  ],
+  "learningObjectives": [
+    "Implement outer assessment and inner selection without information crossing the outer boundary.",
+    "Identify every adaptive modeling decision that belongs inside the nested procedure.",
+    "Interpret outer estimates, predictions, computational cost and configuration stability.",
+    "Adapt nesting to grouped and temporal data and finalize a reproducible deployment procedure."
+  ],
+  "deepSections": [
+    {
+      "id": "two-level-contract",
+      "title": "Outer assessment surrounds the entire selection algorithm",
+      "body": "Partition raw eligible units into outer folds. For one outer fold, lock its labels and features away. On the remaining outer-training data, build inner splits and run the complete candidate search. The inner metric selects a configuration according to a frozen rule. Refit that complete configuration on all outer-training data and predict the outer holdout once. Repeat until every eligible unit has an outer prediction. Only outer losses contribute to the assessment. Inner best scores answer how selection behaved within training data and are expected to be more favorable. The estimand is performance of the declared search-and-fit algorithm at the outer training size, not performance of a single parameter value trained on the full dataset. An untouched test set can still be useful for a final high-stakes confirmation or future audit."
+    },
+    {
+      "id": "what-must-nest",
+      "title": "Any outcome-informed choice belongs inside",
+      "body": "Imputation statistics, category vocabularies, scaling, target encoding, feature selection, PCA, resampling and the estimator fit all occur inside each inner training fold. Hyperparameter values, algorithm family, early-stopping epoch, calibration mapping and decision threshold are selected without the outer holdout. If exploratory analysis of outer results leads to a new feature, metric or search range, those outer folds have become development evidence and cannot support the unchanged final claim. Unsupervised preprocessing may also leak distribution information and should normally be nested. Static domain rules fixed independently of the data can remain outside, as can deterministic row-local parsing. The candidate space and primary metric should be frozen before running outer folds; adapting the space after observing outer scores breaks symmetry and underreports search adaptivity."
+    },
+    {
+      "id": "structured-nesting",
+      "title": "Both levels inherit groups and time",
+      "body": "If deployment requires unseen patients, outer folds hold out patients and inner folds also group patients within outer training data. Row-level inner splits can select identity-dependent configurations even if the outer split is grouped. For future forecasting, outer folds move forward in time and each inner split must train before its validation period; random inner CV selects a method using future patterns. Overlapping label horizons may require gaps or embargoes. Class stratification can maintain metric support only when compatible with group or temporal constraints. Very few groups, rare positives or short history can make deep nesting unstable or impossible; then use a carefully designed holdout, simpler search, simulation or stronger prior constraints rather than violating the boundary. Record exact IDs and cutoffs for audit."
+    },
+    {
+      "id": "results-uncertainty",
+      "title": "Outer predictions are evidence; parameter variation is a diagnostic",
+      "body": "Store every outer prediction, chosen configuration, inner candidate table, fit failure and resource measurement. Aggregate decomposable losses over outer observations or groups according to the target population. Report fold support and paired comparisons on the same outer units. Different parameter choices across folds can indicate flat optima, training-size effects or unstable selection; it does not invalidate the estimate. A consensus parameter chosen afterward is not what every outer fold evaluated, so describe the finalization rule separately. Outer folds have overlapping training sets and may be correlated; ordinary standard error formulas are fragile. Cluster or block bootstrap on outer prediction losses can describe evaluation-sample uncertainty, while repeated nested CV explores partition sensitivity at very high computational cost. Avoid treating inner-fold variance as final uncertainty."
+    },
+    {
+      "id": "compute-final-model",
+      "title": "Plan the compute and document the final refit",
+      "body": "With K outer folds, J inner folds and M candidates, the search needs roughly KJM model fits plus K outer refits; pipelines, seeds and multi-fidelity stages can multiply this. Parallelize within resource limits, cache only fold-safe deterministic transformations, and log timeouts. Use a smaller scientifically justified space rather than silently reducing inner rigor after seeing results. After assessment, choose how to fit the deployment artifact: rerun the same search on all development data, choose a stability-informed configuration by a prespecified rule, or use the configuration selected by a separate validation process. Refit the complete pipeline on all eligible development data and state that its exact parameters were not themselves evaluated by every outer fold; the nested result supports the selection procedure. Preserve outer evidence and the previous model for rollback."
+    }
+  ],
+  "workedExamples": [
+    {
+      "title": "Fit-count calculation",
+      "body": "Five outer folds, four inner folds and 20 candidates require about 5×4×20=400 candidate fits, plus five outer refits and a final development-data search or refit. Compute and failure policy should be designed before launch."
+    },
+    {
+      "title": "Fake nesting",
+      "body": "A team tunes C on all rows with CV, freezes the best C, then runs another five-fold CV and calls it nested. Every row's label influenced the initial C, so the second folds are not independent assessment. The C search must be repeated separately inside each outer training fold."
+    }
+  ],
+  "exercises": [
+    {
+      "prompt": "In 5×3 nested CV with 12 candidates, how many candidate fits occur before refits?",
+      "solution": "Five outer folds times three inner folds times twelve candidates equals 180 candidate fits."
+    },
+    {
+      "prompt": "Why must feature selection be inside the inner loop?",
+      "solution": "Using outer labels to choose features lets assessment outcomes influence the candidate presented to that outer fold."
+    },
+    {
+      "prompt": "What does changing selected C across outer folds mean?",
+      "solution": "It may reflect noisy or flat selection, training composition or training-size effects; report it as stability evidence rather than forcing agreement."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "flow",
+      "title": "One outer fold",
+      "items": [
+        "Lock outer holdout",
+        "Create inner folds from outer training",
+        "Search complete pipelines",
+        "Select by inner evidence",
+        "Refit on all outer training",
+        "Score outer holdout once"
+      ],
+      "caption": "Repeat the entire selection process independently for every outer fold.",
+      "afterSection": "two-level-contract"
+    },
+    {
+      "type": "compare",
+      "title": "Evidence roles",
+      "left": {
+        "title": "Inner loop",
+        "items": [
+          "Compares candidates",
+          "Tunes preprocessing and model",
+          "Selects threshold or calibration",
+          "Optimistic winner is expected"
+        ]
+      },
+      "right": {
+        "title": "Outer loop",
+        "items": [
+          "Never guides selection",
+          "Estimates selected process",
+          "Produces outer OOF predictions",
+          "Supports paired assessment"
+        ]
+      },
+      "caption": "Confusing these roles recreates selection bias inside a more complicated loop.",
+      "afterSection": "results-uncertainty"
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "nested-cv-selection-paper",
+      "contribution": "Provides the core analysis of selection overfitting and subsequent assessment bias."
+    },
+    {
+      "resource": "sklearn-cross-validation",
+      "contribution": "Verifies nested composition patterns, splitter behavior and out-of-fold evaluation mechanics."
+    },
+    {
+      "resource": "sklearn-grid-search",
+      "contribution": "Supports the inner search and refit semantics used in nested procedures."
+    }
+  ]
 }

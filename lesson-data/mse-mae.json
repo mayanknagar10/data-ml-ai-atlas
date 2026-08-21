@@ -6,44 +6,66 @@
   "roles": [
     "all"
   ],
-  "interviewAnswer": "Use MSE when you want large errors penalized disproportionately because errors are squared. Use MAE when you want a loss that grows linearly and is more robust to outliers. The choice is about error behavior—not whether the current loss value is “large” or “small.”",
+  "interviewAnswer": "MSE averages squared residuals and MAE averages absolute residuals. Squaring gives large errors disproportionate influence, a differentiable objective, and the conditional mean as the population-optimal point prediction. Absolute loss grows linearly, is more robust to tails, is nondifferentiable at zero, and targets a conditional median. RMSE restores target units but retains squared-loss ranking. The right metric follows operational cost and the estimand, not a universal robustness preference. I report distributional and slice errors, uncertainty over independent units, and a baseline; keep training loss distinct from selection and business utility; and verify sample weights, missing targets, inverse transforms and aggregation. A model with lower MSE can have worse typical error or worse high-stakes tail decisions.",
   "keyPoints": [
-    "MSE squares residuals",
-    "MAE uses absolute residuals",
-    "Outlier sensitivity",
-    "Gaussian vs Laplace interpretation"
+    "Squared loss elicits the conditional mean; absolute loss elicits a conditional median.",
+    "MSE and RMSE rank the same model on one fixed evaluation set, but RMSE has target units.",
+    "Large residuals dominate MSE through squaring, while every residual contributes linearly to MAE.",
+    "Averaging over rows can overweight repeated entities; aggregation must follow the independent decision unit.",
+    "Metric selection should represent operational loss, tail risk and subgroup consequences."
   ],
   "resources": [
-    "google-mlcc",
-    "statquest",
-    "sklearn",
-    "isl"
+    "sklearn-model-evaluation",
+    "isl",
+    "openintro-stats"
   ],
   "featured": true,
-  "why": "This is a classic interview question because it tests whether you understand how a loss function changes model behavior, not whether you can recite formulas.",
-  "intuition": "Imagine residuals [1, 1, 1, 10]. MAE treats the large error as 10; MSE turns it into 100. That single point therefore dominates MSE much more strongly.",
-  "deepDive": "MSE is smooth everywhere and its gradient grows with error magnitude, so large residuals drive larger updates. MAE has a constant-magnitude gradient away from zero and is more robust to extreme residuals. Statistically, minimizing expected squared error targets the conditional mean, while minimizing expected absolute error targets the conditional median.",
-  "math": "MSE = (1/n) Σ(yᵢ-ŷᵢ)²\nMAE = (1/n) Σ|yᵢ-ŷᵢ|",
-  "code": "import numpy as np\ny = np.array([0., 0., 0., 0.])\ny_hat = np.array([1., 1., 1., 10.])\nerrors = y - y_hat\nprint('MAE:', np.mean(np.abs(errors)))\nprint('MSE:', np.mean(errors ** 2))",
+  "why": "MSE and MAE are simple enough to compute by hand yet encode different statistical targets and decision costs. That makes them the ideal place to learn that a metric is not a neutral report card. Squared error rewards conditional-mean forecasts and heavily penalizes rare large misses; absolute error rewards conditional medians and represents linear unit cost. Log transforms, sample weights, repeated entities, censored targets and inverse transformations can change what an average means. Aggregate improvements can conceal a harmful tail or subgroup. Training on one loss and selecting on another may be sensible, but only when the distinction is explicit. A rigorous evaluation therefore includes a declared prediction unit, horizon, target availability, baseline, uncertainty and residual distribution rather than a single decimal.",
+  "intuition": "A ten-unit miss counts as one hundred under squared error but ten under absolute error. If a few catastrophic misses truly cost quadratically, MSE emphasizes them appropriately; if each unit of error costs the same, MAE is closer to the decision. The mean balances signed residuals, while the median balances counts on either side. A metric is therefore a compressed statement of what prediction and what mistakes matter. Before optimizing it, ask who incurs the error, when it is observed, and whether repeated rows represent repeated independent decisions.",
+  "deepDive": "Regression loss determines both the population point target and how finite residuals are aggregated. Reliable comparison keeps target scale, observation weights, decision units and uncertainty fixed, then supplements the headline mean with residual distributions, tails and slices. Operational loss may require asymmetric, quantile or capped objectives beyond both MSE and MAE.",
+  "math": "For residual e_i=y_i-yhat_i, MSE=n^-1Σe_i², RMSE=sqrt(MSE), and MAE=n^-1Σ|e_i|. Minimizing E[(Y-a)²|X=x] gives a=E[Y|x] by differentiation; minimizing E[|Y-a||X=x] gives any conditional median via subgradients. Weighted metrics divide by Σw_i. MSE=variance(error)+mean(error)² as a descriptive identity on a fixed sample under the corresponding denominator. Jensen gives RMSE≥MAE for nonnegative |e| averages.",
+  "code": "from sklearn.metrics import mean_squared_error,mean_absolute_error\nsk_mse=mean_squared_error(y,a,sample_weight=w); sk_mae=mean_absolute_error(y,a,sample_weight=w)",
   "commonMistakes": [
-    "“Use MSE when the loss is big and MAE when it is small.” — incorrect. The choice is about error weighting and assumptions.",
-    "“MAE ignores large errors.” — false; it penalizes them linearly rather than quadratically.",
-    "Comparing raw MSE and MAE magnitudes as if they were on the same units; MSE is in squared target units."
+    {
+      "misconception": "MAE is always better because it is robust.",
+      "correction": "It is appropriate for linear absolute cost and a median target. Large misses may deserve extra weight in the actual decision."
+    },
+    {
+      "misconception": "RMSE is less sensitive to outliers than MSE because of the square root.",
+      "correction": "The root is applied after averaging; model ordering and squared-residual influence are unchanged on a fixed set."
+    },
+    {
+      "misconception": "Averaging all rows gives an unbiased customer metric.",
+      "correction": "Frequent customers receive more weight. Aggregate or weight at the intended independent decision unit."
+    },
+    {
+      "misconception": "Training loss and business cost must be identical.",
+      "correction": "A surrogate can be useful, but model selection must validate the downstream cost and the difference must be explicit."
+    }
   ],
   "followUps": [
-    "When would you use RMSE?",
-    "How does Huber loss combine MAE and MSE behavior?",
-    "Which estimate minimizes expected MSE vs MAE?",
-    "What happens to gradients near zero?"
+    {
+      "question": "Why does MSE target the mean?",
+      "answer": "Differentiating conditional expected squared loss with respect to the point prediction sets it equal to the conditional expectation."
+    },
+    {
+      "question": "Can RMSE be averaged across folds?",
+      "answer": "A simple average gives each fold equal weight and differs from pooling squared errors then rooting. Choose the estimand and report fold variability."
+    },
+    {
+      "question": "What if overprediction costs twice underprediction?",
+      "answer": "Use and validate an asymmetric loss or quantile objective reflecting that ratio, and report signed error components."
+    }
   ],
-  "production": "Choose the metric/loss from business error cost. A model may train with one differentiable loss and still be selected using a different operational metric.",
-  "workedExample": "If one price prediction is off by €100 while most are off by €5, MSE strongly prioritizes fixing the €100 miss. MAE is less dominated by that single outlier.",
+  "production": "Version target construction and availability cutoff, units and transformations, inclusion population, sample or entity weights, missing-label policy, aggregation, tail definitions and baselines. Test hand-calculated fixtures, nonnegativity, exact-zero behavior and RMSE²=MSE. Monitor target coverage and delay, rolling MSE, MAE, signed bias, tail absolute errors, subgroup results and decision cost with intervals over independent units. Recompute metrics by prediction cohort as labels arrive. Treat any definition change as a new versioned series. Canary model promotions against prespecified scorecard thresholds, retain paired residual evidence under privacy controls and keep the prior model available for rollback.",
+  "workedExample": "Model A residuals are [0,0,0,8], giving MAE 2 and MSE 16. Model B residuals are [3,3,3,3], giving MAE 3 and MSE 9. MAE prefers A because most predictions are exact; MSE prefers B because it avoids the large miss. The decision depends on whether that eight-unit miss carries disproportionate cost.",
   "lab": {
-    "goal": "Make outlier sensitivity visible rather than memorizing definitions.",
     "language": "python",
-    "buildIt": "import numpy as np\ny=np.array([10,10,10,10.])\np1=np.array([9,11,10,30.])\nerr=p1-y\nmae=np.mean(np.abs(err)); mse=np.mean(err**2)\nprint('errors',err,'MAE',mae,'MSE',mse)\n",
-    "useIt": "from sklearn.metrics import mean_absolute_error, mean_squared_error\nprint(mean_absolute_error(y,p1),mean_squared_error(y,p1))\n",
-    "verifyIt": "p2=np.array([9,11,10,14.])\nassert np.mean((p1-y)**2)-np.mean((p2-y)**2) > np.mean(abs(p1-y))-np.mean(abs(p2-y))\n"
+    "goal": "Implement weighted MSE, RMSE and MAE, compare with scikit-learn, and verify their invariants and point optima.",
+    "buildIt": "import numpy as np\ny=np.array([0.,0.,0.,8.]); a=np.array([0.,0.,0.,0.]); b=np.array([3.,3.,3.,5.]); w=np.array([1.,1.,1.,2.])\ndef metrics(y,p,w=None):\n    w=np.ones(len(y)) if w is None else np.asarray(w,float); e=np.asarray(y)-np.asarray(p)\n    mse=float(np.sum(w*e*e)/w.sum()); mae=float(np.sum(w*np.abs(e))/w.sum())\n    return {'mse':mse,'rmse':mse**.5,'mae':mae}\nma=metrics(y,a,w); mb=metrics(y,b,w)",
+    "useIt": "from sklearn.metrics import mean_squared_error,mean_absolute_error\nsk_mse=mean_squared_error(y,a,sample_weight=w); sk_mae=mean_absolute_error(y,a,sample_weight=w)",
+    "verifyIt": "assert abs(ma['mse']-sk_mse)<1e-12 and abs(ma['mae']-sk_mae)<1e-12\nassert abs(ma['rmse']**2-ma['mse'])<1e-12\nassert ma['rmse']>=ma['mae']\ngrid=np.linspace(-1,9,1001); sq=np.array([np.mean((y-v)**2) for v in grid]); ab=np.array([np.mean(np.abs(y-v)) for v in grid])\nassert abs(grid[sq.argmin()]-y.mean())<.011\nassert 0<=grid[ab.argmin()]<=0.01\nassert metrics(y,y)['mse']==metrics(y,y)['mae']==0",
+    "shipIt": "Freeze target, unit, weight and aggregation semantics; test metric invariants; monitor label coverage, tails and slices with independent-unit uncertainty; retain the prior scorecard and model for rollback."
   },
   "visual": {
     "type": "curve",
@@ -113,6 +135,123 @@
     "yLabel": "relative penalty"
   },
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "Mean squared error and mean absolute error summarize regression residuals using different cost geometries. This chapter derives MSE, RMSE and MAE, proves that squared loss targets a conditional mean while absolute loss targets a conditional median, and explains convexity, gradients, subgradients, outlier influence and units. It covers weighted and grouped aggregation, multioutput targets, log-scale evaluation, inverse transforms, missing targets, heteroskedasticity, tail metrics, confidence intervals, baselines and asymmetric alternatives such as pinball loss. Worked examples show one outlier reversing model preference and explain why back-transforming a log forecast requires care. The lab implements weighted MSE, RMSE and MAE, compares with scikit-learn, verifies inequalities and demonstrates the mean-versus-median optimum. Production guidance fixes the evaluation contract, monitors residual slices and target delay, and prevents metric-definition drift. The goal is to choose an error measure that represents the actual prediction estimand and cost rather than declaring one metric universally robust. It also explains how paired comparisons keep competing models on the same evidence.",
+  "prerequisites": [
+    "expectation-variance",
+    "linear-regression"
+  ],
+  "learningObjectives": [
+    "Compute and interpret weighted MSE, RMSE and MAE on a declared target scale.",
+    "Derive their conditional mean and median population optima.",
+    "Diagnose outlier, grouping, transform and aggregation effects on model rankings.",
+    "Design a regression scorecard with baselines, uncertainty, tails and operational slices."
+  ],
+  "deepSections": [
+    {
+      "id": "loss-estimand",
+      "title": "Loss functions select different point summaries",
+      "body": "For one feature profile x, a point predictor chooses a single number for a distribution of possible Y. Expected squared loss has derivative 2(a-E[Y|x]), so the conditional mean is optimal when the expectation exists. Absolute loss has a subgradient based on probability mass below and above a, making a conditional median optimal. These targets differ under skew. Training a flexible model on MSE therefore estimates a mean-like function; training on MAE estimates a median-like function. RMSE is the square root of an aggregate MSE and does not create a new per-observation objective. If the action requires a high service quantile, neither mean nor median is enough; pinball loss targets a conditional quantile. If overprediction and underprediction costs differ, use an asymmetric decision loss and report each side separately."
+    },
+    {
+      "id": "influence-units",
+      "title": "Squaring changes influence and units",
+      "body": "The derivative of squared loss grows with residual magnitude, so large misses dominate optimization and evaluation. Absolute loss has constant-magnitude subgradients away from zero, reducing but not eliminating outlier influence. A valid rare catastrophe should not be dismissed as an outlier when its cost is important; a corrupted label should be repaired through data lineage rather than hidden by MAE. MSE is in squared target units and harder to communicate; RMSE restores units but remains sensitive to large errors. MSE and RMSE preserve model ordering only when computed on exactly the same weighted evaluation set. Normalized metrics can aid cross-series comparison but introduce denominators and failure modes. Always report the target scale, any clipping or transform, and whether errors were aggregated before or after inverse transformation."
+    },
+    {
+      "id": "aggregation-design",
+      "title": "The averaging unit defines the population",
+      "body": "A row-weighted average estimates performance over rows. If one customer has hundreds of events and another has one, it estimates an event-weighted rather than customer-weighted outcome. Choose weights from the deployment decision and sampling design, then divide by their sum. For time series, aggregate over horizon, series and time deliberately; macro and volume-weighted results answer different questions. Multioutput regression similarly needs target-specific units or weights. Missing labels should not be silently treated as zero; define censoring and target-availability rules. Compute uncertainty over independent entities or time blocks, not naive rows. A paired bootstrap or fold comparison preserves that models are evaluated on the same units. Report confidence intervals and the distribution of paired error differences, not only separate standard errors."
+    },
+    {
+      "id": "diagnostics-baselines",
+      "title": "One mean cannot describe an error distribution",
+      "body": "Compare against a constant mean or median, seasonal naive forecast and current production system. Plot residual sign, magnitude and quantiles against prediction, target, time and important slices. MSE can improve while 95th-percentile absolute error worsens; MAE can improve while rare catastrophic misses grow. Decompose squared error by bias and spread descriptively and examine calibration of conditional means or quantiles when relevant. R-squared and percentage metrics answer other questions and can disagree. Freeze the scorecard before model selection to avoid metric shopping. If many slices are inspected, distinguish exploratory findings from confirmatory thresholds and consider multiplicity. Preserve individual residuals or sufficient aggregates with privacy controls so incidents can be traced without retaining unnecessary sensitive outcomes."
+    },
+    {
+      "id": "production-contract",
+      "title": "Metric definitions are versioned production code",
+      "body": "Version target query and cutoff, inclusion criteria, prediction horizon, units, inverse transform, weights, clipping, missing-label policy, aggregation and baseline. Unit-test hand examples and invariants such as nonnegativity, RMSE squared equals MSE and exact predictions score zero. Monitor label coverage and delay before interpreting metric movement. Report rolling MSE, MAE, tail absolute error, signed bias, subgroup results and decision cost with independent-unit uncertainty. A target-definition or weight change creates a new metric series and should not be spliced silently. Backfill late labels by prediction cohort. Gate promotion on prespecified thresholds and retain the prior model and score report for rollback. Avoid optimizing a proxy indefinitely after business cost or population changes."
+    }
+  ],
+  "workedExamples": [
+    {
+      "title": "One outlier reverses preference",
+      "body": "Model A residuals are [0,0,0,8], giving MAE 2 and MSE 16. Model B residuals are [3,3,3,3], giving MAE 3 and MSE 9. MAE prefers A because most predictions are exact; MSE prefers B because it avoids the large miss. The decision depends on whether that eight-unit miss carries disproportionate cost."
+    },
+    {
+      "title": "Log-scale accuracy is not original-scale accuracy",
+      "body": "A model predicts log revenue and achieves low MSE there. Exponentiating the conditional log mean estimates a median-like original-scale quantity under lognormal noise, not the original conditional mean. Evaluate predictions after the intended back-transform and, if estimating a mean, account for the residual distribution rather than applying exp mechanically."
+    }
+  ],
+  "exercises": [
+    {
+      "prompt": "Residuals are [-2,2]. Compute MSE, RMSE and MAE.",
+      "solution": "MSE=(4+4)/2=4, RMSE=2 and MAE=(2+2)/2=2."
+    },
+    {
+      "prompt": "Why can MAE have many minimizing constants?",
+      "solution": "For an even sample, any value between the two middle order statistics can be a median and minimize total absolute deviation."
+    },
+    {
+      "prompt": "How should repeated patient visits be aggregated?",
+      "solution": "If the target claim is patient-level performance, compute patient-level summaries or weights and uncertainty by patient rather than treating visits as independent equal units."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "compare",
+      "title": "Residual influence",
+      "left": {
+        "title": "Squared error",
+        "items": [
+          "Quadratic growth",
+          "Mean target",
+          "Smooth gradient",
+          "Tail misses dominate"
+        ]
+      },
+      "right": {
+        "title": "Absolute error",
+        "items": [
+          "Linear growth",
+          "Median target",
+          "Subgradient at zero",
+          "Typical miss emphasized"
+        ]
+      },
+      "caption": "The loss geometry defines both estimator target and sensitivity to large residuals.",
+      "afterSection": "loss-estimand"
+    },
+    {
+      "type": "flow",
+      "title": "Regression evaluation contract",
+      "items": [
+        "Define target and prediction unit",
+        "Choose cost-aligned losses",
+        "Freeze weights and aggregation",
+        "Compare paired residuals with baselines",
+        "Inspect tails and slices",
+        "Backfill delayed outcomes by cohort"
+      ],
+      "caption": "A metric becomes credible only inside a versioned population and target contract.",
+      "afterSection": "production-contract"
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "sklearn-model-evaluation",
+      "contribution": "Verifies current regression metric definitions, weighting and multioutput behavior."
+    },
+    {
+      "resource": "isl",
+      "contribution": "Supports squared-loss, absolute-loss and model-evaluation interpretation."
+    },
+    {
+      "resource": "openintro-stats",
+      "contribution": "Grounds means, medians, spread and robust descriptive summaries."
+    }
+  ]
 }

@@ -8,34 +8,181 @@
     "ds",
     "mle"
   ],
-  "interviewAnswer": "Spatial indexes reduce expensive geometry comparisons by pruning candidates. R-trees organize bounding boxes; hierarchical grids such as geohash/H3 encode locations into cells.",
+  "interviewAnswer": "Spatial indexes reduce candidate search; they do not replace exact geometry or distance checks. An R-tree groups object minimum bounding rectangles hierarchically, pruning branches whose envelopes cannot satisfy a query. A geohash or quadtree maps locations into hierarchical rectangular cells; prefix locality helps partitioning but neighboring locations can cross prefix boundaries. H3 maps the sphere through an icosahedral, mostly hexagonal hierarchy with resolutions and twelve pentagons; cells support aggregation and neighborhood operations, but cell equality is not exact polygon containment. I choose by workload: dynamic geometry windows, point bucketing, spherical neighborhood analytics or distributed partition pruning. I always refine candidates, handle adjacent cells and distortion, monitor hot cells and index health, and version resolution, encoding and geometry semantics.",
   "keyPoints": [
-    "R-tree",
-    "Bounding boxes",
-    "Hierarchical grids",
-    "Candidate pruning"
+    "R-trees index bounding rectangles of arbitrary geometry and answer window candidates dynamically.",
+    "Hierarchical cell IDs turn spatial proximity into prefixes or parent–child relationships with boundary caveats.",
+    "Geohash rectangles vary physically with latitude; H3 cells are mostly hexagonal with unavoidable pentagons.",
+    "Index resolution trades candidate volume, storage, boundary duplication and aggregation stability.",
+    "Exact predicates and geodesic distances remain the refinement stage after candidate retrieval."
   ],
   "resources": [
     "geopandas-docs",
-    "geodata-science-book"
+    "geodata-science-book",
+    "rtree-paper",
+    "h3-docs"
   ],
   "featured": false,
-  "why": "Without indexing, many spatial queries become expensive all-pairs operations.",
-  "intuition": "Use a cheap spatial partition to find candidates before exact geometry checks.",
-  "deepDive": "Tree and grid indexes optimize different workloads; grid resolution controls aggregation/detail and partition size.",
-  "math": "",
+  "why": "A database cannot scan every road, polygon or event for each map window or nearest query. Spatial indexes exploit bounding geometry or hierarchical cells to discard most objects cheaply. The choice shapes latency, memory, sharding and error: R-trees adapt to irregular objects, while cell indexes create convenient discrete keys for distributed systems and aggregation. Yet grid IDs encourage dangerous shortcuts. Two nearby points can sit across a cell edge; one polygon can cover thousands of cells; a parent cell may only approximately contain children geometrically; polar and pentagon behavior differs. Understanding filter-and-refine preserves correctness while still gaining scalability.",
+  "intuition": "A library catalog groups books by shelves so you do not inspect every book. An R-tree groups nearby bounding rectangles inside larger rectangles; a query skips whole groups that do not overlap. A grid index labels every patch of Earth; searching a location starts with its cell and neighboring cells. Finer patches reduce unrelated candidates but produce more labels and boundary crossings. The label narrows where to look—it is not the final answer to whether complex shapes touch.",
+  "deepDive": "Spatial indexing is candidate management across rectangles, hierarchical grids and spherical cells. Index structures encode locality imperfectly and require exact refinement, neighboring-cell coverage and operational controls for skew, versioning, updates and geometry changes.",
+  "math": "For axis-aligned rectangles A=[xmin,xmax]×[ymin,ymax] and B, they intersect iff max(xmin_A,xmin_B)≤min(xmax_A,xmax_B) and similarly for y. An R-tree stores such minimum bounding rectangles at leaves and unions at internal nodes. Search descends only intersecting nodes. Geohash interleaves quantized longitude and latitude bits, so each prefix denotes a rectangle. A cell covering of geometry G is a set C_r(G) at resolution r; candidate completeness may require every intersecting cell, while centroid-only assignment is insufficient for polygons crossing boundaries.",
   "code": "",
   "commonMistakes": [
-    "Treating cell distance as exact geodesic distance.",
-    "Using one grid resolution for every task."
+    {
+      "misconception": "An R-tree intersection result is exact.",
+      "correction": "It often reflects envelope candidates; run the exact geometry predicate."
+    },
+    {
+      "misconception": "Nearby coordinates always share a geohash prefix.",
+      "correction": "Cell boundaries can separate arbitrarily close points; query neighbors or a covering."
+    },
+    {
+      "misconception": "Every H3 cell is a regular equal-area hexagon.",
+      "correction": "Areas vary and twelve pentagons occur at every resolution."
+    },
+    {
+      "misconception": "Higher resolution always improves performance.",
+      "correction": "It reduces local candidates but increases cell counts, coverings, storage and boundary duplication."
+    }
   ],
   "followUps": [
-    "R-tree vs H3?",
-    "How does indexing help kNN?"
+    {
+      "question": "R-tree or H3 for polygon intersection?",
+      "answer": "An R-tree naturally indexes arbitrary geometry envelopes; H3 coverings can distribute work but still need exact refinement."
+    },
+    {
+      "question": "Why probe neighboring geohash cells?",
+      "answer": "A radius or nearest neighbor can cross the central cell boundary even when geometrically close."
+    },
+    {
+      "question": "How do you evaluate an index?",
+      "answer": "Measure recall against exact queries, candidate-to-match ratio, latency, memory, skew, updates and rebuild behavior."
+    }
   ],
-  "production": "Choose index/resolution based on workload and update pattern.",
-  "workedExample": "A ride-sharing system can aggregate demand by H3 cell while an R-tree accelerates polygon queries.",
+  "production": "Select index from query geometry, CRS, update pattern and distribution. Persist source checksum, geometry precision, CRS, index algorithm, resolution and covering version. Validate against exact brute-force samples, including boundaries, dateline, poles and H3 pentagons. Monitor candidate ratio, bucket or node size quantiles, hot partitions, update lag, deletion debt, memory and tail latency. Use delta overlays or transactional updates so partial rebuilds cannot create false negatives. Keep exact refinement in the read path. Restrict high-resolution cell IDs as location data, and atomically promote immutable snapshots with the prior version available for rollback.",
+  "workedExample": "A restaurant and customer are ten meters apart but lie on opposite geohash cells. Looking only in the customer's exact cell misses the restaurant; probing neighboring cells and then computing true distance recovers it. A large park's bounding rectangle overlaps many address envelopes even when its concave interior does not, so an R-tree returns false candidates that exact intersection removes.",
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "Spatial indexes accelerate geometric and proximity queries by organizing candidate regions. This chapter derives minimum bounding rectangle tests and follows an R-tree through hierarchical nodes, overlap, insertion, split quality and search. It compares R-trees with quadtrees and fixed grids, then explains geohash bit interleaving, prefix cells, neighbor lookups and latitude-dependent physical dimensions. H3 is introduced as an icosahedral aperture-seven hierarchy of mostly hexagonal cells, including resolution choice, parent and child relations, neighborhood rings, cell area variation and the twelve pentagons present at every resolution. The chapter separates logical cell membership from approximate parent containment and from exact feature topology. It covers polygon coverings, compacting, boundary duplication, multi-resolution aggregation, hot cells, antimeridian and polar behavior. The lab uses Shapely STRtree to compare indexed candidates with brute-force exact intersections and verifies no missed results and meaningful pruning. Production guidance selects indexes from query shape, update rate and distribution; versions geometry, CRS and resolution; measures candidate-to-exact ratios, skew and rebuild lag; and maintains exact refinement, privacy and rollback. Index keys are treated as query accelerators and partition hints rather than substitutes for geography.",
+  "prerequisites": [
+    "trees-graphs-algorithms",
+    "hash-tables",
+    "spatial-joins"
+  ],
+  "learningObjectives": [
+    "Explain R-tree envelope hierarchy and why exact refinement remains necessary.",
+    "Compare geohash, quadtree and H3 hierarchy, neighborhood and distortion behavior.",
+    "Choose resolution and covering policy from recall, candidate, storage and aggregation requirements.",
+    "Operate versioned indexes under skew, updates, adversarial inputs and rebuilds."
+  ],
+  "deepSections": [
+    {
+      "id": "rtree",
+      "title": "R-trees organize object envelopes into a dynamic search hierarchy",
+      "body": "Each leaf entry pairs an object's minimum bounding rectangle with a record reference. Internal entries bound all rectangles in a child page. A window query descends only nodes whose rectangles overlap the query; no overlapping branch can be skipped. Insertions choose branches and split overflowing nodes, with heuristics attempting to minimize area, overlap and perimeter because overlapping internal boxes force multiple paths. Irregular, diagonal or widely multipart shapes have loose envelopes and poor pruning. Bulk-loaded variants can pack static data more efficiently. An index built in planar coordinates inherits their wrap and distortion behavior. The result set is normally candidates: envelope intersection is necessary but not sufficient for exact geometry intersection. Prepared geometry and vectorized predicates perform the refinement."
+    },
+    {
+      "id": "hierarchical-cells",
+      "title": "Grid keys discretize space but create neighbor and boundary obligations",
+      "body": "A fixed grid maps coordinates to row and column; a quadtree recursively divides rectangular cells; geohash interleaves longitude and latitude bits so longer prefixes indicate smaller rectangles. Prefixes are convenient database keys, but lexical closeness is not universally geographic closeness and neighboring cells can have different prefixes. Physical east–west width shrinks with latitude for longitude-based grids. Query completeness needs a cell covering of the search shape or the central cell plus sufficient neighbors, then exact filtering. Large polygons may explode into fine cells, motivating mixed-resolution coverings. Compacting sibling cells saves space but complicates equality joins. Centroid assignment is suitable for mutually exclusive aggregation of points, not for proving that a polygon lies entirely within a cell."
+    },
+    {
+      "id": "h3-model",
+      "title": "H3 offers spherical neighborhoods with hierarchy and pentagon exceptions",
+      "body": "H3 projects the sphere onto an icosahedron and indexes mostly hexagonal cells across resolutions zero through fifteen. Hexagons give six relatively uniform neighbor directions and are useful for smoothing, aggregation and graph traversal. Aperture-seven refinement means a parent is associated with about seven children, but the hexagonal grids rotate between levels and geometric parent containment is approximate even though index parent–child relations are exact. A sphere cannot be tiled entirely by hexagons, so every resolution contains twelve pentagons whose missing neighbor direction affects traversal. Cell areas and edge lengths vary; published averages are not guarantees for every location. Polygon filling, antimeridian handling, ring functions and pentagon cases should use official library operations and tests rather than hand-rolled ID arithmetic."
+    },
+    {
+      "id": "index-operations",
+      "title": "Index value is measured by pruning, stability and rebuild behavior",
+      "body": "Define query types—window, point-in-polygon, radius, nearest, aggregation—and expected update rate before choosing an index. Track candidates per query, exact matches, pruning ratio, nodes or cells read, p95 latency, memory, build time and write amplification. Dense cities create hot grid cells; oceans or giant polygons create skew. Adaptive or hierarchical partitions, secondary keys and caps can help but must preserve recall. Store index version with source geometry checksum, CRS, precision, resolution and covering algorithm. Online geometry changes need transactional index updates or delta overlays; failed partial updates can create false negatives. Canary known boundary and pentagon queries after library upgrades. Treat fine cell IDs as sensitive location proxies, control access, and retain the previous immutable index plus query routing for rollback."
+    }
+  ],
+  "workedExamples": [
+    {
+      "title": "Loose envelope",
+      "body": "A crescent polygon's bounding box covers its empty center, so many points become R-tree candidates but fail exact containment."
+    },
+    {
+      "title": "Resolution mismatch",
+      "body": "Aggregating points at a fine H3 resolution and comparing directly with coarse-cell IDs drops matches unless parent conversion is explicit and compatible."
+    }
+  ],
+  "lab": {
+    "language": "python",
+    "goal": "Use an STRtree as an envelope candidate index and verify exact query equivalence and pruning against brute force.",
+    "buildIt": "from shapely.geometry import box, Point\nfrom shapely.strtree import STRtree\ngeometries=[box(x,y,x+.8,y+.8) for x in range(20) for y in range(20)]; tree=STRtree(geometries)\nquery=Point(10.4,10.4).buffer(1.1); candidate_ids=tree.query(query); candidates=[geometries[int(i)] for i in candidate_ids]; indexed=[g for g in candidates if g.intersects(query)]\nbrute=[g for g in geometries if g.intersects(query)]",
+    "useIt": "nearest_id=int(tree.nearest(Point(10.2,10.2))); nearest=geometries[nearest_id]; candidate_ratio=len(candidates)/len(geometries)",
+    "verifyIt": "assert {g.wkb for g in indexed}=={g.wkb for g in brute}\nassert len(candidates)<len(geometries)/10 and candidate_ratio<.1\nassert nearest.distance(Point(10.2,10.2))==0\nfar_query=box(100,100,101,101); assert len(tree.query(far_query))==0\n# Envelope candidates may exceed exact results for a circular query.\nassert len(candidates)>=len(indexed)>0",
+    "shipIt": "Version geometry, CRS and index schema; regression-test exact recall, monitor candidate pruning and hot regions, update atomically, refine exact predicates, and keep rollback snapshots."
+  },
+  "exercises": [
+    {
+      "prompt": "Why do R-tree node overlaps hurt performance?",
+      "solution": "A query must descend multiple branches whose bounding rectangles overlap, reducing pruning."
+    },
+    {
+      "prompt": "Why is one cell insufficient for a radius search?",
+      "solution": "The circle can cross cell boundaries; include a covering or neighbors before exact distance filtering."
+    },
+    {
+      "prompt": "What special H3 topology must code test?",
+      "solution": "The twelve pentagon cells and operations whose neighbor traversal differs around them."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "layers",
+      "title": "Filter-and-refine spatial search",
+      "items": [
+        "Query geometry or point",
+        "Index cells or envelopes",
+        "Candidate IDs",
+        "Exact predicate or distance",
+        "Rank, aggregate or return"
+      ],
+      "caption": "The index narrows work while the geometric operation preserves correctness.",
+      "afterSection": "index-operations"
+    },
+    {
+      "type": "compare",
+      "title": "Geometry tree versus cell hierarchy",
+      "left": {
+        "title": "R-tree",
+        "items": [
+          "Arbitrary object envelopes",
+          "Dynamic insertion",
+          "Overlap-dependent pruning",
+          "Window and geometry candidates"
+        ]
+      },
+      "right": {
+        "title": "Hierarchical cells",
+        "items": [
+          "Discrete location keys",
+          "Parent and neighbor operations",
+          "Distributed aggregation",
+          "Boundary coverings required"
+        ]
+      },
+      "caption": "Workload and representation determine which locality structure fits.",
+      "afterSection": "hierarchical-cells"
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "rtree-paper",
+      "contribution": "Grounds minimum-bounding-rectangle hierarchy, dynamic insertion and spatial search behavior."
+    },
+    {
+      "resource": "h3-docs",
+      "contribution": "Supports official H3 hierarchy, resolution, indexing, neighborhood and pentagon behavior."
+    },
+    {
+      "resource": "geopandas-docs",
+      "contribution": "Provides practical spatial-index and exact-predicate workflows for vector geometries."
+    }
+  ]
 }

@@ -6,38 +6,58 @@
   "roles": [
     "all"
   ],
-  "interviewAnswer": "Leakage occurs when training uses information that would not be available at prediction time or when related samples cross data splits. It produces deceptively good offline metrics and poor production performance.",
+  "interviewAnswer": "Data leakage occurs when model training or evaluation uses information that would not be available for the same prediction in production, or when the validation boundary is contaminated. Target leakage includes post-outcome fields and features computed with future data. Train-test contamination includes fitting imputers, encoders, scalers, feature selectors or oversampling on all rows. Entity leakage places related rows in both sides; temporal leakage trains on the future or uses revised snapshots. Selection leakage arises when the test set repeatedly guides choices. I prevent leakage by defining a prediction timestamp and label horizon, documenting feature availability and lineage, splitting raw data by entity and time before learned transforms, fitting a complete pipeline inside each fold, using point-in-time joins, and reserving final evidence. I also run adversarial checks: remove suspicious features, shift cutoffs, inspect near-perfect proxies, and reproduce every feature from only the allowed historical snapshot.",
   "keyPoints": [
-    "Target leakage",
-    "Temporal leakage",
-    "Preprocessing leakage",
-    "Group leakage"
+    "Availability is defined at the prediction event, not by whether a column exists in today's warehouse.",
+    "Split raw independent units before fitting transformations, resampling, selection or calibration.",
+    "Point-in-time correct joins need event time, ingestion time, revision policy and label windows.",
+    "Repeated entities, duplicates and near-duplicates can contaminate validation without explicit target columns.",
+    "A test set ceases to be independent when repeated inspection changes modeling decisions."
   ],
   "resources": [
-    "google-mlcc",
-    "made-with-ml",
-    "statquest",
-    "sklearn",
-    "google-rules-ml"
+    "sklearn-cross-validation",
+    "sklearn-preprocessing-guide",
+    "nested-cv-selection-paper"
   ],
   "featured": false,
-  "why": "Leakage creates impressive offline scores and disappointing production models, so interviewers often test whether you can detect it before modeling.",
-  "intuition": "Ask one question for every feature and preprocessing step: would I truly know this information at the exact moment the prediction must be made?",
-  "deepDive": "Target leakage uses information caused by or derived from the outcome. Temporal leakage uses future information. Preprocessing leakage occurs when transformations are fit using validation/test data. Group leakage places correlated samples from the same entity in different splits. Leakage can also enter through data joins, labels created after the event, or duplicate records.",
-  "workedExample": "Predicting hospital readmission using a discharge code written after the patient leaves is target/temporal leakage even if the column looks highly predictive.",
-  "code": "# Safer pattern: split first, fit preprocessing only on train\nfrom sklearn.pipeline import make_pipeline\npipe = make_pipeline(preprocessor, model)\npipe.fit(X_train, y_train)",
+  "why": "Leakage is dangerous because it often produces the cleanest metrics and the strongest-looking feature. A hospital discharge code predicts an outcome that was decided before discharge; a fraud chargeback status is known weeks after authorization; a customer aggregate rebuilt from today's complete table includes future activity for historical predictions. Random splits can place duplicates or later visits from the same person on both sides. Even ordinary preprocessing leaks when validation rows contribute vocabulary, category statistics or feature selection. The resulting model may pass software tests yet fail immediately online. Preventing leakage requires a temporal and causal data contract plus evaluation boundaries, not merely dropping columns whose names contain the target.",
+  "intuition": "Freeze time at the instant a prediction must be made. Cover every database field, model artifact and human decision created after that instant. If the remaining inputs cannot be reconstructed exactly from the historical snapshot, the offline example is cheating. Then isolate the future unit—customer, patient, device, geography or time block—so the model cannot recognize a related copy.",
+  "deepDive": "Leakage is an information-boundary violation spanning labels, features, entities, preprocessing, selection and infrastructure. Point-in-time semantics distinguish event occurrence from database arrival and later revision. Prevention combines data lineage, raw-data splitting, fold-local pipelines, immutable evaluation sets and deployment-parity replay. Detection uses suspicious performance, ablations, availability audits and time-forward shadow evaluation, but absence of a symptom is not proof of safety.",
+  "workedExample": "A readmission model includes a billing code finalized after discharge. Historical rows show excellent accuracy because the code reflects care delivered during the outcome window. At discharge-time prediction the final code does not exist, so the feature must be removed or reconstructed from codes available by the cutoff.",
+  "code": "from sklearn.pipeline import make_pipeline\nfrom sklearn.preprocessing import StandardScaler\navailability={'signal_0':True,'signal_1':True,'signal_2':True,'post_outcome':False}\nallowed=[i for i,name in enumerate(availability) if availability[name]]\nmodel=make_pipeline(StandardScaler(),LogisticRegression(max_iter=1000)).fit(X_leaky[tr][:,allowed],y[tr])\npipeline_auc=roc_auc_score(y[te],model.predict_proba(X_leaky[te][:,allowed])[:,1])",
   "commonMistakes": [
-    "Doing feature selection before splitting.",
-    "Allowing future records into training for a historical prediction task.",
-    "Randomly splitting repeated measurements from the same entity."
+    {
+      "misconception": "Removing the target column eliminates leakage.",
+      "correction": "Post-outcome proxies, future aggregates, repeated entities and globally fitted transforms can still reveal forbidden information."
+    },
+    {
+      "misconception": "A pipeline fixes every leakage problem.",
+      "correction": "It controls fitted transformations but cannot repair invalid timestamps, target-derived source fields or the wrong splitter."
+    },
+    {
+      "misconception": "If a feature exists in the warehouse, it was historically available.",
+      "correction": "Warehouses contain late arrivals and revisions; reconstruct event and ingestion time at each prediction cutoff."
+    },
+    {
+      "misconception": "The test set remains independent because labels are hidden from the model code.",
+      "correction": "Human choices informed by repeated test results also adapt to those labels."
+    }
   ],
   "followUps": [
-    "How would you detect leakage?",
-    "What is group leakage?",
-    "Can one-hot encoding leak information?",
-    "How do feature stores prevent point-in-time leakage?"
+    {
+      "question": "Is normalization before splitting always serious leakage?",
+      "answer": "It lets validation distribution influence fitted statistics. The magnitude varies, but the correct and reproducible design fits normalization within training folds."
+    },
+    {
+      "question": "How do you detect duplicate leakage in images or text?",
+      "answer": "Use stable IDs and exact hashes first, then domain-appropriate perceptual hashes or embedding similarity with human review across partitions."
+    },
+    {
+      "question": "What is point-in-time correctness?",
+      "answer": "Every historical feature value matches what the production system could have known by that prediction event, including arrival latency and revision state."
+    }
   ],
-  "production": "Use point-in-time correct feature generation, lineage, feature timestamps and realistic backtests. Data pipelines should make it hard to accidentally join future information.",
+  "production": "Version the prediction timestamp, label horizon and maturity, feature availability and revision table, point-in-time queries, raw snapshot, entity groups, duplicate policy, split manifest and complete pipeline. Assert feature-time cutoffs, entity disjointness and fold-local transformer fitting. Audit strongest features and simple baselines, run label-shuffle and suspicious-feature ablations, scan cross-split duplicates and replay historical features from source snapshots. Restrict final-test access and record every evaluation. Monitor offline-online feature parity and cohort performance; quarantine uncertain lineage and retain a known-safe model for rollback.",
   "visual": {
     "type": "flow",
     "title": "Leakage path",
@@ -52,6 +72,132 @@
     "orientation": "horizontal"
   },
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "math": "Let T_p be prediction time and A_j be the time feature j becomes available with its production value. A valid feature satisfies A_j<=T_p under the deployed latency and revision policy. A label for horizon h may use events in (T_p,T_p+h] but cannot feed features. For transformation theta=g(D), validation is clean only if theta is fitted from D_train rather than D_train union D_valid. For grouped data, train and validation entity-ID sets must be disjoint. For temporal evaluation, max training information time must precede each validation prediction cutoff, including any embargo needed for overlapping labels.",
+  "lab": {
+    "language": "python",
+    "goal": "Create and detect a post-outcome target proxy, enforce an availability allowlist, and verify clean train-test boundaries.",
+    "buildIt": "import numpy as np\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.linear_model import LogisticRegression\nfrom sklearn.metrics import roc_auc_score\nrng=np.random.default_rng(4); n=600\nx=rng.normal(size=(n,3)); y=(x[:,0]+rng.normal(scale=1.5,size=n)>0).astype(int)\npost_outcome=y+rng.normal(scale=.02,size=n); X_leaky=np.c_[x,post_outcome]\ntr,te=train_test_split(np.arange(n),test_size=.3,random_state=5,stratify=y)\ndef auc(X):\n    m=LogisticRegression(max_iter=1000).fit(X[tr],y[tr]); return roc_auc_score(y[te],m.predict_proba(X[te])[:,1])\nleaky_auc=auc(X_leaky); clean_auc=auc(x)",
+    "useIt": "from sklearn.pipeline import make_pipeline\nfrom sklearn.preprocessing import StandardScaler\navailability={'signal_0':True,'signal_1':True,'signal_2':True,'post_outcome':False}\nallowed=[i for i,name in enumerate(availability) if availability[name]]\nmodel=make_pipeline(StandardScaler(),LogisticRegression(max_iter=1000)).fit(X_leaky[tr][:,allowed],y[tr])\npipeline_auc=roc_auc_score(y[te],model.predict_proba(X_leaky[te][:,allowed])[:,1])",
+    "verifyIt": "assert set(tr).isdisjoint(te) and len(set(tr)|set(te))==n\nassert allowed==[0,1,2]\nassert leaky_auc>.99\nassert abs(pipeline_auc-clean_auc)<1e-12 and clean_auc<leaky_auc-.1\ny_shuffled=rng.permutation(y); m=LogisticRegression(max_iter=1000).fit(x[tr],y_shuffled[tr]); shuffled_auc=roc_auc_score(y_shuffled[te],m.predict_proba(x[te])[:,1]); assert abs(shuffled_auc-.5)<.15",
+    "shipIt": "Turn availability metadata and cutoff assertions into CI gates, persist split IDs and snapshots, and require historical feature replay plus suspicious-feature ablation before release."
+  },
+  "description": "Data leakage is any violation of the information or evaluation boundary that makes offline performance easier than deployment. This chapter distinguishes target, temporal, entity, duplicate, preprocessing, feature-selection, resampling and test-set selection leakage. It defines prediction time, feature availability, event time, ingestion time, label horizon and revision policy, then shows how point-in-time joins reconstruct what the system actually knew. It explains why splitting raw independent units must precede imputation, scaling, encoding, target statistics, feature selection, calibration and oversampling. Worked examples expose a post-outcome hospital field and a historical aggregate rebuilt with future transactions. The lab creates an explicit target proxy, demonstrates its inflated validation AUC, removes it through an availability allowlist and verifies split disjointness. Production guidance maintains feature lineage and cutoff manifests, scans duplicates and proxies, replays features from historical snapshots, restricts final-test access, monitors online parity and keeps rollback paths when suspicious drift or impossible offline-online gaps appear. Every release should carry evidence that its inputs were reproducible at their original prediction cutoffs.",
+  "prerequisites": [
+    "cross-validation",
+    "sql-joins"
+  ],
+  "learningObjectives": [
+    "Classify target, temporal, entity, transformation and selection leakage from concrete pipelines.",
+    "Specify prediction-time availability and point-in-time join semantics for every feature.",
+    "Design raw-data splits and fold-local pipelines that preserve entity and temporal boundaries.",
+    "Audit suspicious performance using lineage, ablations, duplicates and historical replay."
+  ],
+  "deepSections": [
+    {
+      "id": "availability-contract",
+      "title": "Define what was knowable at prediction time",
+      "body": "Begin with a prediction event: an entity, timestamp and action. Each feature needs an event timestamp, an ingestion or processing timestamp, source lineage, expected latency and revision rule. A value that occurred before prediction but arrived afterward was unavailable. A value later corrected in the warehouse may differ from the value originally served. Labels require a start, horizon and maturity delay; outcome-window events cannot enter predictors. Static-looking fields may encode post-outcome workflow, such as closure reason, treatment completion or account recovery status. Human actions can also leak: a field recording that an investigator opened a case may be downstream of an earlier risk score. Create a feature availability table and reconstruct training rows with as-of joins from immutable snapshots or bitemporal data. Querying the latest dimension table for every historical row is not point-in-time correct."
+    },
+    {
+      "id": "contamination-types",
+      "title": "Leakage crosses more boundaries than target columns",
+      "body": "Direct target leakage uses the outcome or a deterministic derivative. Proxy leakage uses a post-outcome code, timestamp or workflow state strongly coupled to the label. Temporal leakage lets future observations, centered windows or revised data affect a past prediction. Entity leakage shares the same person, device, document family or experiment across train and validation. Duplicate leakage shares exact or near-identical content, including augmented variants. Transformation leakage fits imputers, scalers, encoders, vocabulary, PCA or feature selectors globally. Resampling leakage generates synthetic points before splitting, allowing validation information to influence training neighbors. Selection leakage occurs when many model, metric or threshold choices adapt to the test set. Pretraining contamination can place evaluation examples in a foundation model corpus. Name the boundary and adversary explicitly; leakage is relative to the deployment claim."
+    },
+    {
+      "id": "safe-construction",
+      "title": "Split first, then learn inside the boundary",
+      "body": "Start from raw eligible records and assign groups or chronological cohorts before computing learned transformations. In each fold, fit imputation, scaling, category handling, target encoding, feature selection, dimensionality reduction, resampling, model, calibration and threshold only on the training partition. Apply the frozen chain to validation. Target encoding usually requires an additional out-of-fold construction within training data so a row does not encode its own label. Time aggregates must include only events visible before each row's cutoff, often with a safety lag for ingestion. Keep label-building code physically separate from feature-building code and restrict permissions where possible. For repeated decisions, define whether evaluation targets new events for known entities or entirely new entities; the split differs. Validate uniqueness and near-duplicate hashes before training."
+    },
+    {
+      "id": "detection-audit",
+      "title": "Suspicious success deserves an information audit",
+      "body": "Near-perfect performance on a hard problem, a single dominant feature, a large gap between random and time-forward splits, and severe online degradation are leakage signals. They are not proofs, and ordinary-looking scores do not prove safety. Inspect feature names, provenance and availability timestamps. Train a simple model and rank univariate associations; manually explain the strongest predictors. Ablate suspicious fields and compare time-forward or group-held-out results. Shuffle labels to test whether preprocessing still extracts signal; performance should collapse to chance. Search exact and perceptual duplicates across partitions. Replay feature computation from a historical snapshot and compare with stored online features. Shift prediction cutoffs earlier to see whether purported features disappear correctly. Review joins for many-to-many explosions, future-effective dimension values and label-derived filters. Record the audit evidence with the model release."
+    },
+    {
+      "id": "governance-monitoring",
+      "title": "Leakage prevention continues after deployment",
+      "body": "Version the prediction contract, source queries, feature definitions, availability rules, split manifest, training snapshots and final-test access. CI can assert that feature timestamps precede cutoffs, entity and duplicate sets are disjoint, transformations fit only expected row IDs and label tables are inaccessible to feature jobs. Compare offline batch features with online logged features on the same prediction events. Monitor missingness, freshness, feature distributions and offline-online score gaps. Delayed labels should be backfilled by prediction cohort; joining them must not rewrite historical feature values. Limit repeated test-set dashboards for active development and rotate or supplement benchmarks when they become selection targets. If a feature's provenance becomes uncertain, quarantine it, evaluate an ablation and keep the last known-safe model available for rollback."
+    }
+  ],
+  "workedExamples": [
+    {
+      "title": "Post-outcome workflow field",
+      "body": "A readmission model includes a billing code finalized after discharge. Historical rows show excellent accuracy because the code reflects care delivered during the outcome window. At discharge-time prediction the final code does not exist, so the feature must be removed or reconstructed from codes available by the cutoff."
+    },
+    {
+      "title": "Latest-table time travel",
+      "body": "A churn feature joins each monthly customer row to today's account status. Closed accounts are marked closed even for months when they were active. An as-of join using the historical effective interval preserves the status known at each prediction month."
+    }
+  ],
+  "exercises": [
+    {
+      "prompt": "Why is a seven-day centered rolling average invalid for a real-time prediction today?",
+      "solution": "The centered window includes future days. Use a trailing window ending before the prediction cutoff."
+    },
+    {
+      "prompt": "When should all visits for a patient be grouped?",
+      "solution": "When the deployment claim is performance on unseen patients or identity-related information would make row-level validation easier than production."
+    },
+    {
+      "prompt": "How can a final test set leak without entering model training code?",
+      "solution": "Repeated human inspection can guide features, algorithms and thresholds, adapting development to its labels."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "flow",
+      "title": "Point-in-time feature boundary",
+      "items": [
+        "Prediction event and cutoff",
+        "Events occurred before cutoff",
+        "Values ingested before cutoff",
+        "Historical revision state",
+        "Feature pipeline fit on training only",
+        "Outcome observed after horizon"
+      ],
+      "caption": "Both time availability and evaluation partition determine whether information is legal.",
+      "afterSection": "availability-contract"
+    },
+    {
+      "type": "compare",
+      "title": "Clean and contaminated evaluation",
+      "left": {
+        "title": "Clean boundary",
+        "items": [
+          "Raw units split first",
+          "Groups and time respected",
+          "Transforms fit per fold",
+          "Final evidence untouched"
+        ]
+      },
+      "right": {
+        "title": "Contaminated boundary",
+        "items": [
+          "Future or post-outcome fields",
+          "Related rows cross split",
+          "Global learned transforms",
+          "Test guides repeated choices"
+        ]
+      },
+      "caption": "Leakage is any path by which held-out or future information influences training or selection.",
+      "afterSection": "contamination-types"
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "sklearn-cross-validation",
+      "contribution": "Supports split discipline, group and time-aware resampling, and fold-local pipeline evaluation."
+    },
+    {
+      "resource": "sklearn-preprocessing-guide",
+      "contribution": "Verifies which preprocessing operations learn state that must remain inside training boundaries."
+    },
+    {
+      "resource": "nested-cv-selection-paper",
+      "contribution": "Supports the treatment of repeated model selection as a source of optimistic assessment bias."
+    }
+  ]
 }

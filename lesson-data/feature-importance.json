@@ -7,38 +7,185 @@
     "ds",
     "mle"
   ],
-  "interviewAnswer": "Feature importance can mean different things: model-specific impurity scores, permutation importance, SHAP-style local/global explanations, or coefficients. Interpret with care when features are correlated.",
+  "interviewAnswer": "Feature importance is method-, model-, dataset- and metric-specific; it is not an intrinsic causal property of a column. Linear coefficients describe link-scale changes conditional on other features and depend on units. Tree impurity importance sums training split gains and can favor continuous or high-cardinality variables. Permutation importance measures held-out score degradation after breaking one feature's association with the outcome for a fixed fitted model, but correlated substitutes can make each look unimportant and unrealistic permutations can leave the data manifold. I start with validated model performance, compute held-out permutation importance with a declared scorer, group related features, inspect repeats and folds, and compare with coefficients or model-specific diagnostics. I use ablation and retraining when the question is whether a feature family is necessary. Explanations are descriptive of the fitted system, not causal effects, and sensitive features require governance even if reported importance is small.",
   "keyPoints": [
-    "Global vs local",
-    "Correlation caveats",
-    "Permutation importance",
-    "Explanations are not causality"
+    "Importance answers a specific question about a fitted model, data distribution and scoring rule.",
+    "Impurity gain is fast but training-based and biased toward features with many candidate splits.",
+    "Held-out permutation importance measures reliance under a feature-breaking intervention, not standalone predictive information.",
+    "Correlation, interactions, encodings and grouped feature families can redistribute or hide importance.",
+    "Use stability, ablation, domain review and causal evidence before making removal or policy decisions."
   ],
   "resources": [
-    "sklearn",
-    "made-with-ml",
-    "statquest",
-    "google-mlcc"
+    "sklearn-inspection-guide",
+    "sklearn-model-evaluation",
+    "isl"
   ],
   "featured": false,
-  "why": "Explainability questions test whether you know what a model used, what caused an outcome, and what an explanation method can legitimately claim.",
-  "intuition": "Feature importance asks how much predictions depend on a feature, but different methods answer different versions of that question. No importance score automatically proves causality.",
-  "deepDive": "Linear coefficients are model-specific and depend on scale and collinearity. Tree impurity importance can favor high-cardinality or frequently split features. Permutation importance measures performance degradation after breaking a feature association but becomes ambiguous with correlated features. SHAP-style methods allocate prediction differences according to a game-theoretic framework, but their interpretation depends on background and feature-dependence assumptions.",
-  "workedExample": "If two features are near-duplicates, permutation of one may show little importance because the other still supplies the same information. Concluding “feature A does not matter” would be misleading.",
-  "code": "from sklearn.inspection import permutation_importance\nr=permutation_importance(model,X_val,y_val,n_repeats=10,random_state=0)",
+  "why": "Stakeholders ask what drives a model, engineers want removable features, and scientists want hypotheses. A ranked bar chart looks decisive but can answer the wrong question. A high-cardinality identifier can receive large tree gain by overfitting. Two correlated sensors can substitute so permutation of either barely changes accuracy. One-hot levels split the evidence of one conceptual field. A feature may matter only through an interaction or only in a critical subgroup. Conversely, a sensitive attribute can have low direct importance while proxies reproduce its influence. Responsible interpretation defines the question, uses untouched data and the relevant metric, preserves feature groups and uncertainty, and avoids turning model reliance into causal narrative.",
+  "intuition": "Ask how much a student's test score drops if one page of notes is scrambled while the trained student remains unchanged. That is permutation importance. If the same facts are duplicated on another page, scrambling one page may have little effect even though the fact matters. If scrambling creates impossible sentences, the measured drop also reflects unrealistic corruption. Importance depends on the intervention.",
+  "deepDive": "Importance methods attribute predictive behavior through coefficients, split gains, perturbations or refits. Each defines a different counterfactual and unit. Robust analysis evaluates on held-out data, handles correlations and feature groups, reports variability and slice dependence, and distinguishes descriptive reliance from causality and data-collection value.",
+  "workedExample": "x2 is almost a copy of x1 and the target depends on their shared signal. A model can use either. Permuting x1 alone leaves x2 intact, so both individual importances may look modest; permuting the pair reveals reliance on the signal family.",
+  "code": "from sklearn.inspection import permutation_importance\nperm=permutation_importance(model,Xte,yte,scoring='r2',n_repeats=12,random_state=4); grouped=Xte.copy(); order=rng.permutation(len(Xte)); grouped[:,[0,1]]=grouped[order][:,[0,1]]; grouped_drop=baseline-r2_score(yte,model.predict(grouped))",
   "commonMistakes": [
-    "Equating feature importance with causal effect.",
-    "Comparing raw linear coefficients across differently scaled features.",
-    "Ignoring correlated features when interpreting permutation or SHAP values."
+    {
+      "misconception": "The most important feature causes the prediction outcome.",
+      "correction": "Importance describes fitted predictive behavior under a method-specific perturbation or attribution, not intervention effects."
+    },
+    {
+      "misconception": "Zero permutation importance proves a feature is useless.",
+      "correction": "A correlated substitute, weak scorer, interaction or poor model can hide its information."
+    },
+    {
+      "misconception": "Permutation should always shuffle a raw column globally.",
+      "correction": "Feature groups, repeated units, time and joint support may require a different perturbation to answer a coherent question."
+    },
+    {
+      "misconception": "Importance repeats provide a confidence interval over retraining.",
+      "correction": "They capture permutation randomness; training and sample uncertainty require folds, seeds or independent-unit resampling."
+    }
   ],
   "followUps": [
-    "Global vs local explanations?",
-    "Why can impurity importance be biased?",
-    "What happens with correlated features?",
-    "How would you validate whether an explanation is useful to domain experts?"
+    {
+      "question": "Why compute permutation importance on held-out data?",
+      "answer": "Training importance can reward memorized noise; held-out score drop measures reliance where generalization is being assessed."
+    },
+    {
+      "question": "What is grouped permutation importance?",
+      "answer": "Shuffle a related feature set together, such as all one-hot levels or correlated sensor channels, to measure reliance on the family."
+    },
+    {
+      "question": "When use drop-column importance?",
+      "answer": "When deciding whether a feature can be removed and the learning algorithm should be allowed to adapt, accepting the extra retraining cost."
+    }
   ],
-  "production": "Explanations are useful for debugging, stakeholder review and monitoring unexpected feature dependence. They should be paired with model performance, data checks and domain knowledge rather than used as a safety guarantee.",
+  "production": "Version fitted model, raw-to-model feature lineage, evaluation cohort, scorer, weights, grouping, permutation scheme, repeats and seeds. Require credible held-out model performance before interpretation. Report native and held-out diagnostics with variation across folds, seeds and important cohorts. Inspect correlations and support, group encoded or substitutable features, and use full ablation before removal. Monitor explanation changes as investigation signals alongside prediction and data drift. Keep sensitive-feature audits separate from naive ranking and prohibit causal language without causal evidence.",
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "math": "Permutation importance for feature j and score S is I_j=S(f,X,y)-E_pi[S(f,X with column j permuted by pi,y)] for a fixed fitted f. Repeats estimate permutation variability, not full training-sample uncertainty. Tree impurity importance sums weighted impurity decreases from splits using j and normalizes across features. For a standardized linear model, coefficients are more comparable but remain conditional link-scale parameters. Drop-column importance retrains without j and measures a different quantity that lets the model adapt.",
+  "lab": {
+    "language": "python",
+    "goal": "Compare tree impurity and held-out permutation importance, verify repeat behavior, and identify signal over independent noise.",
+    "buildIt": "import numpy as np\nfrom sklearn.ensemble import RandomForestRegressor\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.metrics import r2_score\nrng=np.random.default_rng(5); n=700; signal=rng.normal(size=n); duplicate=signal+rng.normal(scale=.05,size=n); noise=rng.normal(size=n); X=np.c_[signal,duplicate,noise]; y=3*signal+rng.normal(scale=.5,size=n)\nXtr,Xte,ytr,yte=train_test_split(X,y,test_size=.35,random_state=2); model=RandomForestRegressor(n_estimators=160,min_samples_leaf=4,random_state=3).fit(Xtr,ytr); baseline=r2_score(yte,model.predict(Xte)); impurity=model.feature_importances_",
+    "useIt": "from sklearn.inspection import permutation_importance\nperm=permutation_importance(model,Xte,yte,scoring='r2',n_repeats=12,random_state=4); grouped=Xte.copy(); order=rng.permutation(len(Xte)); grouped[:,[0,1]]=grouped[order][:,[0,1]]; grouped_drop=baseline-r2_score(yte,model.predict(grouped))",
+    "verifyIt": "assert baseline>.9\nassert abs(impurity.sum()-1)<1e-12\nassert perm.importances.shape==(3,12)\nassert max(perm.importances_mean[:2])>perm.importances_mean[2]+.2\nassert grouped_drop>perm.importances_mean[2]+.5\nassert np.all(np.isfinite(perm.importances))",
+    "shipIt": "Persist the cohort, scorer, grouping and seeds; report correlation-aware stability; and retrain ablations before changing feature contracts."
+  },
+  "description": "Feature importance is a family of model-inspection questions rather than one universal ranking. This chapter interprets standardized coefficients, tree impurity decrease, split and gain counts, held-out permutation, grouped permutation, drop-column retraining and ablation. It explains high-cardinality bias, training-versus-test importance, scorer dependence, correlation and substitute features, interactions, one-hot fragmentation and unrealistic permutations. It separates global average reliance from local and subgroup behavior and distinguishes predictive attribution from causal effect, fairness and data-collection value. Worked examples show duplicated signals hiding each other's permutation importance and a random high-cardinality feature attracting tree splits. The lab fits a random forest, compares impurity and repeated held-out permutation scores, and verifies that genuine signal outranks independent noise. Production guidance versions model, dataset, scorer, feature groups and random seeds, tracks stability across folds and cohorts, uses ablation before deleting expensive inputs, and treats explanation drift as diagnostic evidence rather than an automatic release gate. Every chart names its population, perturbation, metric and uncertainty so rankings cannot travel without their assumptions.",
+  "prerequisites": [
+    "decision-trees",
+    "cross-validation"
+  ],
+  "learningObjectives": [
+    "Interpret coefficient, impurity, permutation and retraining importance as different estimands.",
+    "Diagnose cardinality, correlation, interaction, grouping and out-of-distribution perturbation failures.",
+    "Compute held-out repeated and grouped importance with appropriate metrics and uncertainty.",
+    "Use importance responsibly for debugging, feature cost, governance and hypothesis generation."
+  ],
+  "deepSections": [
+    {
+      "id": "questions-methods",
+      "title": "Choose the method from the decision question",
+      "body": "Coefficient inspection asks how the fitted link changes with one feature conditional on the encoded others. Units, scaling, collinearity and regularization shape magnitude. Tree impurity importance asks how much training impurity reduction was credited to each feature across splits. Permutation asks how much a chosen held-out score falls when one input association is broken while the model stays fixed. Drop-column retraining asks how well the learning algorithm can adapt without a feature, a more expensive question relevant to removal. Feature acquisition decisions may need retraining, latency and cost analysis, not attribution alone. Local explanations ask why one prediction differs from a reference, while global importance averages behavior over a population. State model version, population, scoring metric and perturbation or reference before interpreting a number."
+    },
+    {
+      "id": "impurity-coefficients",
+      "title": "Fast model-native summaries have structural biases",
+      "body": "A raw linear coefficient changes with feature units; standardization helps magnitude comparison but does not solve correlation or nonlinear effects. Logistic coefficients live on log-odds, and interactions make main coefficients reference-dependent. Regularization deliberately redistributes and shrinks coefficients. Tree impurity importance sums improvements on training data and is cheap, but variables with many unique values or candidate cut points have more opportunities for favorable splits. Deep trees can credit noise or leaked identifiers. Correlated variables may split credit arbitrarily, and one-hot levels appear separately. Always compare training-native importance with held-out behavior, report feature-family aggregates and inspect suspicious high-cardinality fields. A zero coefficient or unused tree feature means the fitted model does not use that representation directly; it does not prove the underlying concept lacks predictive information."
+    },
+    {
+      "id": "permutation-design",
+      "title": "Permutation defines a feature-breaking experiment",
+      "body": "Fit the model once, compute a baseline score on held-out examples, independently shuffle one column, rescore and take the difference. Repeat with seeded permutations. A positive drop indicates reliance for that scorer; near-zero can mean irrelevance, redundancy, weak model quality or metric insensitivity; negative values can occur through noise. Compute on validation or test data after checking the model performs meaningfully. The scorer matters: a feature can improve ranking but not calibration or help a rare class while barely changing accuracy. Shuffle within relevant groups or time blocks only when that corresponds to the desired conditional disruption. Group all one-hot columns or a feature family when the conceptual variable is the unit. Preserve paired permutations when comparing models. Repeats quantify shuffle variation, while folds or bootstrap units address sample variation."
+    },
+    {
+      "id": "correlation-support",
+      "title": "Correlated features make marginal breaks misleading",
+      "body": "If x1 and x2 encode the same signal, permuting x1 leaves x2 available, so each marginal importance can be small. Group permutation breaks both but answers a broader question. Conditional permutation attempts to resample x1 given correlated covariates, preserving realism while asking about unique information; it requires a conditional model and changes the estimand. Ordinary permutation can create impossible combinations, such as a child with an adult-only product, pushing the model off its training manifold. Importance then mixes reliance with extrapolation behavior. Examine correlations, joint support and feature lineage before ranking. Interactions create context dependence: a feature important only when another condition holds may have modest global average. Compute conditional slices with sufficient support, and avoid summing arbitrary importances as if they were conserved causal contributions."
+    },
+    {
+      "id": "responsible-use",
+      "title": "Importance is diagnostic evidence, not causal proof",
+      "body": "Predictive reliance can reflect confounding, selection, measurement policy, leakage or proxies. Removing a sensitive feature does not remove its influence if correlated features reproduce it, while retaining it may be necessary for auditing. Do not claim that changing a feature will change the outcome based on importance; interventions require a causal design. Before deleting an expensive feature, retrain the complete pipeline without its family and evaluate paired performance, calibration, critical slices, latency and robustness. Version explanation datasets and background populations because rankings drift as mix changes. Monitor major shifts as prompts for investigation: they may reflect legitimate seasonality, feature breakage or model changes. Provide uncertainty, method limitations and feature semantics alongside charts, and keep raw rankings out of contexts where they can be mistaken for individual blame."
+    }
+  ],
+  "workedExamples": [
+    {
+      "title": "Duplicated signal",
+      "body": "x2 is almost a copy of x1 and the target depends on their shared signal. A model can use either. Permuting x1 alone leaves x2 intact, so both individual importances may look modest; permuting the pair reveals reliance on the signal family."
+    },
+    {
+      "title": "Cardinality bias",
+      "body": "A random continuous ID offers many tree split candidates, while a random binary flag offers one. On training data, chance improvements can give the continuous noise larger impurity importance even though held-out permutation shows no benefit."
+    }
+  ],
+  "exercises": [
+    {
+      "prompt": "Why can two duplicate features each have low permutation importance?",
+      "solution": "After one is shuffled, the other still carries the shared signal, so the fixed model may preserve much of its performance."
+    },
+    {
+      "prompt": "What does negative permutation importance mean?",
+      "solution": "The shuffled version scored better in that repeat, often from sampling or model noise; inspect variation rather than forcing it to zero silently."
+    },
+    {
+      "prompt": "Does removing a feature with low importance guarantee unchanged performance?",
+      "solution": "No. Retraining changes how substitutes and interactions are used; evaluate a full drop-family ablation on paired evidence."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "compare",
+      "title": "Importance estimands",
+      "left": {
+        "title": "Fixed-model permutation",
+        "items": [
+          "Break feature association",
+          "Measure held-out score drop",
+          "Correlation can hide reliance",
+          "No retraining"
+        ]
+      },
+      "right": {
+        "title": "Drop-column ablation",
+        "items": [
+          "Remove feature family",
+          "Retrain full procedure",
+          "Measures adaptive necessity",
+          "Higher compute and selection cost"
+        ]
+      },
+      "caption": "The appropriate method depends on whether the fitted model or the learning system is under investigation.",
+      "afterSection": "questions-methods"
+    },
+    {
+      "type": "flow",
+      "title": "Responsible importance workflow",
+      "items": [
+        "Validate model first",
+        "Declare population and scorer",
+        "Inspect lineage and correlations",
+        "Compute repeated grouped importance",
+        "Check folds and slices",
+        "Confirm removal with retraining"
+      ],
+      "caption": "A ranking becomes useful only after its intervention, uncertainty and decision are explicit.",
+      "afterSection": "responsible-use"
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "sklearn-inspection-guide",
+      "contribution": "Verifies held-out permutation importance semantics, repeats and model-inspection cautions."
+    },
+    {
+      "resource": "sklearn-model-evaluation",
+      "contribution": "Supports scorer selection and held-out metric interpretation used by permutation methods."
+    },
+    {
+      "resource": "isl",
+      "contribution": "Supports coefficients, tree split importance, interactions and predictive-versus-causal distinctions."
+    }
+  ]
 }

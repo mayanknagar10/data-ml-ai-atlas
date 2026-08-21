@@ -7,31 +7,58 @@
     "ds",
     "as"
   ],
-  "interviewAnswer": "t-SNE and UMAP create low-dimensional embeddings that emphasize neighborhood structure, mainly for exploration/visualization. Global distances and cluster sizes can be misleading, especially with t-SNE.",
+  "interviewAnswer": "t-SNE and UMAP create low-dimensional embeddings primarily for visualization by preserving neighborhood structure, not by preserving every global distance. t-SNE turns high-dimensional distances into adaptive Gaussian neighbor probabilities and low-dimensional distances into heavy-tailed Student-t similarities, then minimizes KL(P||Q); perplexity controls effective neighborhood scale and the nonconvex layout depends on initialization and optimization. UMAP builds a weighted k-neighbor graph from local distance scales and optimizes a fuzzy-graph cross-entropy; n_neighbors and min_dist control local context and packing. Apparent cluster size, spacing, orientation and sometimes separation can be artifacts. I fit preprocessing without label leakage, run multiple seeds and parameters, quantify trustworthiness and neighbor recall, color by metadata only after the embedding is fixed, and never cluster or make production decisions from a pretty map alone.",
   "keyPoints": [
-    "Do not treat 2D distance as ground truth.",
-    "Hyperparameters change plots.",
-    "Use PCA or task metrics alongside visualization."
+    "Both methods optimize neighborhood representations; two-dimensional Euclidean distance is not a faithful copy of all original geometry.",
+    "t-SNE perplexity and UMAP n_neighbors control the neighborhood scale included in the objective.",
+    "Nonconvex optimization, initialization and random seeds can change layout while preserving similar local relations.",
+    "Cluster size, empty space and axis orientation in the map have weak or no direct original-space meaning.",
+    "Visualization must be validated with neighbor metrics, sensitivity runs and original-space evidence before interpretation."
   ],
   "resources": [
-    "sklearn",
-    "d2l",
-    "distill-tsne"
+    "tsne-paper",
+    "umap-paper",
+    "distill-tsne",
+    "sklearn-decomposition"
   ],
   "featured": false,
-  "why": "t-SNE & UMAP for Visualization appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
-  "intuition": "Do not treat 2D distance as ground truth.",
-  "deepDive": "t-SNE and UMAP create low-dimensional embeddings that emphasize neighborhood structure, mainly for exploration/visualization. Global distances and cluster sizes can be misleading, especially with t-SNE. Hyperparameters change plots. Use PCA or task metrics alongside visualization. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
-  "workedExample": "Visualize embedding neighborhoods to inspect class overlap, but evaluate retrieval quantitatively rather than trusting clusters on the plot.",
+  "why": "Nonlinear embeddings can reveal local neighborhoods that a linear projection hides, making them powerful tools for exploratory analysis, representation debugging and communication. They are equally powerful at manufacturing persuasive stories. t-SNE and UMAP optimize asymmetric or graph-based objectives that emphasize local relations and intentionally distort other geometry. Hyperparameters, preprocessing, sample density, seed and initialization alter visible islands, sizes and gaps. Coloring a map by labels and then tuning until labels separate creates visual leakage; clustering the same embedding compounds distortion. A rigorous treatment explains the objectives, crowding problem, heavy-tailed repulsion, fuzzy neighbor graphs, out-of-sample limitations and scalability, then provides quantitative and procedural safeguards. The goal is not to ban these maps but to make every visual claim proportional to what the algorithm preserves.",
+  "intuition": "Give every high-dimensional point a list of likely neighbors. Arrange points on paper so those neighbor relationships are reproduced while crowded unrelated points repel each other. t-SNE uses a heavy-tailed low-dimensional similarity so moderately distant pairs can spread apart; UMAP starts from a weighted neighbor graph and balances attractive edges with sampled repulsion. The paper must flatten many dimensions into two, so some distances and densities must change. Rotating or stretching the picture changes nothing, and separate islands need not be distinct real populations. Repeated maps and original-space checks tell which local patterns survive the projection process.",
+  "deepDive": "t-SNE and UMAP are stochastic neighborhood-graph optimization methods, not generic lossless dimensionality reduction. Their outputs are exploratory artifacts whose meaning depends on preprocessing, local-scale parameters, initialization and sampling. Responsible use couples the visualization with quantitative neighbor preservation, sensitivity analysis and original-space validation.",
+  "workedExample": "Two t-SNE islands sit ten plot units apart while two others sit three units apart. The objective strongly preserves within-neighborhood pairs but weakly constrains these global gaps. Changing perplexity and seed reverses the gap ordering without changing nearest-neighbor recall. The analyst reports island-local examples and original-space distances rather than interpreting plot separation.",
   "commonMistakes": [
-    "Applying the method without checking its assumptions or data-generating process.",
-    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+    {
+      "misconception": "Far-apart t-SNE clusters are proportionally far in original space.",
+      "correction": "The objective emphasizes local probabilities and does not preserve all global distances or gap ratios."
+    },
+    {
+      "misconception": "UMAP cluster density reflects original population density.",
+      "correction": "min_dist, local scaling, sampling and optimization change packing; validate density claims in original space."
+    },
+    {
+      "misconception": "A fixed random seed proves a stable pattern.",
+      "correction": "It makes one run reproducible. Stability requires multiple seeds, hyperparameters and resamples."
+    },
+    {
+      "misconception": "Visible islands justify clustering the 2D coordinates.",
+      "correction": "The embedding distorts geometry. Cluster and validate in the task-relevant representation, using the map only as evidence with limits."
+    }
   ],
   "followUps": [
-    "What assumptions does t-SNE & UMAP for Visualization make?",
-    "How would you validate or debug t-SNE & UMAP for Visualization in practice?"
+    {
+      "question": "What does t-SNE perplexity mean?",
+      "answer": "It is an entropy-derived effective neighborhood size controlling each point's adaptive Gaussian bandwidth, not a cluster count."
+    },
+    {
+      "question": "Why use a Student-t kernel in low dimension?",
+      "answer": "Its heavy tail gives moderately distant points more room to separate and reduces the crowding problem."
+    },
+    {
+      "question": "How do you validate a map?",
+      "answer": "Measure trustworthiness or neighbor recall, repeat seeds and scales, inspect original-space examples, and test the exact visual claim on independent data."
+    }
   ],
-  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "production": "Version sample and reference IDs, feature transform, metric, neighbor index, algorithm and library version, seed, initialization and all layout parameters. Record fit quality and approximate-neighbor recall. Benchmark memory, fit time and transform latency at target scale. Monitor input and support drift, local neighbor preservation, disconnected or isolated rates and coordinate distribution only relative to a fixed artifact. Never interpret coordinate motion across unaligned refits as real movement. Minimize sensitive neighbor and coordinate logs. Canary new maps with blinded review and quantitative comparison, retain the prior artifact and offer PCA or original-space summaries when the nonlinear embedding is unavailable or unstable.",
   "visual": {
     "type": "scatter",
     "title": "Embedding visualization",
@@ -109,6 +136,134 @@
     "yLabel": "embedding axis 2"
   },
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "math": "t-SNE defines conditional p_{j|i}∝exp(-||x_i-x_j||²/(2σ_i²)) with σ_i chosen for target perplexity, symmetrizes to p_ij, uses q_ij∝(1+||y_i-y_j||²)^-1, and minimizes KL(P||Q)=Σ_ij p_ij log(p_ij/q_ij). UMAP constructs local fuzzy edge memberships from k-neighbor distances and optimizes a cross-entropy between high- and low-dimensional memberships using attractive edges and negative sampling. Exact conventions depend on implementation; neither objective preserves all pairwise distances.",
+  "code": "from sklearn.decomposition import PCA\npca=PCA(n_components=2,random_state=7).fit_transform(X); tw_pca=float(trustworthiness(X,pca,n_neighbors=10))\ntsne_again=TSNE(n_components=2,perplexity=20,init='pca',learning_rate='auto',random_state=7,max_iter=500).fit_transform(X)",
+  "lab": {
+    "language": "python",
+    "goal": "Create PCA and t-SNE maps, quantify trustworthiness, and verify fixed-seed reproducibility and finite coordinates.",
+    "buildIt": "import numpy as np\nfrom sklearn.datasets import make_blobs\nfrom sklearn.manifold import TSNE,trustworthiness\nfrom sklearn.preprocessing import StandardScaler\nX,_=make_blobs(n_samples=180,centers=4,n_features=8,cluster_std=1.2,random_state=2); X=StandardScaler().fit_transform(X)\ntsne=TSNE(n_components=2,perplexity=20,init='pca',learning_rate='auto',random_state=7,max_iter=500).fit_transform(X)\ntw_tsne=float(trustworthiness(X,tsne,n_neighbors=10))",
+    "useIt": "from sklearn.decomposition import PCA\npca=PCA(n_components=2,random_state=7).fit_transform(X); tw_pca=float(trustworthiness(X,pca,n_neighbors=10))\ntsne_again=TSNE(n_components=2,perplexity=20,init='pca',learning_rate='auto',random_state=7,max_iter=500).fit_transform(X)",
+    "verifyIt": "assert tsne.shape==(len(X),2) and pca.shape==(len(X),2)\nassert np.isfinite(tsne).all() and np.isfinite(pca).all()\nassert np.allclose(tsne,tsne_again)\nassert .5<=tw_tsne<=1 and .5<=tw_pca<=1\nassert tw_tsne>0.9\nassert not np.allclose(tsne,pca)",
+    "shipIt": "Freeze reference data, preprocessing, seed and layout parameters; store neighbor-quality metrics; repeat sensitivity runs; never infer global distance or density without original-space evidence; retain a PCA fallback."
+  },
+  "description": "t-SNE and UMAP turn high-dimensional neighborhoods into two- or three-dimensional exploratory maps. This chapter derives t-SNE's adaptive Gaussian affinities, perplexity, symmetrization, Student-t low-dimensional kernel and asymmetric KL objective, explaining crowding and early exaggeration. It then develops UMAP's nearest-neighbor graph, local connectivity, fuzzy memberships, cross-entropy, negative sampling, n_neighbors and min_dist. Practical sections cover scaling, PCA initialization, metrics, seeds, sampling density, disconnected graphs, global-distance and density distortions, transform semantics, parametric alternatives, trustworthiness, continuity, neighbor recall and visual leakage. Worked examples show why cluster gaps and apparent size can be misleading. The lab computes trustworthiness for PCA and t-SNE embeddings, checks determinism under a fixed seed and verifies that local-neighbor preservation is measurable rather than assumed. Production guidance versions embeddings and reference data, monitors neighbor quality and drift, protects coordinates and supports rollback. These methods are treated as visualization algorithms whose claims must return to original space. You will also learn how label-guided parameter selection contaminates exploratory evidence, why unaligned refits create false motion, and how approximation recall and sample density affect the visible neighborhood graph.",
+  "prerequisites": [
+    "knn",
+    "pca",
+    "cross-entropy-loss"
+  ],
+  "learningObjectives": [
+    "Explain the high- and low-dimensional similarity objectives of t-SNE and UMAP.",
+    "Interpret perplexity, n_neighbors, min_dist, initialization and seed sensitivity.",
+    "Reject unsupported claims about axes, global distance, density and cluster truth.",
+    "Validate embeddings quantitatively and procedurally before communicating patterns."
+  ],
+  "deepSections": [
+    {
+      "id": "tsne-objective",
+      "title": "t-SNE preserves selected neighborhoods with an asymmetric loss",
+      "body": "For each high-dimensional point, t-SNE selects a Gaussian bandwidth so the entropy of its conditional neighbor distribution matches the requested perplexity. Dense regions receive smaller bandwidth and sparse regions larger, making similarity locally adaptive. Symmetric joint probabilities P summarize important pairs. In the map, a Student-t kernel with heavy tails produces Q and lets dissimilar points separate, addressing crowding when high-dimensional volume is compressed. KL(P||Q) strongly penalizes a high-P neighbor placed too far apart but penalizes false low-dimensional neighbors differently. Early exaggeration temporarily strengthens attractive probabilities to form coarse groups. The objective is nonconvex and optimized approximately. Perplexity is neither number of clusters nor a physical radius; explore several values that are small relative to sample size and report sensitivity."
+    },
+    {
+      "id": "umap-graph",
+      "title": "UMAP optimizes a fuzzy neighborhood graph",
+      "body": "UMAP constructs a k-nearest-neighbor graph, assigns local distance scales and fuzzy edge strengths, combines directed neighborhoods, then optimizes a low-dimensional graph whose edge memberships resemble the original. n_neighbors sets how much local context contributes; small values emphasize fine neighborhoods and can fragment the graph, while larger values incorporate broader structure. min_dist controls how tightly embedded points may pack and visibly changes cluster compactness without changing original density. The optimizer samples repulsive nonedges for scale. UMAP's mathematical motivation uses manifold and fuzzy-topological ideas, but real data need not satisfy ideal assumptions. Metric, approximate-neighbor recall, initialization and random state affect results. A fitted implementation may transform new points relative to the training graph, yet those coordinates are model-dependent and not guaranteed stable across refits."
+    },
+    {
+      "id": "visual-misreadings",
+      "title": "Axes, gaps, areas and densities invite overinterpretation",
+      "body": "Axis direction and sign have no intrinsic meaning; rotating the embedding preserves pairwise layout. t-SNE commonly distorts cluster size because local bandwidth adapts to density, and distances between separated islands can be unreliable. UMAP may preserve somewhat more large-scale structure under some settings, but not enough to read map distance as original metric without measurement. Empty space reflects optimization and repulsion as well as data. Sampling density can split or merge visible structures. Coloring by known labels is useful for diagnosis, but choosing parameters after repeatedly viewing that coloring overfits the visualization. Do not run a clustering algorithm on two-dimensional coordinates merely because islands are visible; evaluate clusters in original or task-relevant representation and report the embedding as supporting illustration only."
+    },
+    {
+      "id": "validation-sensitivity",
+      "title": "Measure neighbors and repeat the analysis",
+      "body": "Trustworthiness penalizes low-dimensional neighbors that were not close in original space; continuity and neighbor recall assess complementary failures. Compute metrics across neighborhood sizes, seeds, hyperparameters and resamples. Compare with PCA and even a random or label-blind baseline. Inspect original-space distances and representative examples for any claimed region. Hold labels and sensitive metadata out of parameter selection when using the map to assess their organization. Record preprocessing, sample selection, metric, implementation, version, seed, initialization, iterations and all hyperparameters. If a pattern appears in only one seed or perplexity, treat it as weak. Global measures such as distance correlation may be useful but can conflict with local objectives. Validation should match the precise claim rather than seeking one universal embedding score."
+    },
+    {
+      "id": "scaling-operations",
+      "title": "Large data and reusable coordinates need explicit design",
+      "body": "Exact pairwise t-SNE is quadratic; Barnes-Hut, interpolation and approximate-neighbor methods reduce cost with approximation. UMAP also relies on nearest-neighbor graph construction and stochastic optimization. Benchmark memory, graph recall, fit time and reproducibility at target n. Subsampling can hide rare groups or alter density, so use stratified or representative policies. Version the reference dataset and transformation because coordinates across independent refits are not inherently aligned. For dashboards, freeze an embedding artifact or align layouts before animation; do not present movement caused by random refit as population drift. Protect coordinates and neighbor traces that may reveal sensitive similarity. Monitor transform support, neighbor quality and feature drift, canary updates and retain a PCA or prior-map fallback."
+    }
+  ],
+  "workedExamples": [
+    {
+      "title": "A large gap does not measure population distance",
+      "body": "Two t-SNE islands sit ten plot units apart while two others sit three units apart. The objective strongly preserves within-neighborhood pairs but weakly constrains these global gaps. Changing perplexity and seed reverses the gap ordering without changing nearest-neighbor recall. The analyst reports island-local examples and original-space distances rather than interpreting plot separation."
+    },
+    {
+      "title": "Parameter tuning leaks labels into a map",
+      "body": "A team colors every trial embedding by disease status and selects the seed and min_dist with clearest separation, then claims unsupervised discovery. Labels guided model selection. A credible analysis freezes preprocessing and parameters without labels or uses a separate exploratory and confirmatory dataset, then quantifies neighbor enrichment on untouched data."
+    }
+  ],
+  "exercises": [
+    {
+      "prompt": "What does a t-SNE axis mean?",
+      "solution": "Usually nothing intrinsic; rotation, reflection and translation of the layout preserve its neighborhood relationships."
+    },
+    {
+      "prompt": "Why should labels be hidden while choosing visualization parameters?",
+      "solution": "Otherwise selection optimizes apparent label separation and the resulting map is no longer independent unsupervised evidence."
+    },
+    {
+      "prompt": "What does trustworthiness penalize?",
+      "solution": "It penalizes points that appear as neighbors in the embedding but were not close neighbors in original space."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "compare",
+      "title": "What the maps emphasize",
+      "left": {
+        "title": "t-SNE",
+        "items": [
+          "Adaptive neighbor probabilities",
+          "KL emphasizes missed neighbors",
+          "Heavy-tailed low-dimensional kernel",
+          "Weak global-distance meaning"
+        ]
+      },
+      "right": {
+        "title": "UMAP",
+        "items": [
+          "Weighted k-neighbor graph",
+          "Fuzzy graph cross-entropy",
+          "n_neighbors and min_dist",
+          "Transform available in common implementations"
+        ]
+      },
+      "caption": "Both prioritize neighborhoods and require sensitivity analysis before structural claims.",
+      "afterSection": "umap-graph"
+    },
+    {
+      "type": "flow",
+      "title": "Responsible visualization workflow",
+      "items": [
+        "Freeze sample and preprocessing",
+        "Choose metric and parameter range",
+        "Generate repeated embeddings",
+        "Measure neighbor preservation",
+        "Inspect claims in original space",
+        "Use labels only in a confirmatory stage"
+      ],
+      "caption": "A map becomes evidence only after quantitative and procedural checks.",
+      "afterSection": "validation-sensitivity"
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "tsne-paper",
+      "contribution": "Grounds t-SNE affinities, heavy-tailed embedding and KL objective."
+    },
+    {
+      "resource": "umap-paper",
+      "contribution": "Provides UMAP's neighbor-graph, fuzzy-set and optimization construction."
+    },
+    {
+      "resource": "distill-tsne",
+      "contribution": "Supports practical parameter-sensitivity and interpretation cautions through controlled visual experiments."
+    }
+  ]
 }

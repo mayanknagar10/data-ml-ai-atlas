@@ -6,38 +6,59 @@
   "roles": [
     "all"
   ],
-  "interviewAnswer": "Use training data to fit parameters, validation data to make modeling choices, and test data only for final unbiased evaluation. Cross-validation estimates performance more robustly when data is limited.",
+  "interviewAnswer": "Cross-validation estimates how a complete training procedure generalizes by repeatedly fitting it on training folds and scoring held-out folds. The splitter must reproduce the deployment unit and direction: shuffled K-fold for approximately IID units, GroupKFold when entities repeat, blocked or rolling splits for future prediction, and stratification when class support is needed. Every learned step—including imputation, scaling, encoding, feature selection, resampling and calibration—must be fitted inside each training fold, normally through a pipeline. CV estimates a procedure, not one already-fitted model. Fold scores are correlated because training sets overlap, so their standard deviation is not a simple confidence interval. I use out-of-fold predictions for paired diagnostics, keep an untouched final test set when selection is extensive, and use nested CV when the same data drive hyperparameter or model search and unbiased performance estimation.",
   "keyPoints": [
-    "Never tune on test",
-    "Stratification",
-    "Group/time splits",
-    "Nested CV concept"
+    "The resampling unit and temporal direction must match the future generalization claim.",
+    "All data-dependent transformations belong inside the fold-specific training pipeline.",
+    "Cross-validation evaluates a training procedure; the final model is refit on all development data afterward.",
+    "Fold scores are dependent and can hide example weighting differences; preserve out-of-fold predictions and fold sizes.",
+    "Model selection and performance estimation are distinct tasks; nested CV or a final test set separates them."
   ],
   "resources": [
-    "sklearn",
-    "google-mlcc",
-    "statquest",
-    "isl"
+    "sklearn-cross-validation",
+    "sklearn-model-evaluation",
+    "nested-cv-selection-paper"
   ],
   "featured": false,
-  "why": "Validation strategy determines whether offline metrics are believable. Many real ML failures come from a wrong split rather than a weak model.",
-  "intuition": "Training data teaches the model. Validation data helps you choose the model. Test data estimates how the final chosen system generalizes. Cross-validation rotates the validation role across folds when data is limited.",
-  "deepDive": "Random K-fold CV assumes samples are exchangeable. Stratification preserves class proportions; grouped splits keep related entities together; time-series splits preserve chronology. Any preprocessing learned from data—scaling, imputation, feature selection—must be fit inside each training fold, ideally using a Pipeline. Nested CV separates hyperparameter search from performance estimation when unbiased model-selection estimates matter.",
-  "math": "K-fold estimate ≈ (1/K) Σ_k metric(model trained on all folds except k, evaluated on fold k)",
-  "workedExample": "If ten slices come from the same patient or 3D volume, randomly splitting slices leaks near-duplicates across train and validation. Split by patient/volume instead.",
-  "code": "from sklearn.model_selection import GroupKFold\ncv=GroupKFold(n_splits=5)\nfor tr,va in cv.split(X,y,groups=patient_id):\n    ...",
+  "why": "A single train-test split can be noisy, especially with limited data, but more folds do not automatically make evaluation valid. Randomly splitting repeated patients leaks identity information. Shuffling time lets future patterns train a past prediction. Preprocessing the whole dataset before splitting gives validation rows influence over the fitted transformation. Trying many configurations and reporting the best CV score turns validation into training. Cross-validation is therefore a simulation design, not a checkbox. It must recreate which observations will be new, what information exists at prediction time, how the model is retrained, and which choices are tuned. A well-designed procedure provides reusable out-of-fold predictions, honest comparisons and diagnostics while reserving independent evidence for the final claim.",
+  "intuition": "Treat each fold as a miniature deployment rehearsal. At the fold boundary, pretend the held-out units do not yet exist. Fit every learned artifact on the remaining data, make predictions once, and record them. If the rehearsal allows a future timestamp, a sibling row from the same patient, or a global feature statistic to cross the boundary, it is testing an easier world than production.",
+  "deepDive": "Cross-validation design is governed by exchangeability, grouping, time, prevalence and selection. Splitters encode the target population; pipelines encode the training algorithm; scoring and aggregation encode the estimand. Reliable inference tracks out-of-fold predictions and independent units, uses repeated or nested designs only for their intended purpose, and avoids interpreting dependent fold variation as ordinary sampling uncertainty.",
+  "math": "For folds I_k partitioning observations, a size-weighted CV loss is sum_k sum_{i in I_k} L(y_i,f^{-k}(x_i))/N, where f^{-k} is trained without fold k. The unweighted mean of fold means gives each fold equal weight and differs when sizes vary. K-fold training sets overlap, so fold losses are correlated. Leave-one-out has low training-set bias but can have high estimator variance and high cost. Repeated K-fold varies random partitions; nested CV uses outer folds for estimation and inner folds for selecting a procedure.",
+  "workedExample": "A dataset has ten visits per patient. Row-wise K-fold puts visits from one patient in both train and validation, allowing identity-like features to inflate performance. GroupKFold assigns every visit for a patient to one fold and estimates generalization to unseen patients.",
+  "code": "from sklearn.model_selection import cross_validate,cross_val_predict\nfactory=make_pipeline(StandardScaler(),LogisticRegression(max_iter=1000))\nresult=cross_validate(factory,X,y,cv=cv,scoring='accuracy',return_train_score=False)\nlib_oof=cross_val_predict(factory,X,y,cv=cv,method='predict')",
   "commonMistakes": [
-    "Tuning hyperparameters on the test set.",
-    "Fitting scaling or imputation on the full dataset before splitting.",
-    "Using random CV for future forecasting or grouped entities."
+    {
+      "misconception": "Cross-validation automatically prevents leakage.",
+      "correction": "Only a correct splitter and fold-local fitting of every learned step prevent boundary violations."
+    },
+    {
+      "misconception": "The standard deviation of K fold scores is a confidence interval.",
+      "correction": "Fold scores are dependent because training sets overlap and validation composition varies."
+    },
+    {
+      "misconception": "More folds are always better.",
+      "correction": "They change training-size bias, validation variance and cost; group and time structure matters more than K."
+    },
+    {
+      "misconception": "The best CV score is an unbiased final estimate.",
+      "correction": "Selection adapts to CV noise. Use untouched evidence or nested CV for estimation."
+    }
   ],
   "followUps": [
-    "When would you use stratified CV?",
-    "What is nested cross-validation?",
-    "How should time-series validation differ?",
-    "Why use a scikit-learn Pipeline?"
+    {
+      "question": "When should GroupKFold be used?",
+      "answer": "When multiple rows share a unit whose information will be absent for a new deployment unit and groups must not cross train-validation boundaries."
+    },
+    {
+      "question": "Why put scaling in a pipeline?",
+      "answer": "The scaler's mean and variance must be learned only from each training fold; a pipeline enforces that fit-transform boundary."
+    },
+    {
+      "question": "What is the difference between cross_val_score and cross_val_predict?",
+      "answer": "The first returns fold scores; the second constructs out-of-fold predictions for compatible use cases and is not automatically an estimate of every pooled metric."
+    }
   ],
-  "production": "Match offline splits to how the model will face new data in production: future time, unseen customers, unseen devices, or unseen sites. A realistic split is more valuable than a prettier metric.",
+  "production": "Version raw eligibility, prediction cutoff, groups, time boundaries, random seed, fold assignments, pipeline, search space, metric and aggregation. Assert group disjointness, temporal order and one out-of-fold prediction per eligible unit. Log transformer fit counts, fold support, errors, compute and candidate failures. Compare models on identical splits and paired independent-unit losses. Reserve final evidence or use genuine nested CV when selection is extensive. Refit the selected complete procedure on all development data, preserve the final test set, and deploy the exact feature and preprocessing contract with rollback artifacts.",
   "visual": {
     "type": "flow",
     "title": "K-fold cross-validation",
@@ -53,6 +74,129 @@
     "orientation": "horizontal"
   },
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "lab": {
+    "language": "python",
+    "goal": "Build leakage-safe K-fold evaluation with a preprocessing pipeline, verify library agreement, and construct complete out-of-fold predictions.",
+    "buildIt": "import numpy as np\nfrom sklearn.datasets import make_classification\nfrom sklearn.model_selection import KFold\nfrom sklearn.pipeline import make_pipeline\nfrom sklearn.preprocessing import StandardScaler\nfrom sklearn.linear_model import LogisticRegression\nfrom sklearn.metrics import accuracy_score\nX,y=make_classification(n_samples=120,n_features=6,random_state=7)\ncv=KFold(n_splits=5,shuffle=True,random_state=11); oof=np.full(len(y),np.nan); fold_scores=[]\nfor train,valid in cv.split(X):\n    model=make_pipeline(StandardScaler(),LogisticRegression(max_iter=1000))\n    model.fit(X[train],y[train]); oof[valid]=model.predict(X[valid]); fold_scores.append(accuracy_score(y[valid],oof[valid]))\npooled=accuracy_score(y,oof)",
+    "useIt": "from sklearn.model_selection import cross_validate,cross_val_predict\nfactory=make_pipeline(StandardScaler(),LogisticRegression(max_iter=1000))\nresult=cross_validate(factory,X,y,cv=cv,scoring='accuracy',return_train_score=False)\nlib_oof=cross_val_predict(factory,X,y,cv=cv,method='predict')",
+    "verifyIt": "assert not np.isnan(oof).any() and len(oof)==len(y)\nassert np.array_equal(oof,lib_oof)\nassert np.allclose(fold_scores,result['test_score'])\nfold_sizes=np.array([len(v) for _,v in cv.split(X)]); assert abs(pooled-np.average(fold_scores,weights=fold_sizes))<1e-12\nfor train,valid in cv.split(X): assert set(train).isdisjoint(valid)",
+    "shipIt": "Persist split manifests and out-of-fold predictions, assert group or time boundaries, fit the complete pipeline per fold, and keep selection separate from final estimation."
+  },
+  "description": "Cross-validation is a controlled simulation of training and deployment, not merely repeated random splitting. This chapter derives the out-of-fold estimate, distinguishes observation-weighted from fold-weighted aggregation, and explains the bias, variance and computational trade-offs of holdout, K-fold, repeated K-fold and leave-one-out evaluation. It selects splitters for IID observations, stratified classification, repeated entities, spatial groups and temporal forecasting, including why stratification can reduce observed fold variability. It shows how pipelines keep imputation, scaling, encoding, feature selection, resampling and calibration inside each training fold. Worked examples expose patient leakage and unequal fold weighting. The lab performs manual pipeline-based K-fold evaluation, verifies scikit-learn results and confirms that every row receives exactly one out-of-fold prediction. Production guidance versions split manifests and seeds, records fold-level artifacts and failures, compares paired predictions, separates model selection from estimation, and refits the chosen procedure on all eligible development data without touching the final test set. The emphasis is faithful rehearsal of the actual future novelty rather than maximizing a convenient resampling score.",
+  "prerequisites": [
+    "classification-metrics",
+    "expectation-variance"
+  ],
+  "learningObjectives": [
+    "Choose a splitter whose held-out unit and temporal direction match deployment.",
+    "Construct leakage-safe fold pipelines and complete out-of-fold predictions.",
+    "Aggregate fold evidence with the correct observation, group or time weighting.",
+    "Separate tuning, comparison and final estimation using nested or held-out evaluation."
+  ],
+  "deepSections": [
+    {
+      "id": "estimand-splitter",
+      "title": "Choose the splitter from the generalization claim",
+      "body": "Ordinary shuffled K-fold assumes observational units are sufficiently exchangeable. Each unit appears in one validation fold and K-1 training folds, allowing efficient reuse of limited data. Stratified K-fold approximately preserves class proportions, preventing folds with no rare positives and stabilizing some metrics; however, that engineering convenience can make folds more homogeneous and shrink apparent variability. When rows share a patient, household, device, document or experiment, hold out whole groups so memorized group signatures cannot cross the boundary. For a claim about new groups, GroupKFold is more relevant than row-level K-fold. For future prediction, preserve order with expanding or rolling windows and a gap when labels or features overlap the horizon. Spatial data may require geographic blocking. The correct splitter can yield a lower score because it asks the harder, correct question. Document the target deployment population and which source of novelty each split represents."
+    },
+    {
+      "id": "fold-pipeline",
+      "title": "Fit every learned operation inside each fold",
+      "body": "A transformation uses validation information whenever its state is estimated before splitting. Global means used for imputation, vocabulary selection, scaling parameters, target encodings, univariate feature selection, PCA components, oversampling, probability calibration and threshold selection all leak if learned from the full dataset. A pipeline receives raw fold data, fits transformations and estimator only on the training subset, and applies the frozen chain to validation rows. Pure deterministic row-local transformations that use no learned state can be performed earlier, but keeping them in the pipeline improves reproducibility. Target-derived features need especially strict out-of-fold construction, sometimes with an inner split inside each training fold. Cache carefully because artifacts are fold-specific. Verify the pipeline by recording fitted sample counts or transformer statistics and confirming validation IDs never contribute. Feature availability time matters even when the software pipeline is correct."
+    },
+    {
+      "id": "predictions-aggregation",
+      "title": "Out-of-fold predictions preserve the most useful evidence",
+      "body": "Store one prediction for every eligible observation from a model that did not train on it. These out-of-fold predictions support pooled metrics, residual plots, slice analysis and paired comparison. For decomposable losses, pooling observation losses yields an observation-weighted estimate. Averaging fold metrics weights folds equally; this differs when fold sizes or group composition vary. Nonlinear metrics such as AUC do not always decompose, and pooling scores across folds can be affected by fold-specific score scales. Report fold sizes, per-fold results and the selected aggregate. For group-level claims, aggregate or resample by group. Cross-validation predictions should not be presented as predictions from the final refitted artifact. After procedure selection, fit that procedure on all development data, version its artifacts, and estimate its final performance using evidence not used to make the choice."
+    },
+    {
+      "id": "uncertainty-variance",
+      "title": "More folds do not create independent experiments",
+      "body": "Increasing K trains each fold model on more data and reduces the pessimism caused by smaller training sets, but validation folds become smaller and computation rises. Leave-one-out is nearly unbiased for training size yet can be unstable and expensive. Repeated K-fold samples partition variability, but repeated scores share observations and training data. The standard deviation across fold scores describes split variation under that design; dividing it by square root K is not generally a valid confidence interval because folds are dependent. Prefer paired bootstrap or domain-appropriate cluster and block resampling on out-of-fold losses, while acknowledging model-training variability if it matters. Use the same splits for candidate models so comparisons are paired. Inspect fold-specific failures rather than celebrating a narrow mean. Learning curves across training sizes can diagnose whether more data or lower variance is likely to help."
+    },
+    {
+      "id": "selection-finalization",
+      "title": "Selection consumes validation evidence",
+      "body": "Every choice informed by CV—features, algorithm, hyperparameters, threshold, metric, even a promising random seed—adapts to its noise. The best of many candidates is optimistically biased. An untouched final test set estimates the fully selected process once. With limited data, nested CV places the entire search in each outer training fold and evaluates the selected result on the outer holdout. The inner score selects; the outer scores estimate. Do not tune globally and then call outer CV nested. Freeze the search space and primary metric in advance, log failed trials and compute cost, and include preprocessing in the searched pipeline. Once evidence supports a procedure, refit it on all eligible development data and deploy with the same feature contract. Keep split manifests immutable so leakage investigations and paired comparisons can be reproduced."
+    }
+  ],
+  "workedExamples": [
+    {
+      "title": "Visits are not independent patients",
+      "body": "A dataset has ten visits per patient. Row-wise K-fold puts visits from one patient in both train and validation, allowing identity-like features to inflate performance. GroupKFold assigns every visit for a patient to one fold and estimates generalization to unseen patients."
+    },
+    {
+      "title": "Fold and observation means differ",
+      "body": "One fold has loss 0 on 10 rows and another loss 1 on 90 rows. The unweighted fold mean is 0.5, while pooled observation loss is 0.9. Neither is universally correct; the claimed weighting must be stated."
+    }
+  ],
+  "exercises": [
+    {
+      "prompt": "Why does global median imputation leak?",
+      "solution": "Validation values influence the median applied to their own fold. Fit the imputer separately on each training fold."
+    },
+    {
+      "prompt": "Which splitter fits forecasting next month from past months?",
+      "solution": "An ordered expanding or rolling time split, possibly with a gap matching label and feature overlap."
+    },
+    {
+      "prompt": "What does an out-of-fold prediction guarantee?",
+      "solution": "That the row was not in that model's training fold; it does not by itself guarantee group, time or feature-lineage safety."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "flow",
+      "title": "A leakage-safe fold",
+      "items": [
+        "Select validation units",
+        "Fit raw-data transforms on training only",
+        "Fit estimator on transformed training",
+        "Freeze the pipeline",
+        "Predict validation once",
+        "Store out-of-fold evidence"
+      ],
+      "caption": "Every learned state stays on the training side of the boundary.",
+      "afterSection": "fold-pipeline"
+    },
+    {
+      "type": "compare",
+      "title": "Splitter choice follows novelty",
+      "left": {
+        "title": "Approximately IID units",
+        "items": [
+          "Shuffled K-fold",
+          "Optional stratification",
+          "Observation-level claim"
+        ]
+      },
+      "right": {
+        "title": "Structured novelty",
+        "items": [
+          "Groups held out together",
+          "Time moves forward",
+          "Spatial or blocked claim"
+        ]
+      },
+      "caption": "A harder structured split is correct when production contains structured novelty.",
+      "afterSection": "estimand-splitter"
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "sklearn-cross-validation",
+      "contribution": "Verifies splitter behavior, pipelines, cross-validation prediction caveats and stratification guidance."
+    },
+    {
+      "resource": "sklearn-model-evaluation",
+      "contribution": "Supports scoring, aggregation and metric-selection behavior across folds."
+    },
+    {
+      "resource": "nested-cv-selection-paper",
+      "contribution": "Supports the distinction between selection and unbiased assessment under repeated search."
+    }
+  ]
 }

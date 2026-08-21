@@ -1,6 +1,6 @@
 # Grid, Random & Bayesian Hyperparameter Search — Code Lab
 
-Tune a model without touching the test set.
+Implement a paired regularization search, verify GridSearchCV results, and keep an untouched final test outside selection.
 
 ## 1. Build it
 

@@ -1,5 +1,10 @@
-y=[1,1,1,0,0,0]; pred=[1,0,1,1,0,0]
-tp=sum(a==1 and b==1 for a,b in zip(y,pred)); fn=sum(a==1 and b==0 for a,b in zip(y,pred))
-fp=sum(a==0 and b==1 for a,b in zip(y,pred))
-precision=tp/(tp+fp); recall=tp/(tp+fn); f1=2*precision*recall/(precision+recall)
-print(tp,fp,fn,precision,recall,f1)
+import numpy as np
+y=np.array([1,1,1,0,0,0,0,0]); pred=np.array([1,0,1,1,0,0,0,0])
+def counts(y,p):
+    y=np.asarray(y); p=np.asarray(p)
+    return {'tp':int(((y==1)&(p==1)).sum()),'fp':int(((y==0)&(p==1)).sum()),'fn':int(((y==1)&(p==0)).sum()),'tn':int(((y==0)&(p==0)).sum())}
+def metrics(y,p):
+    c=counts(y,p); tp,fp,fn,tn=(c[k] for k in ('tp','fp','fn','tn'))
+    div=lambda a,b: float('nan') if b==0 else a/b
+    return c|{'accuracy':(tp+tn)/len(y),'precision':div(tp,tp+fp),'recall':div(tp,tp+fn),'specificity':div(tn,tn+fp),'f1':div(2*tp,2*tp+fp+fn)}
+m=metrics(y,pred)
