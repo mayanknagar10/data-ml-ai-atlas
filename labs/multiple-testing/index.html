@@ -1,0 +1,25 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Multiple Testing &amp; False Discovery Rate — Code Lab</title><script>(()=>{const s=localStorage.getItem('atlas-theme');const t=s||((matchMedia('(prefers-color-scheme: dark)').matches)?'dark':'light');document.documentElement.dataset.theme=t})()</script><style>:root{--bg:#fff;--text:#121417;--muted:#5d6470;--line:#dfe3e8;--soft:#f6f7f8;--blue:#155eef;--code:#0d1117;color-scheme:light}html[data-theme=dark]{--bg:#0d1117;--text:#eef2f6;--muted:#a8b0ba;--line:#2b333d;--soft:#171d24;--blue:#8fb4ff;--code:#070a0e;color-scheme:dark}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.6 Inter,system-ui,sans-serif}main{max-width:980px;margin:auto;padding:44px 22px 80px}a{color:var(--blue)}h1{font-size:42px;line-height:1.05;margin:8px 0 12px}.k{font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--blue);font-weight:800}.lead{color:var(--muted);font-size:17px}.top{display:flex;justify-content:space-between;gap:16px}button{border:1px solid var(--line);background:var(--soft);color:var(--text);border-radius:8px;padding:7px 9px;cursor:pointer}section{border-top:1px solid var(--line);padding-top:22px;margin-top:26px}pre{background:var(--code);color:#e6edf3;padding:18px;border-radius:12px;overflow:auto;font:13px/1.55 ui-monospace,monospace}.links{display:flex;gap:12px;flex-wrap:wrap;margin:18px 0}.links a{border:1px solid var(--line);border-radius:8px;padding:7px 9px;text-decoration:none;font-size:12px}@media(max-width:600px){h1{font-size:34px}.top{display:block}}</style></head><body><main><div class="top"><div><div class="k">Data, ML & AI Atlas · Runnable Lab</div><h1>Multiple Testing &amp; False Discovery Rate</h1></div><button id="t">◐ Theme</button></div><p class="lead">Implement Holm FWER and BH FDR adjusted p-values, verify monotonicity, and compare BH output with SciPy.</p><div class="links"><a href="../../index.html#/lesson/multiple-testing">← Full lesson</a><a href="lab.py">Combined Python file</a><a href="README.md">README</a></div><section><h2>1 · Build it</h2><p>Minimal implementation with as little framework abstraction as practical.</p><pre>def adjust_bh(pvalues):
+    m=len(pvalues); order=sorted(range(m),key=pvalues.__getitem__)
+    raw=[m*pvalues[i]/rank for rank,i in enumerate(order,1)]
+    monotone=[0.0]*m; running=1.0
+    for pos in range(m-1,-1,-1):
+        running=min(running,raw[pos],1.0); monotone[pos]=running
+    out=[0.0]*m
+    for pos,i in enumerate(order): out[i]=monotone[pos]
+    return out
+
+def adjust_holm(pvalues):
+    m=len(pvalues); order=sorted(range(m),key=pvalues.__getitem__)
+    out=[0.0]*m; running=0.0
+    for rank,i in enumerate(order):
+        running=max(running,min(1.0,(m-rank)*pvalues[i])); out[i]=running
+    return out
+
+p=[0.001,0.006,0.011,0.020,0.031,0.070,0.20,0.42,0.60,0.90]
+bh=adjust_bh(p); holm=adjust_holm(p)</pre></section><section><h2>2 · Use it</h2><p>The same idea through a common library or practical API.</p><pre>import numpy as np
+from scipy.stats import false_discovery_control
+scipy_bh=false_discovery_control(np.asarray(p),method=&#x27;bh&#x27;)</pre></section><section><h2>3 · Ship it</h2><p>Centralize immutable hypothesis families, include every attempted test, version correction and dependence assumptions, and report adjusted evidence with estimates, intervals, and confirmation status.</p></section><section><h2>4 · Verify it</h2><p>Assertions and sanity checks that catch conceptual or implementation mistakes.</p><pre>assert all(0 &lt;= x &lt;= 1 for x in bh+holm)
+order=sorted(range(len(p)),key=p.__getitem__)
+assert all(bh[order[i]] &lt;= bh[order[i+1]] for i in range(len(p)-1))
+assert all(holm[i] &gt;= min(1.0,p[i]) for i in range(len(p)))
+assert np.allclose(bh,scipy_bh)</pre></section></main><script>const b=document.getElementById('t');function u(){b.textContent=document.documentElement.dataset.theme==='dark'?'☀ Light':'☾ Dark'}u();b.onclick=()=>{const n=document.documentElement.dataset.theme==='dark'?'light':'dark';document.documentElement.dataset.theme=n;localStorage.setItem('atlas-theme',n);u()}</script></body></html>

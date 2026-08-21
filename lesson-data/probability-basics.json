@@ -9,48 +9,171 @@
     "aie",
     "as"
   ],
-  "interviewAnswer": "Conditional probability updates the probability of an event given evidence. Bayes rule reverses a conditional using prior probability and likelihood, and underlies probabilistic inference and many classifiers.",
+  "interviewAnswer": "Conditional probability is `P(A|B)=P(A∩B)/P(B)` for `P(B)>0`; it restricts the population to cases where B occurred. The multiplication rule is `P(A∩B)=P(A|B)P(B)`. Bayes' rule reverses the condition: `P(A|B)=P(B|A)P(A)/P(B)`, where the denominator can be expanded across mutually exclusive hypotheses. The prior/base rate matters: a highly sensitive test can have low positive predictive value when the condition is rare. Define events and population explicitly, use counts to sanity-check, and remember Bayes updates beliefs within the assumed likelihood and prior—it does not prove causality or model correctness.",
   "keyPoints": [
-    "P(A|B)",
-    "Prior/likelihood/posterior",
-    "Base rates",
-    "Independence"
+    "Name the experiment and events",
+    "Conditioning changes the reference population",
+    "Joint equals conditional times marginal",
+    "Bayes combines likelihood and base rate",
+    "Posterior quality depends on model and data"
   ],
   "resources": [
     "harvard-stat110",
-    "statquest"
+    "stanford-stats60",
+    "think-bayes"
   ],
   "featured": false,
-  "why": "Conditional probability is the language of updating beliefs from evidence. It appears in Bayesian reasoning, diagnostic tests, anomaly detection, Naive Bayes, calibration, and any interview question where base rates matter.",
-  "intuition": "Think of probability as shrinking the universe of possible outcomes after observing evidence. P(A|B) asks: among the cases where B happened, how often did A happen? Bayes rule lets you reverse the direction when P(B|A) is easier to reason about than P(A|B).",
-  "deepDive": "Bayes rule combines a prior belief P(A) with the likelihood of evidence P(B|A), then normalizes by P(B). The base-rate term matters: even a highly accurate detector can have poor positive predictive value when the event is extremely rare. Independence means P(A,B)=P(A)P(B); conditional independence can hold even when marginal independence does not, which is why graphical models and Naive Bayes can be useful simplifications.",
-  "math": "P(A|B) = P(A ∩ B) / P(B)\nBayes: P(A|B) = P(B|A) P(A) / P(B)\nTotal probability: P(B)=Σ_i P(B|A_i)P(A_i)",
-  "workedExample": "Suppose a defect occurs in 1% of parts. A detector catches 95% of defects and falsely flags 5% of good parts. Among flagged parts, the probability of a true defect is far below 95% because the 99% non-defect base rate dominates. This is the classic base-rate lesson.",
+  "why": "Risk scores, fraud alerts, medical tests, spam filters and model confidence all require conditional reasoning. Teams often report sensitivity as if it were the probability a flagged case is truly positive, ignore prevalence changes, or treat an observational association as causal. These errors affect people and budgets. A disciplined event model and natural-frequency check make the assumptions and false-positive burden visible before deployment.",
+  "intuition": "Imagine a table of all possible cases. Conditioning on B covers every row outside B and renormalizes the rows that remain. Bayes' rule does not create information; it reads the same intersection from the opposite direction. Natural frequencies—such as 10 true cases and 990 noncases—often make the arithmetic clearer than percentages because the numerator and denominator populations stay visible.",
+  "deepDive": "The full explanation is organized into the structured sections below.",
+  "math": "A probability measure P on Ω satisfies P(A)≥0, P(Ω)=1 and countable additivity for disjoint events. For P(B)>0, P(A|B)=P(A∩B)/P(B). Thus P(A∩B)=P(A|B)P(B) and `P(H_i|E)=P(E|H_i)P(H_i)/Σ_jP(E|H_j)P(H_j)` for a hypothesis partition.",
+  "workedExample": "Imagine 10,000 people. About 100 have the condition; 90 test positive. About 9,900 do not; 5% or 495 test positive falsely. Total positives are 585, so `P(condition|positive)=90/585≈15.4%`, not 90%. Bayes formula gives the same numerator `0.9×0.01` and denominator `0.9×0.01+0.05×0.99`. If prevalence in the tested population differs from 1%, predictive value changes. Repeated tests require a model of dependence; multiplying sensitivities as if independent can be badly wrong.",
   "code": "# Bayes update for a binary diagnostic test\nprior = 0.01\nsensitivity = 0.95\nfalse_positive = 0.05\nposterior = sensitivity*prior / (sensitivity*prior + false_positive*(1-prior))\nprint(round(posterior, 3))",
   "commonMistakes": [
-    "Ignoring the base rate and equating sensitivity with P(defect | positive).",
-    "Confusing independence with mutual exclusivity.",
-    "Treating conditional probabilities as symmetric: P(A|B) is not generally P(B|A)."
+    {
+      "mistake": "Confuse P(A|B) with P(B|A).",
+      "correction": "They have the same intersection numerator but different denominators; Bayes includes the base rate needed to reverse them."
+    },
+    {
+      "mistake": "Mutually exclusive events are independent.",
+      "correction": "For positive-probability exclusive events, observing one makes the other impossible, so they are dependent."
+    },
+    {
+      "mistake": "A posterior probability proves a causal hypothesis.",
+      "correction": "It updates within a specified model and evidence process; causal claims require causal assumptions/design."
+    }
   ],
   "followUps": [
-    "What is the difference between independence and conditional independence?",
-    "Why can a good classifier have low precision on rare events?",
-    "How does Naive Bayes use conditional independence?",
-    "What is a prior and when should it matter?"
+    {
+      "question": "Why does prevalence affect precision?",
+      "answer": "False positives come from the noncase population; when that population is much larger, even a small false-positive rate can dominate positives."
+    },
+    {
+      "question": "What is a likelihood ratio?",
+      "answer": "The probability of evidence under one hypothesis divided by its probability under another; it multiplies prior odds into posterior odds."
+    },
+    {
+      "question": "When can sequential evidence updates multiply?",
+      "answer": "Using conditional likelihoods; simple multiplication requires appropriate conditional independence given each hypothesis."
+    }
   ],
-  "production": "For rare-event systems such as fraud, failures, or safety alerts, calibration and base rates directly determine alert quality. Thresholds should be chosen using posterior risk and operational costs, not accuracy alone.",
-  "visual": {
-    "type": "concept-map",
-    "title": "Probability building blocks",
-    "items": [
-      "events",
-      "sample space",
-      "conditional probability",
-      "Bayes rule"
-    ],
-    "caption": "Concept map for quick revision."
-  },
+  "production": "Version the event/population/horizon, base-rate source, likelihood/calibration, evidence policy and decision costs. Monitor prevalence, calibration, diagnostic rates, volume/capacity and slices with label-delay and selection corrections. Validate finite bounded probabilities, use stable log odds, secure sensitive evidence, support abstention on invalid/drifted inputs and roll back the calibrated model-threshold bundle when assumptions fail.",
   "editorial": {
-    "status": "summary"
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "Probability is a mathematical language for uncertain outcomes under a stated model. Events are subsets of a sample space; probability assigns them coherent weights. Conditional probability restricts attention to cases where evidence occurred, the multiplication rule connects joint and conditional events, and Bayes' rule reverses a condition by combining likelihood with a base rate. This chapter develops complements, unions, intersections, inclusion–exclusion, odds, partitions, diagnostic testing and repeated evidence while separating mathematical probability from causal claims and poorly calibrated subjective confidence. You will learn to define the population and experiment before calculating, avoid confusing `P(A|B)` with `P(B|A)`, and recognize when selection or model misspecification invalidates a posterior. A worked medical-screening example uses a natural-frequency table to make false positives and prevalence visible. The lab enumerates a finite population and verifies Bayes through counts and formulas. Production guidance covers prevalence drift, calibration, threshold decisions, uncertain labels, monitoring, privacy, adversarial likelihood inputs and rollback. The objective is to make every probability statement answer four questions: probability of what event, under which population/model, conditional on what information, and for which decision.",
+  "prerequisites": [],
+  "learningObjectives": [
+    "Represent uncertain experiments with sample spaces and events and apply probability axioms, complements, unions, intersections and inclusion–exclusion.",
+    "Derive conditional probability, multiplication, total probability and Bayes' rule and solve base-rate-sensitive problems with natural frequencies.",
+    "Translate probabilistic outputs into monitored decisions while distinguishing calibration, causation, selection, model uncertainty and cost."
+  ],
+  "deepSections": [
+    {
+      "id": "sample-events",
+      "title": "Sample spaces, events, and probability rules",
+      "body": "A sample space Ω lists possible outcomes at the resolution relevant to the question. An event A is a subset of outcomes. A probability measure satisfies nonnegativity, P(Ω)=1 and additivity over disjoint events. From these follow P(A^c)=1−P(A), monotonicity and inclusion–exclusion `P(A∪B)=P(A)+P(B)−P(A∩B)`. For a finite equally likely space, probability is favorable outcomes divided by total outcomes, but equal likelihood is an assumption—not a universal counting rule.\n\nDefine the experiment and population. “The probability of rain” needs location, time window, threshold, information set and forecast model. A customer churn probability is conditional on feature availability, observation policy and a prediction horizon. Changing the sample space can change probability even when event wording is similar. Impossible under the model does not always mean physically impossible; probability-zero events in continuous models can still be possible exact outcomes.\n\nMutually exclusive means events cannot occur together, `P(A∩B)=0`. It does not mean independent; if one occurs, the other becomes impossible. Exhaustive events cover Ω. A partition is mutually exclusive and exhaustive and lets complicated probabilities be computed by splitting across cases. Venn intuition helps for small event sets, while algebra prevents double counting."
+    },
+    {
+      "id": "conditioning-bayes",
+      "title": "Conditioning, multiplication, and Bayes",
+      "body": "Conditional probability `P(A|B)` divides the mass of the intersection by P(B), making B the new universe. The multiplication rule follows directly. The chain rule extends: `P(A,B,C)=P(A)P(B|A)P(C|A,B)` for a chosen order. Conditioning can increase, decrease or leave a probability unchanged. Independence is the special case where learning B does not change A.\n\nBayes' rule combines prior P(H) and likelihood P(E|H) into posterior P(H|E). With hypotheses H_i forming a partition, `P(E)=Σ_i P(E|H_i)P(H_i)`. Posterior odds equal prior odds times a likelihood ratio, which is often convenient for sequential evidence. Evidence items cannot be multiplied as independent likelihoods unless conditional independence under hypotheses is justified.\n\nA prior may represent population prevalence, previous data or explicit belief. The likelihood is a model for evidence given the hypothesis. Bayes is an identity once these are specified, but a precise posterior can still be wrong if prevalence drifts, labels are biased, evidence selection is ignored or likelihoods are misspecified. Sensitivity analysis over plausible priors/likelihoods shows robustness."
+    },
+    {
+      "id": "diagnostic-decisions",
+      "title": "Diagnostics, scores, and decisions",
+      "body": "For a binary test, sensitivity is P(test+|condition) and specificity is P(test−|no condition). Positive predictive value is P(condition|test+) and depends strongly on prevalence. Negative predictive value has the analogous base-rate dependence. A threshold changes sensitivity and specificity; no threshold is universally optimal without false-positive/negative costs, capacity and fairness constraints.\n\nA classifier score may be a ranking score rather than a calibrated probability. Calibration asks whether cases assigned probability p occur about p fraction of the time under the deployment distribution. Evaluate reliability by bins or proper scoring rules with uncertainty and important slices. Calibration can drift when base rates or conditional feature distributions change. Selective labels—only investigated alerts get outcomes—bias estimates of precision and likelihoods. Random audits or designed follow-up may be necessary.\n\nDecision theory combines posterior uncertainty with actions and losses. The action minimizing expected loss can differ from the most probable class. Human review, abstention and resource constraints create more than two actions. Probability does not choose values or policy; it makes consequences under a model explicit. Report uncertainty and sensitivity rather than a naked percentage."
+    },
+    {
+      "id": "operation-failure",
+      "title": "Production assumptions and failure behavior",
+      "body": "Version the event definition, population, horizon, prior/prevalence estimate, evidence transformation, likelihood/calibration model and threshold/cost policy. Prevent training-serving skew in evidence. Monitor base rate, sensitivity/specificity where labels are available, calibration, alert volume, review capacity, outcome delay and slice disparities. Correct evaluation for sampling/audit design.\n\nHandle missing evidence as its own modeled state; do not silently treat it as negative. Validate probabilities are finite and in [0,1], use log odds for extreme repeated updates and cap resource use for evidence lists. Adversaries may manipulate evidence or prevalence, so monitor feature integrity and feedback loops. Protect sensitive health/fraud attributes and posterior logs.\n\nWhen assumptions fail, safe behavior may be abstention, conservative routing, wider uncertainty or reverting to a simpler rule. Keep an older calibrated model and threshold bundle for rollback. Recalibration alone cannot repair a broken ranking or changed event definition. Document which claims are associative/predictive rather than causal, and require stronger design before interventions are justified."
+    }
+  ],
+  "workedExamples": [
+    {
+      "title": "Rare-disease screening with natural frequencies",
+      "setup": "Prevalence is 1%, sensitivity 90% and specificity 95%. What does a positive result mean?",
+      "walkthrough": "Imagine 10,000 people. About 100 have the condition; 90 test positive. About 9,900 do not; 5% or 495 test positive falsely. Total positives are 585, so `P(condition|positive)=90/585≈15.4%`, not 90%. Bayes formula gives the same numerator `0.9×0.01` and denominator `0.9×0.01+0.05×0.99`. If prevalence in the tested population differs from 1%, predictive value changes. Repeated tests require a model of dependence; multiplying sensitivities as if independent can be badly wrong.",
+      "conclusion": "High sensitivity does not imply high positive predictive value when false positives act on a much larger base population."
+    }
+  ],
+  "exercises": [
+    {
+      "difficulty": "recall",
+      "prompt": "State Bayes' rule for events A and B.",
+      "solution": "`P(A|B)=P(B|A)P(A)/P(B)` when P(B)>0."
+    },
+    {
+      "difficulty": "application",
+      "prompt": "A fraud test has 80% sensitivity, 99% specificity and 0.1% prevalence. Estimate precision.",
+      "solution": "`0.8×0.001/(0.8×0.001+0.01×0.999)≈0.074`, about 7.4%."
+    },
+    {
+      "difficulty": "diagnosis",
+      "prompt": "Precision falls after expansion to a lower-risk market although sensitivity/specificity are stable. Why?",
+      "solution": "The fraud/condition base rate decreased, so false positives comprise a larger share of alerts."
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "harvard-stat110",
+      "contribution": "Provides rigorous event, conditional probability, Bayes, counting and natural-frequency problem solving."
+    },
+    {
+      "resource": "stanford-stats60",
+      "contribution": "Supplies current introductory probability, conditional probability, scale and common-mistake pedagogy."
+    },
+    {
+      "resource": "think-bayes",
+      "contribution": "Provides computational Bayes examples, updating and model-checking intuition."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "flow",
+      "title": "Bayesian update as odds flow",
+      "items": [
+        "Define hypothesis + population",
+        "Prior odds",
+        "Evidence likelihood ratio",
+        "Posterior odds",
+        "Calibrated decision + cost",
+        "Monitor prevalence and outcomes"
+      ],
+      "caption": "Bayes updates a defined model; deployment still needs calibration, costs and drift monitoring.",
+      "afterSection": "conditioning-bayes"
+    },
+    {
+      "type": "compare",
+      "title": "Rare-test positive population",
+      "left": {
+        "title": "Condition present",
+        "items": [
+          "100 of 10,000",
+          "90 true positives",
+          "10 false negatives"
+        ]
+      },
+      "right": {
+        "title": "Condition absent",
+        "items": [
+          "9,900 of 10,000",
+          "495 false positives",
+          "9,405 true negatives"
+        ]
+      },
+      "caption": "Among 585 positives, only 90 are true positives—natural frequencies expose the base-rate effect.",
+      "afterSection": "diagnostic-decisions"
+    }
+  ],
+  "lab": {
+    "goal": "Compute diagnostic Bayes probabilities from natural frequencies and verify formula/count agreement, normalization and prevalence sensitivity.",
+    "language": "python",
+    "buildIt": "def diagnostic(prevalence,sensitivity,specificity,population=100000):\n    if not all(0<=x<=1 for x in (prevalence,sensitivity,specificity)): raise ValueError('probability')\n    cases=population*prevalence; noncases=population-cases\n    tp=cases*sensitivity; fn=cases-tp; fp=noncases*(1-specificity); tn=noncases-fp\n    positive=tp+fp\n    return {'tp':tp,'fp':fp,'fn':fn,'tn':tn,'ppv':tp/positive if positive else float('nan')}\n\ndef bayes(prior,likelihood,false_positive):\n    denominator=likelihood*prior+false_positive*(1-prior)\n    return likelihood*prior/denominator",
+    "useIt": "counts=diagnostic(.01,.90,.95,10000)\nposterior=bayes(.01,.90,.05)\nlow_base=bayes(.001,.90,.05)",
+    "verifyIt": "assert counts=={'tp':90.0,'fp':495.0,'fn':10.0,'tn':9405.0,'ppv':90/585}\nassert abs(counts['ppv']-posterior)<1e-15\nassert sum(counts[k] for k in ('tp','fp','fn','tn'))==10000\nassert 0<=posterior<=1 and low_base<posterior\nassert bayes(.01,1.0,0.0)==1.0\ntry: diagnostic(1.1,.9,.9)\nexcept ValueError: pass\nelse: raise AssertionError('invalid probabilities must fail')",
+    "shipIt": "Use audited prevalence and outcome sampling, stable calibrated probabilities, explicit cost/capacity thresholds, slice monitoring, sensitive-data controls and a versioned model-threshold rollback bundle."
   }
 }

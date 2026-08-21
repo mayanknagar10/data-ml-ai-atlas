@@ -9,31 +9,173 @@
     "aie",
     "as"
   ],
-  "interviewAnswer": "The Jacobian collects first derivatives of vector-valued functions; the Hessian contains second derivatives of a scalar objective and describes local curvature.",
+  "interviewAnswer": "For f:R^n→R^m, the Jacobian J has entries `J_ij=∂f_i/∂x_j` under the output-by-input convention and maps a small input change to `df≈J dx`. A JVP computes Jv; a VJP computes uᵀJ and is what reverse mode uses. For scalar f, the Hessian H has `H_ij=∂²f/∂x_i∂x_j` and gives the quadratic term `½dxᵀHdx`. At a stationary point, positive-definite H indicates a strict local minimum, negative definite a maximum, and mixed eigenvalue signs a saddle. Full matrices are usually avoided; autodiff computes products, while Newton/Gauss-Newton methods solve damped systems with conditioning and validation checks.",
   "keyPoints": [
-    "Gradient gives first-order direction.",
-    "Hessian eigenvalues describe local curvature.",
-    "Second-order methods can converge quickly but are expensive in high dimensions."
+    "Jacobian maps input perturbations to output perturbations",
+    "JVP and VJP avoid full matrices",
+    "Hessian encodes local curvature",
+    "Eigenvalue signs classify stationary geometry",
+    "Newton steps require safe solves and damping"
   ],
   "resources": [
-    "mit-linear-algebra",
-    "stanford-cs229"
+    "boyd-convex",
+    "stanford-ee364a",
+    "numpy-linalg"
   ],
   "featured": false,
-  "why": "Jacobians, Hessians & Second-order Thinking is a recurring foundation across data science and machine learning because it affects both theoretical correctness and practical system behavior.",
-  "intuition": "Gradient gives first-order direction.",
-  "deepDive": "The Jacobian collects first derivatives of vector-valued functions; the Hessian contains second derivatives of a scalar objective and describes local curvature. Hessian eigenvalues describe local curvature. Second-order methods can converge quickly but are expensive in high dimensions. The interview-level skill is not merely recalling the definition: explain the assumptions, what diagnostic evidence you would inspect, and what alternative you would choose when those assumptions fail.",
-  "workedExample": "Newton’s method rescales the gradient using curvature rather than taking the same learning-rate geometry in every direction.",
+  "why": "Modern models have millions of inputs or parameters, so a full derivative matrix is too large. Yet products with that matrix power backpropagation, influence approximations, sensitivity analysis and second-order optimization. Shape confusion, wrong transpose conventions and indefinite curvature lead to subtle errors. Operator thinking makes the useful computations explicit and exposes when a second-order promise depends on smoothness, local validity and numerical conditioning.",
+  "intuition": "The Jacobian is a tiny local machine: feed it a small direction and it predicts how every output moves. The Hessian describes how the gradient machine itself changes. Around a point, the Hessian turns a flat tangent plane into a bowl, dome or saddle. In large systems, you rarely print the machine; you ask it targeted questions such as ‘what happens along this vector?’",
+  "deepDive": "The full explanation is organized into the structured sections below.",
+  "workedExample": "The Jacobian is `[[2xy,x²],[cos x,1]]`. At (1,2), J=`[[4,1],[cos1,1]]`. For v=(1,−1), Jv=`(3,cos1−1)`, predicting the first-order output change. The scalar φ has gradient `(x,4y)` and constant Hessian diag(1,4). Its positive eigenvalues show a strict convex bowl; the y direction has four times the curvature. Newton solves H p=−g and reaches the origin in one exact quadratic step. A finite-difference JVP and HVP should agree, while computing a full Hessian would be unnecessary if only H v were needed.",
   "commonMistakes": [
-    "Using the concept mechanically without checking assumptions or data semantics.",
-    "Reporting one metric/result without examining uncertainty, slices or failure modes."
+    {
+      "mistake": "A Jacobian has the same orientation in every source/library.",
+      "correction": "Conventions differ; state output-by-input or its transpose and derive product shapes explicitly."
+    },
+    {
+      "mistake": "A positive semidefinite Hessian always proves a strict minimum.",
+      "correction": "Zero-curvature directions require higher-order analysis; strict positive definiteness is a sufficient second-order condition."
+    },
+    {
+      "mistake": "Newton's method means multiply by an inverse Hessian.",
+      "correction": "Solve a possibly damped system and globalize with line search/trust region; never form the inverse explicitly."
+    }
   ],
   "followUps": [
-    "What assumptions or limitations does Jacobians, Hessians & Second-order Thinking have?",
-    "How would you validate Jacobians, Hessians & Second-order Thinking on a real dataset?"
+    {
+      "question": "What is the difference between a JVP and VJP?",
+      "answer": "JVP maps an input direction to output change; VJP maps output sensitivities backward to input sensitivities."
+    },
+    {
+      "question": "How can you compute Hv without H?",
+      "answer": "Differentiate the scalar/vector product of the gradient with v using mixed autodiff modes, obtaining a Hessian-vector product."
+    },
+    {
+      "question": "Why add damping to Newton?",
+      "answer": "It improves conditioning, can make the system positive definite and limits trust in an inaccurate local quadratic model."
+    }
   ],
-  "production": "In production, make assumptions explicit, validate on representative slices, compare with a simple baseline and monitor the signals that can drift.",
+  "production": "Prefer JVP/VJP/HVP operators to full matrices; validate dot-product, finite-difference and symmetry invariants on small cases. Use damped solves/trust or line search, monitor solver residual, iterations, curvature, actual versus predicted decrease, nonfinite values and cost. Version objective/data/order/framework/solver state, restrict sensitive derivative products, bound resources and retain a tested first-order or previous-model rollback path.",
   "editorial": {
-    "status": "summary"
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "The Jacobian is the matrix representation of a vector-valued function's local linear map; the Hessian records second derivatives of a scalar function and describes local curvature. These objects clarify tensor shapes, sensitivity, inverse problems, uncertainty propagation and optimization, but full materialization is often unnecessary or impossible at ML scale. This chapter derives Jacobian-vector products (JVPs), vector-Jacobian products (VJPs), Hessian-vector products, quadratic Taylor models, curvature eigenvalues and positive-definiteness tests. You will learn to distinguish output-by-input conventions, interpret mixed partial symmetry under regularity assumptions, identify minima, maxima and saddles, and explain why Newton's method can fail when curvature is indefinite or the linear solve is unstable. A worked two-input/two-output map and scalar objective checks all shapes. The lab compares analytic Jacobian/Hessian values to finite differences and validates directional products. Production guidance covers autodiff mode choice, Gauss-Newton and Fisher approximations, damping, conjugate gradients, conditioning, precision, custom operations, monitoring and rollback. The objective is to use derivative operators and products as practical tools instead of treating giant derivative matrices as objects that must always be formed.",
+  "prerequisites": [
+    "derivatives-gradients",
+    "eigen-svd"
+  ],
+  "learningObjectives": [
+    "Derive Jacobian, JVP, VJP, Hessian and Hessian-vector shapes and interpret them as local sensitivity operators.",
+    "Use Hessian eigenstructure and quadratic models to classify stationary points and reason about conditioning and Newton-like steps.",
+    "Choose exact products or structured approximations with numerical checks, damping, scalable solves and production monitoring."
+  ],
+  "deepSections": [
+    {
+      "id": "jacobian-products",
+      "title": "Jacobians, JVPs, and VJPs",
+      "body": "For f:R^n→R^m, differentiability gives `f(x+h)=f(x)+J_f(x)h+o(||h||)`. With output-by-input convention, J is m×n and row i is the gradient transpose of output f_i. A JVP `Jv` is the directional rate of all outputs along input direction v and can be computed by forward-mode autodiff without forming J. A VJP `u^TJ` combines output sensitivities into input sensitivities and is computed by reverse mode.\n\nShape reasoning decides mode efficiency. If n is small and m huge, columns/JVPs are cheap; if a scalar loss m=1 depends on huge n, one reverse VJP obtains the gradient. A full Jacobian needs roughly min(n,m) sweeps plus storage and should be requested only when genuinely needed. Batches introduce a block structure: many examples are independent, but asking a framework for a Jacobian of the whole batch can materialize zeros and huge dimensions. Use per-example APIs or vectorization deliberately.\n\nJacobians propagate uncertainty locally: covariance approximately maps as `JΣJ^T`, assuming linearization is adequate. Singular values reveal local amplification and insensitive/null directions. Inverse problems become unstable when small singular values make inputs poorly identifiable. Normalize units before comparing sensitivities across coordinates."
+    },
+    {
+      "id": "hessian-curvature",
+      "title": "Hessians and local curvature",
+      "body": "For twice-differentiable scalar f:R^n→R, H=∇²f has entries of second partial derivatives. Under continuity of mixed partials near the point, H is symmetric. Taylor's quadratic model is `f(x+p)≈f(x)+g^Tp+½p^THp`. Directional curvature along unit v is `v^THv`; Hessian eigenvectors give principal curvature directions and eigenvalues their curvature.\n\nAt a stationary point g=0, positive-definite H implies a strict local minimum, negative definite a maximum, and both positive/negative eigenvalues a saddle. Positive semidefinite alone can be inconclusive because higher-order terms matter; a zero Hessian does not prove a minimum. Away from stationary points, curvature classification does not replace the nonzero first-order slope. Nonsmooth objectives may not have a classical Hessian at kinks.\n\nCondition number among positive eigenvalues affects optimization. Very large eigenvalues set small stable first-order steps; tiny ones create flat directions. Negative curvature can provide an escape direction from a saddle but makes an undamped Newton system aim in a non-descent direction. Hessian trace, diagonal and top eigenvalues are useful summaries but cannot fully describe a complex landscape."
+    },
+    {
+      "id": "second-order-methods",
+      "title": "Newton, Gauss-Newton, and structured approximations",
+      "body": "Newton's method minimizes the quadratic model by solving `Hp=−g` and setting x←x+p. Near a well-behaved minimum it can converge rapidly. Globally, the quadratic model may be poor, H may be singular/indefinite and a full factorization may be unaffordable. Line search or trust regions constrain the step; damping solves `(H+λI)p=−g` to improve definiteness and conditioning. Never compute H^{-1} explicitly—solve the linear system.\n\nHessian-vector products can be obtained by differentiating a gradient-vector product (or forward-over-reverse), enabling conjugate-gradient solves and eigenvalue estimates with memory proportional to vectors. Conjugate gradient assumes a symmetric positive-definite operator for its standard form; damping or alternative Krylov solvers may be needed. Preconditioning approximates curvature cheaply to reduce iterations.\n\nFor nonlinear least squares, Gauss-Newton uses `J^TJ` and omits residual-weighted second derivative terms; it is positive semidefinite and accurate near small residuals. Levenberg–Marquardt adds damping. Fisher information and empirical Fisher appear in probabilistic/natural-gradient contexts but are not generally identical to the Hessian. Diagonal, block-diagonal and low-rank approximations trade fidelity for cost and must be evaluated on the actual objective."
+    },
+    {
+      "id": "operator-operation",
+      "title": "Validation and production operation",
+      "body": "Check a JVP against directional finite differences of f, a VJP against dot-product identity `u^T(Jv)=(u^TJ)v`, and an HVP against finite differences of gradients. For smooth scalar code, check Hessian symmetry within tolerance. Use double precision and scale-aware steps on small deterministic cases; avoid branch boundaries. Validate shape conventions with asymmetric n and m. Custom differentiation rules require tests for batched, broadcast, dtype/device and zero-size edge cases.\n\nAt scale, instrument product latency, linear-solver residual, iteration count, damping/trust radius, predicted versus actual objective decrease, nonfinite values and curvature estimates. Fail safely when solves do not converge or the step is not descent. Cache/reuse products only when parameters and data match; stale curvature can be harmful. Distributed products must use consistent reductions and deterministic tolerance policy.\n\nVersion the exact objective, regularization, data batch/snapshot, parameter order, autodiff/compiler framework, damping and solver settings. Curvature calculations may expose training data through influence or gradient information, so restrict outputs and logs. Bound product requests to prevent resource exhaustion. Compare second-order cost against first-order baselines and downstream benefit. Checkpoint all optimizer/preconditioner state and retain a simpler fallback/previous model for rollback."
+    }
+  ],
+  "math": "For f:R^n→R^m, J_f(x)∈R^{m×n} satisfies f(x+h)=f(x)+Jh+o(||h||). A JVP is Jv and VJP is u^TJ. For scalar φ, H=∇²φ and `φ(x+p)=φ(x)+g^Tp+½p^THp+o(||p||²)`. HVP is Hv. Newton solves Hp=−g; damped Newton solves (H+λI)p=−g.",
+  "workedExamples": [
+    {
+      "title": "Two-output map and scalar curvature",
+      "setup": "Let f(x,y)=(x²y, sin x+y) and φ(x,y)=½(x²+4y²).",
+      "walkthrough": "The Jacobian is `[[2xy,x²],[cos x,1]]`. At (1,2), J=`[[4,1],[cos1,1]]`. For v=(1,−1), Jv=`(3,cos1−1)`, predicting the first-order output change. The scalar φ has gradient `(x,4y)` and constant Hessian diag(1,4). Its positive eigenvalues show a strict convex bowl; the y direction has four times the curvature. Newton solves H p=−g and reaches the origin in one exact quadratic step. A finite-difference JVP and HVP should agree, while computing a full Hessian would be unnecessary if only H v were needed.",
+      "conclusion": "The Jacobian handles output sensitivity; the Hessian handles scalar-objective curvature, and products expose both economically."
+    }
+  ],
+  "exercises": [
+    {
+      "difficulty": "recall",
+      "prompt": "What is the shape of the Jacobian for f:R^5→R^3 under output-by-input convention?",
+      "solution": "3×5; it maps a 5-vector input perturbation to a 3-vector output perturbation."
+    },
+    {
+      "difficulty": "application",
+      "prompt": "How do you test a VJP implementation without forming J?",
+      "solution": "Check `uᵀ(Jv)=(uᵀJ)v` using independently computed JVP and VJP for random u,v."
+    },
+    {
+      "difficulty": "diagnosis",
+      "prompt": "A Newton step increases loss at a saddle. Why?",
+      "solution": "The Hessian is indefinite and the unconstrained quadratic solution need not be a descent direction; use damping/trust-region/line search or negative-curvature handling."
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "boyd-convex",
+      "contribution": "Provides Jacobian/Hessian calculus, curvature, Newton method, line search and positive-definite system foundations."
+    },
+    {
+      "resource": "stanford-ee364a",
+      "contribution": "Supplies detailed second-order optimization, damping, trust/line search and structured least-squares material."
+    },
+    {
+      "resource": "numpy-linalg",
+      "contribution": "Documents stable solves, eigenvalues and condition diagnostics used to implement small derivative-system checks."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "flow",
+      "title": "Derivative operators without giant matrices",
+      "items": [
+        "Input direction v",
+        "JVP: Jv → output sensitivity",
+        "Output weight u",
+        "VJP: uᵀJ → input sensitivity",
+        "Differentiate gradient product",
+        "HVP: Hv → curvature response"
+      ],
+      "caption": "Targeted products answer scalable sensitivity questions without materializing every partial derivative.",
+      "afterSection": "jacobian-products"
+    },
+    {
+      "type": "compare",
+      "title": "Hessian eigenvalue signatures",
+      "left": {
+        "title": "Single-sign curvature",
+        "items": [
+          "All positive: local bowl",
+          "All negative: local dome",
+          "Near zero: flat/weakly identified"
+        ]
+      },
+      "right": {
+        "title": "Mixed curvature",
+        "items": [
+          "Positive and negative: saddle",
+          "Newton may not descend",
+          "Damping/trust region needed"
+        ]
+      },
+      "caption": "Second-order classification applies at stationary smooth points; semidefinite cases can need higher-order reasoning.",
+      "afterSection": "hessian-curvature"
+    }
+  ],
+  "lab": {
+    "goal": "Implement central-difference Jacobian and Hessian checks, then verify JVP, VJP, symmetry and analytic curvature.",
+    "language": "python",
+    "buildIt": "import math\n\ndef vector_f(v):\n    x,y=v; return [x*x*y,math.sin(x)+y]\n\ndef scalar_f(v):\n    x,y=v; return 0.5*(x*x+4*y*y)\n\ndef jacobian_fd(f,x,h=1e-6):\n    base=f(x); J=[[0.0]*len(x) for _ in base]\n    for j in range(len(x)):\n        plus=list(x); minus=list(x); plus[j]+=h; minus[j]-=h\n        fp,fm=f(plus),f(minus)\n        for i in range(len(base)): J[i][j]=(fp[i]-fm[i])/(2*h)\n    return J\n\ndef gradient_fd(f,x,h=1e-5):\n    out=[]\n    for j in range(len(x)):\n        plus=list(x); minus=list(x); plus[j]+=h; minus[j]-=h\n        out.append((f(plus)-f(minus))/(2*h))\n    return out",
+    "useIt": "import numpy as np\nx=np.array([1.,2.]); J=np.array(jacobian_fd(vector_f,x.tolist()))\nJ_true=np.array([[4.,1.],[math.cos(1.),1.]])\nH=np.array(jacobian_fd(lambda z: gradient_fd(scalar_f,z),x.tolist(),h=1e-4))\nH_true=np.diag([1.,4.]); v=np.array([1.,-1.]); u=np.array([2.,3.])",
+    "verifyIt": "assert np.allclose(J,J_true,atol=1e-8)\nassert np.allclose(J@v,[3.,math.cos(1.)-1.],atol=1e-8)\nassert np.isclose(u@(J@v),(u@J)@v)\nassert np.allclose(H,H_true,atol=1e-5)\nassert np.allclose(H,H.T,atol=1e-8)\nassert np.all(np.linalg.eigvalsh(H)>0)\ngrad=np.array([x[0],4*x[1]]); step=np.linalg.solve(H_true,-grad)\nassert np.allclose(x+step,[0.,0.])",
+    "shipIt": "Use framework derivative products for large models, keep dot-product/finite checks for custom operators, damp and monitor iterative solves, secure derivative traces and checkpoint compatible optimizer/model state for rollback."
   }
 }

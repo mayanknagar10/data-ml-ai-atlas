@@ -6,41 +6,185 @@
   "roles": [
     "ds"
   ],
-  "interviewAnswer": "More data does not fix a systematically unrepresentative sample. Selection and nonresponse bias occur when inclusion/response is related to the outcome or variables of interest.",
+  "interviewAnswer": "Selection bias occurs when inclusion depends on variables related to the outcome after conditioning on what the analysis uses. Coverage bias comes from the frame missing or duplicating target units; nonresponse bias comes when sampled respondents differ from nonrespondents on the estimand. Bias is not determined by response rate alone: it depends on response–outcome association. Weighting or imputation can correct differences explained by observed variables with overlap and valid models, but not unknown unmeasured selection without assumptions. Compare to frame benchmarks, model response, conduct targeted follow-up, and report sensitivity analyses.",
   "keyPoints": [
-    "Distinguish sampling variance from systematic bias.",
-    "Weighting can help only when selection is modeled with adequate information.",
-    "Instrumentation and eligibility define the population actually observed."
+    "Large n attacks variance, not systematic selection",
+    "Response rate is a risk indicator, not a bias estimate",
+    "Adjustment needs outcome-relevant observed variables and positivity",
+    "Conditioning on a collider can create association",
+    "Residual selection uncertainty requires sensitivity and external evidence"
   ],
   "resources": [
+    "census-nonresponse",
+    "cdc-survey-variance",
     "openintro-stats",
-    "stanford-stats60"
+    "harvard-causal-diagrams"
   ],
   "featured": true,
-  "why": "Selection, Coverage & Nonresponse Bias is a standard part of a broad data/ML curriculum because it changes how models are selected, evaluated or operated in real systems.",
-  "intuition": "Distinguish sampling variance from systematic bias.",
-  "deepDive": "More data does not fix a systematically unrepresentative sample. Selection and nonresponse bias occur when inclusion/response is related to the outcome or variables of interest. Weighting can help only when selection is modeled with adequate information. Instrumentation and eligibility define the population actually observed. A strong answer connects the formal idea to validation, data requirements and failure modes instead of treating the method as a recipe.",
-  "workedExample": "An opt-in survey of power users can produce extremely precise but biased estimates of overall satisfaction.",
+  "why": "Many data products observe only app users who consented, customers who answered, patients who remained, devices that connected, or labels that annotators could resolve. Modeling the observed rows as if they were a random population sample can dominate every later algorithmic choice. Interviews ask about survivorship and nonresponse because they test causal and survey reasoning. Production systems are especially vulnerable to feedback: a model changes who is shown an option, which changes who produces labels, which shapes the next model. Weighting can look scientific while extrapolating from near-zero-probability groups or calibrating only easy margins. Bias analysis requires operational data about the frame and contact process, not only the final table.",
+  "intuition": "Suppose satisfied and dissatisfied customers answer a survey at different rates. The respondent mean mixes two things: how common each group is and how likely each is to appear. A million responses do not reveal the silent group if its response probability is tiny. If response differences are fully explained by known age and region and every cell has respondents, weighting cells back to population shares can recover the target under a within-cell exchangeability assumption. If response also depends on unobserved satisfaction inside cells, weighting remains biased. Response rate can be low with little bias when response is unrelated to outcome, or high with serious bias when a small outcome-critical group is systematically absent.",
+  "deepDive": "Let S indicate observation. The respondent estimand E[Y|S=1] differs from population E[Y] when selection changes the distribution of outcome-relevant variables or depends on Y after adjustment. Identification requires design information or assumptions about S, Y, and covariates X.",
+  "workedExample": "A population is 70% standard-tier customers with 60% support approval and 30% premium with 90% approval. True approval is 0.7*0.60+0.3*0.90=69%. Suppose response rates are 20% standard and 80% premium. Among respondents, premium share becomes 0.24/(0.14+0.24)=63.2%, so unweighted approval is about 79.0%, biased upward. Poststratifying respondents to known 70/30 tier shares recovers 69% only if respondents and nonrespondents have the same approval within tier. If dissatisfied standard customers respond even less within tier, residual bias remains and requires follow-up or sensitivity analysis.",
   "commonMistakes": [
-    "Choosing the technique without checking whether its assumptions match the problem.",
-    "Optimizing an offline metric without checking realistic validation slices or operational constraints."
+    "Claiming a large sample eliminates selection or nonresponse bias.",
+    "Using response rate as a direct estimate of bias without outcome information.",
+    "Weighting on variables measured only for respondents or with near-zero response overlap.",
+    "Calibrating to convenient margins and assuming all unmeasured selection is corrected.",
+    "Dropping missing or attrited units without preserving denominators, reasons, and time-varying selection."
   ],
   "followUps": [
-    "When would you not use Selection, Coverage & Nonresponse Bias?",
-    "How would you validate or tune Selection, Coverage & Nonresponse Bias?"
+    {
+      "question": "Can a 90% response rate still be biased?",
+      "answer": "Yes. If the missing 10% have outcomes very different from respondents, bias can be material. Rate measures quantity missing, not the respondent–nonrespondent outcome gap."
+    },
+    {
+      "question": "When does inverse response weighting work?",
+      "answer": "When response propensities are correctly known/estimated, positive, and selection is ignorable for the outcome conditional on included covariates, with a representative frame and correct measurement."
+    },
+    {
+      "question": "How do you assess unmeasured selection?",
+      "answer": "You cannot identify it from respondent data alone. Use targeted nonrespondent follow-up, administrative benchmarks, alternative frames, negative controls, longitudinal evidence, and quantitative sensitivity analyses."
+    }
   ],
-  "production": "In production, validate on realistic slices, track latency/cost when relevant, and monitor for distribution changes or failure modes that the offline metric can hide.",
-  "visual": {
-    "type": "concept-map",
-    "title": "Selection, Coverage & Nonresponse Bias",
-    "items": [
-      "Distinguish sampling variance from systematic bias.",
-      "Weighting can help only when selection is modeled with adequate information.",
-      "Instrumentation and eligibility define the population actually observed."
-    ],
-    "caption": "A compact concept map for the most important ideas in this lesson."
-  },
+  "production": "Retain target and frame definitions, selection and exposure probabilities, invitation/contact attempts, disposition reasons, timestamps, consent, device/mode, eligibility, item missingness, attrition events, and benchmark versions under strict privacy controls. Monitor response and coverage by outcome-relevant frame variables, weight concentration, propensity overlap, contact difficulty, benchmark gaps, attrition hazards, and downstream effect sensitivity. Cap or stabilize weights only under a documented bias–variance analysis. Test correction on simulations and historical cases with known outcomes. Use randomized exploration where policy-driven missing labels would otherwise destroy overlap. Do not expose small nonrespondent categories. Publish unweighted and weighted estimates, sample/frame counts, assumptions, and sensitivity ranges. If response instrumentation fails, preserve the incident, withdraw affected estimates, and rebuild weights from the last valid frame snapshot rather than silently imputing everything.",
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "Selection, coverage, and nonresponse bias arise when observed units differ systematically from the target population in ways related to the outcome or estimand. More rows reduce sampling variance but do not automatically reduce these biases; a massive opt-in dataset can be precisely wrong. This chapter decomposes total survey error, distinguishes target population, frame coverage, unit nonresponse, item nonresponse, attrition, and conditioning on selection, and explains why response rate alone does not determine bias. You will learn to draw selection diagrams, compare respondents with frame benchmarks, use inverse-probability weighting, calibration, imputation, follow-up samples, and sensitivity analysis, while stating the untestable assumptions each method needs. The worked example shows how differential response reverses an apparent support rate and how weighting helps only with observed adjustment variables. The lab simulates outcome-related response, quantifies bias, applies poststratification, and verifies when correction succeeds or fails. Production guidance covers contact paradata, consent, privacy, weight lineage, monitoring, bounded corrections, and transparent residual-uncertainty reporting.",
+  "prerequisites": [
+    "sampling-design",
+    "joint-marginal-conditional"
+  ],
+  "learningObjectives": [
+    "Separate undercoverage, overcoverage, unit nonresponse, item nonresponse, attrition, and measurement error in a total-error framework.",
+    "Explain why response rate and sample size alone do not identify nonresponse or selection bias.",
+    "Apply weighting, calibration, imputation, follow-up, and sensitivity methods with explicit exchangeability and positivity assumptions.",
+    "Design diagnostics and monitoring that compare observed samples with frames, benchmarks, and hard-to-reach follow-up data."
+  ],
+  "deepSections": [
+    {
+      "id": "total-error",
+      "title": "Coverage, nonresponse, attrition, and measurement",
+      "body": "Undercoverage occurs when target units have no frame representation; overcoverage includes ineligible or duplicate entries. Unit nonresponse means no usable record from a sampled unit; item nonresponse leaves specific variables missing. Attrition is longitudinal dropout and can depend on evolving outcomes. Measurement error can correlate with response and survive weighting. Processing errors, mode effects, and timing add further nonsampling error. Separate these mechanisms because remedies differ: improve the frame, deduplicate, redesign contacts, impute items, model censoring, validate instruments, or revise processing. A final complete-case dataset hides this lineage, so retain disposition codes and denominators."
+    },
+    {
+      "id": "bias-rate",
+      "title": "Why response rate does not equal bias",
+      "body": "For a mean, nonresponse bias can be expressed using response rate and the difference between respondent and nonrespondent means; the latter is usually unknown. A low rate increases concern but can have small bias if groups have similar outcomes. A high rate can hide large bias if the missing group is small but extreme. Compare respondents and nonrespondents on frame variables, early versus late responders, contact difficulty, administrative outcomes, and targeted follow-up. Census nonresponse-bias analyses combine multiple diagnostics rather than certify representativeness from one rate. Benchmark discrepancies can reflect both sample bias and benchmark mismatch, so document definitions and dates."
+    },
+    {
+      "id": "adjustment",
+      "title": "Weighting, calibration, imputation, and doubly robust ideas",
+      "body": "If response is conditionally independent of Y given observed X and response probabilities are positive, inverse response weights can recover population moments. Estimate propensities using variables measured for respondents and nonrespondents, then stabilize or trim cautiously. Poststratification and raking align weighted margins with trusted population totals; they correct outcome bias only insofar as calibration variables explain it. Outcome imputation predicts missing Y under a missing-at-random model. Augmented inverse-probability estimators combine outcome and response models and may remain consistent if one is correct under conditions. Flexible models do not remove unmeasured-selection assumptions. Cross-fit complex nuisance models and audit overlap."
+    },
+    {
+      "id": "selection-causal",
+      "title": "Colliders, feedback loops, and sensitivity",
+      "body": "Conditioning on being observed can open a noncausal path when selection is influenced by both exposure and outcome or their causes—a collider mechanism. Case-only, hospitalized, approved-loan, and platform-active samples commonly induce such associations. Product ranking creates endogenous exposure and missing-not-at-random labels: items not shown cannot be clicked. Logging policies, randomized exploration, inverse propensity scoring, and off-policy evaluation can help under positivity and correct propensities. Sensitivity analysis varies unobserved respondent–nonrespondent outcome differences or selection odds and reports how conclusions change. Negative controls and external validation can reveal residual bias but cannot prove none remains."
+    },
+    {
+      "id": "bounds",
+      "title": "Partial identification and bounds without ignorability",
+      "body": "When conditional ignorability is not credible, point identification may be impossible. Bounds make the remaining uncertainty explicit. With a bounded outcome, worst-case bounds combine observed outcomes with extreme possible values for nonrespondents; they may be wide but honest. Monotone-response or bounded-difference assumptions narrow them and should be varied in sensitivity analysis. Pattern-mixture models specify how missing outcomes differ from predicted respondent outcomes; selection models specify response odds as a function of unobserved outcomes. Neither is testable from observed data alone. Report a tipping point: how large an unobserved selection difference must be to reverse the decision. This is more informative than presenting one heavily modeled adjustment as though the missing group had been observed."
+    }
+  ],
+  "math": "Population mean mu=E[Y]. Respondent mean is E[Y|S=1]. If response propensity pi(X)=P(S=1|X) is positive and Y is independent of S conditional on X, then E[S Y/pi(X)]=E[Y], motivating inverse-probability weighting. A normalized estimator is sum S_i w_i Y_i/sum S_i w_i. With overall response rate r, mean bias satisfies E[Y|S=1]-E[Y]=(1-r)(E[Y|S=1]-E[Y|S=0]); response rate alone is insufficient because the outcome gap is unknown.",
+  "workedExamples": [
+    {
+      "title": "Tier-dependent survey response",
+      "body": "Calculate how selection changes group composition, recover the target with known-margin poststratification under conditional exchangeability, and state the within-tier assumption that remains unverified."
+    }
+  ],
+  "exercises": [
+    {
+      "prompt": "Response rate is 40%; respondent and nonrespondent means differ by 10. What is respondent-mean bias relative to population?",
+      "solution": "Using bias=(1-r)(respondent mean-nonrespondent mean), bias=0.60*10=6 units."
+    },
+    {
+      "prompt": "Why can extreme inverse-probability weights be dangerous?",
+      "solution": "They indicate poor overlap and make a few respondents represent many units, inflating variance and sensitivity to model error. Trimming trades variance for bias and must be disclosed."
+    },
+    {
+      "prompt": "If weighting aligns age and region margins, is nonresponse bias eliminated?",
+      "solution": "Only if selection is ignorable for the outcome conditional on those variables, positivity holds, benchmarks match the target, and models/measurement are valid. Unmeasured within-cell selection can remain."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "flow",
+      "title": "Where a target population becomes an observed dataset",
+      "items": [
+        "Target population",
+        "Sampling frame",
+        "Invited/sample",
+        "Respondents",
+        "Complete items",
+        "Analyzed records"
+      ],
+      "caption": "Coverage, unit response, item response, and analysis filtering are distinct selection gates with distinct denominators.",
+      "orientation": "horizontal",
+      "afterSection": "total-error"
+    },
+    {
+      "type": "matrix",
+      "title": "Bias diagnostics and what they reveal",
+      "caption": "No single diagnostic proves absence of selection bias; triangulation is required.",
+      "afterSection": "bias-rate",
+      "rows": [
+        "Response rate",
+        "Frame comparison",
+        "Follow-up sample",
+        "Sensitivity analysis"
+      ],
+      "cols": [
+        "Evidence",
+        "Limit"
+      ],
+      "cells": [
+        [
+          "Amount missing",
+          "Not outcome gap"
+        ],
+        [
+          "Observed composition",
+          "Only measured variables"
+        ],
+        [
+          "Hard-to-reach outcomes",
+          "Cost/remaining selection"
+        ],
+        [
+          "Robustness range",
+          "Assumption-indexed"
+        ]
+      ]
+    }
+  ],
+  "lab": {
+    "language": "python",
+    "goal": "Simulate outcome-related response, quantify respondent bias, apply poststratification, and verify exactly when observed-group adjustment recovers the population.",
+    "buildIt": "def weighted_mean(values,weights): return sum(v*w for v,w in zip(values,weights))/sum(weights)\n# Deterministic expected-count population: 700 standard, 300 premium.\npop_values=[0.60]*700+[0.90]*300\ngroups=['standard']*700+['premium']*300\n# 20% and 80% response, selected deterministically within identical cells.\nrespondent_values=[0.60]*140+[0.90]*240\nrespondent_groups=['standard']*140+['premium']*240\nunweighted=sum(respondent_values)/len(respondent_values)\nweights=[700/140 if g=='standard' else 300/240 for g in respondent_groups]\nadjusted=weighted_mean(respondent_values,weights)\ntruth=sum(pop_values)/len(pop_values)",
+    "useIt": "import numpy as np\nnp_adjusted=float(np.average(np.asarray(respondent_values),weights=np.asarray(weights)))\nresponse_rate=len(respondent_values)/len(pop_values)",
+    "verifyIt": "assert abs(truth-0.69) < 1e-12\nassert unweighted > truth\nassert abs(adjusted-truth) < 1e-12\nassert abs(np_adjusted-adjusted) < 1e-12\nassert response_rate == 0.38\nassert max(weights)/min(weights) == 4.0",
+    "shipIt": "Preserve every selection denominator and contact outcome, calibrate only with defensible frame variables and overlap, monitor weights and benchmark gaps, and publish sensitivity to residual unmeasured selection."
+  },
+  "sourceNotes": [
+    {
+      "resource": "census-nonresponse",
+      "contribution": "Provides current official examples of multi-method nonresponse bias analysis beyond response-rate reporting."
+    },
+    {
+      "resource": "cdc-survey-variance",
+      "contribution": "Explains response weighting and complex-design implications for estimates, tests, and uncertainty."
+    },
+    {
+      "resource": "openintro-stats",
+      "contribution": "Provides accessible foundations for sampling bias, missingness, weighting, and inference."
+    },
+    {
+      "resource": "harvard-causal-diagrams",
+      "contribution": "Supports causal-diagram reasoning about selection, conditioning, confounders, and colliders."
+    }
+  ]
 }

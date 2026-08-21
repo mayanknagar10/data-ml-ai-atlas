@@ -7,89 +7,174 @@
     "ds",
     "as"
   ],
-  "interviewAnswer": "Least squares can be understood as projecting the target vector onto the column space of the design matrix; the residual is orthogonal to that space at the optimum.",
+  "interviewAnswer": "Least squares chooses x̂ minimizing `||Ax−b||²`. At the optimum the residual r=b−Ax̂ is orthogonal to the column space, giving `AᵀA x̂=Aᵀb`. The fitted values are the projection of b onto Col(A). Normal equations are useful for derivation but square the condition number; production solvers use QR or SVD. If A is rank-deficient, coefficients are not unique and the pseudoinverse returns a minimum-norm solution. Always include the intended intercept, inspect rank and conditioning, evaluate out of sample, and remember that unbiasedness or confidence intervals require assumptions beyond numerical minimization.",
   "keyPoints": [
-    "Projection geometry explains normal equations.",
-    "Rank deficiency makes solutions non-unique without additional choices.",
-    "QR/SVD are numerically preferable to explicit matrix inverse."
+    "Fitted values lie in column space",
+    "Residual is orthogonal to features",
+    "Normal equations are a derivation",
+    "QR/SVD are safer solvers",
+    "Rank deficiency breaks coefficient uniqueness"
   ],
   "resources": [
-    "mit-linear-algebra"
+    "mit-linear-algebra",
+    "numpy-linalg",
+    "boyd-convex"
   ],
   "featured": false,
-  "why": "Orthogonality, Projections & Least Squares is a recurring foundation across data science and machine learning because it affects both theoretical correctness and practical system behavior.",
-  "intuition": "Projection geometry explains normal equations.",
-  "deepDive": "Least squares can be understood as projecting the target vector onto the column space of the design matrix; the residual is orthogonal to that space at the optimum. Rank deficiency makes solutions non-unique without additional choices. QR/SVD are numerically preferable to explicit matrix inverse. The interview-level skill is not merely recalling the definition: explain the assumptions, what diagnostic evidence you would inspect, and what alternative you would choose when those assumptions fail.",
-  "workedExample": "Fit linear regression by projecting y onto the span of feature columns.",
+  "why": "Linear regression, calibration, embeddings, filters and many optimization steps reduce to projection or least squares. The formula can produce numbers even when columns are duplicated, scales differ by orders of magnitude or data leaks future information. Understanding geometry reveals why coefficients become unstable, why residual checks matter and why computing an inverse is the wrong implementation. It also separates the deterministic approximation problem from statistical claims about noise and causality.",
+  "intuition": "The columns of A span a flat surface of predictions that the model can express. Observation b usually lies off that surface. Least squares drops a perpendicular from b to the surface; the landing point is A x̂ and the leftover arrow is the residual. Coefficients describe how to combine columns to reach the landing point. If columns point in redundant directions, the landing point can be unique while the coordinate recipe is not.",
+  "deepDive": "The full explanation is organized into the structured sections below.",
+  "workedExample": "The design matrix has rows `(1,x_i)`. Solving gives β0=7/6 and β1=1/2, so fitted values are `(7/6,5/3,13/6)`. Residuals `b−Aβ` are `(-1/6,1/3,-1/6)`. Their sum is zero, showing orthogonality to the intercept column; their dot product with x is also zero, showing orthogonality to the slope column. The data vector is decomposed into fitted projection plus residual. Use `lstsq`/QR rather than explicitly inverting A^TA. With only one x value or a duplicated feature column, coefficients would not be uniquely identified.",
   "commonMistakes": [
-    "Using the concept mechanically without checking assumptions or data semantics.",
-    "Reporting one metric/result without examining uncertainty, slices or failure modes."
+    {
+      "mistake": "Use `(A.T@A)^{-1}@A.T@b` in production.",
+      "correction": "Normal equations explain geometry but square conditioning; use `lstsq`, QR or SVD without an explicit inverse."
+    },
+    {
+      "mistake": "A low training residual proves a useful model.",
+      "correction": "Evaluate under deployment-like splits and inspect residual structure, leakage, baseline improvement and stability."
+    },
+    {
+      "mistake": "Rank-deficient coefficients have a unique interpretation.",
+      "correction": "Many coefficient vectors yield the same projection; pseudoinverse selects one convention and regularization changes the objective."
+    }
   ],
   "followUps": [
-    "What assumptions or limitations does Orthogonality, Projections & Least Squares have?",
-    "How would you validate Orthogonality, Projections & Least Squares on a real dataset?"
+    {
+      "question": "Why is the residual orthogonal to every feature column?",
+      "answer": "Any component along the column space could be added to the fitted vector to reduce squared distance, so at the closest point none remains."
+    },
+    {
+      "question": "Why prefer QR to normal equations?",
+      "answer": "It solves through an orthonormal/triangular factorization without forming A^TA and avoids squaring the condition number."
+    },
+    {
+      "question": "What does the pseudoinverse return?",
+      "answer": "A least-squares solution, specifically the minimum-Euclidean-norm one when coefficients are not unique."
+    }
   ],
-  "production": "In production, make assumptions explicit, validate on representative slices, compare with a simple baseline and monitor the signals that can drift.",
-  "visual": {
-    "type": "scatter",
-    "title": "Least-squares projection",
-    "series": [
-      {
-        "label": "observations",
-        "points": [
-          [
-            0.08,
-            0.2
-          ],
-          [
-            0.18,
-            0.29
-          ],
-          [
-            0.28,
-            0.31
-          ],
-          [
-            0.39,
-            0.46
-          ],
-          [
-            0.52,
-            0.5
-          ],
-          [
-            0.64,
-            0.63
-          ],
-          [
-            0.76,
-            0.69
-          ],
-          [
-            0.88,
-            0.82
-          ]
+  "production": "Use `lstsq`/QR/SVD with explicit rank and tolerance diagnostics; never form an inverse for solving. Version features, preprocessing, solver, penalty and cutoff. Use leakage-safe splits, baselines and residual/slice diagnostics, validate schema/finiteness/conditioning, monitor feature and residual drift, protect training data and keep a reproducible prior artifact for rollback.",
+  "editorial": {
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "Orthogonal projection chooses the point in a subspace closest to a target, and least squares uses that geometry to fit inconsistent linear systems. Given a design matrix A and observations b, the fitted vector A x̂ is the projection of b onto A's column space, so the residual is orthogonal to every column. This chapter derives normal equations, explains why QR and singular value decomposition are safer computational routes, and connects rank, pseudoinverse, minimum-norm solutions, regularization, leverage and residual diagnostics. You will learn to construct projection onto a vector or orthonormal basis, distinguish coefficient uncertainty from predictive error, include intercepts and categorical encodings correctly, and identify when collinearity or ill-conditioning makes coefficients unstable even though predictions look reasonable. A worked line fit checks residual orthogonality by hand and with NumPy. Production guidance covers train/test separation, scaling, solver choice, dtype, robust alternatives, monitoring, privacy, artifact versioning and rollback. The objective is to connect the geometric statement “closest point in a subspace” to practical regression code and to know where ordinary least squares assumptions stop supporting statistical conclusions.",
+  "prerequisites": [
+    "vectors-matrices",
+    "norms-distances"
+  ],
+  "learningObjectives": [
+    "Derive projection and least-squares optimality from residual orthogonality and the geometry of column space.",
+    "Choose QR, SVD, pseudoinverse or regularization instead of relying blindly on normal equations or explicit inverse.",
+    "Validate fits using rank, conditioning, residual structure, leakage-safe evaluation and production monitoring."
+  ],
+  "deepSections": [
+    {
+      "id": "projection-geometry",
+      "title": "Projection onto vectors and subspaces",
+      "body": "For nonzero vector a, the projection of b onto span(a) is `a(a^Tb)/(a^Ta)`. The coefficient is the aligned component measured relative to a's squared length. The residual `b−proj_a b` is orthogonal to a. If Q has orthonormal columns spanning a subspace, projection is `QQ^T b`, and P=QQ^T is symmetric and idempotent: `P^T=P`, `P²=P`. The complementary projector I−P maps onto the orthogonal complement.\n\nFor a general full-column-rank A, the projection matrix can be written `A(A^TA)^{-1}A^T`, but this expression is primarily conceptual. Forming it is unnecessary and often expensive; solving for coefficients or using an orthonormal factor is better. If columns are not independent, the inverse does not exist even though the subspace and its projection remain well defined. SVD/pseudoinverse supplies the orthogonal projector onto the column space.\n\nProjection depends on the inner product. Weighted least squares changes geometry so some residuals count more, commonly using inverse-variance weights under a noise model. Generalized least squares handles correlated errors through a covariance-aware metric. Weights must reflect the intended objective and be included consistently in evaluation; arbitrary large weights can create numerical and fairness problems."
+    },
+    {
+      "id": "least-squares-derivation",
+      "title": "Least squares and the normal equations",
+      "body": "Define `f(x)=||Ax−b||²=(Ax−b)^T(Ax−b)`. Its gradient is `2A^T(Ax−b)`. Setting it to zero yields `A^TA x=A^Tb`, equivalent to residual orthogonality `A^T(b−Ax)=0`. When A has independent columns, `A^TA` is positive definite and the minimizer is unique. With dependent columns, there are multiple coefficient minimizers but all share the same fitted projection.\n\nAn intercept corresponds to a column of ones. Omitting it forces the fitted hyperplane through the origin and changes residual-mean and interpretation. Centering features and target can separate intercept computation, but preprocessing must be fitted on training data and replayed identically. Categorical one-hot encoding plus an intercept creates exact dependence if every category column is retained; drop a reference level or use a solver/regularization with an explicit identification convention.\n\nLeast squares minimizes vertical squared residuals in the modeled target coordinate. It is sensitive to outliers because squaring grows rapidly. It does not minimize perpendicular distance to both feature and target measurement errors, and it does not by itself produce causal effects. Statistical inference adds assumptions about error mean, variance, independence or distribution and data collection."
+    },
+    {
+      "id": "solvers-rank",
+      "title": "QR, SVD, pseudoinverse, and regularization",
+      "body": "Solving normal equations by forming `A^TA` is numerically risky because its condition number is approximately the square of A's condition number. QR factorization writes A=QR with Q orthonormal and R triangular; solve `Rx=Q^Tb` without squaring conditioning. Householder QR is a standard stable dense method. SVD writes A=UΣV^T and exposes singular directions, rank, condition number and minimum-norm solutions. It costs more but is robust for rank deficiency and diagnostics.\n\nThe Moore-Penrose pseudoinverse `A^+=VΣ^+U^T` reciprocates nonzero singular values under a tolerance and returns the minimum-Euclidean-norm solution among least-squares minimizers. Tiny singular values amplify noise, so numerical rank depends on scale and tolerance. Do not interpret the library default as domain truth.\n\nRidge regression minimizes `||Ax−b||²+λ||x||²`, leading to `(A^TA+λI)x=A^Tb` (usually excluding the intercept from penalty). It shrinks unstable directions and guarantees a unique solution for λ>0 but introduces bias. Choose λ using validation without leakage. Feature scaling changes the effective ridge penalty, so preprocessing and penalty are one model. Lasso uses L1 penalty and changes the solver/geometry."
+    },
+    {
+      "id": "diagnostics-production",
+      "title": "Diagnostics, evaluation, and operation",
+      "body": "Verify solver status, shape, rank, singular values/condition estimate, finite coefficients and residual orthogonality within tolerance. Compare predictions from two stable solvers on a small fixture. Inspect residuals versus fitted values, time, groups and important features for nonlinearity, heteroscedasticity, autocorrelation and bias. High leverage observations have unusual feature geometry and can influence the fit; large residual and leverage together deserve investigation, not automatic deletion.\n\nSplit evaluation according to deployment: chronological for future prediction, grouped for new entities, spatial for new regions. Fit scaling, imputation and encoding only on training folds. Compare to intercept/mean and simple domain baselines. Report prediction error and uncertainty separately from coefficient p-values. Robust regression, transformed targets, generalized linear models or nonlinear features may better match data and outcome.\n\nIn production, version column order, units, encoder, scaler, solver, regularization and training cutoff. Validate incoming schema/range/missingness, monitor prediction and residual drift when labels arrive, and alert on rank/conditioning changes. Bound matrix sizes and resource use, avoid logging sensitive raw rows, and audit protected-group performance. Keep training data lineage and a prior artifact for rollback. Refit only through the same tested pipeline; a mathematically equivalent feature reorder is not operationally equivalent without metadata."
+    }
+  ],
+  "math": "For A∈R^{m×n}, b∈R^m, minimize f(x)=||Ax−b||_2². Since ∇f=2A^T(Ax−b), optimality gives A^Tr=0 for r=b−Ax̂. If A has full column rank, x̂=(A^TA)^{-1}A^Tb conceptually. With SVD A=UΣV^T, x̂=A^+b=VΣ^+U^Tb is the minimum-norm least-squares solution. The fitted projector is P=AA^+.",
+  "workedExamples": [
+    {
+      "title": "Fit a line and verify orthogonality",
+      "setup": "Fit y≈β0+β1x for x=(0,1,2) and y=(1,2,2).",
+      "walkthrough": "The design matrix has rows `(1,x_i)`. Solving gives β0=7/6 and β1=1/2, so fitted values are `(7/6,5/3,13/6)`. Residuals `b−Aβ` are `(-1/6,1/3,-1/6)`. Their sum is zero, showing orthogonality to the intercept column; their dot product with x is also zero, showing orthogonality to the slope column. The data vector is decomposed into fitted projection plus residual. Use `lstsq`/QR rather than explicitly inverting A^TA. With only one x value or a duplicated feature column, coefficients would not be uniquely identified.",
+      "conclusion": "Residual orthogonality is both the derivation and a powerful implementation check."
+    }
+  ],
+  "exercises": [
+    {
+      "difficulty": "recall",
+      "prompt": "What equation expresses least-squares residual orthogonality?",
+      "solution": "A^T(b−Ax̂)=0, equivalently the normal equations A^TAx̂=A^Tb."
+    },
+    {
+      "difficulty": "application",
+      "prompt": "When would SVD be preferable to a normal-equation solve?",
+      "solution": "When rank deficiency, ill-conditioning, pseudoinverse/minimum norm or singular-value diagnostics matter."
+    },
+    {
+      "difficulty": "diagnosis",
+      "prompt": "Predictions are stable but individual coefficients change wildly across retraining. Why?",
+      "solution": "Strong collinearity creates nearly null directions: many coefficient combinations produce similar fitted values. Inspect singular values and use redesign or regularization."
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "mit-linear-algebra",
+      "contribution": "Provides projection, orthogonality, least squares, QR/subspaces and pseudoinverse foundations."
+    },
+    {
+      "resource": "numpy-linalg",
+      "contribution": "Documents production `lstsq`, QR, SVD, rank, solve and pseudoinverse routines used instead of explicit normal-equation inversion."
+    },
+    {
+      "resource": "boyd-convex",
+      "contribution": "Connects least-squares objectives, regularization, optimality and numerical solution to convex optimization."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "flow",
+      "title": "Least squares as orthogonal decomposition",
+      "items": [
+        "Observation b",
+        "Column space Col(A)",
+        "Closest expressible point A x̂",
+        "Residual r=b−A x̂",
+        "Check Aᵀr=0"
+      ],
+      "caption": "The fitted vector lies in the model subspace and the leftover is perpendicular to every feature direction.",
+      "afterSection": "projection-geometry"
+    },
+    {
+      "type": "compare",
+      "title": "Same objective, different numerical routes",
+      "left": {
+        "title": "Normal equations",
+        "items": [
+          "Useful derivation",
+          "Forms AᵀA",
+          "Squares conditioning",
+          "Avoid explicit inverse"
         ]
       },
-      {
-        "label": "fit",
-        "points": [
-          [
-            0.07,
-            0.18
-          ],
-          [
-            0.9,
-            0.84
-          ]
+      "right": {
+        "title": "QR / SVD",
+        "items": [
+          "QR: stable full-rank solve",
+          "SVD: rank and null directions",
+          "Pseudoinverse / minimum norm",
+          "Explicit tolerance diagnostics"
         ]
-      }
-    ],
-    "caption": "Least squares chooses the line/subspace that minimizes squared residuals.",
-    "xLabel": "feature",
-    "yLabel": "target"
-  },
-  "editorial": {
-    "status": "summary"
+      },
+      "caption": "Mathematical equivalence in exact arithmetic does not imply equal numerical stability.",
+      "afterSection": "solvers-rank"
+    }
+  ],
+  "lab": {
+    "goal": "Project by solving least squares and verify the normal-equation, orthogonality, minimum-error and NumPy invariants.",
+    "language": "python",
+    "buildIt": "def solve_two_by_two(a,b,c,d,u,v):\n    det=a*d-b*c\n    if abs(det)<1e-12: raise ValueError('singular')\n    return ((u*d-b*v)/det,(a*v-u*c)/det)\n\ndef least_squares_line(xs,ys):\n    n=len(xs); sx=sum(xs); sxx=sum(x*x for x in xs); sy=sum(ys); sxy=sum(x*y for x,y in zip(xs,ys))\n    return solve_two_by_two(n,sx,sx,sxx,sy,sxy)",
+    "useIt": "import numpy as np\nxs=np.array([0.,1.,2.]); y=np.array([1.,2.,2.])\nbeta=np.array(least_squares_line(xs,y))\nA=np.column_stack([np.ones_like(xs),xs])\nlibrary,residuals,rank,singular=np.linalg.lstsq(A,y,rcond=None)\nfitted=A@beta; residual=y-fitted",
+    "verifyIt": "assert np.allclose(beta,[7/6,1/2])\nassert np.allclose(beta,library)\nassert rank==2 and singular[-1]>0\nassert np.allclose(A.T@residual,[0.,0.],atol=1e-12)\nassert np.allclose(fitted+residual,y)\nfor delta in ([.01,0.],[0.,.01],[-.01,.02]):\n    assert np.linalg.norm(A@(beta+delta)-y)>=np.linalg.norm(residual)-1e-12",
+    "shipIt": "Use target-library QR/SVD least squares with rank/condition telemetry, leakage-safe preprocessing and evaluation, versioned features/artifacts, drift monitoring and a prior reproducible model for rollback."
   }
 }

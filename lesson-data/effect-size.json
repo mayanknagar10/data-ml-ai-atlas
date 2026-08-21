@@ -8,41 +8,220 @@
     "da",
     "as"
   ],
-  "interviewAnswer": "Statistical significance asks whether an effect is hard to explain by noise under a null; effect size asks whether the magnitude is practically meaningful. Large samples can make tiny effects significant.",
+  "interviewAnswer": "Effect size is the magnitude of the estimand—such as a 1.2 percentage-point lift, relative risk, mean difference, correlation, or standardized mean difference. A p-value combines magnitude with uncertainty and sample size, so a tiny effect can be significant in a huge sample and a useful effect nonsignificant in a small one. Report the effect in domain units first, its interval, baseline risk, and a predefined minimum worthwhile effect. Standardized measures aid comparison but depend on the chosen standard deviation and population.",
   "keyPoints": [
-    "Report magnitude and uncertainty, not p-value alone.",
-    "Practical significance depends on costs/base rates.",
-    "Confidence intervals communicate plausible effect ranges."
+    "Magnitude and evidence are separate",
+    "Domain units usually lead communication",
+    "Relative measures require baseline risk",
+    "Standardized effects depend on reference variability",
+    "Practical thresholds should be set before results"
   ],
   "resources": [
     "openintro-stats",
-    "microsoft-experimentation"
+    "asa-pvalues",
+    "stanford-stats200"
   ],
   "featured": true,
-  "why": "Effect Size vs Statistical Significance appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
-  "intuition": "Report magnitude and uncertainty, not p-value alone.",
-  "deepDive": "Statistical significance asks whether an effect is hard to explain by noise under a null; effect size asks whether the magnitude is practically meaningful. Large samples can make tiny effects significant. Practical significance depends on costs/base rates. Confidence intervals communicate plausible effect ranges. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
-  "workedExample": "A 0.05 percentage-point conversion lift can be highly significant on millions of users but still not justify engineering cost.",
+  "why": "Decisions care about outcomes, costs, and harms—not whether a test statistic crossed 1.96. Significance-only reporting encourages shipping negligible wins in high-volume data and discarding potentially valuable but uncertain effects in small studies. Standardized effects can compare different scales, but a 'small' d may be important for cheap population-wide interventions and a 'large' d may be irrelevant if the outcome is a proxy. Relative lifts sound dramatic when baseline rates are tiny; absolute differences reveal impact. Interviews test this distinction because it connects statistics with product judgment. Production dashboards should expose both magnitude and uncertainty, with thresholds determined by economics, safety, reversibility, and opportunity cost.",
+  "intuition": "Two archers can hit different distances from the bullseye. Effect size is the distance between their average hits. Statistical evidence also considers how scattered the arrows are and how many were fired. Ten thousand tightly grouped arrows can establish a one-millimeter difference; five scattered arrows cannot precisely establish a ten-centimeter difference. A standardized effect divides the distance by a spread measure, making it unitless, but that denominator belongs to a population and design. If one group becomes more heterogeneous, standardized effect changes even when the raw difference does not. For binary outcomes, moving from 1% to 2% is a one-point absolute increase and a 100% relative increase; both are true, but operational consequences depend on population volume and cost.",
+  "deepDive": "An effect measure should be chosen from the estimand and action. Raw differences preserve units. Relative and odds measures describe multiplicative comparisons. Standardized measures compare signal with variability. No universal scale labels effects as meaningful independent of context.",
+  "workedExample": "Experiment A estimates a +0.08 percentage-point conversion lift with 95% interval [0.03,0.13] and p=0.002. Experiment B estimates +0.80 points with interval [-0.20,1.80] and p=0.12. A has stronger evidence but may be below a +0.30-point minimum worthwhile effect; B is much less certain but includes valuable gains and possible harm. The correct decisions may be 'do not launch A on economics' and 'collect more information for B,' not 'A wins because significant.' Baseline conversion and cost translate these percentages into expected value.",
   "commonMistakes": [
-    "Applying the method without checking its assumptions or data-generating process.",
-    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+    "Calling a smaller p-value a larger effect.",
+    "Reporting only relative lift without baseline rate or absolute difference.",
+    "Using universal small/medium/large labels for standardized effects without domain context.",
+    "Comparing Cohen's d values computed with incompatible populations or variance denominators.",
+    "Ranking subgroup effects without uncertainty, multiplicity control, or shrinkage."
   ],
   "followUps": [
-    "What assumptions does Effect Size vs Statistical Significance make?",
-    "How would you validate or debug Effect Size vs Statistical Significance in practice?"
+    {
+      "question": "Why can a tiny effect have a tiny p-value?",
+      "answer": "Standard error shrinks with independent information. A tiny estimate many SEs from zero can be statistically incompatible with the null while remaining practically negligible."
+    },
+    {
+      "question": "When prefer raw over standardized effect?",
+      "answer": "Use raw units when stakeholders understand them and decisions have costs in those units. Add standardized measures for cross-scale comparison, but disclose the denominator and report raw effects too."
+    },
+    {
+      "question": "Why can odds ratio exaggerate intuition for common outcomes?",
+      "answer": "Odds and probabilities diverge as baseline risk grows. An odds ratio is not a risk ratio; translate it to absolute risks for representative baselines before communicating impact."
+    }
   ],
-  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
-  "visual": {
-    "type": "concept-map",
-    "title": "Effect Size vs Statistical Significance",
-    "items": [
-      "Report magnitude and uncertainty, not p-value alone.",
-      "Practical significance depends on costs/base rates.",
-      "Confidence intervals communicate plausible effect ranges."
-    ],
-    "caption": "A compact concept map for the most important ideas in this lesson."
-  },
+  "production": "Define estimand, unit, population, horizon, contrast, baseline, effect scale, variance method, and minimum worthwhile benefit/maximum acceptable harm in a metric registry. Show absolute and relative changes with intervals and sample design. Monitor baseline risk, outcome variance, denominator composition, attrition, effect heterogeneity, weight concentration, and decision sensitivity. Use shrinkage and minimum-cell rules for slices, and protect sensitive subgroup data. Validate effect calculations with synthetic fixtures and invariance tests. Keep statistical evidence separate from expected-value modeling but link them in decision records. Version thresholds so teams cannot move them after results. Roll back launches based on guardrail effects and uncertainty, not headline significance alone. Re-estimate when population variance or baseline rate drifts because standardized and relative effects may change meaning.",
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "Effect size describes the magnitude of a difference or association; statistical significance describes how incompatible data are with a null model relative to sampling uncertainty. They answer different questions. This chapter covers raw effects, relative effects, standardized mean differences, correlations, odds and risk ratios, number needed to treat, and model-performance changes. It explains why standardization aids comparison but can hide domain meaning, how small-sample bias corrections such as Hedges' g work, and why odds ratios are often misread as risk ratios. You will learn to define a smallest effect of practical interest, pair estimates with uncertainty, distinguish clinical or business importance from detectability, and avoid interpreting noisy subgroup effect sizes without shrinkage. The worked example compares an accurately estimated tiny conversion lift with a larger uncertain one. The lab implements Cohen's d and Hedges' g, verifies scale/translation invariance, and checks against the raw mean difference. Production guidance covers estimand contracts, metric units, heterogeneous effects, decision curves, monitoring, and communication.",
+  "prerequisites": [
+    "confidence-intervals",
+    "hypothesis-testing"
+  ],
+  "learningObjectives": [
+    "Select raw, relative, standardized, or probability-scale effect measures that match the decision and outcome type.",
+    "Explain why p-values depend on effect magnitude, noise, sample size, and design while effect size is not significance.",
+    "Compute standardized mean differences with appropriate pooled variance and small-sample correction.",
+    "Interpret effects against predefined practical thresholds and report uncertainty, baseline risk, and heterogeneity."
+  ],
+  "deepSections": [
+    {
+      "id": "effect-families",
+      "title": "Raw, relative, and standardized measures",
+      "body": "For continuous outcomes, mean or median differences are directly interpretable. Standardized mean difference d divides a mean difference by a within-group SD, often pooled under homoscedastic assumptions. Glass's delta uses a control SD when treatment changes variability. Hedges' g corrects small-sample upward bias in d. Correlation r measures linear association and r squared describes variance explained only under a specified setting. For binary outcomes, risk difference gives absolute change, risk ratio gives multiplicative change, and odds ratio compares odds. Odds ratios increasingly exceed risk ratios as outcomes become common. Number needed to treat is reciprocal absolute risk difference under conditions and can be unstable near zero."
+    },
+    {
+      "id": "significance-link",
+      "title": "How magnitude, noise, and n produce evidence",
+      "body": "A test statistic is often effect estimate divided by standard error. Holding variance and design fixed, larger effects or larger independent samples produce stronger evidence. Thus p-value is not a magnitude measure. Confidence intervals reveal the range of effects compatible with the procedure. A significant effect can lie entirely below the minimum worthwhile effect. A nonsignificant interval may contain both zero and large benefit, signaling insufficient information rather than no effect. Equivalence tests can support that effects are confined within prespecified negligible bounds. Power planning should use a meaningful alternative, not an effect reverse-engineered from a desired sample size."
+    },
+    {
+      "id": "standardization",
+      "title": "What standardization clarifies and hides",
+      "body": "Dividing by SD makes an effect unitless and facilitates meta-analysis or comparison across instruments, but the chosen SD is influenced by measurement reliability, population heterogeneity, range restriction, and treatment effects on variance. Standardized values can differ across populations for the same raw effect. Conventional labels such as 0.2, 0.5, and 0.8 are context-dependent heuristics, not laws. Report the raw effect alongside standardized effect, specify denominator and weighting, and avoid standardizing binary outcomes without a clear latent-scale model. Feature importance scores are not automatically causal effect sizes."
+    },
+    {
+      "id": "heterogeneity-decisions",
+      "title": "Heterogeneous effects and decision consequences",
+      "body": "An average effect can hide benefit for some groups and harm for others. Subgroup estimates have larger uncertainty and multiplicity; use prespecified interactions, hierarchical shrinkage, and validation rather than ranking noisy slices. Decision value combines effect distribution with implementation cost, risk, capacity, fairness, and reversibility. A treatment policy may target units with positive expected net benefit, but observational heterogeneity can reflect confounding. Report distributional outcomes and guardrails when averages conceal tails. Sensitivity to missing data and estimand choices—intention-to-treat versus per-protocol, risk difference versus ratio—belongs in the decision record."
+    },
+    {
+      "id": "uncertainty-effects",
+      "title": "Intervals and transformations for effect measures",
+      "body": "Effect estimators have sampling distributions that can be skewed, especially ratios and number-needed-to-treat near a zero risk difference. Construct intervals on a stable scale when appropriate: log risk ratio or log odds ratio, then exponentiate endpoints. A symmetric interval on the ratio scale can include impossible negative values. Standardized mean differences also have nontrivial small-sample uncertainty because the denominator is estimated. For paired or clustered designs, effect and standard error must use the matching covariance structure. When communicating transformed measures, show representative absolute consequences at realistic baselines. An interval for a relative effect does not imply a constant absolute effect across populations with different baseline risk. Sensitivity to scale is substantive, not merely formatting."
+    }
+  ],
+  "math": "For two independent groups, raw effect Delta=Xbar1-Xbar0. With equal-variance convention, pooled s_p=sqrt(((n1-1)s1^2+(n0-1)s0^2)/(n1+n0-2)), and Cohen's d=Delta/s_p. Hedges' g=J d with approximate J=1-3/(4(n1+n0)-9). For binary outcomes, risk difference=p1-p0, risk ratio=p1/p0, and odds ratio=[p1/(1-p1)]/[p0/(1-p0)]. The standard error of an effect, not the effect alone, determines a test statistic.",
+  "workedExamples": [
+    {
+      "title": "Precise tiny lift versus uncertain large lift",
+      "body": "Compare both intervals with zero and with a prespecified business threshold, then add baseline volume and cost. Statistical ranking and decision ranking need not agree."
+    }
+  ],
+  "exercises": [
+    {
+      "prompt": "Conversion rises from 2% to 2.5%. Give absolute and relative effects.",
+      "solution": "Absolute risk difference is 0.5 percentage points. Relative risk is 2.5/2=1.25, a 25% relative increase."
+    },
+    {
+      "prompt": "Means differ by 4 and pooled SD is 8. What is Cohen's d?",
+      "solution": "d=4/8=0.5. Its importance depends on outcome, population, costs, and uncertainty—not a universal label."
+    },
+    {
+      "prompt": "A 95% interval is [0.01,0.05] but minimum worthwhile effect is 0.10. What follows?",
+      "solution": "The effect is statistically above zero under the procedure but the entire compatible range is below the predefined worthwhile threshold, arguing against action on benefit grounds."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "matrix",
+      "title": "Magnitude, evidence, and decision",
+      "caption": "A sound analysis keeps these layers connected but never substitutes one for another.",
+      "afterSection": "significance-link",
+      "rows": [
+        "Effect",
+        "Evidence",
+        "Decision"
+      ],
+      "cols": [
+        "Question",
+        "Typical output"
+      ],
+      "cells": [
+        [
+          "How large?",
+          "Difference/ratio/d"
+        ],
+        [
+          "How uncertain under model?",
+          "SE/CI/p-value"
+        ],
+        [
+          "Is action worthwhile?",
+          "Expected utility/threshold"
+        ]
+      ]
+    },
+    {
+      "type": "curve",
+      "title": "Same effect, different uncertainty",
+      "series": [
+        {
+          "label": "small n",
+          "points": [
+            [
+              0.1,
+              0.05
+            ],
+            [
+              0.3,
+              0.3
+            ],
+            [
+              0.5,
+              0.55
+            ],
+            [
+              0.7,
+              0.3
+            ],
+            [
+              0.9,
+              0.05
+            ]
+          ]
+        },
+        {
+          "label": "large n",
+          "points": [
+            [
+              0.3,
+              0.02
+            ],
+            [
+              0.42,
+              0.35
+            ],
+            [
+              0.5,
+              0.95
+            ],
+            [
+              0.58,
+              0.35
+            ],
+            [
+              0.7,
+              0.02
+            ]
+          ]
+        }
+      ],
+      "caption": "Conceptual: identical point effects can produce different evidence because sampling uncertainty differs.",
+      "xLabel": "effect estimate",
+      "yLabel": "sampling density",
+      "afterSection": "significance-link"
+    }
+  ],
+  "lab": {
+    "language": "python",
+    "goal": "Compute Cohen's d and Hedges' g, verify translation/scale invariance, and keep the raw effect beside the standardized result.",
+    "buildIt": "import math\n\ndef mean(xs): return sum(xs)/len(xs)\ndef variance(xs):\n    m=mean(xs); return sum((x-m)**2 for x in xs)/(len(xs)-1)\ndef standardized_effect(a,b):\n    n1,n0=len(a),len(b); v1,v0=variance(a),variance(b)\n    pooled=math.sqrt(((n1-1)*v1+(n0-1)*v0)/(n1+n0-2))\n    d=(mean(a)-mean(b))/pooled\n    correction=1-3/(4*(n1+n0)-9)\n    return mean(a)-mean(b),d,correction*d\na=[14,15,13,17,16,18,15,16]; b=[10,12,11,13,9,14,12,11]\nraw,d,g=standardized_effect(a,b)",
+    "useIt": "import numpy as np\na_np=np.asarray(a,float); b_np=np.asarray(b,float)\npooled=np.sqrt(((a_np.size-1)*a_np.var(ddof=1)+(b_np.size-1)*b_np.var(ddof=1))/(a_np.size+b_np.size-2))\nnumpy_d=(a_np.mean()-b_np.mean())/pooled",
+    "verifyIt": "assert abs(d-numpy_d) < 1e-12\nassert abs(g) < abs(d)\n_,shifted_d,_=standardized_effect([x+100 for x in a],[x+100 for x in b])\n_,scaled_d,_=standardized_effect([x*3 for x in a],[x*3 for x in b])\nassert abs(shifted_d-d) < 1e-12\nassert abs(scaled_d-d) < 1e-12\nassert raw == mean(a)-mean(b)",
+    "shipIt": "Publish domain-unit and standardized effects with intervals, baseline risk, denominator definition, practical thresholds, and slice-aware shrinkage; monitor population scale drift."
+  },
+  "sourceNotes": [
+    {
+      "resource": "openintro-stats",
+      "contribution": "Provides accessible definitions and applications of effect sizes with confidence-based inference."
+    },
+    {
+      "resource": "asa-pvalues",
+      "contribution": "Explicitly separates statistical significance from effect size and substantive importance."
+    },
+    {
+      "resource": "stanford-stats200",
+      "contribution": "Provides sampling and testing theory explaining how magnitude and standard error jointly determine evidence."
+    }
+  ]
 }

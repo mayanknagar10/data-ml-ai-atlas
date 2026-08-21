@@ -8,86 +8,196 @@
     "da",
     "as"
   ],
-  "interviewAnswer": "A p-value is the probability, assuming the null hypothesis and test assumptions are true, of seeing a result at least as extreme as the observed one. It is not the probability that the null hypothesis is true.",
+  "interviewAnswer": "A p-value is the probability, assuming the null model and test assumptions, of obtaining a statistic at least as extreme as observed. It is not the probability the null is true, not the false-positive probability of this result, and not effect size. A complete test specifies the estimand, null and alternative, statistic, reference distribution, sidedness, alpha, and stopping rule before looking. Then report the estimate and interval, check assumptions and multiplicity, and interpret the result against practical costs.",
   "keyPoints": [
-    "Null/alternative",
-    "Test statistic",
-    "Type I/II errors",
-    "Statistical vs practical significance"
+    "The null is a complete enough data-generating claim to calibrate a statistic",
+    "p-values are conditional tail areas, not posterior probabilities",
+    "Alpha controls a procedure's Type I error under valid use",
+    "Power depends on a specific alternative",
+    "Evidence, effect magnitude, and action utility are distinct"
   ],
   "resources": [
-    "statquest",
-    "harvard-stat110"
+    "asa-pvalues",
+    "stanford-stats200",
+    "nist-stat-handbook",
+    "scipy-stats"
   ],
   "featured": true,
-  "why": "Data Scientist interviews often test whether you can reason about experiments instead of mechanically running scipy.stats functions.",
-  "intuition": "Start by assuming there is no real effect (the null). Ask how surprising your observed result would be under that assumption. A small p-value means the observation would be unusual under the null—it does not directly tell you the probability that the null is false.",
-  "deepDive": "A hypothesis test requires a null/alternative, a test statistic, assumptions and a decision threshold. Type I error is a false positive; Type II is a false negative. Statistical significance is not necessarily business significance, which is why effect size and confidence intervals matter.",
-  "math": "p-value = P(test statistic at least as extreme as observed | H₀ and assumptions)",
+  "why": "Tests influence experiments, model comparisons, quality monitoring, medical evidence, and policy. Misinterpretation can ship useless features, suppress real harm, or manufacture discoveries by trying many analyses. A p-value can be numerically correct while answering the wrong question because the unit, outcome, subgroup, or null was chosen after inspection. Conversely, rigidly banning tests discards a useful calibration tool. Interviews focus on p-values because they expose conditional-probability reasoning and experimental discipline. The practical skill is to design a procedure whose error behavior matches the decision, then communicate what the result does and does not establish. The ASA explicitly warns against basing conclusions only on a threshold and against treating significance as effect importance. That principle belongs in analytics systems, not only academic papers.",
+  "intuition": "Assume a card shuffler is fair and choose a score that grows when the observed sequence looks suspicious. Run the fair shuffler many times and see how often its score is at least as extreme. That frequency is a simulation picture of the p-value. A rare score says the data and the fair-shuffler model are in tension; it does not identify which assumption failed or calculate the probability of cheating. Alpha is a rule chosen before play that limits false alarms when the model holds. Power asks how often the rule detects a particular kind and size of cheating. If you inspect many scores and report only the strangest, the original calibration no longer applies. The same logic governs product tests: define the metric and analysis before observing treatment labels, respect assignment, and separate evidence from business value.",
+  "deepDive": "A test maps data to a decision or evidence measure with known behavior under a null model. Validity comes from the sampling or randomization distribution, not from the vocabulary of significance. Parametric, permutation, and exact tests differ in how that reference distribution is obtained.",
+  "math": "For statistic T and observed t, an upper-tail p-value is P_H0(T>=t); a two-sided definition must specify how both tails are ordered. A level-alpha test has sup over theta in H0 of P_theta(reject)<=alpha. At alternative theta1, power is P_theta1(reject)=1-beta(theta1). For a normal mean with known sigma, Z=(Xbar-mu0)/(sigma/sqrt(n)); reject a two-sided H0 at level alpha when |Z|>z_(1-alpha/2). The matching interval excludes mu0 exactly when the test rejects. These probabilities describe repeated procedure behavior.",
   "code": "from scipy import stats\n# Example: compare two independent sample means\na = [10, 11, 9, 12, 10]\nb = [13, 14, 12, 13, 15]\nstat, p = stats.ttest_ind(a, b, equal_var=False)\nprint(stat, p)",
   "commonMistakes": [
-    "“p=0.03 means there is a 97% chance the alternative is true.” — incorrect.",
-    "Treating p<0.05 as automatically important.",
-    "Choosing the test after repeatedly looking at results."
+    "Saying p=0.03 means a 97% probability the alternative is true.",
+    "Treating p>=0.05 as evidence of equality or no effect.",
+    "Choosing a one-sided test after seeing the effect direction.",
+    "Ignoring repeated peeking, multiple metrics, subgroup search, or model-selection attempts.",
+    "Reporting significance without effect size, interval, assumptions, or practical threshold."
   ],
   "followUps": [
-    "What is statistical power?",
-    "Type I vs Type II error?",
-    "When would you use a non-parametric test?",
-    "How does multiple testing change interpretation?"
+    {
+      "question": "What is the difference between alpha and a p-value?",
+      "answer": "Alpha is a prechosen operating threshold for a procedure's Type I error. The p-value is a data-dependent tail area under H0. Comparing them implements a rule, but they are not the same probability."
+    },
+    {
+      "question": "Does p=0.001 prove the alternative?",
+      "answer": "No. It indicates strong incompatibility with the specified null model for the chosen statistic, assuming the design and analysis are valid. It does not rule out bias, misspecification, multiplicity, or data errors."
+    },
+    {
+      "question": "How should continuous experiment monitoring be handled?",
+      "answer": "Use a prespecified group-sequential design, alpha-spending rule, confidence sequence, or other always-valid method. Fixed-horizon tests repeatedly inspected without adjustment lose their nominal error control."
+    }
   ],
-  "production": "In product experimentation, predefine the primary metric, sample-size/power plan, stopping rule and guardrail metrics before observing the result.",
-  "workedExample": "A tiny conversion lift can be statistically significant with millions of users but economically irrelevant. Always report effect size and uncertainty.",
+  "production": "Create an experiment or inference specification before data access: owner, population, unit, estimand, hypotheses, sidedness, primary and guardrail metrics, exclusions, covariance adjustment, alpha, power target, stopping rule, and multiplicity family. Validate sample-ratio balance, exposure logging, missing outcomes, cluster dependence, novelty effects, and implementation integrity. Store all attempted analyses and immutable code/data versions. Dashboards should display estimates, intervals, practical thresholds, and sequential status; avoid binary green labels. Restrict small-cell data and secure sensitive subgroup results. Monitor repeated-test false-alert rates with simulations. If analysis code changes after results, label it exploratory and obtain fresh confirmation. Rollback decisions should consider guardrail harm and reversibility, while preserving the original audit trail. A centralized metric registry prevents silent redefinition across teams.",
+  "workedExample": "A feature raises conversion from 10.00% to 10.08% in a very large experiment and produces p=0.004. The result is difficult to reconcile with an exact zero-effect model under the planned analysis, but the estimated lift is only 0.08 percentage points. If engineering and support costs require at least 0.30 points, statistical significance does not justify launch. Report the 95% interval, guardrail effects, assignment diagnostics, sample-ratio checks, and the predefined minimum detectable and worthwhile effects. If the team inspected the result daily using a fixed-horizon test, p=0.004 may not retain its advertised calibration; use the planned sequential method or re-run a confirmatory experiment.",
   "lab": {
-    "goal": "Compute a simple two-sample mean test and connect the statistic to the null hypothesis.",
     "language": "python",
-    "buildIt": "import math\na=[10,11,9,12,10,11]; b=[13,12,14,11,13,14]\ndef mean(x): return sum(x)/len(x)\ndef var(x):\n    m=mean(x); return sum((v-m)**2 for v in x)/(len(x)-1)\nse=math.sqrt(var(a)/len(a)+var(b)/len(b))\nt=(mean(b)-mean(a))/se\nprint('difference',mean(b)-mean(a),'t statistic',t)",
-    "useIt": "from scipy.stats import ttest_ind\nprint(ttest_ind(b,a,equal_var=False))",
-    "verifyIt": "assert mean(b)>mean(a)\nassert t>1\n"
-  },
-  "visual": {
-    "type": "curve",
-    "title": "Null distribution and rejection region",
-    "series": [
-      {
-        "label": "null density",
-        "points": [
-          [
-            0,
-            0.02
-          ],
-          [
-            0.18,
-            0.12
-          ],
-          [
-            0.35,
-            0.42
-          ],
-          [
-            0.5,
-            0.88
-          ],
-          [
-            0.65,
-            0.42
-          ],
-          [
-            0.82,
-            0.12
-          ],
-          [
-            1,
-            0.02
-          ]
-        ]
-      }
-    ],
-    "caption": "A p-value measures how extreme the observed statistic is under the null model; the rejection region lives in the tails.",
-    "xLabel": "test statistic",
-    "yLabel": "density"
+    "goal": "Build an exact sign-flip randomization test, compare its tail count with SciPy, and verify null calibration by construction.",
+    "buildIt": "import itertools\n\ndef mean(xs): return sum(xs)/len(xs)\ndef sign_flip_pvalue(differences):\n    observed = abs(mean(differences))\n    stats = []\n    for signs in itertools.product((-1, 1), repeat=len(differences)):\n        stats.append(abs(mean([s*x for s,x in zip(signs,differences)])))\n    return sum(t >= observed-1e-12 for t in stats)/len(stats), stats\n\ndiffs = [1.2, 0.5, 0.9, -0.1, 1.4, 0.7, 0.3, 1.0]\np_value, null_stats = sign_flip_pvalue(diffs)",
+    "useIt": "import numpy as np\nfrom scipy.stats import permutation_test\nresult = permutation_test((np.asarray(diffs),), lambda x: np.mean(x), permutation_type='samples', alternative='two-sided', n_resamples=np.inf)",
+    "verifyIt": "assert len(null_stats) == 2**len(diffs)\nassert 0.0 <= p_value <= 1.0\nassert abs(p_value-result.pvalue) < 1e-12\nassert sign_flip_pvalue([1.0,-1.0,2.0,-2.0])[0] == 1.0",
+    "shipIt": "Prespecify the statistic and exchangeability/randomization mechanism, log every analysis, use sequentially valid monitoring, and report effect estimates and intervals with the p-value."
   },
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "Hypothesis testing is a calibrated procedure for measuring how incompatible observed data are with a specified null model, not a machine for assigning truth probabilities to hypotheses. This chapter connects the scientific question, estimand, null and alternative, test statistic, reference distribution, p-value, decision rule, Type I error, Type II error, power, effect size, and confidence interval. It contrasts Fisher-style evidence with Neyman–Pearson decision rules without pretending that one p-value settles a scientific or product decision. You will learn how sidedness, optional stopping, model assumptions, randomization, and multiple testing alter validity; why “fail to reject” is not “accept”; and why a tiny p-value may accompany a negligible effect in a huge dataset. The worked example separates statistical evidence from launch utility. The lab implements a one-sample randomization test and verifies its tail count against SciPy. Production guidance covers preregistration, metric governance, sequential monitoring, audit trails, privacy, and reporting estimates with uncertainty rather than threshold badges.",
+  "prerequisites": [
+    "sampling-distributions",
+    "confidence-intervals"
+  ],
+  "learningObjectives": [
+    "Translate a domain question into an estimand, explicit null/alternative, statistic, and valid reference distribution.",
+    "Interpret p-values, Type I/II errors, and power without common probability reversals.",
+    "Choose sidedness and stopping rules before observing results and diagnose assumption violations.",
+    "Report effect estimates, intervals, practical thresholds, and multiplicity context alongside test results."
+  ],
+  "deepSections": [
+    {
+      "id": "test-components",
+      "title": "From question to calibrated statistic",
+      "body": "Start with the target population and estimand, such as the intention-to-treat difference in 14-day retention. State H0 and a scientifically meaningful alternative. Choose a statistic sensitive to that alternative. Derive or simulate its distribution under H0 while preserving the design. Define one- or two-sided extremeness and alpha before inspecting results. A two-sided test spends error in both directions; a one-sided test is justified only when the opposite direction would not trigger a claim and was excluded in advance. Nuisance parameters may be estimated, conditioned out, or handled through asymptotics. Every choice affects calibration."
+    },
+    {
+      "id": "pvalue-errors",
+      "title": "p-values, alpha, and the two error types",
+      "body": "The p-value P_H0(T at least as extreme as t_obs) conditions on H0. It does not provide P(H0|data), which would require prior odds and likelihoods. Alpha is the maximum or nominal probability of rejection under H0 for a fixed procedure. A Type I error rejects a true null. A Type II error fails to reject under a specified alternative; beta and power 1-beta depend on effect size, variance, design, and sample size. A p-value above alpha does not prove H0, because the study may be underpowered or the statistic insensitive. The observed p-value is not the achieved Type I error rate or the probability the decision is wrong."
+    },
+    {
+      "id": "assumptions-stopping",
+      "title": "Assumptions, optional stopping, and researcher degrees of freedom",
+      "body": "A t test relies on independence and a reference model or approximation; a randomization test relies on assignment and a sharp or otherwise specified null; a permutation test relies on exchangeability for the chosen shuffle. Repeatedly checking a fixed-horizon p-value and stopping below 0.05 inflates false positives. Trying transformations, exclusions, subgroups, outcomes, and covariates until one passes does the same. Pre-specification, held-out confirmation, sequential tests, alpha-spending, or always-valid evidence processes restore calibration for their settings. Log every analysis attempt, not only the successful query. Model diagnostics matter because a small p-value may reflect outliers, dependence, or misspecification rather than the intended alternative."
+    },
+    {
+      "id": "evidence-decision",
+      "title": "Evidence is not effect size or utility",
+      "body": "With enough independent observations, a negligible deviation can yield a tiny p-value; with few observations, a valuable effect can remain uncertain. Report the estimate and interval against minimum worthwhile benefit and maximum acceptable harm. Decision theory adds costs, opportunity, reversibility, and prior information. Equivalence and noninferiority tests answer targeted absence-of-material-difference questions; ordinary failure to reject does not. Multiple outcomes require a defined family and error criterion. Replication and external validity matter after internal calibration. A test is one input to a decision record, not an automatic launch switch."
+    },
+    {
+      "id": "test-validity",
+      "title": "Exact, conservative, and asymptotic validity",
+      "body": "A level claim can be exact for every finite sample under a design, conservative because discreteness prevents using all alpha, or asymptotic as sample size grows. The label p-value does not reveal which. Small cell counts, boundary parameters, weak identification, or estimated nuisance quantities can make an asymptotic reference inaccurate. Exact conditioning may protect size but lose power or target a narrower null. Parametric bootstrap and permutation calibration can improve finite-sample behavior when their models are credible. Before deployment, simulate the complete procedure at several null parameter settings, not only one convenient point. The maximum false-rejection rate across relevant nulls is the operating characteristic that a composite-null level claim must control."
+    }
+  ],
+  "workedExamples": [
+    {
+      "title": "A precise but economically negligible lift",
+      "body": "Separate incompatibility with an exact-zero null from the magnitude and value of the estimated effect. Then audit stopping and multiplicity before using the nominal p-value."
+    }
+  ],
+  "exercises": [
+    {
+      "prompt": "Define a p-value in one conditional-probability sentence.",
+      "solution": "It is the probability, under the specified null model and assumptions, of a test statistic at least as extreme as the one observed."
+    },
+    {
+      "prompt": "A test returns p=0.20 with 20% power for the effect of interest. Can you conclude no effect?",
+      "solution": "No. The procedure frequently fails to reject when that effect exists. Report the interval and acknowledge that the data are weakly informative; consider a better-powered study."
+    },
+    {
+      "prompt": "Why is choosing one-sidedness after seeing the sign invalid?",
+      "solution": "It uses the data twice and changes the tail rule to favor the observation, so the claimed Type I error calibration no longer matches the procedure actually used."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "flow",
+      "title": "A defensible test",
+      "items": [
+        "Define estimand",
+        "State H0/H1",
+        "Choose statistic",
+        "Calibrate under H0",
+        "Report estimate + uncertainty",
+        "Decide against costs"
+      ],
+      "caption": "Calibration begins before results are visible and ends with a decision richer than a threshold.",
+      "orientation": "horizontal",
+      "afterSection": "test-components"
+    },
+    {
+      "type": "curve",
+      "title": "Null reference and observed tail",
+      "series": [
+        {
+          "label": "null",
+          "points": [
+            [
+              0,
+              0.02
+            ],
+            [
+              0.2,
+              0.25
+            ],
+            [
+              0.5,
+              0.95
+            ],
+            [
+              0.8,
+              0.25
+            ],
+            [
+              1,
+              0.02
+            ]
+          ]
+        },
+        {
+          "label": "observed threshold",
+          "points": [
+            [
+              0.82,
+              0
+            ],
+            [
+              0.82,
+              0.45
+            ]
+          ]
+        }
+      ],
+      "caption": "Conceptual: the p-value is the reference-model tail at least as extreme as the observed statistic.",
+      "xLabel": "test statistic",
+      "yLabel": "null density",
+      "afterSection": "pvalue-errors"
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "asa-pvalues",
+      "contribution": "Provides authoritative principles for interpreting and reporting p-values without threshold misuse."
+    },
+    {
+      "resource": "stanford-stats200",
+      "contribution": "Provides formal test construction, error rates, power, and likelihood-based inference foundations."
+    },
+    {
+      "resource": "scipy-stats",
+      "contribution": "Documents current exact, permutation, and Monte Carlo testing interfaces used in the lab."
+    }
+  ]
 }

@@ -8,85 +8,214 @@
     "da",
     "as"
   ],
-  "interviewAnswer": "A frequentist 95% confidence interval is produced by a procedure that would contain the true parameter in 95% of repeated samples. It is not literally a 95% probability statement about a fixed parameter after observing the data.",
+  "interviewAnswer": "A 95% frequentist confidence interval comes from a procedure that would contain the true parameter in 95% of repeated samples under its model and sampling assumptions. After observing one interval, the fixed parameter is either inside it or not; 95% is not its posterior probability. A useful answer states the estimand, construction, assumptions, and whether the interval excludes both the null value and business-relevant thresholds. Use design-aware, profile, score, or bootstrap intervals when a simple symmetric Wald interval is unreliable.",
   "keyPoints": [
-    "Standard error",
-    "Coverage interpretation",
-    "Sample size",
-    "Assumptions"
+    "Coverage belongs to the procedure",
+    "Estimate plus critical value times SE is only one construction",
+    "Bias is not represented by a narrow interval",
+    "Prediction intervals include future outcome noise",
+    "Business thresholds matter alongside zero"
   ],
   "resources": [
-    "statquest",
-    "harvard-stat110"
+    "stanford-stats200",
+    "nist-stat-handbook",
+    "asa-pvalues",
+    "scipy-stats"
   ],
   "featured": false,
-  "why": "Confidence intervals test whether you understand uncertainty rather than reporting point estimates as if they were exact.",
-  "intuition": "A point estimate gives one number; a confidence interval shows the range of values compatible with sampling uncertainty under a specified procedure. Wider intervals mean more uncertainty.",
-  "deepDive": "In frequentist inference, the parameter is fixed and the interval is random before sampling. A 95% confidence procedure has 95% long-run coverage under its assumptions. Width depends on standard error, confidence level and sample size. Correct coverage can fail when assumptions, dependence, or repeated peeking are ignored.",
-  "math": "Generic form: estimate ± critical_value × standard_error\nFor a mean with large n: X̄ ± z_(1-α/2) σ/√n",
-  "workedExample": "If a conversion lift is estimated at +1.2 percentage points with a 95% CI of [-0.2, 2.6], the data are compatible with both a small negative and a useful positive effect; the point estimate alone is not enough.",
+  "why": "Point estimates conceal sampling uncertainty and invite false precision. A model may improve AUC by 0.003, a campaign may lift conversion by 0.4 points, or a latency change may save 5 ms; without an interval, readers cannot judge which alternatives remain compatible with the data. Interviews test the notorious 95% interpretation, but the deeper skill is selecting an interval that matches the estimator and design. In product decisions, an interval that crosses zero may still rule out material harm, while a statistically positive interval may lie entirely below the minimum worthwhile effect. Coverage can fail because of bias, dependence, optional stopping, post-selection, boundary parameters, or an inappropriate asymptotic approximation. Reporting more decimal places does not repair those failures. A defensible interval is tied to an estimand and a repeatable procedure, not a decorative error bar.",
+  "intuition": "Imagine a machine that repeatedly samples data and draws an interval using the same recipe. Lay those intervals across a horizontal line marking the fixed true mean. A 95% procedure misses about five of every hundred lines in the long run, assuming the recipe's conditions. The individual interval does not move after it is observed; the randomness was in the data and therefore in the endpoints. Increasing confidence makes the machine draw wider lines, because it must capture the truth more often. Increasing independent information usually narrows them. Prediction is harder than parameter estimation: a future observation includes both uncertainty about the mean and its own irreducible noise, so a prediction interval is wider. Bayesian credible intervals answer a different probability question by conditioning on data and a prior. Neither language should be borrowed without its assumptions.",
+  "deepDive": "Confidence intervals invert a family of tests or use a pivotal, asymptotic, likelihood, or resampling construction. The familiar estimate plus-or-minus critical-value times SE works well only when the estimator is approximately symmetric and the SE is reliable. The construction, not the label '95%', determines actual coverage.",
+  "math": "For iid normal observations with unknown variance, (Xbar-mu)/(S/sqrt(n)) follows t with n-1 degrees of freedom, yielding Xbar +/- t_(1-alpha/2,n-1) S/sqrt(n). A prediction interval for a new normal observation uses S sqrt(1+1/n), which is wider. For an asymptotically normal estimator theta_hat, theta_hat +/- z_(1-alpha/2) estimated-SE is a Wald interval. Inverting a two-sided level-alpha test gives the set of theta0 values not rejected. These formulas do not include design bias or post-selection uncertainty unless explicitly modeled.",
+  "workedExample": "An experiment estimates conversion lift at +1.2 percentage points with a 95% interval [-0.2, 2.6]. Zero is inside, so a matching two-sided 5% test would not reject a zero effect. But decision-making needs thresholds. If a loss greater than -0.5 points is unacceptable, the interval rules out that magnitude of harm under the procedure. If launch requires at least +1.0 point, the interval still includes effects below the threshold, so benefit is uncertain. Saying 'no effect' discards this information. The report should state randomization unit, estimator, repeated-peeking policy, confidence construction, and whether guardrail intervals are adjusted for multiplicity.",
   "code": "import numpy as np\nfrom scipy import stats\nx=np.array([10,11,12,9,13,12,11])\nmean=x.mean(); se=stats.sem(x)\nprint(stats.t.interval(.95, df=len(x)-1, loc=mean, scale=se))",
   "commonMistakes": [
-    "Saying there is a 95% probability the fixed frequentist parameter lies in this observed interval.",
-    "Reporting a CI without the assumptions or sample design.",
-    "Treating a narrow but biased interval as trustworthy."
+    "Assigning 95% posterior probability to a fixed frequentist parameter.",
+    "Treating failure to reject as proof of equality or no effect.",
+    "Using symmetric Wald intervals for bounded or strongly skewed quantities without checking coverage.",
+    "Ignoring clustering, repeated peeking, model selection, or multiple reported intervals.",
+    "Confusing a confidence interval for a mean with a prediction interval for a future observation."
   ],
   "followUps": [
-    "How does sample size affect interval width?",
-    "What is the difference between a confidence interval and prediction interval?",
-    "When would you use a bootstrap interval?",
-    "How does repeated testing affect coverage?"
+    {
+      "question": "Why does a 99% interval tend to be wider than a 95% interval?",
+      "answer": "The procedure must capture the target in a larger fraction of repeated samples, so the critical value moves farther into the reference distribution's tails while the data and SE stay fixed."
+    },
+    {
+      "question": "What does it mean when a 95% interval includes zero?",
+      "answer": "A matching two-sided 5% test does not reject zero. It does not prove zero, and it does not answer whether material harm or useful benefit has been ruled out. Inspect the full interval against predefined thresholds."
+    },
+    {
+      "question": "When is a bootstrap interval appropriate?",
+      "answer": "When the sample represents the repetition mechanism and analytic uncertainty is difficult. Resampling must preserve clusters, pairs, time blocks, stratification, and refitting steps. It cannot repair selection bias or an unrepresentative sample."
+    }
   ],
-  "production": "Confidence intervals are useful for experiment effects, model metrics, latency estimates and business KPIs. Slice-level intervals can reveal when apparent subgroup differences are mostly sampling noise.",
-  "visual": {
-    "type": "curve",
-    "title": "Confidence interval around an estimate",
-    "series": [
-      {
-        "label": "estimate",
-        "points": [
-          [
-            0,
-            0.5
-          ],
-          [
-            1,
-            0.5
-          ]
-        ]
-      },
-      {
-        "label": "lower",
-        "points": [
-          [
-            0,
-            0.36
-          ],
-          [
-            1,
-            0.36
-          ]
-        ]
-      },
-      {
-        "label": "upper",
-        "points": [
-          [
-            0,
-            0.64
-          ],
-          [
-            1,
-            0.64
-          ]
-        ]
-      }
-    ],
-    "caption": "The interval is produced by a procedure with a stated long-run coverage rate; it is not a probability that this fixed interval contains the parameter.",
-    "xLabel": "repeated study",
-    "yLabel": "estimate"
-  },
+  "production": "Store interval method and assumptions with every metric definition: estimand, unit, confidence level, sidedness, variance estimator, resampling unit, stopping rule, and multiplicity family. Run coverage simulations before deploying important decision thresholds, including boundary rates and realistic cluster sizes. Monitor effective sample size, missingness, variance, weight concentration, and interval width. Do not suppress wide intervals; they are evidence of limited information. Use sequential confidence sequences for continuous monitoring rather than repeatedly recomputing fixed-horizon intervals. Limit small-slice output for privacy and stability. Version random seeds and software APIs for bootstrap results. If a pipeline changes attribution or unit grain, invalidate old intervals. Roll back the estimator and uncertainty method together. Dashboards should show point estimate, interval, sample window, and practical thresholds, with plain-language caveats rather than a green/red significance badge.",
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "A confidence interval is the output of a procedure designed to cover an unknown target at a stated long-run rate under specified assumptions. This chapter builds that sentence into a practical workflow. It derives a t interval for a mean, explains the duality between two-sided tests and intervals, distinguishes confidence intervals from credible and prediction intervals, and compares normal, t, Wilson, profile-likelihood, and bootstrap constructions. It emphasizes that confidence level is a property of the procedure before data are observed—not a posterior probability assigned to a fixed frequentist parameter afterward. You will learn why interval width responds to standard error and confidence level, how bias and optional stopping destroy nominal coverage, why a symmetric Wald interval can be absurd near boundaries, and how to communicate compatibility without reducing inference to “significant” or “not significant.” The worked example treats a conversion lift whose interval crosses both zero and a business threshold. The lab verifies repeated-sample coverage and shows that one observed interval either covers or does not.",
+  "prerequisites": [
+    "sampling-distributions"
+  ],
+  "learningObjectives": [
+    "Interpret frequentist confidence intervals through repeated-sample coverage without assigning probability to a fixed parameter.",
+    "Construct and diagnose t, proportion, bootstrap, and prediction intervals under their assumptions.",
+    "Connect interval width to standard error, confidence level, sample design, and multiplicity.",
+    "Use intervals to reason about practical thresholds, equivalence, and uncertainty rather than binary significance."
+  ],
+  "deepSections": [
+    {
+      "id": "coverage",
+      "title": "Coverage and the repeated-sampling statement",
+      "body": "Let C(X) be a random set computed from data X. A 1-alpha confidence procedure satisfies P_theta(theta in C(X)) at least or approximately 1-alpha under a model for each relevant theta. Probability ranges over hypothetical datasets. After X=x is observed, C(x) is fixed in frequentist analysis. Saying '95% probability theta lies here' silently changes frameworks unless a posterior distribution has been defined. Coverage may be exact, conservative, or asymptotic. An exact binomial interval can overcover because discreteness prevents every nominal level; an asymptotic interval may undercover in small samples. Simulation across plausible parameter values is an effective coverage audit."
+    },
+    {
+      "id": "constructions",
+      "title": "Choosing a construction instead of defaulting to Wald",
+      "body": "For a normal mean with unknown variance and iid normal observations, Xbar plus-or-minus t critical times s/sqrt(n) has exact model-based coverage. Large-sample estimators often use a normal Wald interval. Wald intervals can extend outside valid ranges for probabilities or rates and can perform poorly with skewness, separation, weak identification, or boundaries. Score/Wilson intervals for proportions, likelihood-ratio/profile intervals, transformations such as log scale, and bootstrap intervals can behave better. Bootstrap percentile intervals inherit bias and skewness issues; basic and BCa variants make different corrections. The method must preserve pairing, clusters, stratification, and the estimator's complete fitting pipeline."
+    },
+    {
+      "id": "duality",
+      "title": "Intervals, tests, equivalence, and practical thresholds",
+      "body": "For a two-sided level-alpha test and a matching 1-alpha interval, a candidate null value is rejected exactly when it falls outside the interval. The interval communicates more because it shows a range of compatible effect sizes. Failure to exclude zero is not proof of no effect. To support practical equivalence, predefine a smallest effect of interest and use an equivalence procedure such as two one-sided tests; the interval must lie within the equivalence bounds. For noninferiority, direction and margin must be set before data. Inspect whether the interval excludes material harm, excludes the minimum worthwhile benefit, or remains decision-ambiguous. These questions connect inference to loss and action."
+    },
+    {
+      "id": "coverage-failures",
+      "title": "Why nominal coverage fails",
+      "body": "Coverage is conditional on design and analysis discipline. Selection bias shifts the estimator without widening its standard error. Repeated peeking and stopping when an interval becomes favorable change its coverage unless sequential methods are used. Selecting the best model, subgroup, or metric and then reporting its ordinary interval ignores selection. Autocorrelation and clustering make iid SEs too small. Weak instruments, rare outcomes, heavy tails, and small samples can make asymptotic shapes poor. Missing data and measurement error introduce additional assumptions. Run design-aware simulations, negative controls, sensitivity analyses, and specification checks; no interval summarizes unmodeled uncertainty automatically."
+    },
+    {
+      "id": "conditional-coverage",
+      "title": "Marginal, conditional, and simultaneous coverage",
+      "body": "Nominal coverage is often marginal over the sampling distribution. It need not provide 95% coverage within every covariate slice, after selecting extreme estimates, or simultaneously across many parameters. A model may have correct average coverage while severely undercovering rare segments. Conditional intervals seek validity given relevant features but are harder to obtain without assumptions. Simultaneous confidence regions or bands protect an entire family of parameters or a function, and are wider than pointwise intervals. When users inspect whichever subgroup looks most interesting, ordinary pointwise intervals no longer describe that selection. Decide whether the consumer needs one prespecified parameter, all time points on a curve, or a selected winner, then choose the corresponding inferential target and verify coverage by scenario."
+    }
+  ],
+  "workedExamples": [
+    {
+      "title": "Conversion lift against two decision thresholds",
+      "body": "Interpret the same interval relative to the null, a harm boundary, and a minimum worthwhile benefit. The conclusion changes with the decision question even though the statistical evidence does not."
+    }
+  ],
+  "exercises": [
+    {
+      "prompt": "Interpret a 95% interval [2, 8] for a mean difference.",
+      "solution": "Under repeated use of the stated procedure and its assumptions, 95% of intervals cover the fixed true difference. This observed interval excludes zero and contains effect sizes from 2 through 8; it is not a 95% posterior probability statement."
+    },
+    {
+      "prompt": "A mean has SE 3. Approximately how does quadrupling independent n affect SE?",
+      "solution": "SE scales approximately as 1/sqrt(n), so quadrupling n halves SE to about 1.5, assuming the same variance and independent information."
+    },
+    {
+      "prompt": "Why can a narrow interval be misleading in a convenience sample?",
+      "solution": "The interval typically represents sampling variability under its model, not selection bias. A large convenience sample can concentrate tightly around the wrong population target."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "curve",
+      "title": "Repeated intervals and fixed truth",
+      "series": [
+        {
+          "label": "covers",
+          "points": [
+            [
+              0.05,
+              0.2
+            ],
+            [
+              0.45,
+              0.2
+            ]
+          ]
+        },
+        {
+          "label": "misses",
+          "points": [
+            [
+              0.58,
+              0.45
+            ],
+            [
+              0.9,
+              0.45
+            ]
+          ]
+        },
+        {
+          "label": "truth",
+          "points": [
+            [
+              0.5,
+              0.05
+            ],
+            [
+              0.5,
+              0.95
+            ]
+          ]
+        }
+      ],
+      "caption": "Conceptual: intervals vary across samples while the target remains fixed; nominal coverage describes the procedure.",
+      "xLabel": "possible parameter value",
+      "yLabel": "repeated sample",
+      "afterSection": "coverage"
+    },
+    {
+      "type": "matrix",
+      "title": "Interval families answer different questions",
+      "caption": "Use the language belonging to the construction and probability model.",
+      "afterSection": "duality",
+      "rows": [
+        "Confidence",
+        "Credible",
+        "Prediction"
+      ],
+      "cols": [
+        "Target",
+        "Interpretation"
+      ],
+      "cells": [
+        [
+          "Fixed parameter",
+          "Repeated-sample coverage"
+        ],
+        [
+          "Posterior parameter",
+          "Posterior probability under prior/model"
+        ],
+        [
+          "Future outcome",
+          "Parameter plus outcome uncertainty"
+        ]
+      ]
+    }
+  ],
+  "lab": {
+    "language": "python",
+    "goal": "Verify long-run coverage of a t interval and show why an observed confidence interval is not a posterior probability statement.",
+    "buildIt": "import math\nimport random\n\ndef mean(xs): return sum(xs) / len(xs)\ndef sd(xs):\n    m = mean(xs)\n    return math.sqrt(sum((x-m)**2 for x in xs)/(len(xs)-1))\n\ndef z_interval(xs, critical=1.96):\n    m = mean(xs); se = sd(xs)/math.sqrt(len(xs))\n    return m-critical*se, m+critical*se\n\nrng = random.Random(11)\nmu = 3.0\nintervals = [z_interval([rng.gauss(mu, 2.0) for _ in range(80)]) for _ in range(3000)]",
+    "useIt": "import numpy as np\nfrom scipy.stats import t\nrng_np = np.random.default_rng(11)\nx = rng_np.normal(mu, 2.0, size=80)\nse = x.std(ddof=1)/np.sqrt(x.size)\ncritical = t.ppf(0.975, df=x.size-1)\nscipy_interval = (x.mean()-critical*se, x.mean()+critical*se)",
+    "verifyIt": "coverage = sum(lo <= mu <= hi for lo,hi in intervals)/len(intervals)\nassert 0.93 < coverage < 0.97\nassert scipy_interval[0] < scipy_interval[1]\nassert isinstance(scipy_interval, tuple)",
+    "shipIt": "Attach estimand, unit, interval construction, confidence level, stopping rule, and practical thresholds to every reported interval; audit coverage with design-faithful simulation."
+  },
+  "sourceNotes": [
+    {
+      "resource": "stanford-stats200",
+      "contribution": "Provides formal confidence-interval theory and its relationship to testing."
+    },
+    {
+      "resource": "nist-stat-handbook",
+      "contribution": "Documents repeated-sampling coverage and classical interval constructions for applied comparisons."
+    },
+    {
+      "resource": "asa-pvalues",
+      "contribution": "Supports interpretation beyond binary significance and emphasizes effect size and transparency."
+    },
+    {
+      "resource": "scipy-stats",
+      "contribution": "Documents current bootstrap and distribution APIs used in practical interval construction."
+    }
+  ]
 }

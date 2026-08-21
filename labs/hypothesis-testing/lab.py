@@ -1,16 +1,23 @@
-import math
-a=[10,11,9,12,10,11]; b=[13,12,14,11,13,14]
-def mean(x): return sum(x)/len(x)
-def var(x):
-    m=mean(x); return sum((v-m)**2 for v in x)/(len(x)-1)
-se=math.sqrt(var(a)/len(a)+var(b)/len(b))
-t=(mean(b)-mean(a))/se
-print('difference',mean(b)-mean(a),'t statistic',t)
+import itertools
+
+def mean(xs): return sum(xs)/len(xs)
+def sign_flip_pvalue(differences):
+    observed = abs(mean(differences))
+    stats = []
+    for signs in itertools.product((-1, 1), repeat=len(differences)):
+        stats.append(abs(mean([s*x for s,x in zip(signs,differences)])))
+    return sum(t >= observed-1e-12 for t in stats)/len(stats), stats
+
+diffs = [1.2, 0.5, 0.9, -0.1, 1.4, 0.7, 0.3, 1.0]
+p_value, null_stats = sign_flip_pvalue(diffs)
 
 # ---- Use it ----
-from scipy.stats import ttest_ind
-print(ttest_ind(b,a,equal_var=False))
+import numpy as np
+from scipy.stats import permutation_test
+result = permutation_test((np.asarray(diffs),), lambda x: np.mean(x), permutation_type='samples', alternative='two-sided', n_resamples=np.inf)
 
 # ---- Verify it ----
-assert mean(b)>mean(a)
-assert t>1
+assert len(null_stats) == 2**len(diffs)
+assert 0.0 <= p_value <= 1.0
+assert abs(p_value-result.pvalue) < 1e-12
+assert sign_flip_pvalue([1.0,-1.0,2.0,-2.0])[0] == 1.0

@@ -1,3 +1,3 @@
 # Ship it
 
-Training pipelines should log learning rate, loss and gradient/parameter health with checkpoints so failed runs are diagnosable and resumable.
+Use tested library optimizers for models, log effective batch/rate and numerical signals, checkpoint full state atomically, enforce cost/failure budgets and gate deployment with held-out slice evaluation plus rollback.

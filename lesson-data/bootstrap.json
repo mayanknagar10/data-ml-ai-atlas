@@ -8,52 +8,180 @@
     "da",
     "as"
   ],
-  "interviewAnswer": "The bootstrap approximates an estimator’s sampling distribution by repeatedly resampling the observed dataset with replacement. It is useful when analytic standard errors are difficult but the sample is reasonably representative.",
+  "interviewAnswer": "The nonparametric bootstrap treats the empirical distribution as an estimate of the population: draw many size-n samples with replacement, recompute the entire estimator, and use the resulting distribution for standard errors or intervals. It works when the observed sample represents the repetition mechanism and the estimator is sufficiently regular. Resample the independent unit—pairs, users, clusters, or time blocks—not blindly rows. Bootstrap cannot repair selection bias, absent rare classes, or a fundamentally misspecified pipeline, and interval choice and Monte Carlo error must be reported.",
   "keyPoints": [
-    "Resample rows with replacement.",
-    "Recompute the statistic each time.",
-    "Use the empirical distribution for uncertainty."
+    "Resampling approximates repeated sampling from an estimated population",
+    "Replacement preserves iid draws from the empirical distribution",
+    "The estimator must be recomputed end to end",
+    "Dependence determines the resampling unit",
+    "Coverage must be checked rather than assumed"
   ],
   "resources": [
+    "efron-bootstrap",
     "stanford-stats200",
+    "scipy-stats",
     "isl"
   ],
   "featured": false,
-  "why": "Bootstrap & Resampling appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
-  "intuition": "Resample rows with replacement.",
-  "deepDive": "The bootstrap approximates an estimator’s sampling distribution by repeatedly resampling the observed dataset with replacement. It is useful when analytic standard errors are difficult but the sample is reasonably representative. Recompute the statistic each time. Use the empirical distribution for uncertainty. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
-  "workedExample": "Bootstrap the difference in median delivery times between two methods to form an interval.",
+  "why": "Modern metrics are often ratios, quantiles, ranking scores, or outputs of fitted pipelines whose standard errors are messy. The bootstrap turns a difficult derivation into a simulation procedure that exposes estimator variability. That convenience also encourages misuse. Row bootstrap on repeated user events invents independence; bootstrapping only final predictions ignores model-training variation; independently resampling paired outcomes destroys the pairing; and resampling a biased dataset reproduces its bias. Interviews ask for the algorithm, but a strong answer states the target repetition mechanism and failure cases. In production, a stochastic interval must also be reproducible, computationally bounded, and stable enough for decisions. The bootstrap is best understood as a model—the empirical distribution plus a resampling design—not as a magical guarantee.",
+  "intuition": "The observed sample is the only concrete glimpse of the population. Place equal probability mass on each observed independent unit, then pretend that discrete empirical distribution generated new studies. Sampling with replacement allows some units to appear multiple times and others not at all, producing the variation that sampling would create. Recompute the statistic for each pseudo-study. The spread of those values estimates standard error; their shape reveals skewness or instability. Without replacement, every size-n resample would merely reorder all observations and many statistics would not change. The approximation is strongest when the original sample captures the population features relevant to the statistic. If no failure event appears, the empirical distribution assigns it probability zero, so no bootstrap replicate can discover it. If dependence exists, the empirical units must be clusters or blocks rather than rows.",
+  "deepDive": "The bootstrap substitutes the empirical distribution F_n for unknown F and estimates the distribution of T(F_n*)-T(F_n) conditional on data. Its validity depends on whether this conditional distribution approximates the true distribution of T(F_n)-T(F) at the relevant scale.",
+  "workedExample": "Delivery method A has median time 28 minutes and B has 31, so the observed median difference A-B is -3 minutes. Resample orders with replacement separately within methods, preserving the original group sizes, and recompute both medians 20,000 times. Suppose the 2.5% and 97.5% quantiles are -5.4 and -0.8 minutes. Under this percentile procedure, the data support faster median delivery for A. Before acting, check whether repeated orders from the same courier or geography require cluster resampling, whether censored cancellations were excluded, and whether the sample period represents future traffic. The interval reflects the chosen design—not every source of uncertainty.",
   "commonMistakes": [
-    "Applying the method without checking its assumptions or data-generating process.",
-    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+    "Resampling rows when users, devices, schools, or time blocks are the independent units.",
+    "Bootstrapping only the final metric while holding learned preprocessing or model parameters fixed.",
+    "Believing more bootstrap replicates compensate for a tiny or unrepresentative original sample.",
+    "Using a percentile interval without checking bias, skewness, boundaries, or empirical coverage.",
+    "Forgetting that paired observations and treatment strata must remain paired or stratified."
   ],
   "followUps": [
-    "What assumptions does Bootstrap & Resampling make?",
-    "How would you validate or debug Bootstrap & Resampling in practice?"
+    {
+      "question": "Why sample with replacement?",
+      "answer": "The empirical distribution generates independent draws with replacement. Without replacement, a size-n resample contains every observed unit exactly once, so permutation-invariant statistics such as the mean would not vary."
+    },
+    {
+      "question": "What does increasing B accomplish?",
+      "answer": "It reduces Monte Carlo error in approximating the bootstrap distribution conditional on the observed data. It does not add information to the original sample or repair a statistically invalid bootstrap scheme."
+    },
+    {
+      "question": "When would you use a block bootstrap?",
+      "answer": "When observations have local serial or spatial dependence and blocks can preserve the dependence relevant to the statistic. Block length is a modeling choice and should be checked by sensitivity analysis."
+    }
   ],
-  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "production": "Specify bootstrap target, independent resampling unit, strata or blocks, replicate count, interval method, full pipeline steps, RNG algorithm, and seed derivation in configuration. Parallelize with independent random streams and make results deterministic for the same artifact version. Monitor failed fits, degenerate replicates, class loss, interval width, quantile Monte Carlo error, cluster coverage, and runtime. Cache only when data and code hashes match. Avoid storing raw replicate samples when estimates suffice, especially for sensitive records. Validate coverage with simulated and historical replay cases, including rare outcomes. Set failure behavior: widen, fall back to an analytic conservative interval, or suppress the estimate rather than silently dropping failed replicates. Version and roll back the resampler with preprocessing and estimator code.",
   "lab": {
-    "goal": "Estimate uncertainty with a nonparametric bootstrap.",
     "language": "python",
-    "buildIt": "import numpy as np\nrng=np.random.default_rng(0)\nx=np.array([2.,3.,4.,5.,8.,9.])\nstats=np.array([rng.choice(x,len(x),replace=True).mean() for _ in range(5000)])\nci=np.quantile(stats,[.025,.975])\nprint(ci)",
-    "useIt": "from scipy.stats import bootstrap\nres=bootstrap((x,),np.mean,random_state=0)\nprint(res.confidence_interval)",
-    "shipIt": "Package bootstrap configuration with the estimator definition and random seed; use it when analytic uncertainty is unavailable and monitor whether the production sample remains representative.",
-    "verifyIt": "assert ci[0] < x.mean() < ci[1]"
-  },
-  "visual": {
-    "type": "flow",
-    "title": "Bootstrap workflow",
-    "items": [
-      "Observed sample",
-      "Resample with replacement",
-      "Recompute statistic",
-      "Use bootstrap distribution"
-    ],
-    "caption": "Bootstrap approximates sampling uncertainty using repeated resamples of the observed data.",
-    "accent": 1,
-    "orientation": "horizontal"
+    "goal": "Build a bootstrap confidence interval for a median, compare with SciPy BCa output, and verify reproducibility and narrowing with more data.",
+    "buildIt": "import random\nimport statistics\n\ndef bootstrap_statistic(xs, statistic, repeats=5000, seed=17):\n    rng = random.Random(seed); n=len(xs)\n    return [statistic(rng.choices(xs,k=n)) for _ in range(repeats)]\n\ndef percentile_interval(values, level=0.95):\n    ys=sorted(values); tail=(1-level)/2\n    lo=ys[int(tail*(len(ys)-1))]; hi=ys[int((1-tail)*(len(ys)-1))]\n    return lo,hi\n\nx=[8,9,10,10,11,12,13,17,22,30,31,35]\nreplicates=bootstrap_statistic(x,statistics.median)\ninterval=percentile_interval(replicates)",
+    "useIt": "import numpy as np\nfrom scipy.stats import bootstrap\nrng=np.random.default_rng(17)\nresult=bootstrap((np.asarray(x),),np.median,confidence_level=0.95,n_resamples=5000,method='BCa',rng=rng)\nscipy_interval=(float(result.confidence_interval.low),float(result.confidence_interval.high))",
+    "verifyIt": "assert bootstrap_statistic(x,statistics.median,100,17)==bootstrap_statistic(x,statistics.median,100,17)\nassert interval[0] <= statistics.median(x) <= interval[1]\nassert scipy_interval[0] < scipy_interval[1]\nwide=percentile_interval(bootstrap_statistic(x*8,statistics.median,3000,19))\nassert wide[1]-wide[0] <= interval[1]-interval[0]",
+    "shipIt": "Resample the independent unit and full pipeline, use deterministic independent RNG streams, track failed replicates and Monte Carlo error, and coverage-test the chosen interval method."
   },
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "The bootstrap estimates an estimator's sampling behavior by repeatedly sampling with replacement from the empirical distribution and recomputing the complete statistic. It is powerful because it can approximate standard errors, bias, and confidence intervals when analytic derivations are inconvenient, but it is not assumption-free. This chapter develops the plug-in principle, explains why replacement matters, distinguishes ordinary, paired, stratified, cluster, block, parametric, and residual bootstraps, and compares percentile, basic, normal, and bias-corrected accelerated intervals. You will learn when the empirical distribution is a reasonable stand-in for the population, why rare events and nonsmooth statistics cause instability, and why resampling rows breaks dependence. The worked example estimates a difference in medians while preserving treatment groups. The lab implements a bootstrap distribution from first principles, compares it with SciPy's current API, verifies reproducibility and interval behavior, and demonstrates the effect of sample size. Production guidance covers resampling grain, pipeline refitting, Monte Carlo error, seeds, compute budgets, privacy, and coverage audits.",
+  "prerequisites": [
+    "sampling-distributions",
+    "confidence-intervals"
+  ],
+  "learningObjectives": [
+    "Explain the empirical plug-in principle and why bootstrap resamples have the original sample size with replacement.",
+    "Choose a resampling scheme that preserves pairing, groups, clusters, time dependence, weights, and model-fitting steps.",
+    "Compare common bootstrap interval constructions and diagnose skewness, bias, discreteness, and boundary failure.",
+    "Implement reproducible bootstrap uncertainty and verify it against simulation or an official library."
+  ],
+  "deepSections": [
+    {
+      "id": "bootstrap-principle",
+      "title": "The plug-in distribution and algorithm",
+      "body": "Given iid observations x1,...,xn, the empirical distribution F_n places mass 1/n on each xi. A bootstrap sample draws n times independently from F_n, which is equivalent to sampling observed rows with replacement. For each replicate b, compute theta_hat_b*=T(x_b*), including every preprocessing and fitting step that would vary in a new sample. The bootstrap standard error is the sample SD of replicate estimates. Estimated bias is mean(theta_hat*)-theta_hat. Thousands of replicates reduce Monte Carlo noise but do not fix statistical invalidity. Report the number of replicates, random generator, seed policy, and interval method."
+    },
+    {
+      "id": "resampling-designs",
+      "title": "Resampling must mirror the data design",
+      "body": "Paired measurements are resampled as pairs. Two independently sampled groups are resampled within group when estimating a two-sample effect. Cluster bootstrap samples independent clusters and carries all their rows. Stratified bootstrap samples within design strata. Time-series block bootstrap samples contiguous blocks long enough to retain relevant dependence; moving, circular, and stationary variants differ. Parametric bootstrap simulates from a fitted model, trading empirical flexibility for model dependence. Regression residual bootstrap assumes a residual structure; case bootstrap resamples observations; wild bootstrap can handle heteroskedasticity. Survey replicate weights may be preferable to ad hoc row resampling. The unit and scheme follow from the estimand and design."
+    },
+    {
+      "id": "intervals",
+      "title": "Bootstrap standard errors and interval choices",
+      "body": "The normal interval uses theta_hat plus-or-minus a critical value times bootstrap SE and assumes approximate symmetry. The percentile interval takes quantiles of theta_hat*, which is intuitive but can inherit bias and transformation issues. The basic interval reflects percentile endpoints around theta_hat. Studentized intervals bootstrap a pivotal statistic and can improve accuracy at extra computational cost. BCa adjusts for median bias and acceleration related to estimator influence, and SciPy currently defaults to BCa. No method dominates every setting. Compare interval shape, replicate histogram, jackknife influence, and simulation coverage across plausible distributions. Transform bounded positive parameters when appropriate."
+    },
+    {
+      "id": "failure-modes",
+      "title": "Where ordinary bootstrap breaks",
+      "body": "Nonsmooth estimators, sample extremes, parameters on boundaries, very small samples, infinite-variance distributions, weak identification, and model selection can defeat ordinary bootstrap approximations. The sample maximum's empirical bootstrap cannot exceed the observed maximum. Rare classes absent from the sample remain absent. Some estimators require an m-out-of-n or subsampling approach. Cross-validation metrics need resampling that accounts for training and evaluation roles; leaking the same rows across stages biases uncertainty. A bootstrap distribution can look smooth and still target the wrong population. Audit against synthetic data with known truth, alternative resampling schemes, influence diagnostics, and domain shifts."
+    },
+    {
+      "id": "pipeline-bootstrap",
+      "title": "Bootstrapping learned pipelines and evaluation metrics",
+      "body": "For a trained model's future performance, uncertainty can arise from training-sample variation, evaluation-sample variation, hyperparameter selection, and deployment population drift. Bootstrapping only a fixed test set conditions on the fitted model and estimates a narrower quantity. To capture training variation, each replicate must redo feature fitting, model training, tuning logic, threshold selection, and evaluation on an independent or appropriately out-of-bag sample. Naive reuse can leak observations and create optimistic metrics. Nested resampling is expensive, so state which randomness is included. For paired model comparisons, resample evaluation units jointly so both models face the same cases; the covariance substantially improves precision. Distribution shift remains outside an iid bootstrap unless explicitly simulated."
+    }
+  ],
+  "math": "For B bootstrap replicates theta_hat_1*,...,theta_hat_B*, bootstrap SE is sqrt(sum_b(theta_hat_b*-mean*)^2/(B-1)). A percentile (1-alpha) interval uses empirical quantiles alpha/2 and 1-alpha/2. A basic interval is [2 theta_hat-q_(1-alpha/2)*, 2 theta_hat-q_(alpha/2)*]. Monte Carlo uncertainty of estimated quantiles decreases with B but depends on density near the quantile. Statistical validity concerns n tending large; increasing B only approximates the conditional bootstrap distribution more precisely.",
+  "workedExamples": [
+    {
+      "title": "Difference in group medians",
+      "body": "Resample within each independent group, recompute both medians, inspect the replicate distribution, and interpret its interval only after validating the unit and censoring rules."
+    }
+  ],
+  "exercises": [
+    {
+      "prompt": "Why does a bootstrap sample of size n contain about 63% distinct observations on average for large n?",
+      "solution": "Each observation is omitted with probability (1-1/n)^n, approaching e^-1. Thus the included fraction approaches 1-e^-1, about 0.632."
+    },
+    {
+      "prompt": "How should 500 users with repeated sessions be bootstrapped for a user-level treatment effect?",
+      "solution": "Sample users with replacement and carry all relevant sessions/outcomes for each sampled user. Row resampling would destroy within-user dependence."
+    },
+    {
+      "prompt": "You increase B from 1,000 to 100,000 and the interval remains biased. Why?",
+      "solution": "B controls simulation precision conditional on the sample. Bias from an invalid resampling model, estimator, or unrepresentative data is a statistical problem, not Monte Carlo noise."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "flow",
+      "title": "Ordinary bootstrap",
+      "items": [
+        "Observed independent units",
+        "Sample n with replacement",
+        "Refit/recompute estimator",
+        "Repeat B times",
+        "Summarize uncertainty"
+      ],
+      "caption": "The complete estimator and the correct independent unit belong inside each replicate.",
+      "orientation": "horizontal",
+      "afterSection": "bootstrap-principle"
+    },
+    {
+      "type": "matrix",
+      "title": "Resampling schemes follow dependence",
+      "caption": "Blind row resampling is only one special case.",
+      "afterSection": "resampling-designs",
+      "rows": [
+        "iid rows",
+        "Paired data",
+        "Clusters",
+        "Time series"
+      ],
+      "cols": [
+        "Resample",
+        "Preserve"
+      ],
+      "cells": [
+        [
+          "Rows",
+          "Marginal distribution"
+        ],
+        [
+          "Pairs",
+          "Within-pair link"
+        ],
+        [
+          "Whole clusters",
+          "Within-cluster dependence"
+        ],
+        [
+          "Blocks",
+          "Local temporal dependence"
+        ]
+      ]
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "efron-bootstrap",
+      "contribution": "Introduces the empirical resampling principle and foundational bootstrap approximation studied here."
+    },
+    {
+      "resource": "stanford-stats200",
+      "contribution": "Provides bootstrap standard-error and confidence-interval theory in a broader inference framework."
+    },
+    {
+      "resource": "scipy-stats",
+      "contribution": "Documents the current bootstrap API, supported interval methods, pairing, vectorization, and RNG behavior."
+    }
+  ]
 }

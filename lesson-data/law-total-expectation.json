@@ -7,30 +7,173 @@
     "ds",
     "as"
   ],
-  "interviewAnswer": "Condition on useful groups, solve within each group, then average using group probabilities. These identities are powerful for mixture distributions, debugging aggregate metrics and Bayesian reasoning.",
+  "interviewAnswer": "If events B_i form a partition, `P(A)=Σ_iP(A|B_i)P(B_i)`. For a conditioning variable Z, `E[X]=E[E[X|Z]]`, the tower property. Total variance is `Var(X)=E[Var(X|Z)]+Var(E[X|Z])`, separating average within-group variance from variation between group means. The weights must be probabilities for the target population, not arbitrary averages of group metrics. These laws are identities and require no independence, but each conditional quantity and group weight must refer to the same well-defined population and observation process.",
   "keyPoints": [
-    "P(A)=sum P(A|B)P(B).",
-    "E[X]=E[E[X|Y]].",
-    "Stratification can explain aggregate differences."
+    "Partition cases must be disjoint and exhaustive",
+    "Weight conditional answers by target probability",
+    "Tower property averages conditional means",
+    "Total variance equals within plus between",
+    "Composition changes aggregate metrics"
   ],
   "resources": [
-    "harvard-stat110"
+    "harvard-stat110",
+    "think-bayes",
+    "stanford-stats60"
   ],
   "featured": false,
-  "why": "Law of Total Probability & Total Expectation is a recurring foundation across data science and machine learning because it affects both theoretical correctness and practical system behavior.",
-  "intuition": "P(A)=sum P(A|B)P(B).",
-  "deepDive": "Condition on useful groups, solve within each group, then average using group probabilities. These identities are powerful for mixture distributions, debugging aggregate metrics and Bayesian reasoning. E[X]=E[E[X|Y]]. Stratification can explain aggregate differences. The interview-level skill is not merely recalling the definition: explain the assumptions, what diagnostic evidence you would inspect, and what alternative you would choose when those assumptions fail.",
-  "workedExample": "Overall conversion is a weighted average of device-specific conversion rates.",
+  "why": "Overall conversion, risk, latency and model accuracy are mixtures of heterogeneous groups. Unweighted averages mislead when group sizes differ; distribution shift changes the mixture even when group behavior is constant. Total laws also turn complex problems into easier conditional pieces and provide diagnostics for whether uncertainty is intrinsic within groups or driven by group differences.",
+  "intuition": "Sort all cases into labeled boxes that cover the population. Compute the probability or average inside each box, then combine using how common each box is. For variance, measure spread inside boxes and spread between their centers. The final result changes either when boxes behave differently or when the population moves between boxes.",
+  "deepDive": "The full explanation is organized into the structured sections below.",
+  "workedExample": "Total escalation is `0.7×0.10+0.3×0.30=0.16`. Expected handling time is `0.7×8+0.3×20=11.6` minutes. An unweighted average of channel escalation rates gives 20% and is wrong for the population. If phone share rises to 60% while channel rates remain fixed, total escalation becomes 22%; composition alone explains the change. If within-channel handling-time variances are 9 and 25, total variance is weighted within `0.7×9+0.3×25=13.8` plus between-group variance `0.7(8−11.6)^2+0.3(20−11.6)^2=30.24`, total 44.04.",
   "commonMistakes": [
-    "Using the concept mechanically without checking assumptions or data semantics.",
-    "Reporting one metric/result without examining uncertainty, slices or failure modes."
+    {
+      "mistake": "Average subgroup rates equally.",
+      "correction": "Weight by target-population subgroup probabilities unless an explicitly different standardization is intended."
+    },
+    {
+      "mistake": "Overall variance is the weighted average of within-group variances.",
+      "correction": "Add the variance of conditional means—the between-group component."
+    },
+    {
+      "mistake": "A mixture distribution has the same family with averaged parameters.",
+      "correction": "Mixtures generally leave the family and can be multimodal; combine distributions/likelihoods, not just parameters."
+    }
   ],
   "followUps": [
-    "What assumptions or limitations does Law of Total Probability & Total Expectation have?",
-    "How would you validate Law of Total Probability & Total Expectation on a real dataset?"
+    {
+      "question": "What conditions must partition events satisfy?",
+      "answer": "They are mutually exclusive and collectively exhaustive, with conditionals defined on positive-probability cases."
+    },
+    {
+      "question": "What is the tower property?",
+      "answer": "Averaging conditional expectation over the conditioning information returns the unconditional expectation."
+    },
+    {
+      "question": "How can aggregate performance change without subgroup degradation?",
+      "answer": "The subgroup mixture weights can shift toward groups with different baseline rates."
+    }
   ],
-  "production": "In production, make assumptions explicit, validate on representative slices, compare with a simple baseline and monitor the signals that can drift.",
+  "production": "Version disjoint/exhaustive segment definitions, target weights, windows and conditional models. Validate weights and direct-enumeration fixtures, normalize mixtures stably, report conditional plus standardized/actual aggregate metrics and within/between variance. Monitor composition, sparse cells and delayed outcomes, protect small groups and retain a prior compatible weight-model bundle for rollback.",
   "editorial": {
-    "status": "summary"
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "The laws of total probability, expectation and variance solve an uncertain problem by conditioning on a useful partition and averaging the conditional answers with the correct weights. They formalize mixture models, subgroup aggregation, hierarchical risk, hidden states, recursive dynamic programming and Bayesian prediction. This chapter derives each law, the tower property and within/between variance decomposition, then shows how choosing a conditioning variable can simplify or complicate a calculation. You will learn to distinguish conditional weights from observed sample proportions, avoid averaging rates without population weights, and use the complement event or first-step analysis strategically. A worked customer-support example combines channel-specific escalation probabilities and expected handling times while exposing composition drift. The lab computes mixture probabilities and moments and verifies them against direct enumeration. Production guidance covers changing segment mix, post-stratification, sparse groups, delayed/missing labels, numerical log mixtures, hierarchical shrinkage, monitoring, privacy and rollback. The objective is to use conditioning as a controlled decomposition—state the exhaustive cases, solve each case, then reassemble—while recognizing that aggregate performance can move even when every conditional performance stays fixed.",
+  "prerequisites": [
+    "joint-marginal-conditional",
+    "expectation-variance"
+  ],
+  "learningObjectives": [
+    "Derive and apply total probability, tower expectation and total variance over event partitions or conditioning variables.",
+    "Use first-step/latent-group conditioning and interpret within-group versus between-group uncertainty and composition effects.",
+    "Operate mixture and stratified estimates with correct weights, sparse-group uncertainty, drift monitoring, privacy and stable rollback."
+  ],
+  "deepSections": [
+    {
+      "id": "total-probability",
+      "title": "Total probability over a partition",
+      "body": "Let B_1,…,B_k be disjoint and exhaustive with positive probabilities. Because A is the disjoint union of intersections A∩B_i, `P(A)=ΣP(A∩B_i)=ΣP(A|B_i)P(B_i)`. With two cases, condition on B and B^c. The formula supplies the denominator in Bayes and the predictive probability of evidence under competing hypotheses.\n\nChoose a partition that makes conditionals easy: first coin/die outcome, hidden customer type, weather state, route, machine status or first step of a stochastic process. A partition with too many sparse cells increases estimation error. Cases must be exhaustive; dropping an unknown category makes weights sum below one. They must be mutually exclusive at the chosen time/grain; overlapping segments double count.\n\nFor continuous Z, summation becomes integration `p(x)=∫p(x|z)p(z)dz`. In log-space mixtures, compute log-sum-exp of log weights plus log component likelihoods. Averaging parameters is not generally equivalent to averaging distributions: a mixture of Normals is not usually one Normal and can be multimodal/heavy-tailed."
+    },
+    {
+      "id": "tower-first-step",
+      "title": "Total expectation and first-step analysis",
+      "body": "Conditional expectation E[X|Z] is a function/random variable of Z. The tower property `E[E[X|Z]]=E[X]` says averaging the conditional mean over Z recovers the overall mean. More generally, if one information set is contained in another, iterated conditioning collapses to the coarser set. Linearity plus indicators often turns expected totals into simple conditional calculations.\n\nFirst-step analysis conditions a process on its initial transition and writes a recurrence for expected time, cost or reward. For an absorbing Markov process, expected remaining time from state s is one plus the weighted expected time from successor states, with boundary zero at absorption. The recurrence requires eventual absorption/finite expectation for a finite answer. Recursive equations can be solved algebraically or by dynamic programming.\n\nIn Bayesian prediction, average a conditional predictive distribution over posterior uncertainty in parameters/latent variables rather than plugging in the posterior mean if the function is nonlinear. In ensemble/risk settings, expected loss over scenarios uses scenario probabilities from the target environment. Scenario stress tests may deliberately use alternative weights and should be labeled rather than confused with the base forecast."
+    },
+    {
+      "id": "total-variance",
+      "title": "Within-group and between-group variance",
+      "body": "Write `X−E[X]=(X−E[X|Z])+(E[X|Z]−E[X])`. Squaring and taking expectation makes the cross term vanish, yielding total variance. The first term averages uncertainty remaining within each Z; the second measures heterogeneity in conditional means. A mixture can therefore have high overall variance even when each component is tight.\n\nFor two groups with means μ_i, variances σ_i² and weights w_i, overall mean is Σw_iμ_i and variance is `Σw_iσ_i²+Σw_i(μ_i−μ)²`. Averaging group variances alone misses between-group spread. A pooled sample variance estimator also accounts for degrees of freedom and estimated means; do not substitute population identities without estimator corrections.\n\nThe decomposition guides action. If within-group variance dominates, richer within-group features or process noise reduction may help. If between-group variance dominates, segmentation, allocation or fairness questions matter. It remains descriptive: conditioning on a post-treatment group can make the decomposition inappropriate for causal attribution."
+    },
+    {
+      "id": "composition-operation",
+      "title": "Composition, estimation, and production",
+      "body": "Aggregate metrics are weighted averages. If channel mix changes, overall escalation can rise even if every channel-specific rate is unchanged. This is not necessarily model degradation, but users experience the aggregate. Report both conditional rates and standardized aggregate using a fixed reference mix when diagnosing. Simpson's paradox can reverse trends when group composition differs; inspect the causal relevance of the stratifier before “adjusting.”\n\nEstimate target weights from the correct population/time and conditionals from compatible samples. Survey/post-stratification weights correct known sampling imbalance but increase variance when extreme; report effective sample size. Sparse groups benefit from uncertainty intervals or hierarchical shrinkage, not silent pooling. Missing/delayed outcomes can bias group rates; log observation propensity and perform designed audits/sensitivity analysis.\n\nVersion partition definitions, weight source/window, conditional models and unknown-category policy. Monitor weight sums, segment mix, conditional and aggregate metrics, within/between variance, sparse-cell counts and calibration. Protect small-group statistics. Bound mixture components, normalize in log space and fail on invalid weights. Keep prior weight/model bundles for rollback and distinguish a rollback of population assumptions from a code rollback."
+    }
+  ],
+  "math": "For partition {B_i}, `P(A)=Σ_iP(A|B_i)P(B_i)`. For integrable X and conditioning variable Z, `E[X]=E[E[X|Z]]`. For finite second moment, `Var(X)=E[Var(X|Z)]+Var(E[X|Z])`. For discrete groups with weights w_z, these are weighted sums over z.",
+  "workedExamples": [
+    {
+      "title": "Support escalation and handling time",
+      "setup": "Chat handles 70% of cases with 10% escalation and mean 8 minutes; phone handles 30% with 30% escalation and mean 20 minutes.",
+      "walkthrough": "Total escalation is `0.7×0.10+0.3×0.30=0.16`. Expected handling time is `0.7×8+0.3×20=11.6` minutes. An unweighted average of channel escalation rates gives 20% and is wrong for the population. If phone share rises to 60% while channel rates remain fixed, total escalation becomes 22%; composition alone explains the change. If within-channel handling-time variances are 9 and 25, total variance is weighted within `0.7×9+0.3×25=13.8` plus between-group variance `0.7(8−11.6)^2+0.3(20−11.6)^2=30.24`, total 44.04.",
+      "conclusion": "Weights, conditional behavior and between-group differences jointly determine aggregate outcomes."
+    }
+  ],
+  "exercises": [
+    {
+      "difficulty": "recall",
+      "prompt": "State the law of total variance.",
+      "solution": "`Var(X)=E[Var(X|Z)]+Var(E[X|Z])`."
+    },
+    {
+      "difficulty": "application",
+      "prompt": "Groups have rates 10% and 40% with weights 80% and 20%. What is the overall rate?",
+      "solution": "`0.8×0.10+0.2×0.40=0.16`, or 16%."
+    },
+    {
+      "difficulty": "diagnosis",
+      "prompt": "Aggregate accuracy falls while every region's accuracy is unchanged. What should you inspect?",
+      "solution": "The region mixture shifted toward lower-baseline-accuracy regions; compare actual and standardized weights before attributing model drift."
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "harvard-stat110",
+      "contribution": "Provides total probability, conditional expectation, tower property, total variance and first-step analysis."
+    },
+    {
+      "resource": "think-bayes",
+      "contribution": "Supplies computational mixture and posterior-predictive examples that average over latent uncertainty."
+    },
+    {
+      "resource": "stanford-stats60",
+      "contribution": "Connects weighted averages, scale, subgroup composition and responsible interpretation."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "flow",
+      "title": "Condition, solve, and recombine",
+      "items": [
+        "Choose disjoint exhaustive cases",
+        "Compute conditional answer per case",
+        "Measure target-population weights",
+        "Multiply answer × weight",
+        "Sum",
+        "Check against direct aggregate"
+      ],
+      "caption": "Total laws convert a complex problem into simpler conditional pieces with visible weights.",
+      "afterSection": "total-probability"
+    },
+    {
+      "type": "compare",
+      "title": "Two sources of total uncertainty",
+      "left": {
+        "title": "Within groups",
+        "items": [
+          "E[Var(X|Z)]",
+          "Noise/heterogeneity remaining",
+          "Average of conditional spreads"
+        ]
+      },
+      "right": {
+        "title": "Between groups",
+        "items": [
+          "Var(E[X|Z])",
+          "Conditional means differ",
+          "Composition affects aggregate"
+        ]
+      },
+      "caption": "Ignoring either term understates overall variance in heterogeneous populations.",
+      "afterSection": "total-variance"
+    }
+  ],
+  "lab": {
+    "goal": "Compute total probability, expectation and variance for a finite mixture and verify them against direct enumeration and composition changes.",
+    "language": "python",
+    "buildIt": "def mixture_moments(weights,means,variances):\n    if len(weights)!=len(means) or len(weights)!=len(variances) or abs(sum(weights)-1)>1e-12 or any(w<0 for w in weights): raise ValueError('invalid mixture')\n    mean=sum(w*m for w,m in zip(weights,means))\n    within=sum(w*v for w,v in zip(weights,variances))\n    between=sum(w*(m-mean)**2 for w,m in zip(weights,means))\n    return mean,within,between,within+between\n\ndef total_probability(weights,conditionals):\n    return sum(w*p for w,p in zip(weights,conditionals))",
+    "useIt": "weights=[.7,.3]; rates=[.1,.3]; means=[8.,20.]; variances=[9.,25.]\nescalation=total_probability(weights,rates)\nmoments=mixture_moments(weights,means,variances)\n# Direct discrete mixture with two equally likely points around each mean matching variance is not needed; verify identity algebraically.\nshifted=total_probability([.4,.6],rates)",
+    "verifyIt": "assert abs(escalation-.16)<1e-15\nassert all(abs(a-b)<1e-12 for a,b in zip(moments,[11.6,13.8,30.24,44.04]))\nassert shifted==.22 and shifted>escalation\nassert abs(moments[3]-(moments[1]+moments[2]))<1e-15\nassert total_probability([1.,0.],rates)==rates[0]\ntry: mixture_moments([.5,.4],means,variances)\nexcept ValueError: pass\nelse: raise AssertionError('weights must define target population')",
+    "shipIt": "Version partitions and weight sources, monitor composition plus conditional/aggregate metrics, use stable normalized mixtures and uncertainty for sparse cells, protect small groups and keep a prior weight-model rollback bundle."
   }
 }

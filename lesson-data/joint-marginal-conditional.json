@@ -7,31 +7,171 @@
     "ds",
     "as"
   ],
-  "interviewAnswer": "A joint distribution describes variables together; marginalization sums/integrates out variables; conditioning updates the distribution given observed information.",
+  "interviewAnswer": "The joint distribution `p(x,y)` assigns probability to combinations. Marginals sum or integrate out unobserved variables: `p(x)=Σ_y p(x,y)`. For `p(y)>0`, `p(x|y)=p(x,y)/p(y)`. Conversely `p(x,y)=p(x|y)p(y)`, and this chain rule extends to many variables. A joint determines all marginals and conditionals, but a marginal does not preserve dependence. For continuous variables, densities integrate rather than give point probability. Conditioning means learning an observed event; it is not the same as intervening causally. Validate support and normalization and use log-space inference for tiny high-dimensional probabilities.",
   "keyPoints": [
-    "Marginalize unwanted variables.",
-    "Conditional distributions depend on evidence.",
-    "Bayes rule reverses conditioning."
+    "Joint keeps co-occurrence",
+    "Marginal sums out variables",
+    "Conditional slices and renormalizes",
+    "Chain rule factorizes any joint",
+    "Conditioning is observation, not intervention"
   ],
   "resources": [
     "harvard-stat110",
-    "stanford-stats60"
+    "stanford-stats60",
+    "scipy-stats"
   ],
   "featured": false,
-  "why": "Joint, Marginal & Conditional Distributions is a recurring foundation across data science and machine learning because it affects both theoretical correctness and practical system behavior.",
-  "intuition": "Marginalize unwanted variables.",
-  "deepDive": "A joint distribution describes variables together; marginalization sums/integrates out variables; conditioning updates the distribution given observed information. Conditional distributions depend on evidence. Bayes rule reverses conditioning. The interview-level skill is not merely recalling the definition: explain the assumptions, what diagnostic evidence you would inspect, and what alternative you would choose when those assumptions fail.",
-  "workedExample": "From a joint table of device and conversion, derive device marginal rates and P(conversion|device).",
+  "why": "Naive Bayes, sequence models, mixture models, risk aggregation and missing-data systems all manipulate joint and conditional distributions. Teams often multiply incompatible conditionals, normalize over the wrong axis, interpret density as probability, or use P(Y|X) as if changing X would cause Y. Correct view changes prevent these errors and make inference algorithms easier to verify.",
+  "intuition": "Picture a grid whose cells hold joint probability. Row sums give one marginal; column sums give the other. Conditioning on a column covers every other column and rescales the chosen one to sum to one. The same joint table supports many views, but a list of row sums cannot reconstruct how mass was arranged inside the grid.",
+  "deepDive": "The full explanation is organized into the structured sections below.",
+  "workedExample": "The table sums to one. Marginals: P(rain)=0.40 and P(high)=0.42. Conditional P(high|rain)=0.24/0.40=0.60; P(high|dry)=0.18/0.60=0.30. Reconstruct rain/high as 0.60×0.40=0.24. If rain and high were independent, their joint would be 0.40×0.42=0.168, so they are associated. This does not prove making it rain would cause demand; common causes or selection may matter. An inference service should log the table/version, reject unsupported categories and monitor both weather prevalence and conditional demand drift.",
   "commonMistakes": [
-    "Using the concept mechanically without checking assumptions or data semantics.",
-    "Reporting one metric/result without examining uncertainty, slices or failure modes."
+    {
+      "mistake": "A marginal distribution preserves dependence information.",
+      "correction": "Summing out variables loses how probability was paired; many joints share the same marginals."
+    },
+    {
+      "mistake": "Condition on an event with zero probability using the elementary ratio.",
+      "correction": "The denominator is zero; continuous conditioning uses densities/regular conditionals and explicit model structure."
+    },
+    {
+      "mistake": "Interpret P(Y|X=x) as the result of forcing X=x.",
+      "correction": "Observation and intervention differ when confounding, mediation or selection exists."
+    }
   ],
   "followUps": [
-    "What assumptions or limitations does Joint, Marginal & Conditional Distributions have?",
-    "How would you validate Joint, Marginal & Conditional Distributions on a real dataset?"
+    {
+      "question": "How do you get a marginal from a joint?",
+      "answer": "Sum or integrate the joint over every value of the variables being removed."
+    },
+    {
+      "question": "Does a joint determine conditionals?",
+      "answer": "Yes where the conditioning event has positive probability/density structure; the reverse from arbitrary conditionals may not define a compatible joint."
+    },
+    {
+      "question": "Why use log probabilities in inference?",
+      "answer": "Products of many small probabilities underflow; logs turn products into sums and log-sum-exp normalizes stably."
+    }
   ],
-  "production": "In production, make assumptions explicit, validate on representative slices, compare with a simple baseline and monitor the signals that can drift.",
+  "production": "Version support, variable/axis semantics, factorization, observation process and inference algorithm. Verify normalization, marginal/conditional reconstruction and exact small cases; compute in log space and bound resources. Monitor support, missingness, marginals/conditionals and calibration by slice, secure rare joint combinations, document observation versus intervention and retain a compatible model-feature rollback bundle.",
   "editorial": {
-    "status": "summary"
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "A joint distribution describes uncertainty about variables together; marginals summarize one variable by summing or integrating out the others; conditional distributions renormalize a slice after observing information. These operations are the grammar behind probabilistic models, likelihoods, missing-data reasoning and graphical models. This chapter develops discrete probability tables and continuous joint densities, support, normalization, CDFs, conditional expectation, transformations and the chain/product rule. You will learn that marginals lose dependence information, that conditioning can change both support and association, and that a valid-looking collection of conditionals may not correspond to one compatible joint distribution. A worked weather-demand table computes marginals, conditionals, covariance and a posterior-like update. The lab normalizes a joint table and verifies marginalization, conditional normalization, reconstruction and expectation. Production guidance covers sparse/high-dimensional representations, zero-probability conditioning, density/log normalization, missing-not-at-random selection, privacy, drift, inference approximation and rollback. The objective is to move fluently among joint, marginal and conditional views while always naming which variables were observed, integrated out or intervened upon.",
+  "prerequisites": [
+    "probability-basics",
+    "expectation-variance"
+  ],
+  "learningObjectives": [
+    "Construct and validate discrete/continuous joint distributions and derive marginals, conditionals and expectations by sum/integration.",
+    "Use chain-rule factorizations and transformations while distinguishing conditioning from marginalization and intervention.",
+    "Operate high-dimensional probabilistic representations with stable normalization, support/selection assumptions, approximation checks and privacy controls."
+  ],
+  "deepSections": [
+    {
+      "id": "joint-support",
+      "title": "Joint distributions and support",
+      "body": "For discrete X,Y, a joint PMF p(x,y) is nonnegative and sums to one over allowed pairs. Support may be constrained: if Y≤X, many grid cells are impossible and normalization must respect that region. For continuous variables, joint density integrates to one over its support; probability of a region is a double/multiple integral. Mixed discrete-continuous models require appropriate measures and cannot be represented by one ordinary PDF without care.\n\nThe joint CDF `F(x,y)=P(X≤x,Y≤y)` determines the distribution and can recover rectangle probabilities through inclusion–exclusion. Density contours show concentration but can hide tail probability. Transforming variables uses a Jacobian determinant to preserve probability mass; simply substituting coordinates without it gives a wrong density.\n\nA joint model encodes dependence. Two models can share the same marginals but have opposite or nonlinear dependence and very different risk for sums/extremes. Copulas formalize coupling marginals, but estimation/tail assumptions remain. Empirical joint tables become sparse exponentially with dimension, motivating factorizations, parametric models and approximate inference."
+    },
+    {
+      "id": "marginal-conditional",
+      "title": "Marginalization and conditioning",
+      "body": "Marginalization removes a variable by summing/integrating: `p_X(x)=Σ_y p(x,y)`. It represents uncertainty when Y is unobserved, not necessarily unknown in the world. Marginal expectation follows by the same aggregation. Integrating latent variables can induce dependence among observed variables even if they are conditionally independent given the latent state.\n\nConditioning on Y=y forms `p(x|y)=p(x,y)/p_Y(y)` when the denominator is positive. The conditional distribution has its own support and moments that vary with y. Conditioning on a probability-zero continuous event requires a regular conditional distribution/limit rather than the elementary ratio of point probabilities; density ratios often supply the practical formula. Conditioning on selection can create association (collider bias) even when variables were marginally independent.\n\nMissing data are not automatically marginalization under the desired population. If missingness depends on unobserved values, observed cases follow a selected conditional distribution. Model the observation mechanism or perform sensitivity analysis. In code, normalize along the correct axis and retain named dimensions; a tensor whose rows/columns happen to share sizes can silently normalize the wrong conditional."
+    },
+    {
+      "id": "factorization-inference",
+      "title": "Chain-rule factorization and inference",
+      "body": "The product rule gives `p(x,y)=p(x|y)p(y)=p(y|x)p(x)`. For variables X1…Xn, any ordering yields `p(x1)…p(xn|x1…x_{n−1})`. This is an identity, not an independence assumption. Graphical models simplify factors using conditional-independence assumptions; autoregressive models choose an order and parameterize each conditional. Compatibility matters: arbitrary separately specified conditionals may contradict each other and fail to define a joint.\n\nInference computes conditionals or marginals from a joint/factorization. Exact summation grows exponentially in dense discrete spaces. Variable elimination reorders sums/products; message passing exploits graph structure; Monte Carlo and variational methods approximate when exact inference is costly. Numerical implementations use log probabilities and log-sum-exp. Normalizing constants may be intractable but cannot be ignored when comparing properly normalized probabilities.\n\nValidate small models by enumerating all states: total mass one, marginals sum one, conditionals normalize, and reconstructing `p(x|y)p(y)` returns the joint. For approximate inference, compare on tractable subproblems, monitor effective sample size or bounds and test calibration/downstream decisions rather than trusting convergence messages alone."
+    },
+    {
+      "id": "operation-semantics",
+      "title": "Semantics and production operation",
+      "body": "Version variable definitions, support, discretization, factorization/order, parameterization, observation/missingness process and inference algorithm. Keep event time and feature-availability constraints so conditioning never uses future information. Monitor joint support violations, marginal and conditional drift, normalization error, log-likelihood/calibration, missingness patterns and important slices.\n\nHigh-dimensional tables can leak individuals through rare combinations; apply minimum-group, privacy and access controls to joint statistics. Bound inference state spaces, iteration and memory. Handle impossible evidence explicitly rather than dividing by zero or returning a uniform distribution without policy. Distinguish out-of-model evidence from numerical underflow by computing in log space.\n\nA conditional predictive model estimates observational P(Y|X); deploying an action that sets X requires causal assumptions and may shift behavior. Document this boundary. Keep an older model/factorization and compatible feature pipeline for rollback. When approximation changes, run shadow comparisons on exact/synthetic cases and retain seeds/artifacts for reproducibility."
+    }
+  ],
+  "math": "Discrete: `p(x,y)≥0`, `Σ_xΣ_y p(x,y)=1`; `p_X(x)=Σ_y p(x,y)`; `p(x|y)=p(x,y)/p_Y(y)` when p_Y(y)>0. Continuous analogues replace sums with integrals and use densities. Chain rule: `p(x_1,…,x_n)=∏_{i=1}^n p(x_i|x_1,…,x_{i−1})` for an ordering.",
+  "workedExamples": [
+    {
+      "title": "Weather and high demand",
+      "setup": "Joint probabilities are P(rain,high)=0.24, P(rain,low)=0.16, P(dry,high)=0.18, P(dry,low)=0.42.",
+      "walkthrough": "The table sums to one. Marginals: P(rain)=0.40 and P(high)=0.42. Conditional P(high|rain)=0.24/0.40=0.60; P(high|dry)=0.18/0.60=0.30. Reconstruct rain/high as 0.60×0.40=0.24. If rain and high were independent, their joint would be 0.40×0.42=0.168, so they are associated. This does not prove making it rain would cause demand; common causes or selection may matter. An inference service should log the table/version, reject unsupported categories and monitor both weather prevalence and conditional demand drift.",
+      "conclusion": "Marginals describe frequency; conditionals describe selected slices; the joint preserves their dependence."
+    }
+  ],
+  "exercises": [
+    {
+      "difficulty": "recall",
+      "prompt": "How is p(x) obtained from p(x,y) in a discrete model?",
+      "solution": "`p(x)=Σ_y p(x,y)`."
+    },
+    {
+      "difficulty": "application",
+      "prompt": "Given p(x,y), how do you compute E[X|Y=y]?",
+      "solution": "Normalize the y slice to p(x|y), then sum `Σ_x x p(x|y)` (or integrate continuously)."
+    },
+    {
+      "difficulty": "diagnosis",
+      "prompt": "Rows of a conditional table do not sum to one. What might be wrong?",
+      "solution": "Normalization used the wrong axis/denominator, impossible states were mishandled, or the input joint itself is not normalized/nonnegative."
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "harvard-stat110",
+      "contribution": "Provides joint, marginal, conditional distributions, transformations and conditional expectation foundations."
+    },
+    {
+      "resource": "stanford-stats60",
+      "contribution": "Supplies current conditional-probability interpretation and common-mistake pedagogy."
+    },
+    {
+      "resource": "scipy-stats",
+      "contribution": "Documents current multivariate/distribution APIs and numerical probability functions used in implementation."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "flow",
+      "title": "Three views of one probability table",
+      "items": [
+        "Joint p(x,y): keep co-occurrence",
+        "Sum over y → marginal p(x)",
+        "Select y and divide by p(y) → conditional p(x|y)",
+        "Multiply p(x|y)p(y) → reconstruct joint"
+      ],
+      "caption": "Marginalization removes information; conditioning selects and renormalizes a slice.",
+      "afterSection": "marginal-conditional"
+    },
+    {
+      "type": "compare",
+      "title": "Observation versus action",
+      "left": {
+        "title": "Condition P(Y|X=x)",
+        "items": [
+          "Select cases where X=x",
+          "May reflect confounding",
+          "Population composition changes"
+        ]
+      },
+      "right": {
+        "title": "Intervene do(X=x)",
+        "items": [
+          "Set X by an action",
+          "Break incoming causes",
+          "Requires a causal model"
+        ]
+      },
+      "caption": "A predictive conditional is not automatically an intervention effect.",
+      "afterSection": "operation-semantics"
+    }
+  ],
+  "lab": {
+    "goal": "Normalize and query a discrete joint table, verifying marginals, conditionals, reconstruction, expectations and dependence.",
+    "language": "python",
+    "buildIt": "def validate_joint(table):\n    if any(value<0 for row in table for value in row): raise ValueError('negative mass')\n    total=sum(map(sum,table))\n    if abs(total-1)>1e-12: raise ValueError('not normalized')\n\ndef marginals(table):\n    validate_joint(table)\n    rows=[sum(row) for row in table]\n    cols=[sum(table[i][j] for i in range(len(table))) for j in range(len(table[0]))]\n    return rows,cols\n\ndef conditional_x_given_y(table,j):\n    _,cols=marginals(table); denominator=cols[j]\n    if denominator==0: raise ValueError('impossible evidence')\n    return [table[i][j]/denominator for i in range(len(table))]",
+    "useIt": "joint=[[.24,.16],[.18,.42]]\nweather,demand=marginals(joint)\n# rows: rain,dry; columns: high,low\np_weather_given_high=conditional_x_given_y(joint,0)\np_high_given_weather=[joint[i][0]/weather[i] for i in range(2)]",
+    "verifyIt": "assert weather==[.4,.6] and demand==[.42,.58]\nassert abs(sum(p_weather_given_high)-1)<1e-12\nassert p_high_given_weather==[.6,.3]\nfor i in range(2):\n    for j in range(2):\n        assert abs((joint[i][j]/weather[i])*weather[i]-joint[i][j])<1e-12\nassert joint[0][0]!=weather[0]*demand[0]\ntry: conditional_x_given_y([[.5,0],[.5,0]],1)\nexcept ValueError: pass\nelse: raise AssertionError('zero evidence must fail')",
+    "shipIt": "Use named dimensions and log-space probability libraries for large models, preserve observation/missingness semantics, monitor normalization/support/conditional drift, protect rare joint cells and keep a compatible inference rollback artifact."
   }
 }

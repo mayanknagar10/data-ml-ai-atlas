@@ -9,47 +9,174 @@
     "aie",
     "as"
   ],
-  "interviewAnswer": "Eigenvectors are directions preserved by a linear transformation up to scaling. SVD decomposes any matrix into orthogonal directions and singular values, making it useful for compression, PCA intuition and low-rank approximation.",
+  "interviewAnswer": "An eigenvector v of square A satisfies Av=λv, so its direction is preserved and scaled by eigenvalue λ. General matrices may have complex eigenvalues or lack a full eigenbasis; real symmetric matrices have orthonormal eigenvectors and real eigenvalues. Any m×n matrix has an SVD `A=UΣVᵀ`: V gives orthonormal input directions, Σ nonnegative gains, and U the corresponding output directions. Singular values expose rank and conditioning, and keeping the top k terms gives the best rank-k approximation in Frobenius and spectral norm. PCA is SVD/eigendecomposition applied to centered data/covariance, with preprocessing fitted on training data.",
   "keyPoints": [
-    "Eigen equation Av=λv",
+    "Eigenvectors preserve direction",
     "SVD works for rectangular matrices",
-    "Low-rank approximation",
-    "Connection to PCA"
+    "Singular values quantify gain",
+    "Truncation is optimal for reconstruction norms",
+    "PCA requires centering and leakage control"
   ],
   "resources": [
     "mit-linear-algebra",
-    "3b1b-linear-algebra"
+    "3b1b-linear-algebra",
+    "numpy-linalg"
   ],
   "featured": false,
-  "why": "Eigenvectors/SVD underpin PCA, low-rank approximation, conditioning and many representation/compression methods.",
-  "intuition": "An eigenvector is a direction a square matrix transforms without changing direction, only scale. SVD decomposes any matrix into orthogonal input/output directions with nonnegative strengths.",
-  "deepDive": "For square A, Av=λv. SVD exists for any m×n matrix: A=UΣVᵀ. Singular values rank directions by how strongly the transformation acts. Truncating small singular values gives the best low-rank approximation under common norms and reveals effective dimensionality. For symmetric covariance matrices, PCA eigenvectors correspond to right singular vectors of centered data.",
-  "math": "Av=λv\nA=UΣVᵀ\nRank-k approximation: A_k=U_k Σ_k V_kᵀ",
-  "workedExample": "A dataset with 100 correlated features may have most variance captured by the first 10 singular directions, enabling compression or visualization.",
+  "why": "Decompositions power dimensionality reduction, compression, latent factors, spectral clustering, covariance analysis, stable least squares and condition diagnostics. Misuse is common: calling singular vectors eigenvectors, performing PCA without centering, fitting components before splitting, treating sign flips as model drift, or assuming high explained variance guarantees predictive value. First-principles geometry explains the outputs and their limitations.",
+  "intuition": "A general matrix maps the unit sphere in its input space to an ellipsoid in its output space. Right singular vectors are orthogonal input directions along the ellipsoid's axes; singular values are their stretch factors; left singular vectors point along the resulting output axes. Eigenvectors instead ask for directions that remain on their own line inside the same square input/output space.",
+  "deepDive": "The full explanation is organized into the structured sections below.",
+  "math": "Eigenpair: Av=λv for square A and v≠0. SVD: A=UΣV^T with orthonormal U,V and σ_i≥0. Then A^TA v_i=σ_i²v_i and AA^T u_i=σ_i²u_i. Rank-r A has r positive singular values. The truncated A_k=Σ_{i=1}^kσ_i u_i v_i^T minimizes ||A−B||_2 and ||A−B||_F over rank(B)≤k, with ||A−A_k||_F²=Σ_{i>k}σ_i².",
+  "workedExample": "Its eigenvectors and singular vectors are the coordinate axes. Eigenvalues are 3 and 1; singular values are also 3 and 1 because A is symmetric positive. Full SVD reconstructs A exactly. The best rank-one approximation keeps `3 e1 e1^T`, producing diag(3,0). Its spectral error is 1 and squared Frobenius error is 1, equal to the discarded singular value contributions. If the second axis contained crucial rare-class information, optimal reconstruction error would not guarantee optimal classification. A sign flip of e1 in both left/right vectors represents the same component.",
   "code": "import numpy as np\nU,S,Vt=np.linalg.svd(X_centered,full_matrices=False)\nX_rank10=U[:,:10]@np.diag(S[:10])@Vt[:10]",
   "commonMistakes": [
-    "Assuming every matrix has a full set of real eigenvectors.",
-    "Confusing eigenvalues with singular values.",
-    "Using PCA without centering or considering scale."
+    {
+      "mistake": "Every square matrix has an orthonormal eigenbasis.",
+      "correction": "Real symmetric matrices do; general matrices may be non-normal, defective or have complex eigenpairs."
+    },
+    {
+      "mistake": "PCA on all data before splitting is harmless preprocessing.",
+      "correction": "The mean and components learn validation/test distribution, causing leakage; fit only on training data."
+    },
+    {
+      "mistake": "Component sign changes indicate a different solution.",
+      "correction": "Singular/eigenvectors are sign-ambiguous, and repeated/near-equal values permit basis rotations; compare subspaces/reconstruction."
+    }
   ],
   "followUps": [
-    "Why does SVD work for rectangular matrices?",
-    "How does SVD relate to PCA?",
-    "What does a small singular value mean?",
-    "What is condition number?"
+    {
+      "question": "How are eigenvalues and singular values related?",
+      "answer": "Singular values of A are square roots of eigenvalues of positive-semidefinite A^TA; they are nonnegative and apply to rectangular A."
+    },
+    {
+      "question": "What does a tiny singular value imply?",
+      "answer": "The map nearly erases that input direction, so inversion/coefficients can amplify noise and the problem is ill-conditioned."
+    },
+    {
+      "question": "What does truncated SVD optimize?",
+      "answer": "Matrix reconstruction error among rank-k approximations under spectral and Frobenius norms, not every downstream objective."
+    }
   ],
-  "production": "Low-rank methods reduce storage/compute and diagnose redundant representations, but truncation can remove rare yet important directions—validate downstream impact.",
-  "visual": {
-    "type": "layers",
-    "title": "SVD decomposition",
-    "items": [
-      "Vᵀ · input basis",
-      "Σ · scale singular directions",
-      "U · output basis"
-    ],
-    "caption": "SVD decomposes a linear map into orthogonal directions and axis-wise scaling."
-  },
+  "production": "Fit centering/scaling and decomposition on training data only; version representation, k, solver, seed and tolerances. Validate orthogonality, reconstruction, convergence, rank/condition and downstream metrics across slices. Use sparse/randomized operators for scale with exact-subset regression, control dtype/threads and monitor covariance/subspace drift. Protect sensitive components and roll back the transform with all dependent coordinates/models.",
   "editorial": {
-    "status": "summary"
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "Eigenvectors identify directions preserved by a square linear transformation up to scale; singular value decomposition (SVD) gives an orthonormal input/output basis and nonnegative gains for any rectangular matrix. This chapter distinguishes eigendecomposition from SVD, derives their geometry, and connects them through `AᵀA` and `AAᵀ`. You will learn when a real matrix may lack a complete real eigenbasis, why symmetric matrices behave especially well, how singular values reveal rank and conditioning, and how truncated SVD yields the best low-rank approximation under standard norms. The chapter connects these ideas to principal component analysis, latent semantic structure, image compression, pseudoinverse and iterative power methods while separating centered covariance PCA from an uncentered matrix factorization. A worked 2×2 example verifies reconstruction and rank-one error. The lab implements power iteration and uses NumPy SVD with sign-invariant checks. Production guidance covers scaling, missing data, randomized algorithms, component stability, sign/rotation ambiguity, reconstruction versus downstream utility, privacy, resource cost and rollback. The aim is to make decompositions tools for understanding which directions a system amplifies, suppresses or cannot identify—not mysterious functions that merely return three arrays.",
+  "prerequisites": [
+    "vectors-matrices",
+    "projections-least-squares"
+  ],
+  "learningObjectives": [
+    "Explain eigenvectors/eigenvalues and singular vectors/values geometrically and state when each decomposition applies.",
+    "Use singular values to reason about rank, conditioning, pseudoinverse, energy and optimal low-rank approximation.",
+    "Apply PCA or truncated SVD without leakage, centering mistakes or invalid interpretations of unstable components."
+  ],
+  "deepSections": [
+    {
+      "id": "eigen-geometry",
+      "title": "Eigenvalues, eigenvectors, and symmetric structure",
+      "body": "For square A, a nonzero vector v is an eigenvector if Av=λv. Scaling v gives the same direction, so normalization is conventional. Eigenvalues satisfy `det(A−λI)=0`. Repeated eigenvalues can have one or multiple independent eigenvectors. A matrix is diagonalizable when it has a basis of eigenvectors, giving `A=VΛV^{-1}` and making powers easy: `A^t=VΛ^tV^{-1}`. Not every matrix is diagonalizable, and real matrices can have complex eigenpairs.\n\nReal symmetric matrices are special: the spectral theorem gives real eigenvalues and an orthonormal eigenbasis, `A=QΛQ^T`. Positive semidefinite matrices have nonnegative eigenvalues and define nonnegative quadratic forms. Covariance and Gram matrices have this structure, enabling stable geometric interpretation. For a Markov transition convention, a dominant eigenvector can describe stationary behavior under appropriate conditions; network spectral methods depend on which Laplacian/adjacency normalization is used.\n\nEigenvalue magnitude often governs repeated linear dynamics, but non-normal matrices can show transient amplification not predicted by eigenvalues alone. Eigenvector conditioning matters. Production conclusions should not reduce a general dynamical system to “largest eigenvalue wins” without checking diagonalizability, normalization and the actual operator."
+    },
+    {
+      "id": "svd-geometry",
+      "title": "Singular value decomposition and fundamental subspaces",
+      "body": "For A∈R^{m×n}, SVD is `A=UΣV^T`. In a reduced SVD of rank r, U has r orthonormal columns in R^m, V has r orthonormal columns in R^n, and diagonal Σ contains singular values `σ1≥…≥σr>0`. Applying A first expresses x in the right-singular basis V, scales components by σ, and expresses the result in U. Null-space right singular directions have zero gain.\n\nThe right singular vectors are eigenvectors of `A^TA` with eigenvalues σ²; left singular vectors are eigenvectors of `AA^T`. This connection avoids conflating dimensions: A's singular vectors live in different spaces when A is rectangular. Rank equals the number of nonzero singular values in exact arithmetic. The spectral norm is σ1, the Frobenius norm squared is the sum of σ_i², and full-rank condition number is σ1/σmin. Tiny values amplify noise in inverse problems.\n\nThe pseudoinverse `A^+=VΣ^+U^T` reverses nonzero directions and zeroes the null space. A tolerance determines which values count as numerical zero. Scaling features changes singular values, components and condition, so compare only under a fixed representation."
+    },
+    {
+      "id": "low-rank-pca",
+      "title": "Low-rank approximation and PCA",
+      "body": "Writing SVD as `A=Σ_i σ_i u_i v_i^T` expresses A as rank-one components. The Eckart–Young–Mirsky theorem says truncating after k components gives a best rank-k approximation under spectral and Frobenius norms. The squared Frobenius reconstruction error is `Σ_{i>k}σ_i²`. This is an optimal statement for those matrix norms, not necessarily for classification accuracy, fairness, interpretability or perceptual quality.\n\nPrincipal component analysis centers data matrix X by the training mean. Right singular vectors of centered X are principal feature directions; scores are XV, and covariance eigenvalues are proportional to σ² depending on the covariance denominator. Explained variance ratio reports reconstruction variance, not supervised usefulness. Standardizing features changes PCA from covariance geometry toward correlation geometry and should follow unit/goal reasoning. Sparse/truncated SVD on term-document matrices is often applied without centering because centering destroys sparsity; call the method accurately.\n\nFit centering, scaling and components only on training data. Transform validation/test with those fitted parameters. Choose k using reconstruction, downstream validation, latency/storage and slice behavior. Component signs are arbitrary, and nearly equal singular values allow rotations within a subspace; compare subspaces or reconstructed outputs rather than raw columns alone."
+    },
+    {
+      "id": "algorithms-operation",
+      "title": "Algorithms and production operation",
+      "body": "Dense full SVD is expensive for very large matrices. If only top components are needed, Lanczos/Krylov or randomized SVD methods use matrix-vector products and subspace iteration. Power iteration repeatedly normalizes Av to approach a dominant eigenvector when spectral separation and initialization conditions are favorable; convergence slows when leading magnitudes are close and can miss components orthogonal to initialization. Sparse and linear-operator interfaces avoid materializing huge matrices.\n\nValidate reconstruction `A≈UΣV^T`, orthonormality `U^TU≈I`, `V^TV≈I`, sorted nonnegative values and expected residual. Use relative tolerances tied to dtype and norm. Compare randomized results across seeds by subspace angles or reconstruction, not signs. Monitor iteration convergence and fallback on nonconvergence. Mixed precision can distort small singular values, while oversubscribed BLAS threads can hurt latency.\n\nVersion row/feature definition, centering, scaling, missing-value treatment, k, solver, seed and tolerance. Monitor input scale/covariance drift, explained/reconstruction error, downstream metrics, component/subspace stability, latency and memory. Decompositions may encode sensitive population structure; restrict artifacts and evaluate subgroup effects. Keep a prior transform plus compatible downstream model/index for rollback, since changing the basis invalidates stored coordinates."
+    }
+  ],
+  "workedExamples": [
+    {
+      "title": "Diagonal stretch and rank-one approximation",
+      "setup": "Let A=diag(3,1), a transformation that stretches the first coordinate three times and preserves the second.",
+      "walkthrough": "Its eigenvectors and singular vectors are the coordinate axes. Eigenvalues are 3 and 1; singular values are also 3 and 1 because A is symmetric positive. Full SVD reconstructs A exactly. The best rank-one approximation keeps `3 e1 e1^T`, producing diag(3,0). Its spectral error is 1 and squared Frobenius error is 1, equal to the discarded singular value contributions. If the second axis contained crucial rare-class information, optimal reconstruction error would not guarantee optimal classification. A sign flip of e1 in both left/right vectors represents the same component.",
+      "conclusion": "Singular values quantify directional gain and reconstruction loss, but the downstream task decides whether a discarded direction matters."
+    }
+  ],
+  "exercises": [
+    {
+      "difficulty": "recall",
+      "prompt": "Where do left and right singular vectors live for an m×n matrix?",
+      "solution": "Left singular vectors live in the m-dimensional output space; right singular vectors live in the n-dimensional input space."
+    },
+    {
+      "difficulty": "application",
+      "prompt": "Why use truncated SVD for a sparse term-document matrix rather than centered PCA?",
+      "solution": "Centering can destroy sparsity; uncentered truncated SVD preserves sparse computation, though its components are not covariance PCA."
+    },
+    {
+      "difficulty": "diagnosis",
+      "prompt": "Two runs have flipped component signs but identical reconstruction. Is that a failure?",
+      "solution": "No. Signs are arbitrary when paired consistently. Compare reconstruction or subspace, not raw sign."
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "mit-linear-algebra",
+      "contribution": "Provides eigenvalue, symmetric matrix, positive-definite, SVD, pseudoinverse and image-compression foundations."
+    },
+    {
+      "resource": "3b1b-linear-algebra",
+      "contribution": "Offers geometric explanations of eigenvectors, basis change and transformations that complement the formal derivation."
+    },
+    {
+      "resource": "numpy-linalg",
+      "contribution": "Documents current eigen/SVD, rank, condition and pseudoinverse routines and their array behavior."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "flow",
+      "title": "SVD maps a sphere to an ellipsoid",
+      "items": [
+        "Rotate into right-singular basis Vᵀ",
+        "Scale axes by singular values Σ",
+        "Rotate into output basis U",
+        "Zero-gain axes form null space"
+      ],
+      "caption": "Right directions, nonnegative gains and left directions can describe any rectangular linear map.",
+      "afterSection": "svd-geometry"
+    },
+    {
+      "type": "compare",
+      "title": "Eigen versus singular decomposition",
+      "left": {
+        "title": "Eigen",
+        "items": [
+          "Square operator",
+          "Same input/output direction",
+          "May be complex or defective",
+          "Symmetric case is orthonormal"
+        ]
+      },
+      "right": {
+        "title": "SVD",
+        "items": [
+          "Any rectangular matrix",
+          "Separate input/output bases",
+          "Always nonnegative gains",
+          "Direct rank/condition diagnostics"
+        ]
+      },
+      "caption": "The decompositions answer related but distinct geometric questions.",
+      "afterSection": "eigen-geometry"
+    }
+  ],
+  "lab": {
+    "goal": "Implement dominant-eigenvector power iteration, then verify SVD reconstruction, orthogonality, sign-invariant eigen behavior and optimal rank-one error.",
+    "language": "python",
+    "buildIt": "import math\n\ndef power_iteration(a,start,steps=100):\n    v=list(map(float,start))\n    for _ in range(steps):\n        w=[sum(row[j]*v[j] for j in range(len(v))) for row in a]\n        norm=math.sqrt(sum(x*x for x in w))\n        if norm==0: raise ValueError('zero iterate')\n        v=[x/norm for x in w]\n    av=[sum(row[j]*v[j] for j in range(len(v))) for row in a]\n    value=sum(v[i]*av[i] for i in range(len(v)))\n    return value,v",
+    "useIt": "import numpy as np\nA=np.array([[3.,0.],[0.,1.]])\nvalue,vector=power_iteration(A.tolist(),[1.,1.])\nU,s,Vt=np.linalg.svd(A,full_matrices=False)\nrank1=s[0]*np.outer(U[:,0],Vt[0])\nreconstruction=(U*s)@Vt",
+    "verifyIt": "assert abs(value-3.0)<1e-10\nassert abs(abs(vector[0])-1.0)<1e-8\nassert np.allclose(reconstruction,A)\nassert np.allclose(U.T@U,np.eye(2)) and np.allclose(Vt@Vt.T,np.eye(2))\nassert np.allclose(s,[3.,1.])\nassert np.isclose(np.linalg.norm(A-rank1,2),s[1])\nassert np.isclose(np.linalg.norm(A-rank1,'fro')**2,sum(s[1:]**2))",
+    "shipIt": "Use stable library/randomized decompositions, training-only preprocessing, convergence and reconstruction checks, versioned basis metadata, downstream slice evaluation, drift monitoring and compatible rollback artifacts."
   }
 }

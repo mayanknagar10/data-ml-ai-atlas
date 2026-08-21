@@ -8,31 +8,178 @@
     "da",
     "as"
   ],
-  "interviewAnswer": "A permutation test builds a null distribution by shuffling labels in a way justified by exchangeability under the null. It is especially useful for transparent nonparametric testing.",
+  "interviewAnswer": "A permutation test compares an observed statistic with values obtained by shuffling in a way justified under the null. In a randomized experiment, reassign labels according to the actual assignment mechanism; in observational data, a label shuffle additionally requires exchangeability. Preserve pairs, blocks, clusters, and treatment counts. Exact enumeration is possible for small designs; otherwise sample permutations and use a correction such as (b+1)/(B+1). The p-value is valid for the specified statistic, null, design, and extremeness rule—not because permutation is automatically nonparametric.",
   "keyPoints": [
-    "Define a statistic before shuffling.",
-    "Shuffle only under a valid exchangeability assumption.",
-    "p-value is the tail probability under the randomization/null procedure."
+    "Randomization mechanism can supply the null distribution",
+    "Exchangeability is a substantive assumption",
+    "Pairs, blocks, and clusters constrain valid transformations",
+    "The statistic determines sensitivity and two-sided ordering",
+    "Monte Carlo p-values have simulation uncertainty"
   ],
   "resources": [
     "stanford-stats200",
+    "scipy-stats",
     "openintro-stats"
   ],
   "featured": false,
-  "why": "Permutation & Randomization Tests appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
-  "intuition": "Define a statistic before shuffling.",
-  "deepDive": "A permutation test builds a null distribution by shuffling labels in a way justified by exchangeability under the null. It is especially useful for transparent nonparametric testing. Shuffle only under a valid exchangeability assumption. p-value is the tail probability under the randomization/null procedure. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
-  "workedExample": "Shuffle treatment labels to test whether an observed conversion-rate difference is larger than random assignment would produce.",
+  "why": "Permutation tests make the source of calibration visible: if treatment truly had no effect, would relabeling assignments produce a statistic as large as observed? They are useful for custom metrics whose parametric null distribution is difficult. But shuffling can erase real structure. Permuting sessions across users, observations across time, or outcomes across unequal-variance groups can generate worlds the design never allowed. In randomized experiments, the assignment algorithm—not a generic shuffle—is authoritative. In observational comparisons, exchangeability is rarely guaranteed without conditioning or adjustment. Interviewers value these tests because the algorithm is simple but correct use requires deep design reasoning. In production, exactness also depends on reconstructing assignment and predefining the statistic, not merely calling a resampling API.",
+  "intuition": "Freeze every observed outcome and ask which treatment-label arrangements could have occurred under the assignment process if treatment changed none of them. Compute the chosen effect statistic for each allowed arrangement. The observed assignment is one member of that reference set. If its statistic lies in an extreme tail, the no-effect assignment model has difficulty explaining it. In a matched-pair experiment, only swapping labels within pairs is allowed; a global shuffle breaks the match. In a cluster-randomized experiment, whole cluster labels move together. For observational groups, the same picture requires the stronger claim that units were exchangeable under the null. A nonparametric test does not mean assumption-free—it relocates assumptions from a distribution family to invariance and design.",
+  "deepDive": "A permutation test is defined by a group of transformations G under which the joint data distribution is invariant under H0. The reference distribution is {T(gX): g in G}. Randomization tests obtain G from known assignment probabilities; permutation tests often posit exchangeability.",
+  "workedExample": "In a completely randomized experiment, 6 of 12 stores receive a promotion. The observed difference in average weekly sales is 4.2 units. There are choose(12,6)=924 possible assignments with six treated stores, small enough to enumerate. Recompute the mean difference for every assignment while holding outcomes fixed. If 18 assignments have an absolute difference at least 4.2, the two-sided exact p-value is 18/924=0.0195. If stores were randomized in matched regional pairs, enumerating all six-of-twelve allocations would be wrong; only the 2^6 within-pair swaps belong to the design.",
   "commonMistakes": [
-    "Applying the method without checking its assumptions or data-generating process.",
-    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+    "Saying permutation tests make no assumptions.",
+    "Globally shuffling labels when randomization occurred within blocks, pairs, or clusters.",
+    "Using observational label permutation as if it proved a causal effect despite confounding.",
+    "Changing the statistic or one-sided direction after observing the result.",
+    "Reporting zero from finite random permutations instead of a corrected Monte Carlo estimate and its precision."
   ],
   "followUps": [
-    "What assumptions does Permutation & Randomization Tests make?",
-    "How would you validate or debug Permutation & Randomization Tests in practice?"
+    {
+      "question": "What is exchangeability?",
+      "answer": "It is invariance of the joint distribution under the permitted permutations under H0. It is weaker or stronger depending on the transformation set and is a substantive design/model condition, not a property produced by shuffling."
+    },
+    {
+      "question": "When is a permutation test exact?",
+      "answer": "When the null makes outcomes invariant to transformations, the transformation probabilities match the actual design or symmetry, and the statistic and tail rule were fixed. Exact enumeration removes Monte Carlo error, not design error."
+    },
+    {
+      "question": "Why studentize a permutation statistic?",
+      "answer": "Dividing by an estimated standard error can make the statistic closer to pivotal and improve behavior when nuisance variance differs, especially for testing equal means rather than identical distributions. Validity still depends on conditions."
+    }
   ],
-  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "production": "Persist the randomization configuration, eligibility set, blocks, clusters, assignment probabilities, exposure logs, statistic code, tail definition, number of permutations, and RNG seed. Reconstruct the exact design rather than inferring it from observed treatment counts. Batch vectorized computations but compare optimized code with exact small fixtures. Monitor assignment integrity, missing outcomes, interference indicators, failed metric calculations, Monte Carlo precision, and runtime. Store aggregate null statistics only when privacy permits; avoid retaining duplicated sensitive rows. Predefine how ties and NaNs are handled. Use more permutations or an exact method near action thresholds. Label exploratory metrics and confirm them on fresh data. Roll back both metric and transformation rules when experiment design changes.",
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "Permutation and randomization tests build a reference distribution by applying transformations that are valid under a null hypothesis—often reallocating treatment labels or swapping paired signs—and comparing the observed statistic with that distribution. Their strength is transparent design-based calibration with few distributional assumptions; their danger is the casual belief that any labels may be shuffled. This chapter distinguishes Fisher randomization inference from observational permutation tests, defines exchangeability, shows exact and Monte Carlo tail calculations, handles paired and blocked designs, and explains studentization, ties, two-sided definitions, and the plus-one correction for sampled permutations. You will learn how interference, clustering, covariate-adaptive assignment, unequal variances, and data-dependent statistic selection invalidate naive shuffles. The worked example uses a randomized conversion experiment with a difference-in-means statistic. The lab enumerates a small exact test, compares it with SciPy, and verifies symmetry and p-value bounds. Production guidance covers assignment reconstruction, reproducible RNG, batch computation, audit logs, precision, and sequential use.",
+  "prerequisites": [
+    "hypothesis-testing"
+  ],
+  "learningObjectives": [
+    "Identify the exact transformation group justified by random assignment or exchangeability under the null.",
+    "Construct exact and Monte Carlo permutation distributions for independent, paired, blocked, and clustered designs.",
+    "Choose and predefine a statistic and two-sided extremeness rule appropriate to the alternative.",
+    "Diagnose invalid shuffles caused by dependence, unequal assignment, interference, or post-selection."
+  ],
+  "deepSections": [
+    {
+      "id": "design-null",
+      "title": "Randomization inference and the null being tested",
+      "body": "Under Fisher's sharp null, every unit's outcome would be identical under every treatment, so all missing potential outcomes are known and outcomes can be held fixed while assignments vary. Recompute the statistic over assignments allowed by the experiment, respecting fixed treatment counts, blocks, unequal probabilities, or clusters. The resulting p-value is exact conditional on the observed outcomes and assignment design. A weak null such as zero average effect does not impute every missing potential outcome; an unstudentized randomization test may not be exact for it under heterogeneous effects. State whether the null is sharp, distributional equality, equal means, or conditional independence."
+    },
+    {
+      "id": "exchangeability",
+      "title": "Exchangeability and constrained permutations",
+      "body": "Exchangeability means the joint distribution is invariant to the permitted label permutations under H0. Independent identically distributed samples support broad permutations under a distribution-equality null. Paired data support within-pair swaps or sign flips. Blocked experiments permute within blocks. Repeated measures may require subject-level transformations. Time and spatial structures rarely permit arbitrary global shuffles; cyclic shifts or restricted permutations may be justified under specific stationarity claims. Covariate-adaptive randomization must be replayed faithfully. If the transformation destroys dependence or changes nuisance distributions, the reference distribution is wrong even if the code executes."
+    },
+    {
+      "id": "statistics-pvalues",
+      "title": "Statistic choice, exact tails, and Monte Carlo estimates",
+      "body": "Choose a statistic before unblinding: mean difference for location, studentized difference for unequal variances, rank statistic for stochastic ordering, or a domain metric for practical sensitivity. Two-sided p-values can be based on absolute statistic, doubled smaller tail, or probability ordering; definitions differ for asymmetric discrete distributions. Exact p is the fraction of allowed transformations at least as extreme, typically including the observed arrangement. When B random permutations are sampled, (b+1)/(B+1) avoids zero and yields a valid conservative Monte Carlo estimate under standard sampling. Report B and simulation uncertainty; a p-value near a threshold may need more permutations."
+    },
+    {
+      "id": "limitations",
+      "title": "Confounding, interference, and post-selection",
+      "body": "Permutation does not create randomization in observational data. Confounding can make labels nonexchangeable even under no causal effect. Matching or conditioning can narrow the transformation set, but validity then depends on the adjustment and design. Interference means one unit's assignment changes another's outcome, violating usual potential-outcome structure. Missing outcomes and noncompliance complicate estimands. Selecting the largest statistic from many metrics and testing it with a single-metric permutation distribution is invalid; permute the whole selection procedure or adjust multiplicity. Sequentially rerunning permutation tests requires a sequential design. Computational expense is not the main risk—the wrong invariance claim is."
+    },
+    {
+      "id": "confidence-inversion",
+      "title": "Inverting randomization tests for effect intervals",
+      "body": "Randomization tests can produce more than a p-value. Under an additive constant-effect model, subtract a candidate effect from treated outcomes, test the resulting sharp null, and collect candidate effects not rejected; this inverts the test into a confidence set. The construction inherits the assignment-based calibration and may be asymmetric or discrete. It does not establish that treatment effects are truly constant, so interpret the interval for the model being inverted. Hodges–Lehmann-style estimates use the effect value that centers a rank or randomization statistic. In clustered or blocked experiments, inversion must replay the same restricted assignments at every candidate. This connection shows that design-based estimation and testing belong to one coherent procedure rather than isolated significance output."
+    }
+  ],
+  "math": "For transformation set G and statistic T, an exact upper-tail p-value is |{g in G:T(gX)>=T(X)}|/|G| when transformations are equally likely. With unequal assignment probabilities, weight assignments accordingly. For B randomly sampled transformations and b exceedances, p_hat=(b+1)/(B+1). Conditional Monte Carlo standard error is approximately sqrt(p_hat(1-p_hat)/(B+1)), useful as a precision diagnostic but not a substitute for design validity.",
+  "workedExamples": [
+    {
+      "title": "Twelve-store randomized promotion",
+      "body": "Enumerate only assignments allowed by the actual randomization, compute the statistic for each, count the appropriate two-sided tail, and contrast complete randomization with paired assignment."
+    }
+  ],
+  "exercises": [
+    {
+      "prompt": "A paired experiment has 8 pairs. How many exact within-pair label swaps exist?",
+      "solution": "Each pair has two orientations, so 2^8=256 transformations, assuming every pair can be swapped independently."
+    },
+    {
+      "prompt": "In 999 random permutations, 4 are at least as extreme. Give the plus-one estimate.",
+      "solution": "(4+1)/(999+1)=0.005. It avoids claiming an impossible zero tail probability from finite Monte Carlo sampling."
+    },
+    {
+      "prompt": "Why is a global shuffle invalid for cluster randomization?",
+      "solution": "It assigns different treatments to rows within a cluster, creating assignments the experiment could never produce and breaking within-cluster dependence. Shuffle whole cluster labels according to the design."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "flow",
+      "title": "Design-based reference distribution",
+      "items": [
+        "Freeze outcomes",
+        "Replay allowed assignments",
+        "Recompute statistic",
+        "Order by extremeness",
+        "Count observed tail"
+      ],
+      "caption": "The allowed transformation set comes from the null and assignment design.",
+      "orientation": "horizontal",
+      "afterSection": "design-null"
+    },
+    {
+      "type": "matrix",
+      "title": "Transformation sets",
+      "caption": "Exactness requires replaying the actual design constraints.",
+      "afterSection": "exchangeability",
+      "rows": [
+        "Paired",
+        "Blocked",
+        "Cluster randomized",
+        "Complete randomization"
+      ],
+      "cols": [
+        "Valid transformation",
+        "Invalid shortcut"
+      ],
+      "cells": [
+        [
+          "Swap within pair",
+          "Global shuffle"
+        ],
+        [
+          "Permute within block",
+          "Cross-block shuffle"
+        ],
+        [
+          "Move whole clusters",
+          "Shuffle rows"
+        ],
+        [
+          "Preserve treated count",
+          "Independent coin flips"
+        ]
+      ]
+    }
+  ],
+  "lab": {
+    "language": "python",
+    "goal": "Enumerate an exact two-sample permutation test, verify its tail calculation against SciPy, and preserve fixed group sizes.",
+    "buildIt": "import itertools\n\ndef mean(xs): return sum(xs)/len(xs)\ndef exact_difference_test(a,b):\n    pooled=list(a)+list(b); n_a=len(a)\n    observed=abs(mean(a)-mean(b)); stats=[]\n    for idx in itertools.combinations(range(len(pooled)),n_a):\n        chosen=set(idx)\n        left=[x for i,x in enumerate(pooled) if i in chosen]\n        right=[x for i,x in enumerate(pooled) if i not in chosen]\n        stats.append(abs(mean(left)-mean(right)))\n    p=sum(t >= observed-1e-12 for t in stats)/len(stats)\n    return observed,p,stats\na=[8,9,11,12]; b=[3,4,6,7]\nobserved,p_value,null_stats=exact_difference_test(a,b)",
+    "useIt": "import numpy as np\nfrom scipy.stats import permutation_test\nres=permutation_test((np.asarray(a),np.asarray(b)),lambda x,y: np.mean(x)-np.mean(y),permutation_type='independent',alternative='two-sided',n_resamples=np.inf)",
+    "verifyIt": "import math\nassert len(null_stats)==math.comb(len(a)+len(b),len(a))\nassert 0 <= p_value <= 1\nassert abs(p_value-res.pvalue) < 1e-12\nassert exact_difference_test(a,a)[1] == 1.0",
+    "shipIt": "Replay the original assignment mechanism with its blocks, clusters, counts, and probabilities; predefine statistic/tails and record Monte Carlo precision and seeds."
+  },
+  "sourceNotes": [
+    {
+      "resource": "stanford-stats200",
+      "contribution": "Provides randomization and permutation test theory within rigorous frequentist inference."
+    },
+    {
+      "resource": "scipy-stats",
+      "contribution": "Documents exact and randomized permutation types, tail definitions, precision warnings, and current RNG interface."
+    },
+    {
+      "resource": "openintro-stats",
+      "contribution": "Provides accessible design-based examples linking randomization, null distributions, and practical interpretation."
+    }
+  ]
 }

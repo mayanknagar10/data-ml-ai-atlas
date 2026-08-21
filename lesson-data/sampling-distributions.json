@@ -8,41 +8,216 @@
     "da",
     "as"
   ],
-  "interviewAnswer": "A sampling distribution describes how an estimator would vary across repeated samples. Standard error measures that estimator uncertainty; it is not the standard deviation of the raw observations.",
+  "interviewAnswer": "A sampling distribution describes how a statistic would vary over repeated samples from the same data-generating process and design. Its standard deviation is the statistic's standard error. For an independent sample mean with finite variance, SE is sigma divided by square root n, estimated by s divided by square root n. That is different from the standard deviation of individual observations. The formula changes under clustering, time dependence, unequal weights, or finite-population sampling, and a small SE says nothing about selection bias.",
   "keyPoints": [
-    "Estimator variability shrinks with more information/sample size.",
-    "SE and population SD answer different questions.",
-    "Sampling design affects uncertainty."
+    "Random data make estimators random before sampling",
+    "Standard error measures estimator variability, not raw spread",
+    "Independence and design determine effective information",
+    "Bias and variance are separate failure modes",
+    "Simulation can audit analytic uncertainty formulas"
   ],
   "resources": [
     "stanford-stats200",
-    "openintro-stats"
+    "openintro-stats",
+    "cdc-survey-variance",
+    "numpy-random"
   ],
   "featured": true,
-  "why": "Sampling Distributions & Standard Error appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
-  "intuition": "Estimator variability shrinks with more information/sample size.",
-  "deepDive": "A sampling distribution describes how an estimator would vary across repeated samples. Standard error measures that estimator uncertainty; it is not the standard deviation of the raw observations. SE and population SD answer different questions. Sampling design affects uncertainty. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
-  "workedExample": "The mean order value may have SD €40 across orders but a much smaller SE for the estimated population mean.",
+  "why": "Every confidence interval, p-value, power calculation, and error bar assumes some sampling distribution. If that hidden layer is wrong, polished downstream inference is wrong. A common analytics mistake treats millions of events as millions of independent units even when only thousands of users generated them. The naive standard error then shrinks dramatically while the real information has barely changed. Another mistake reports a small standard error from a convenience sample and calls the estimate accurate, ignoring systematic coverage or nonresponse bias. Interviewers ask about standard error because the answer reveals whether a candidate understands repeated-sampling uncertainty, unit of analysis, and asymptotic approximation rather than memorizing a formula. In production, the sampling distribution is also the basis of alert thresholds and metric-change detection. It must reflect how data arrive, which units are randomized, and which sources of variation will recur.",
+  "intuition": "Imagine repeatedly drawing 100 orders from the same population and computing the mean order value. The histogram of all order values may be broad and skewed. Each sample has its own empirical histogram. The histogram of the thousands of sample means is a third object: it is narrower because positive and negative deviations partly cancel. Increasing sample size usually narrows that distribution, but duplicating the same customers' orders does not add the same information as observing new independent customers. Standard error is the width of that estimator histogram. Bias is the displacement of its center from the target. An estimator may be centered correctly but too noisy, or tightly concentrated around the wrong value. The central limit theorem often makes the center of the sampling distribution approximately normal even when observations are not normal, provided the required independence or weak-dependence and finite-variance conditions are credible. That approximation is a claim to diagnose, not a license to ignore heavy tails, rare events, or dependence.",
+  "deepDive": "Inference starts by declaring a target estimand, a sampling or assignment mechanism, and an estimator. Repetition means rerunning that mechanism, not arbitrarily reshuffling a fixed spreadsheet. The standard error is the standard deviation across those hypothetical repetitions. Analytic formulas, bootstrap resampling, and Monte Carlo simulation are different ways to approximate the same conceptual object under different assumptions.",
+  "workedExample": "Suppose 4,000 orders have standard deviation 40 euros. Treating orders as iid gives SE=40/sqrt(4000)=0.63 euros. But the orders come from 1,000 customers with four orders each and intra-customer correlation rho=0.30. The equal-cluster design effect is 1+(4-1)(0.30)=1.9, so the adjusted SE is approximately 0.63*sqrt(1.9)=0.87 euros and the effective sample size is about 4000/1.9=2,105 independent orders. The point estimate is unchanged; its claimed precision changes. If high-value customers were undercovered, neither SE repairs the bias. A defensible report therefore states the customer clustering, uses customer-level resampling or cluster-robust variance, and separately evaluates coverage bias.",
   "commonMistakes": [
-    "Applying the method without checking its assumptions or data-generating process.",
-    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+    "Dividing the raw standard deviation by square root of the number of rows when rows are not independent units.",
+    "Calling the sample's empirical histogram a sampling distribution.",
+    "Equating a small standard error with low total error while ignoring selection, measurement, or model bias.",
+    "Invoking the CLT without checking tail behavior, dependence, sample size, or whether the statistic is regular.",
+    "Using event-level bootstrap resampling when assignment and dependence operate at user or cluster level."
   ],
   "followUps": [
-    "What assumptions does Sampling Distributions & Standard Error make?",
-    "How would you validate or debug Sampling Distributions & Standard Error in practice?"
+    {
+      "question": "Why is standard error usually smaller than standard deviation?",
+      "answer": "Standard deviation describes heterogeneity of individual values, while the mean averages deviations. Under iid sampling, averaging n observations divides variance by n and standard deviation by square root n. Dependence can substantially weaken that reduction."
+    },
+    {
+      "question": "Can an estimator have zero standard error and still be wrong?",
+      "answer": "Yes. A constant estimator has zero variance but may be badly biased. More realistically, a huge nonrepresentative sample can yield a tiny estimated SE around a biased target. Precision and validity are different dimensions."
+    },
+    {
+      "question": "How would you estimate SE when no closed form is available?",
+      "answer": "Use a design-respecting bootstrap, jackknife, influence-function or Monte Carlo simulation. The resampling unit and mechanism must mimic the source of repeated-sample variation; otherwise computation only produces precise nonsense."
+    }
   ],
-  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
-  "visual": {
-    "type": "concept-map",
-    "title": "Sampling Distributions & Standard Error",
-    "items": [
-      "Estimator variability shrinks with more information/sample size.",
-      "SE and population SD answer different questions.",
-      "Sampling design affects uncertainty."
-    ],
-    "caption": "A compact concept map for the most important ideas in this lesson."
-  },
+  "production": "Define metric grain, estimand, independent unit, exposure window, and sampling design in the metric contract. Preserve cluster IDs and weights so uncertainty can be reproduced. Compare analytic and resampling SEs on stable reference datasets; large disagreement is a diagnostic. Monitor raw count, distinct independent units, weight concentration, cluster-size distribution, missingness, tail quantiles, and estimated design effect. Version variance code with the metric definition and log seeds for simulations. For streaming metrics, account for autocorrelation and delayed outcomes; do not emit iid error bars on every event. Apply privacy controls to small slices and avoid leaking individual records through debugging samples. When the design changes, invalidate historical uncertainty thresholds or recompute them. Rollback means restoring the estimator, variance method, and population definition together, not only reverting a dashboard query.",
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "A sampling distribution is the probability distribution of a statistic over repeated samples generated by the same population and sampling design. It is the bridge from observed data to uncertainty about an estimator. This chapter separates the population distribution, the empirical distribution of one sample, and the sampling distribution of an estimator; derives the standard error of a mean; explains why standard deviation and standard error answer different questions; and shows how dependence, unequal weights, clustering, and finite populations change the calculation. You will learn when a central-limit approximation is credible, why an unbiased estimator can still be too noisy to use, and why a low standard error cannot repair selection bias. The worked example and lab simulate repeated samples so that sampling variability is visible rather than merely asserted. Production guidance covers unit-of-analysis mistakes, correlated observations, design-aware uncertainty, reproducible simulation, and monitoring effective sample size. The goal is to make every later interval, test, and power calculation rest on a clear data-generating and sampling model.",
+  "prerequisites": [
+    "expectation-variance",
+    "clt"
+  ],
+  "learningObjectives": [
+    "Distinguish a population distribution, a sample distribution, and an estimator's sampling distribution.",
+    "Derive and interpret standard error for independent means and recognize when the square-root-n rule fails.",
+    "Diagnose how bias, dependence, weighting, clustering, and finite-population sampling affect uncertainty.",
+    "Estimate sampling uncertainty analytically or by simulation and verify the result against repeated samples."
+  ],
+  "deepSections": [
+    {
+      "id": "three-distributions",
+      "title": "Three distributions that must not be confused",
+      "body": "The population distribution describes values for units in the target population or superpopulation. The empirical distribution gives probability 1/n to each observed value in one sample. A sampling distribution describes a statistic T(X1,...,Xn) across repeated samples. The first concerns units, the second summarizes observed units, and the third concerns an estimator. Their spreads have different meanings. Population standard deviation measures heterogeneity among units; standard error measures uncertainty in a statistic. A sample mean of 10,000 purchases can have a tiny SE while purchases themselves vary enormously. Conversely, a robust median may have a larger SE than the mean under a clean Gaussian model but behave better under contamination. Always name the random unit and the target statistic before writing a denominator."
+    },
+    {
+      "id": "mean-se",
+      "title": "Deriving the square-root-n rule",
+      "body": "For independent identically distributed Xi with mean mu and variance sigma squared, Var(Xbar)=Var(sum Xi/n)=n sigma squared/n squared=sigma squared/n, so SE(Xbar)=sigma/sqrt(n). Replacing unknown sigma by sample s yields the estimated SE. The reduction is proportional to 1/sqrt(n): halving uncertainty requires roughly four times as many independent observations. The derivation depends on covariance terms being zero. With correlation, Var(Xbar) includes 2 times the sum of pairwise covariances divided by n squared. Positive within-user, household, device, school, or time correlation reduces effective sample size. Negative dependence can reduce variance. For sampling without replacement from a finite population, multiply by the finite-population correction sqrt((N-n)/(N-1)) when the design and target warrant it."
+    },
+    {
+      "id": "quality-properties",
+      "title": "Bias, variance, consistency, and efficiency",
+      "body": "The sampling distribution exposes estimator quality. Bias is E[T]-theta; variance is E[(T-E[T]) squared]; mean squared error equals variance plus squared bias. Unbiasedness alone is not optimal if a slightly biased estimator has much lower variance and lower MSE. Consistency asks whether the estimator converges to the target as information grows. Efficiency compares variances among estimators under a model. Robustness asks how sensitive the estimator is to contamination or model violations. These are properties of a procedure under specified conditions, not permanent labels. Sample variance with denominator n-1 is unbiased under iid sampling, but an unbiased formula does not fix an unrepresentative sample. Regularized estimators deliberately introduce bias to reduce variance. Report the target, loss, and operating conditions when comparing estimators."
+    },
+    {
+      "id": "design-aware-se",
+      "title": "Design-aware and dependence-aware uncertainty",
+      "body": "Simple iid SE formulas fail for clustered samples, repeated measurements, time series, spatial data, survey weights, and adaptive collection. Cluster-robust or sandwich estimators aggregate score contributions at the independent cluster level. Block methods preserve local dependence in time or space. Survey estimators incorporate stratification, primary sampling units, unequal selection probabilities, and sometimes finite-population corrections. Unequal weights often lower effective sample size; one useful diagnostic is (sum w)^2/sum(w^2), though a complete design variance needs more than that scalar. When clusters are few, asymptotic cluster corrections can be unreliable. Validate analytic SEs against design-respecting simulation or resampling and avoid silently switching the unit from users to events."
+    }
+  ],
+  "math": "Let T=T(X1,...,Xn) estimate theta. Bias(T)=E[T]-theta, Var(T)=E[(T-E[T])^2], and MSE(T)=Var(T)+Bias(T)^2. For iid Xi with variance sigma^2, Var(Xbar)=sigma^2/n. If every distinct pair has correlation rho, Var(Xbar)=sigma^2[1+(n-1)rho]/n, giving the design effect 1+(n-1)rho. The effective independent sample size is approximately n divided by that design effect. A standardized statistic (T-theta)/SE(T) may approach a reference distribution, but only under the theorem's regularity conditions.",
+  "workedExamples": [
+    {
+      "title": "Order value with repeated customers",
+      "body": "Start with the iid SE, identify customer as the independent cluster, calculate a design effect, and compare against customer-level bootstrap results. The example shows why row count is not information count and why uncertainty and representativeness require separate checks."
+    }
+  ],
+  "exercises": [
+    {
+      "prompt": "A sample has raw SD 12 and n=144 iid observations. Estimate the mean's SE and explain the unit.",
+      "solution": "SE=12/sqrt(144)=1. It is the repeated-sample standard deviation of the sample mean, expressed in the original measurement unit, not the spread of individual observations."
+    },
+    {
+      "prompt": "Ten observations are exact duplicates of each of 100 independent units. Should n be 1,000 in the iid formula?",
+      "solution": "No. Duplicate rows add no independent information. Aggregate or cluster by the 100 independent units; otherwise the naive SE is understated by treating copies as new evidence."
+    },
+    {
+      "prompt": "An estimator has bias 2 and variance 9. Compute MSE.",
+      "solution": "MSE=variance+bias squared=9+4=13. This demonstrates why variance alone is not total estimation error."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "matrix",
+      "title": "Three different distributions",
+      "caption": "The same dataset can be discussed at three probability levels; standard error belongs to the estimator level.",
+      "afterSection": "three-distributions",
+      "rows": [
+        "Population",
+        "One sample",
+        "Sampling distribution"
+      ],
+      "cols": [
+        "Random unit",
+        "Spread means"
+      ],
+      "cells": [
+        [
+          "Individual unit",
+          "Heterogeneity"
+        ],
+        [
+          "Observed unit",
+          "Observed spread"
+        ],
+        [
+          "Statistic across repetitions",
+          "Estimator uncertainty"
+        ]
+      ]
+    },
+    {
+      "type": "curve",
+      "title": "Sampling means concentrate",
+      "series": [
+        {
+          "label": "n=16",
+          "points": [
+            [
+              0,
+              0.05
+            ],
+            [
+              0.25,
+              0.35
+            ],
+            [
+              0.5,
+              0.65
+            ],
+            [
+              0.75,
+              0.35
+            ],
+            [
+              1,
+              0.05
+            ]
+          ]
+        },
+        {
+          "label": "n=64",
+          "points": [
+            [
+              0.2,
+              0.02
+            ],
+            [
+              0.38,
+              0.3
+            ],
+            [
+              0.5,
+              0.95
+            ],
+            [
+              0.62,
+              0.3
+            ],
+            [
+              0.8,
+              0.02
+            ]
+          ]
+        }
+      ],
+      "caption": "Conceptual, not measured: under iid finite-variance sampling, the mean's distribution narrows at the square-root-n rate.",
+      "xLabel": "sample mean",
+      "yLabel": "relative density",
+      "afterSection": "mean-se"
+    }
+  ],
+  "lab": {
+    "language": "python",
+    "goal": "Simulate a sampling distribution, verify the analytic SE, and show how cluster dependence invalidates a row-level iid calculation.",
+    "buildIt": "import math\nimport random\n\ndef repeated_means(population, n, repeats, seed=7):\n    rng = random.Random(seed)\n    return [sum(rng.choices(population, k=n)) / n for _ in range(repeats)]\n\ndef sample_sd(xs):\n    mean = sum(xs) / len(xs)\n    return math.sqrt(sum((x - mean) ** 2 for x in xs) / (len(xs) - 1))\n\npopulation = [float(x) for x in range(1, 101)]\nmeans = repeated_means(population, n=25, repeats=4000)",
+    "useIt": "import numpy as np\nrng = np.random.default_rng(7)\narray = np.asarray(population)\ndraws = rng.choice(array, size=(4000, 25), replace=True)\nnp_means = draws.mean(axis=1)\nanalytic_se = array.std(ddof=0) / np.sqrt(25)",
+    "verifyIt": "empirical_se = sample_sd(means)\nassert abs(empirical_se - analytic_se) / analytic_se < 0.05\nassert abs(np_means.std(ddof=1) - analytic_se) / analytic_se < 0.05\nassert sample_sd(repeated_means(population, 100, 4000)) < empirical_se",
+    "shipIt": "Resample the independent business unit, preserve design weights and clusters, compare analytic and simulation estimates in CI, and version the metric grain with its uncertainty method."
+  },
+  "sourceNotes": [
+    {
+      "resource": "stanford-stats200",
+      "contribution": "Provides the rigorous sampling-distribution and standard-error foundation used throughout this chapter."
+    },
+    {
+      "resource": "cdc-survey-variance",
+      "contribution": "Documents why weights, clustering, and stratification materially alter survey variance estimates."
+    },
+    {
+      "resource": "numpy-random",
+      "contribution": "Provides the current random Generator API used for reproducible simulation in the lab."
+    }
+  ]
 }

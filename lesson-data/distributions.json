@@ -8,112 +8,176 @@
     "mle",
     "as"
   ],
-  "interviewAnswer": "Know when Bernoulli, Binomial, Poisson, Normal and related distributions are appropriate. The distribution is a model for the data-generating process, not merely a curve-fitting choice.",
+  "interviewAnswer": "A discrete distribution assigns probability mass `p(x)=P(X=x)` that sums to one. A continuous distribution has density f whose integral over a region is probability; `P(X=x)=0` at any exact point for a continuous variable even when density is positive. The CDF `F(x)=P(X≤x)` works for both. Choose a family from support and mechanism: Bernoulli for one binary trial, Binomial for a fixed number of conditionally independent equal-probability trials, Poisson for event counts under a rate model, Exponential for memoryless waiting time, Normal for additive symmetric variation, and Beta for a probability parameter. Verify parameter conventions, tails and data assumptions rather than relying on shape alone.",
   "keyPoints": [
-    "Support",
-    "Parameters",
-    "Expectation/variance",
-    "When each model makes sense"
+    "Support comes before family",
+    "Density is not point probability",
+    "Parameters encode a generative story",
+    "Tail behavior drives risk",
+    "Library conventions must be verified"
   ],
   "resources": [
     "harvard-stat110",
-    "statquest"
+    "scipy-stats",
+    "numpy-random"
   ],
   "featured": false,
-  "why": "Interviewers use distributions to test whether you can connect a mathematical model to how data is generated instead of selecting a curve by habit.",
-  "intuition": "A distribution describes the values a random variable can take and how probability is allocated across them. Choose the family from the mechanism: binary event → Bernoulli, number of successes in fixed trials → Binomial, event counts in an interval → Poisson, continuous additive noise → often approximately Normal.",
-  "deepDive": "Bernoulli models one binary trial; Binomial sums independent Bernoulli trials with constant success probability; Poisson models counts under a constant event-rate approximation; Normal is continuous and symmetric and often appears through aggregation; Exponential models waiting time between Poisson-process events. Real data may violate independence, constant rate, or symmetry assumptions, so goodness-of-fit and domain reasoning matter.",
-  "math": "Bernoulli: P(X=x)=p^x(1-p)^(1-x)\nBinomial: P(X=k)=C(n,k)p^k(1-p)^(n-k)\nPoisson: P(X=k)=e^{-λ} λ^k/k!\nNormal: X ~ N(μ,σ²)",
-  "workedExample": "Number of support tickets per hour might be modeled as Poisson only if arrivals are roughly independent with a stable rate. If ticket volume has strong time-of-day effects or bursts, a single Poisson model is a poor description.",
+  "why": "Likelihoods, simulations, anomaly thresholds, forecasts and uncertainty intervals all depend on a distribution. An inappropriate family can assign impossible negative counts, understate tail risk, or produce confident alerts because overdispersion and zero inflation were ignored. Rate versus scale mistakes can change results by orders of magnitude. Distribution knowledge is therefore both modeling and software-interface knowledge.",
+  "intuition": "A distribution is a rule for spreading one unit of probability over possible values. Discrete rules place coins on outcomes; continuous rules spread paint whose area, not height at a point, is probability. Parameters move, stretch or reshape the pattern. A good family describes how variation could arise and which extremes remain plausible.",
+  "deepDive": "The full explanation is organized into the structured sections below.",
+  "math": "Discrete PMF p(x)≥0 with Σ_xp(x)=1. Continuous PDF f(x)≥0 with ∫f=1 and `P(a≤X≤b)=∫_a^b f(x)dx`. CDF F(x)=P(X≤x). Examples: Binomial PMF `C(n,k)p^k(1−p)^{n−k}`; Poisson `e^{−λ}λ^k/k!`; Normal density `(σ√(2π))^{-1}exp(−(x−μ)^2/(2σ²))`.",
+  "workedExample": "The exact count is Binomial(n=1000,p=0.002), with mean 2 and variance 1.996. A Poisson(λ=np=2) approximation is close because n is large and p small. `P(0)` is `(0.998)^1000≈0.1351` exactly and `e^{-2}≈0.1353` under Poisson. If customers influence each other during outages or risk differs greatly, independence/equal-p fail and observed variance likely exceeds two. Add exposure and outage covariates or use a hierarchical/Negative Binomial model. Verify tail probabilities against operational staffing costs, not only the mean.",
   "code": "import numpy as np\nrng=np.random.default_rng(0)\nprint(rng.binomial(n=20,p=.1,size=5))\nprint(rng.poisson(lam=3,size=5))",
   "commonMistakes": [
-    "Assuming every continuous variable should be Normal.",
-    "Using a distribution without checking its support or assumptions.",
-    "Confusing probability density with probability for continuous variables."
+    {
+      "mistake": "Treat a PDF value as P(X=x).",
+      "correction": "For a continuous distribution, point probability is zero; integrate density over an interval."
+    },
+    {
+      "mistake": "Use a Normal model for any symmetric-looking sample.",
+      "correction": "Check support, tails, censoring, mixtures and mechanism; a small histogram is weak evidence."
+    },
+    {
+      "mistake": "Pass a rate as a library's scale parameter.",
+      "correction": "Confirm documentation; Exponential/Gamma scale is commonly reciprocal of rate."
+    }
   ],
   "followUps": [
-    "When is Poisson a reasonable model?",
-    "What is the relationship between Bernoulli and Binomial?",
-    "Why does the Normal distribution appear so often?",
-    "What distribution would you use for waiting times?"
+    {
+      "question": "When is Poisson a Binomial approximation?",
+      "answer": "For large n, small p and λ=np held moderate, under approximately independent equal-probability trials."
+    },
+    {
+      "question": "What does memoryless mean?",
+      "answer": "The remaining waiting distribution is unchanged by time already waited; Exponential and Geometric have this property."
+    },
+    {
+      "question": "Why use a survival function directly?",
+      "answer": "Computing `1−CDF` near one can lose precision; a direct tail implementation is numerically stable."
+    }
   ],
-  "production": "Distribution assumptions influence uncertainty estimates, anomaly thresholds, simulation, forecasting, and likelihood-based losses. Monitor whether the production distribution still resembles the one used during modeling.",
-  "visual": {
-    "type": "curve",
-    "title": "Distribution shapes",
-    "series": [
-      {
-        "label": "narrow",
-        "points": [
-          [
-            0,
-            0.02
-          ],
-          [
-            0.2,
-            0.1
-          ],
-          [
-            0.35,
-            0.36
-          ],
-          [
-            0.5,
-            0.93
-          ],
-          [
-            0.65,
-            0.36
-          ],
-          [
-            0.8,
-            0.1
-          ],
-          [
-            1,
-            0.02
-          ]
+  "production": "Version support, family, observation process, parameter convention, fit data and library. Test moments/quantiles/log probabilities against known cases, use stable log/tail APIs, controlled noncryptographic RNG streams and bounded sampling. Monitor support, quantile/tail/zero/dispersion and score drift by slice, define fallback for invalid fits and retain a prior validated distribution model for rollback.",
+  "editorial": {
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "A probability distribution describes how mass or density is assigned to a random variable under a model. Choosing a distribution means choosing support, parameter interpretation, tail behavior, dependence assumptions and a data-generating story—not matching a familiar bell-shaped plot. This chapter distinguishes probability mass functions, density functions, cumulative distribution functions and quantiles, then develops Bernoulli, Binomial, Categorical, Poisson, Geometric, Uniform, Normal, Exponential, Gamma, Beta and related approximations. You will learn when probabilities come from mass versus density, how location/scale/rate parameterizations differ across libraries, why the Normal can be a poor model for counts or heavy tails, and how memorylessness and support constraints encode assumptions. A worked support-ticket example contrasts Binomial and Poisson models and checks the rare-event approximation. The lab implements a Binomial PMF and verifies moments and sampling against NumPy/SciPy. Production guidance covers truncation, censoring, mixtures, zero inflation, parameter estimation, posterior predictive/model checks, numerical log probabilities, version drift and safe simulation. The objective is to choose and validate a distribution from the mechanism and decision consequences rather than from convenience.",
+  "prerequisites": [
+    "probability-basics"
+  ],
+  "learningObjectives": [
+    "Distinguish PMF, PDF, CDF, survival function and quantile and use each correctly for discrete and continuous variables.",
+    "Select common distributions from support and generative assumptions and translate parameterizations across formulas and libraries.",
+    "Validate probabilistic models with moments, tail/quantile checks, simulation, calibration and production drift/failure monitoring."
+  ],
+  "deepSections": [
+    {
+      "id": "mass-density-cdf",
+      "title": "Mass, density, CDF, and quantiles",
+      "body": "For discrete X, a PMF p(x) is nonnegative and sums to one. For continuous X, a PDF f(x) is nonnegative and integrates to one; probability over [a,b] is the integral. Density can exceed one when concentrated on a narrow interval because it is probability per unit, not probability. Point probability is zero for a purely continuous variable. Mixed distributions can contain both atoms and density.\n\nThe CDF `F(x)=P(X≤x)` is nondecreasing, right-continuous and approaches zero/one at extremes. It handles all distribution types. The survival function `1−F(x)` is often computed directly for numerical accuracy in upper tails. The quantile function is a generalized inverse and maps a probability level to a threshold; conventions at jumps and sample quantiles vary.\n\nExpectation and variance summarize but do not determine most distributions. Equal mean/variance can hide skew, multimodality or different tails. Visual checks should compare CDF/quantiles and tail exceedances, not only histograms. Empirical data are affected by censoring, truncation, measurement rounding and selection, which must be incorporated in the observation model."
+    },
+    {
+      "id": "discrete-families",
+      "title": "Discrete distribution families",
+      "body": "Bernoulli(p) models one indicator with P(X=1)=p. Binomial(n,p) counts successes in n trials when trial count is fixed, success probability is common and trials are conditionally independent. Its mean is np and variance np(1−p). Heterogeneous probabilities yield a Poisson-binomial distribution, while dependence can inflate or reduce variance. Categorical generalizes one trial to K outcomes; Multinomial counts categories over fixed n.\n\nPoisson(λ) models a nonnegative event count with mean and variance λ under a homogeneous independent-increment process interpretation. It is a useful approximation to Binomial for large n, small p with np fixed. Real counts often show overdispersion, clustering, seasonality, exposure differences or excess zeros; Negative Binomial, hierarchical, zero-inflated or point-process models may be more appropriate. Include exposure/observation time in the rate.\n\nGeometric models trials until first success and is memoryless in the discrete setting, but conventions count failures before success or trials including success. State support. Hypergeometric models successes sampled without replacement from a finite population, unlike Binomial's independent/effectively-with-replacement trials. These distinctions follow the data-generating mechanism."
+    },
+    {
+      "id": "continuous-families",
+      "title": "Continuous distribution families",
+      "body": "Uniform(a,b) assigns constant density on a bounded interval. Normal(μ,σ²) models symmetric unbounded variation and arises in additive approximations, but negative values and light tails can be implausible for positive skewed quantities. Standard deviation σ is not variance. Multivariate Normal adds covariance and elliptical contours; zero covariance implies independence only under special families such as a jointly Gaussian model.\n\nExponential(rate λ) models nonnegative waiting time with constant hazard and memorylessness, mean 1/λ. Libraries may use `scale=1/λ`; confusing rate and scale is common. Gamma generalizes positive waiting/amount variability with shape and rate/scale conventions. Weibull permits increasing/decreasing hazard. Lognormal arises when a logarithm is Normal and produces positive right-skewed values with heavier tail than Normal.\n\nBeta(α,β) lives on [0,1] and flexibly models probabilities/proportions; it is conjugate to Bernoulli/Binomial likelihoods under a standard Bayesian model. Dirichlet generalizes to probability vectors. Student t resembles Normal centrally but has heavier tails controlled by degrees of freedom and supports robust likelihoods. A family name alone is insufficient: state support, parameterization and whether parameters describe population, latent heterogeneity or observation noise."
+    },
+    {
+      "id": "fit-check-operate",
+      "title": "Fitting, checking, and operating distributions",
+      "body": "Estimate parameters by maximum likelihood, method of moments, Bayesian posterior or robust procedures according to the goal. Account for truncation/censoring and selection in the likelihood. Comparing fitted curves on training data is insufficient; use held-out log score, probability integral transform/rank checks, quantile coverage, tail exceedance, posterior predictive simulation and domain consequences. Mixtures can capture subpopulations but introduce identifiability and local-optimum issues.\n\nUse log PMF/PDF for small probabilities and stable tail functions (`sf`, `logsf`) rather than subtracting a CDF near one. Verify library parameter order and `loc`/`scale` semantics with a known moment or quantile. Random samples require a controlled Generator for reproducibility; statistical PRNGs are not cryptographic. Parallel streams must be spawned correctly rather than seeded identically.\n\nVersion family, support transformations, parameter convention, fitted parameters, training cutoff and library. Monitor outcome support violations, mean/variance/quantiles/tails, zero rate, calibration and log-score drift across slices. Define fallback when fit is invalid or tail thresholds become unstable. Protect sensitive simulated/fitted data, bound sampling sizes and keep a prior validated model for rollback."
+    }
+  ],
+  "workedExamples": [
+    {
+      "title": "Model daily support-ticket counts",
+      "setup": "One thousand customers independently open a ticket with probability 0.002 per day.",
+      "walkthrough": "The exact count is Binomial(n=1000,p=0.002), with mean 2 and variance 1.996. A Poisson(λ=np=2) approximation is close because n is large and p small. `P(0)` is `(0.998)^1000≈0.1351` exactly and `e^{-2}≈0.1353` under Poisson. If customers influence each other during outages or risk differs greatly, independence/equal-p fail and observed variance likely exceeds two. Add exposure and outage covariates or use a hierarchical/Negative Binomial model. Verify tail probabilities against operational staffing costs, not only the mean.",
+      "conclusion": "The approximation follows a rare independent-event mechanism; overdispersion is evidence that the mechanism needs revision."
+    }
+  ],
+  "exercises": [
+    {
+      "difficulty": "recall",
+      "prompt": "What is the difference between PMF and PDF?",
+      "solution": "A PMF assigns point probabilities that sum; a PDF assigns density whose integral over a region is probability."
+    },
+    {
+      "difficulty": "application",
+      "prompt": "Which distribution models successes in draws without replacement?",
+      "solution": "Hypergeometric, given a finite population with a fixed number of successes."
+    },
+    {
+      "difficulty": "diagnosis",
+      "prompt": "Poisson fitted counts have variance far above their mean. What might be missing?",
+      "solution": "Heterogeneous rates, clustering/dependence, seasonality, exposure differences or zero inflation; consider covariates/hierarchical or Negative Binomial structure."
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "harvard-stat110",
+      "contribution": "Provides distribution definitions, transformations, named families, approximations and problem-solving foundations."
+    },
+    {
+      "resource": "scipy-stats",
+      "contribution": "Documents current distribution PMF/PDF/CDF/SF/log and fitting/sampling interfaces."
+    },
+    {
+      "resource": "numpy-random",
+      "contribution": "Provides current Generator-based distribution sampling, state, seed and parallel-stream guidance."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "compare",
+      "title": "Probability mass versus density",
+      "left": {
+        "title": "Discrete",
+        "items": [
+          "Mass at exact outcomes",
+          "PMF sums to one",
+          "P(X=x) may be positive",
+          "Binomial / Poisson"
         ]
       },
-      {
-        "label": "wide",
-        "points": [
-          [
-            0,
-            0.14
-          ],
-          [
-            0.2,
-            0.3
-          ],
-          [
-            0.4,
-            0.55
-          ],
-          [
-            0.5,
-            0.62
-          ],
-          [
-            0.6,
-            0.55
-          ],
-          [
-            0.8,
-            0.3
-          ],
-          [
-            1,
-            0.14
-          ]
+      "right": {
+        "title": "Continuous",
+        "items": [
+          "Area over intervals",
+          "PDF integrates to one",
+          "P(X=x)=0",
+          "Normal / Exponential"
         ]
-      }
-    ],
-    "caption": "Different distributions encode different assumptions about uncertainty and tail behavior.",
-    "xLabel": "value",
-    "yLabel": "density"
-  },
-  "editorial": {
-    "status": "summary"
+      },
+      "caption": "The CDF unifies both by recording accumulated probability up to a threshold.",
+      "afterSection": "mass-density-cdf"
+    },
+    {
+      "type": "flow",
+      "title": "Distribution choice from mechanism",
+      "items": [
+        "Define support + observation process",
+        "Fixed trials or event rate?",
+        "Independent / constant probability?",
+        "Tail + dispersion requirements",
+        "Fit parameters",
+        "Check held-out quantiles/tails",
+        "Monitor drift"
+      ],
+      "caption": "A family earns its use through assumptions and predictive checks, not visual familiarity.",
+      "afterSection": "fit-check-operate"
+    }
+  ],
+  "lab": {
+    "goal": "Implement the Binomial PMF, verify normalization and moments, and compare generated samples with NumPy and SciPy references.",
+    "language": "python",
+    "buildIt": "import math\n\ndef binomial_pmf(k,n,p):\n    if not (isinstance(k,int) and isinstance(n,int) and 0<=k<=n and 0<=p<=1): return 0.0\n    return math.comb(n,k)*(p**k)*((1-p)**(n-k))\n\ndef moments(values,probs):\n    mean=sum(x*p for x,p in zip(values,probs))\n    variance=sum((x-mean)**2*p for x,p in zip(values,probs))\n    return mean,variance",
+    "useIt": "import numpy as np\nfrom scipy.stats import binom\nn=20; p=.1; values=list(range(n+1)); probs=[binomial_pmf(k,n,p) for k in values]\nmean,variance=moments(values,probs)\nrng=np.random.default_rng(20260821); samples=rng.binomial(n,p,size=100000)",
+    "verifyIt": "assert math.isclose(sum(probs),1.0,rel_tol=1e-12)\nassert math.isclose(mean,n*p,rel_tol=1e-12)\nassert math.isclose(variance,n*p*(1-p),rel_tol=1e-12)\nassert np.allclose(probs,binom.pmf(values,n,p))\nassert abs(samples.mean()-n*p)<.02\nassert abs(samples.var()-n*p*(1-p))<.04\nassert all(0<=x<=n for x in samples)",
+    "shipIt": "Use verified SciPy distribution/log-tail APIs and independent NumPy Generator streams, version parameter conventions and seeds, monitor tail/dispersion/support drift and keep a validated fallback model."
   }
 }

@@ -8,46 +8,227 @@
     "da",
     "as"
   ],
-  "interviewAnswer": "When many hypotheses are tested, false positives accumulate. Family-wise methods such as Bonferroni control any false positive; FDR methods such as Benjamini–Hochberg control the expected proportion among discoveries.",
+  "interviewAnswer": "With m tests, individual alpha does not control the overall error. Bonferroni and Holm control the probability of at least one false rejection in a defined family; BH controls the expected false discovery proportion under its conditions and is usually more powerful when many discoveries are acceptable. For BH, sort p-values, find the largest k with p_(k)<=kq/m, and reject through k. Define the family before seeing results, account for dependence and selection, report adjusted values and effect sizes, and do not call FDR the probability each discovery is false.",
   "keyPoints": [
-    "More tests → more opportunities for false positives.",
-    "FWER and FDR are different guarantees.",
-    "Pre-register primary metrics when possible."
+    "Multiplicity begins with a declared family",
+    "FWER controls any false rejection; FDR controls expected false proportion",
+    "Holm dominates simple Bonferroni while retaining strong FWER control",
+    "BH is a step-up rule with dependence conditions",
+    "Adjustment does not repair biased tests or post-selection"
   ],
   "resources": [
-    "stanford-stats200"
+    "benjamini-hochberg",
+    "stanford-stats200",
+    "scipy-stats",
+    "asa-pvalues"
   ],
   "featured": true,
-  "why": "Multiple Testing & False Discovery Rate appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
-  "intuition": "More tests → more opportunities for false positives.",
-  "deepDive": "When many hypotheses are tested, false positives accumulate. Family-wise methods such as Bonferroni control any false positive; FDR methods such as Benjamini–Hochberg control the expected proportion among discoveries. FWER and FDR are different guarantees. Pre-register primary metrics when possible. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
-  "workedExample": "Testing 100 product metrics at 5% individually will produce apparent wins by chance even if nothing changed.",
+  "why": "A dashboard with 100 metrics, a genomics screen with 20,000 genes, and an ML evaluation sliced across dozens of groups all create multiple chances to see small p-values. At m independent true nulls tested at 0.05, the chance of at least one false rejection is 1-0.95^m, about 99.4% for 100. The appropriate response depends on consequences. A safety investigation may demand strong FWER control; discovery screening may tolerate some false leads for greater power and use FDR with later confirmation. Interviews often ask Bonferroni versus BH, but operational maturity means defining which hypotheses belong together, how exploratory and confirmatory stages interact, and how dependent metrics affect guarantees. Hiding failed tests is a data-governance bug, not merely a statistical detail.",
+  "intuition": "Imagine fishing with many hooks. Even if no fish exist, enough hooks will snag debris that looks like a catch. FWER asks to keep the probability of any false catch in the basket below a limit. FDR allows a controlled expected fraction of false catches among everything declared, which is useful when a screening stage can tolerate follow-up work. Bonferroni gives each hook a tiny share alpha/m. Holm starts with the smallest p-value and relaxes thresholds as hypotheses are removed. BH draws an increasing line kq/m against sorted p-values and accepts the largest prefix beneath it. None of these methods knows whether a test was biased, chosen after inspection, or omitted from the count. The family and evidence pipeline must be honest.",
+  "deepDive": "Let V be false rejections, R total rejections, and m0 true nulls. FWER=P(V>=1). False discovery proportion is V/max(R,1), and FDR is its expectation. Different criteria answer different risk questions and cannot be compared only by the number of rejections.",
+  "workedExample": "Ten preregistered metrics yield sorted p-values [0.001,0.006,0.011,0.020,0.031,0.070,0.20,0.42,0.60,0.90]. At q=0.05, BH thresholds are [0.005,0.010,0.015,0.020,0.025,...]. Ranks 1–4 satisfy their thresholds, rank 5 does not, and no later rank satisfies, so reject the first four. This controls expected false discovery proportion under BH conditions, not the chance of any false claim. Effect estimates and intervals still determine usefulness. If the ten metrics were selected from 200 inspected metrics, m=10 is not an honest confirmatory family.",
   "commonMistakes": [
-    "Applying the method without checking its assumptions or data-generating process.",
-    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+    "Adjusting only the significant p-values while omitting all tests attempted.",
+    "Saying FDR q is the probability that each discovery is false.",
+    "Applying BH without considering dependence assumptions or how the family was selected.",
+    "Using multiplicity correction as a substitute for valid individual tests, effect sizes, or replication.",
+    "Treating repeated dashboard updates as one fixed batch family without an online or sequential method."
   ],
   "followUps": [
-    "What assumptions does Multiple Testing & False Discovery Rate make?",
-    "How would you validate or debug Multiple Testing & False Discovery Rate in practice?"
+    {
+      "question": "When prefer FWER over FDR?",
+      "answer": "Prefer FWER when even one false claim is costly, such as a small confirmatory safety family. Prefer FDR for large screening settings where some false leads are acceptable and discoveries receive follow-up."
+    },
+    {
+      "question": "Why is Holm generally preferable to plain Bonferroni?",
+      "answer": "Holm uses progressively less stringent denominators after ordering p-values, retains strong FWER control under broad dependence, and is never less powerful than the single-step Bonferroni rule."
+    },
+    {
+      "question": "Does BH work under correlated tests?",
+      "answer": "It controls under independence and certain positive dependence conditions; arbitrary dependence needs additional justification or more conservative/structured methods. Correlation should be part of the method choice, not ignored."
+    }
   ],
-  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
-  "visual": {
-    "type": "bars",
-    "title": "Why multiple testing matters",
-    "labels": [
-      "1 test",
-      "10 tests",
-      "100 tests"
-    ],
-    "values": [
-      0.05,
-      0.4,
-      0.994
-    ],
-    "caption": "With many independent tests, the chance of at least one false positive rises quickly if per-test α is unchanged.",
-    "yLabel": "P(any false positive)"
-  },
+  "production": "Maintain a hypothesis registry with family ID, owner, estimand, metric version, population, planned direction, decision, and every attempted analysis. Freeze batch families before unblinding or use a formally designed online procedure for incoming tests. Compute adjusted values centrally to prevent teams from omitting tests. Monitor family size, rejection count, p-value histogram, dependence structure, exploratory-to-confirmatory conversion, and replication rate. Store raw and adjusted p-values plus effect intervals; never overwrite raw evidence. Access-control sensitive subgroup findings and apply minimum-cell rules. Version the correction algorithm and sort/tie behavior. Test implementations with known fixtures and invariants. If a family definition or metric changes, create a new analysis version rather than silently recomputing history. Rollback should restore both decisions and their full multiplicity context.",
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "Testing many hypotheses creates many opportunities for false discoveries. Multiplicity is not solved by interpreting each p-value in isolation; the analyst must define a family, choose an error criterion, and apply a procedure whose dependence assumptions and selection process match the problem. This chapter derives why unadjusted family-wise error grows, contrasts family-wise error rate with false discovery rate, explains Bonferroni, Holm, Benjamini–Hochberg, and Benjamini–Yekutieli ideas, and distinguishes adjusted p-values from local false-discovery probabilities. You will learn how hierarchical testing, gatekeeping, preregistration, holdout confirmation, and selective inference control different risks; why correlated tests complicate guarantees; and why adding hypotheses after looking changes the family. The worked example applies BH to ten feature metrics and interprets the rejection threshold. The lab implements Holm and BH from scratch, verifies monotonic adjusted values against SciPy, and checks invariants. Production guidance covers metric-family governance, lineage, online testing, dashboards, reproducibility, and audit of all attempted analyses.",
+  "prerequisites": [
+    "hypothesis-testing"
+  ],
+  "learningObjectives": [
+    "Quantify how repeated testing inflates the chance and number of false positives.",
+    "Choose between FWER and FDR according to the cost and volume of false discoveries.",
+    "Implement Bonferroni/Holm and Benjamini–Hochberg procedures with valid ordering and monotonicity.",
+    "Define hypothesis families and diagnose dependence, selection, and reporting practices that invalidate nominal control."
+  ],
+  "deepSections": [
+    {
+      "id": "error-growth",
+      "title": "How multiplicity accumulates",
+      "body": "If m true-null tests are independent at per-test alpha, P(at least one false rejection)=1-(1-alpha)^m, bounded above by m alpha via the union bound. Dependence changes the exact value but not the need for a family-level procedure. Expected false rejections under valid marginal tests is m0 alpha. Multiple outcomes, time points, subgroups, transformations, models, and stopping looks all consume opportunities. A family is the collection over which a claim or decision is made. It may be all primary outcomes for one experiment, all model variants competing for launch, or all genes in a screen. Define it by scientific and decision context, not by which results look promising."
+    },
+    {
+      "id": "fwer",
+      "title": "Bonferroni and Holm family-wise control",
+      "body": "Bonferroni rejects p_i<=alpha/m and controls FWER under arbitrary dependence by the union bound, but can be conservative. Adjusted p-values are min(m p_i,1). Holm's step-down procedure sorts p_(1)<=...<=p_(m), compares p_(k) with alpha/(m-k+1), and stops at the first failure; it strongly controls FWER under broad conditions and is never less powerful than Bonferroni. Closed testing and gatekeeping can exploit logical structure. FWER suits high-cost false claims, final confirmatory analyses, and small families where any false launch is serious. It does not guarantee that every nonrejected hypothesis is true or control selection bias."
+    },
+    {
+      "id": "fdr",
+      "title": "Benjamini–Hochberg false discovery control",
+      "body": "For target q, BH sorts p-values and finds largest k with p_(k)<=kq/m, rejecting all p_(1)...p_(k). Under independent true-null p-values and certain positive dependence structures it controls FDR at or below q m0/m. The original paper introduced this less stringent criterion to gain power when controlling the proportion of false discoveries is appropriate. Benjamini–Yekutieli adds a harmonic-factor correction for arbitrary dependence and can be conservative. BH-adjusted p-values are monotone reverse cumulative minima of m p_(k)/k. FDR is an expectation over repeated studies; q=0.05 does not mean each reported discovery has 5% probability of being false."
+    },
+    {
+      "id": "selection-structure",
+      "title": "Hierarchies, dependence, and selective reporting",
+      "body": "Correlated outcomes can make standard assumptions uncertain; permutation-based max statistics, hierarchical FDR, knockoffs, or domain-specific methods may be appropriate. Testing parent hypotheses before children can conserve error and match scientific structure. Independent holdout confirmation separates exploration from validation when the selection process is complex. Online FDR methods address hypotheses arriving over time; rerunning batch BH on a growing dashboard does not automatically provide online guarantees. Data-dependent filtering is safe only under conditions such as independence from null p-values. Record every hypothesis, preprocessing variant, and stopping look. Adjustment applied after suppressing inconvenient tests is not control."
+    },
+    {
+      "id": "replicability",
+      "title": "Discovery, confirmation, and replicability",
+      "body": "Error control within one screen does not guarantee that discoveries replicate in a new population. Winner's curse makes selected effect estimates too large because selection favors positive noise. A two-stage design can use FDR for discovery, then independent confirmatory data with a stricter family-wise criterion. Split proportions should reflect discovery volume and follow-up cost. Shrinkage estimates can improve magnitude reporting but do not retroactively change the testing family. Track directional errors as well as false rejections when sign matters. For recurring products, measure empirical replication and calibration by p-value bins; systematic failure may reveal bias, dependence violations, or shifting populations. Publish the complete discovery and confirmation funnel so consumers do not equate an adjusted p-value with durable truth."
+    }
+  ],
+  "math": "Under independence, FWER=1-(1-alpha)^m when all m nulls are true. Bonferroni uses alpha/m. Holm compares ordered p_(k) to alpha/(m-k+1). BH at target q finds k*=max{k:p_(k)<=kq/m}; reject ranks <=k*. Adjusted BH values in sorted order are qtilde_(i)=min_{j>=i}(m p_(j)/j,1), then mapped back to original hypotheses. The reverse cumulative minimum is essential so adjusted values are nondecreasing with rank.",
+  "workedExamples": [
+    {
+      "title": "BH on ten preregistered metrics",
+      "body": "Sort p-values, compare each with its rank-dependent line, select the largest passing rank, reject the prefix, and interpret FDR as a repeated-procedure expectation rather than per-result probability."
+    }
+  ],
+  "exercises": [
+    {
+      "prompt": "Compute the chance of at least one false positive for 20 independent true nulls at alpha=0.05.",
+      "solution": "1-0.95^20, approximately 0.642. This illustrates why per-test alpha is not family-wise control."
+    },
+    {
+      "prompt": "For m=5 and q=0.10, what is the BH threshold at rank 3?",
+      "solution": "kq/m=3*0.10/5=0.06. This rank passes if the third sorted p-value is at most 0.06."
+    },
+    {
+      "prompt": "Why must BH adjusted p-values use a reverse cumulative minimum?",
+      "solution": "Without it, adjusted values could decrease at later, larger raw p-values, violating the ordered rejection structure. The cumulative minimum enforces monotonicity across ranks."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "matrix",
+      "title": "Two family-level error goals",
+      "caption": "Choose the error criterion from the decision cost, not from which method yields more discoveries.",
+      "afterSection": "error-growth",
+      "rows": [
+        "FWER",
+        "FDR"
+      ],
+      "cols": [
+        "Controls",
+        "Typical use"
+      ],
+      "cells": [
+        [
+          "P(any false rejection)",
+          "Confirmatory/high-cost claims"
+        ],
+        [
+          "E(false fraction among rejections)",
+          "Large discovery screens"
+        ]
+      ]
+    },
+    {
+      "type": "curve",
+      "title": "BH step-up geometry",
+      "series": [
+        {
+          "label": "sorted p",
+          "points": [
+            [
+              0.1,
+              0.01
+            ],
+            [
+              0.2,
+              0.03
+            ],
+            [
+              0.3,
+              0.05
+            ],
+            [
+              0.4,
+              0.08
+            ],
+            [
+              0.5,
+              0.14
+            ],
+            [
+              0.6,
+              0.24
+            ],
+            [
+              0.7,
+              0.4
+            ],
+            [
+              0.8,
+              0.58
+            ],
+            [
+              0.9,
+              0.75
+            ],
+            [
+              1.0,
+              0.92
+            ]
+          ]
+        },
+        {
+          "label": "rank line",
+          "points": [
+            [
+              0,
+              0
+            ],
+            [
+              1,
+              0.2
+            ]
+          ]
+        }
+      ],
+      "caption": "Conceptual: find the largest sorted p-value below the rank-dependent BH line and reject the entire prefix.",
+      "xLabel": "rank / m",
+      "yLabel": "p-value",
+      "afterSection": "fdr"
+    }
+  ],
+  "lab": {
+    "language": "python",
+    "goal": "Implement Holm FWER and BH FDR adjusted p-values, verify monotonicity, and compare BH output with SciPy.",
+    "buildIt": "def adjust_bh(pvalues):\n    m=len(pvalues); order=sorted(range(m),key=pvalues.__getitem__)\n    raw=[m*pvalues[i]/rank for rank,i in enumerate(order,1)]\n    monotone=[0.0]*m; running=1.0\n    for pos in range(m-1,-1,-1):\n        running=min(running,raw[pos],1.0); monotone[pos]=running\n    out=[0.0]*m\n    for pos,i in enumerate(order): out[i]=monotone[pos]\n    return out\n\ndef adjust_holm(pvalues):\n    m=len(pvalues); order=sorted(range(m),key=pvalues.__getitem__)\n    out=[0.0]*m; running=0.0\n    for rank,i in enumerate(order):\n        running=max(running,min(1.0,(m-rank)*pvalues[i])); out[i]=running\n    return out\n\np=[0.001,0.006,0.011,0.020,0.031,0.070,0.20,0.42,0.60,0.90]\nbh=adjust_bh(p); holm=adjust_holm(p)",
+    "useIt": "import numpy as np\nfrom scipy.stats import false_discovery_control\nscipy_bh=false_discovery_control(np.asarray(p),method='bh')",
+    "verifyIt": "assert all(0 <= x <= 1 for x in bh+holm)\norder=sorted(range(len(p)),key=p.__getitem__)\nassert all(bh[order[i]] <= bh[order[i+1]] for i in range(len(p)-1))\nassert all(holm[i] >= min(1.0,p[i]) for i in range(len(p)))\nassert np.allclose(bh,scipy_bh)",
+    "shipIt": "Centralize immutable hypothesis families, include every attempted test, version correction and dependence assumptions, and report adjusted evidence with estimates, intervals, and confirmation status."
+  },
+  "sourceNotes": [
+    {
+      "resource": "benjamini-hochberg",
+      "contribution": "Introduces FDR and the original step-up control procedure under its stated assumptions."
+    },
+    {
+      "resource": "stanford-stats200",
+      "contribution": "Provides multiple-testing theory connecting family-wise and false-discovery criteria."
+    },
+    {
+      "resource": "scipy-stats",
+      "contribution": "Documents the current official false_discovery_control implementation used for lab verification."
+    },
+    {
+      "resource": "asa-pvalues",
+      "contribution": "Supports transparent reporting beyond thresholded p-values and selective significance claims."
+    }
+  ]
 }

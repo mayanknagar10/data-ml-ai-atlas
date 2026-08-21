@@ -9,31 +9,177 @@
     "aie",
     "as"
   ],
-  "interviewAnswer": "Mathematically equivalent formulas can behave very differently in floating point. Stable implementations avoid overflow/underflow, poor conditioning and subtractive cancellation.",
+  "interviewAnswer": "Floating point represents a finite set of values with limited precision and exponent range, so operations round, addition is non-associative, large exponentials overflow, tiny values underflow and subtracting nearly equal numbers loses significant digits. Stable algorithms reformulate without changing the mathematical result: log-sum-exp subtracts the maximum, softmax shares that shift, probabilities multiply in log space, and linear systems use factorization-based solves rather than inverses or normal equations. Conditioning is sensitivity of the problem; stability is behavior of the algorithm. Use condition estimates, scale-aware tolerances, higher-precision accumulation where needed, nonfinite monitoring and adversarial numerical tests across hardware.",
   "keyPoints": [
-    "Use log-sum-exp for softmax/log-likelihoods.",
-    "Avoid explicit matrix inversion when solves/decompositions are available.",
-    "Scale values and inspect NaN/Inf early."
+    "Finite precision changes algebraic behavior",
+    "Conditioning belongs to the problem",
+    "Stability belongs to the algorithm",
+    "Shift/scaling avoids range failure",
+    "Solve and factorize; do not invert"
   ],
   "resources": [
-    "numpy",
-    "deep-learning-book"
+    "goldberg-floating",
+    "scipy-logsumexp",
+    "numpy-linalg"
   ],
   "featured": false,
-  "why": "Numerical Stability: log-sum-exp, overflow & conditioning is a recurring foundation across data science and machine learning because it affects both theoretical correctness and practical system behavior.",
-  "intuition": "Use log-sum-exp for softmax/log-likelihoods.",
-  "deepDive": "Mathematically equivalent formulas can behave very differently in floating point. Stable implementations avoid overflow/underflow, poor conditioning and subtractive cancellation. Avoid explicit matrix inversion when solves/decompositions are available. Scale values and inspect NaN/Inf early. The interview-level skill is not merely recalling the definition: explain the assumptions, what diagnostic evidence you would inspect, and what alternative you would choose when those assumptions fail.",
-  "workedExample": "Compute softmax by subtracting the maximum logit before exponentiation.",
+  "why": "A model can be mathematically correct and still produce NaNs, zero probabilities, negative variances or wildly unstable coefficients. These failures vary by dtype, batch order, compiler and accelerator, making them hard to reproduce. Numerical issues also create security and reliability risks when extreme untrusted inputs exhaust retries or bypass checks through NaN comparisons. Stable formulations and observability prevent entire classes of incidents.",
+  "intuition": "Floating point is scientific notation with a fixed number of significant digits and bounded exponent. It can represent very large and very small scales, but not every real number. Adding a grain of sand to a mountain may round back to the mountain; subtracting two nearly equal mountains can leave a difference with few trustworthy digits. Stable algorithms move the calculation into a safe scale before doing sensitive work.",
+  "deepDive": "The full explanation is organized into the structured sections below.",
+  "workedExample": "Direct exp(1000) overflows in ordinary floating point, so dividing exponentials yields invalid values. Subtract m=1000 to get shifted logits (0,−1,−2). Exponentials are approximately (1,0.3679,0.1353), all representable, and normalization yields roughly (0.6652,0.2447,0.0900). Adding or subtracting a common constant leaves exact softmax unchanged because numerator and denominator share the factor. `logsumexp` is `1000+log(1+e^{-1}+e^{-2})`. Verify probabilities are finite, nonnegative and sum to one. For all −∞ logits, the usual max shift gives undefined −∞−(−∞), so the calling contract must define an error or masked result.",
   "commonMistakes": [
-    "Using the concept mechanically without checking assumptions or data semantics.",
-    "Reporting one metric/result without examining uncertainty, slices or failure modes."
+    {
+      "mistake": "Machine epsilon is the tolerance for every comparison.",
+      "correction": "Tolerance depends on dtype, scale, operation count, conditioning and the invariant being checked; use relative and absolute components."
+    },
+    {
+      "mistake": "A small linear-system residual proves accurate coefficients.",
+      "correction": "Ill-conditioning can allow small backward/residual error but large forward solution error; inspect κ and weak singular directions."
+    },
+    {
+      "mistake": "Clipping NaNs or probabilities fixes the numerical issue.",
+      "correction": "It may hide invalid inputs/overflow and change the objective; use stable formulas and explicit failure semantics."
+    }
   ],
   "followUps": [
-    "What assumptions or limitations does Numerical Stability: log-sum-exp, overflow & conditioning have?",
-    "How would you validate Numerical Stability: log-sum-exp, overflow & conditioning on a real dataset?"
+    {
+      "question": "What is the difference between conditioning and stability?",
+      "answer": "Conditioning is sensitivity of the exact problem to inputs; stability is how much extra error the algorithm introduces in finite precision."
+    },
+    {
+      "question": "Why subtract the maximum in softmax?",
+      "answer": "Softmax is shift-invariant, and the shift makes all exponent arguments nonpositive, preventing positive exponential overflow."
+    },
+    {
+      "question": "Why avoid normal equations numerically?",
+      "answer": "A^TA squares the condition number and loses accuracy in weak directions; QR or SVD is safer."
+    }
   ],
-  "production": "In production, make assumptions explicit, validate on representative slices, compare with a simple baseline and monitor the signals that can drift.",
+  "production": "Adopt stable primitives for log/probability/statistics and factorization-based solves; test adversarial scales against high-precision/trusted references and dtype-aware invariants. Check finiteness before comparisons, monitor nonfinite/saturation/condition/residual/scaler signals, bound resources and deterministic retries, canary compiler/hardware/dtype changes and keep stable fallback plus full-state rollback artifacts.",
   "editorial": {
-    "status": "summary"
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "Numerical stability asks whether an algorithm produces an accurate result in finite-precision arithmetic; conditioning asks whether the underlying problem itself is sensitive to small input changes. This chapter develops floating-point representation, unit roundoff, overflow, underflow, subnormals, cancellation and non-associativity, then derives stable log-sum-exp, softmax, log-probability, variance, norm and linear-system practices. You will learn to distinguish forward from backward error, use condition numbers, avoid explicit inverses and normal equations, choose dtypes and tolerances, and detect when no algorithm can recover information absent from ill-conditioned data. A worked extreme-logit example shows why subtracting the maximum preserves softmax exactly in real arithmetic while preventing overflow. The lab implements stable log-sum-exp/softmax and compensated summation with invariants against high-precision references. Production guidance covers mixed precision, loss scaling, deterministic reductions, NaN/Inf policy, telemetry, cross-hardware regression, adversarial inputs, resource limits and rollback. The goal is to make numerical behavior part of algorithm design and system observability rather than a late response to a mysterious NaN.",
+  "prerequisites": [
+    "vectors-matrices",
+    "eigen-svd",
+    "derivatives-gradients"
+  ],
+  "learningObjectives": [
+    "Explain floating-point rounding, range limits, cancellation and non-associativity and predict common failure modes.",
+    "Separate problem conditioning from algorithm stability using forward/backward error and condition-number reasoning.",
+    "Implement and operate stable transformations, reductions and linear solves with dtype-aware tests, telemetry and safe failure policy."
+  ],
+  "deepSections": [
+    {
+      "id": "floating-point",
+      "title": "Floating-point model and error mechanisms",
+      "body": "A normalized binary floating-point number has sign, significand and exponent. Rounding maps each real result to a nearby representable value, often modeled as `fl(a op b)=(a op b)(1+δ)` for ordinary-range results with |δ| bounded near unit roundoff. This model excludes overflow, underflow and some subnormal cases. Machine epsilon is commonly the gap from 1 to the next value and differs by dtype; terminology varies, so inspect library `finfo`.\n\nOverflow produces infinity or raises depending on operation/policy. Underflow rounds tiny magnitudes toward zero; subnormals extend range with reduced relative precision and may have hardware performance behavior. Invalid operations create NaN. Comparisons with NaN are false except inequality, so naive range checks can be bypassed unless finiteness is checked first. Signed zero can affect reciprocals and branch behavior.\n\nFloating addition is not associative: `(a+b)+c` can differ from `a+(b+c)`. Parallel reductions therefore vary with tree/order. Adding small values to a huge accumulator can lose them; pairwise or compensated summation reduces error. Catastrophic cancellation occurs when subtracting nearby approximations, exposing their rounding error. Algebraically equivalent formulas may have drastically different numerical quality."
+    },
+    {
+      "id": "stable-transformations",
+      "title": "Stable exponentials, probabilities, and statistics",
+      "body": "For values x_i, `log Σ exp(x_i)` overflows when any x is large. Let m=max x. Then `logsumexp(x)=m+log Σ exp(x_i−m)`, mathematically identical because the common factor exp(m) is extracted. Every shifted exponent is at most one, preventing positive overflow. If all inputs are −∞, handle the special case explicitly. Softmax uses the same shift; its probabilities are invariant to adding a constant to all logits.\n\nMultiply many probabilities in log space: sums of log-probabilities avoid underflow and turn products into additions. Use `log1p(x)` for log(1+x) near zero and `expm1(x)` for exp(x)−1; direct forms lose small differences. Stable logistic/softplus formulas branch or use logaddexp to avoid exp overflow. Clamp probabilities only with a documented objective effect; arbitrary epsilon can bias loss and hide invalid logits.\n\nThe textbook one-pass variance `E[x²]−E[x]²` cancels when variance is small relative to mean. Two-pass centered computation or Welford's recurrence is safer. Euclidean norm can overflow when squaring huge values and underflow for tiny ones; scaled sum-of-squares algorithms avoid both. Centering and scaling can help algorithms but must not leak evaluation data."
+    },
+    {
+      "id": "conditioning-stability",
+      "title": "Conditioning, forward error, and stable linear algebra",
+      "body": "Conditioning measures sensitivity of the exact problem: how much output can change under a small relative input change. For solving Ax=b, condition number in a compatible norm is `κ(A)=||A||||A^{-1}||` when invertible. A large κ means some input direction is nearly erased, so measurement/rounding error can be greatly amplified. No stable algorithm can recover digits the problem does not contain. Rescaling can improve numeric representation but does not always remove intrinsic identifiability.\n\nForward error compares computed output with the exact desired output. Backward error asks whether the computed output is exact for a nearby input. A backward-stable solver can still have large forward error on an ill-conditioned problem, roughly amplified by κ. Residual `||b−A x̂||` alone can be small while x̂ is inaccurate when A is ill-conditioned; report scaled residual and condition estimates.\n\nUse LU/Cholesky/QR/SVD solves appropriate to structure rather than explicit inverse. Forming A^TA squares the condition number. Symmetric positive-definite systems benefit from Cholesky after verifying assumptions; adding jitter changes the problem and must be justified/monitored. Singular values expose weak directions, and regularization trades bias for stability. Pivoting, equilibration and iterative refinement can improve solves, but target-library behavior and precision matter."
+    },
+    {
+      "id": "numerical-operation",
+      "title": "Testing and operating numerical reliability",
+      "body": "Test numerical code across scales: zeros, subnormals where relevant, maximum finite values, mixed signs, near equality, repeated values, singular/nearly singular matrices, all −∞ logits and NaNs/Infs. Compare to higher precision or a trusted stable implementation on small cases. Assert invariants such as softmax nonnegativity and sum, log-sum-exp bounds, symmetry, monotonicity and solve residual. Use relative plus absolute tolerance based on scale, dtype, algorithm and condition—not a universal decimal count.\n\nMixed precision stores/executes parts in lower precision for speed, with higher-precision accumulation, master weights or dynamic loss scaling. Monitor overflows, skipped steps and scaler value. Quantization adds calibration and saturation error. Compiler fast-math flags may reassociate or weaken IEEE semantics; test the built artifact on deployment hardware. Cross-device bitwise equality may be unrealistic, but defined accuracy envelopes and deterministic modes are possible.\n\nIn production, check finiteness before comparisons, bound magnitudes and input sizes, classify numeric failures separately, and avoid retry loops that repeat deterministic NaNs. Log rates and safe summaries rather than sensitive values. Monitor nonfinite tensors, clipping/saturation, condition estimates, solver residual/iterations and output distribution. Canary new kernels/dtypes, retain a stable fallback and roll back code plus model/optimizer state. Treat adversarial extreme inputs and malformed arrays as security cases with bounded CPU/memory."
+    }
+  ],
+  "math": "For ordinary rounded operations, `fl(z)=z(1+δ)` with |δ| on the order of unit roundoff u, subject to range caveats. A problem y=f(x) has relative condition approximately `κ=lim_{ε→0} sup_{||Δx||≤ε||x||} (||Δy||/||y||)/ε`. For invertible A, κ(A)=||A||||A^{-1}||. Stable log-sum-exp: `L=m+log Σ_i exp(x_i−m)`, m=max_i x_i.",
+  "workedExamples": [
+    {
+      "title": "Softmax of extreme logits",
+      "setup": "Compute softmax for logits (1000, 999, 998).",
+      "walkthrough": "Direct exp(1000) overflows in ordinary floating point, so dividing exponentials yields invalid values. Subtract m=1000 to get shifted logits (0,−1,−2). Exponentials are approximately (1,0.3679,0.1353), all representable, and normalization yields roughly (0.6652,0.2447,0.0900). Adding or subtracting a common constant leaves exact softmax unchanged because numerator and denominator share the factor. `logsumexp` is `1000+log(1+e^{-1}+e^{-2})`. Verify probabilities are finite, nonnegative and sum to one. For all −∞ logits, the usual max shift gives undefined −∞−(−∞), so the calling contract must define an error or masked result.",
+      "conclusion": "A mathematically invariant shift moves exponentials into a safe numeric range without changing the distribution."
+    }
+  ],
+  "exercises": [
+    {
+      "difficulty": "recall",
+      "prompt": "Why is floating-point addition non-associative?",
+      "solution": "Each intermediate is rounded to a finite representable value, and different grouping creates different intermediates and lost low-order terms."
+    },
+    {
+      "difficulty": "application",
+      "prompt": "Rewrite `log(exp(a)+exp(b))` stably.",
+      "solution": "Let m=max(a,b); compute `m+log(exp(a−m)+exp(b−m))`, with explicit handling if both are −∞."
+    },
+    {
+      "difficulty": "diagnosis",
+      "prompt": "A solver has tiny residual but coefficients vary enormously under tiny perturbations. What is happening?",
+      "solution": "The problem is ill-conditioned; small input/rounding changes are amplified in weak singular directions despite backward-stable solving."
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "goldberg-floating",
+      "contribution": "Provides the foundational IEEE floating-point, rounding, cancellation and error analysis used throughout the chapter."
+    },
+    {
+      "resource": "scipy-logsumexp",
+      "contribution": "Documents a production stable log-domain summation primitive and supported behavior."
+    },
+    {
+      "resource": "numpy-linalg",
+      "contribution": "Provides current condition, norm, factorization, solve, least-squares and SVD APIs for stable linear algebra."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "compare",
+      "title": "Problem sensitivity versus algorithm behavior",
+      "left": {
+        "title": "Conditioning",
+        "items": [
+          "Property of exact problem",
+          "Input perturbation → output change",
+          "Large κ loses recoverable digits",
+          "Regularization changes problem"
+        ]
+      },
+      "right": {
+        "title": "Stability",
+        "items": [
+          "Property of implementation",
+          "Rounding/range error added",
+          "Backward stability is desirable",
+          "Reformulation can improve it"
+        ]
+      },
+      "caption": "A stable algorithm cannot make an ill-conditioned problem informative, but an unstable one can waste accuracy from a well-conditioned problem.",
+      "afterSection": "conditioning-stability"
+    },
+    {
+      "type": "flow",
+      "title": "Stable softmax transformation",
+      "items": [
+        "Receive finite logits",
+        "Find maximum m",
+        "Shift logits x−m",
+        "Exponentiate nonpositive values",
+        "Sum in safe range",
+        "Normalize",
+        "Verify finite + sum≈1"
+      ],
+      "caption": "Shift invariance prevents overflow while explicit checks handle invalid or fully masked inputs.",
+      "afterSection": "stable-transformations"
+    }
+  ],
+  "lab": {
+    "goal": "Implement stable log-sum-exp, softmax and compensated summation, then verify extreme-value invariants and high-precision agreement.",
+    "language": "python",
+    "buildIt": "import math\n\ndef logsumexp(values):\n    if not values: return -math.inf\n    m=max(values)\n    if m==math.inf: return math.inf\n    if m==-math.inf: return -math.inf\n    return m+math.log(sum(math.exp(x-m) for x in values))\n\ndef softmax(values):\n    lse=logsumexp(values)\n    if not math.isfinite(lse): raise ValueError('softmax requires a finite normalizer')\n    return [math.exp(x-lse) for x in values]\n\ndef kahan_sum(values):\n    total=0.0; correction=0.0\n    for value in values:\n        adjusted=value-correction; new=total+adjusted\n        correction=(new-total)-adjusted; total=new\n    return total",
+    "useIt": "from decimal import Decimal,getcontext\nvalues=[1000.0,999.0,998.0]\nprobs=softmax(values); lse=logsumexp(values)\ngetcontext().prec=50\nreference=float(Decimal(1000)+(Decimal(1)+Decimal(-1).exp()+Decimal(-2).exp()).ln())\nsequence=[1e16,1.0,-1e16]",
+    "verifyIt": "assert all(math.isfinite(p) and p>=0 for p in probs)\nassert math.isclose(sum(probs),1.0,rel_tol=1e-14,abs_tol=1e-14)\nassert math.isclose(lse,reference,rel_tol=1e-14)\nshifted=softmax([x-12345 for x in values])\nassert all(math.isclose(a,b,rel_tol=1e-12) for a,b in zip(probs,shifted))\nassert sum(sequence)==0.0\nassert kahan_sum([1e16,-1e16,1.0])==1.0\nassert logsumexp([-math.inf,-math.inf])==-math.inf\ntry: softmax([-math.inf,-math.inf])\nexcept ValueError: pass\nelse: raise AssertionError('undefined normalizer must fail explicitly')",
+    "shipIt": "Use tested SciPy/framework primitives and stable solvers, maintain extreme-scale regression suites per dtype/hardware, monitor nonfinite/condition/residual signals, bound adversarial inputs and retain a stable numerical fallback for rollback."
   }
 }

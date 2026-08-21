@@ -9,38 +9,176 @@
     "da",
     "as"
   ],
-  "interviewAnswer": "Maximum likelihood chooses parameters that make observed data most likely. MAP adds a prior and chooses the most probable parameters after combining prior and likelihood; many regularizers can be interpreted as MAP priors.",
+  "interviewAnswer": "MLE maximizes p(data|theta), treating the observed data as fixed and theta as the optimization variable. MAP maximizes p(data|theta)p(theta), equivalently log likelihood plus log prior. A zero-mean Gaussian prior often yields an L2 penalty and a Laplace prior an L1 penalty, with scaling determined by noise and prior parameters. Both return point estimates; MAP is not full Bayesian inference and is not invariant to arbitrary reparameterization. Validate the model, identifiability, optimization, and predictive calibration separately.",
   "keyPoints": [
-    "Likelihood vs probability",
-    "Prior",
-    "Regularization link",
-    "Bayesian interpretation"
+    "Likelihood is a function of parameters, not a normalized parameter probability",
+    "Logs turn products into stable sums",
+    "MAP adds prior information and can regularize weak data",
+    "Point estimation discards posterior shape",
+    "A converged optimizer can fit a wrong or unidentified model"
   ],
   "resources": [
     "stanford-cs229",
-    "harvard-stat110",
-    "statquest"
+    "stanford-stats200",
+    "scipy-stats"
   ],
   "featured": false,
-  "why": "MLE and MAP connect probability, optimization and regularization. They help explain why familiar losses such as cross-entropy and squared error arise from probabilistic assumptions.",
-  "intuition": "MLE asks which parameters make the observed data most plausible. MAP asks the same question but also incorporates what parameter values were plausible before seeing the data.",
-  "deepDive": "Given independent observations, MLE maximizes the likelihood or equivalently the log-likelihood. MAP maximizes log likelihood plus log prior. A Gaussian prior over weights produces an L2-style penalty; a Laplace prior produces an L1-style penalty. MLE and MAP return point estimates, unlike full Bayesian inference which maintains a posterior distribution.",
-  "math": "MLE: θ̂ = argmax_θ p(D|θ)\nMAP: θ̂ = argmax_θ p(D|θ)p(θ) = argmax [log p(D|θ)+log p(θ)]",
-  "workedExample": "Linear regression with Gaussian observation noise leads to minimizing squared error. Adding a zero-mean Gaussian prior on coefficients produces an L2-regularized objective, giving a MAP interpretation of ridge regression.",
+  "why": "MLE connects probability assumptions to losses used throughout statistics and machine learning. Squared error follows from Gaussian observation noise; cross-entropy follows from Bernoulli or categorical likelihoods. MAP explains one source of regularization and makes prior commitments explicit. Without this foundation, practitioners treat losses as arbitrary functions and misread penalties as universally equivalent priors. In interviews, likelihood questions test conditional reasoning and optimization. In production, a misspecified likelihood can yield poor tail probabilities or calibration even when predictive ranking looks good. A prior chosen for numerical convenience may dominate low-volume segments. Conversely, unregularized MLE can diverge under complete separation or overfit sparse categories. Estimation is therefore both a mathematical objective and an engineering contract about data generation.",
+  "intuition": "Suppose a coin produced eight heads and two tails. MLE asks: which head probability would make this exact outcome pattern most plausible? The answer is 0.8. MAP adds a prior belief, perhaps that extreme probabilities are uncommon, then finds the peak after combining evidence and prior. With little data, the prior moves the estimate; with abundant regular data, the likelihood usually dominates. The posterior mean averages parameter values under the posterior, while MAP selects only its highest point, so they need not match. In a multimodal posterior the MAP may describe one narrow peak while ignoring substantial mass elsewhere. In high-dimensional models, a penalty can stabilize the optimizer, but it also encodes geometry and scale. Standardizing features changes what an isotropic coefficient prior means.",
+  "deepDive": "A statistical model is a family p(x|theta). After observing x, the likelihood L(theta;x) is that same expression viewed as a function of theta. It need not integrate to one over theta. Bayes' rule normalizes likelihood times prior to obtain a posterior density when a prior is defined.",
+  "math": "For Bernoulli data with k successes in n trials, log L(p)=k log p+(n-k)log(1-p), whose MLE is k/n for 0<k<n. With Beta(a,b) prior, the posterior is Beta(a+k,b+n-k). For a+k>1 and b+n-k>1, MAP=(a+k-1)/(a+b+n-2), while posterior mean=(a+k)/(a+b+n). For Gaussian linear regression y=Xw+epsilon, epsilon~N(0,sigma^2 I), plus w~N(0,tau^2 I), negative log posterior is ||y-Xw||^2/(2sigma^2)+||w||^2/(2tau^2)+constant, so MAP is ridge with lambda=sigma^2/tau^2 under an unnormalized squared-error convention.",
+  "workedExample": "A segment has 1 conversion in 2 visits. Bernoulli MLE is 0.5, a volatile estimate. With Beta(2,8) prior, posterior is Beta(3,9). MAP=(3-1)/(3+9-2)=0.20 and posterior mean=3/12=0.25. The different values are not contradictions: they optimize different loss or density criteria. A predictive probability for the next Bernoulli trial equals the posterior mean 0.25, not necessarily the mode. The prior represents eight pseudo-observations only under this conjugate interpretation and must be justified using prior data or domain knowledge, not chosen after seeing the segment outcome.",
   "code": "# Negative log-likelihood + L2 prior (schematic)\nloss = data_negative_log_likelihood + lambda_ * (weights**2).sum()",
   "commonMistakes": [
-    "Calling the likelihood a probability distribution over parameters.",
-    "Saying MAP is full Bayesian inference.",
-    "Assuming regularization always corresponds to the same prior regardless of formulation."
+    "Calling L(theta;x) a probability distribution over theta without a prior and normalization.",
+    "Saying MAP is full Bayesian inference or always equals the posterior mean.",
+    "Claiming L2 always means the same Gaussian prior without tracking objective scaling and feature units.",
+    "Trusting optimizer convergence without checking identifiability, boundaries, local modes, or misspecification.",
+    "Using an outcome-informed prior or regularization search on the final evaluation data."
   ],
   "followUps": [
-    "Why do we maximize log-likelihood instead of likelihood?",
-    "How does ridge regression connect to a Gaussian prior?",
-    "What is the difference between MAP and posterior mean?",
-    "When does the prior matter less?"
+    {
+      "question": "Why maximize log likelihood?",
+      "answer": "Log is monotone, so the maximizer is unchanged; products become sums, gradients are simpler, and numerical underflow is reduced. Stable implementations still use log-sum-exp and distribution-specific log-probability functions."
+    },
+    {
+      "question": "When do MLE and MAP become similar?",
+      "answer": "When regular, highly informative data make the likelihood sharply concentrated relative to a smooth positive prior near the optimum. This is not guaranteed with weak identification, boundaries, high dimension, or a prior that excludes the likelihood optimum."
+    },
+    {
+      "question": "Why is MAP not invariant to reparameterization?",
+      "answer": "A posterior density acquires a Jacobian under transformation, and the highest density point can move beyond simply transforming the old mode. Posterior probabilities transform consistently, but density modes depend on coordinates."
+    }
   ],
-  "production": "Probabilistic objectives make uncertainty assumptions explicit. If noise characteristics or class probabilities shift, likelihood-based training assumptions and calibration can become wrong.",
+  "production": "Define support, parameterization, likelihood, censoring/missingness assumptions, prior source, feature scaling, and hyperparameter-selection data. Use distribution log-probability functions, stable transforms, gradient checks, multiple initializations, and convergence diagnostics. Test analytic estimates on synthetic data with known parameters and on boundary cases. Monitor calibration, residuals, tail scores, parameter drift, condition numbers, prior-to-data influence, and optimizer failures. Persist software, seed, initialization, data snapshot, objective scaling, and convergence status. Protect sensitive priors and small-segment estimates. Set fallback estimates for sparse groups and abstain when identification is weak. Rollback must restore preprocessing and prior settings alongside parameters. For high-stakes decisions, propagate uncertainty through posterior predictive or validated frequentist procedures rather than treating a MAP point as certainty.",
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "Maximum likelihood estimation chooses parameter values that make the observed data most likely under a specified statistical model. Maximum a posteriori estimation multiplies that likelihood by a prior density and chooses the posterior mode. This chapter carefully distinguishes probability of data given parameters from a probability distribution over parameters, derives log-likelihood objectives for Bernoulli and Gaussian models, connects Gaussian and Laplace priors to common regularizers, and explains why MAP remains a point estimate rather than full Bayesian inference. You will learn how identifiability, constraints, reparameterization, boundary solutions, weak data, and misspecified likelihoods affect both methods; why maximizing a density is coordinate-sensitive; and why optimization convergence does not prove statistical validity. The worked example derives smoothed Bernoulli estimates and contrasts MLE, MAP, and posterior mean. The lab implements them from first principles and verifies against an analytic Beta–Binomial result. Production guidance covers numerical stability, calibration, prior governance, reproducibility, monitoring, and rollback when data or likelihood assumptions shift.",
+  "prerequisites": [
+    "distributions",
+    "expectation-variance"
+  ],
+  "learningObjectives": [
+    "Write likelihood and log-likelihood objectives without reversing their conditioning.",
+    "Derive MLE and MAP estimates for simple models and connect priors to regularization penalties.",
+    "Distinguish MAP, posterior mean, posterior predictive inference, and full posterior uncertainty.",
+    "Diagnose identifiability, numerical, boundary, prior, and misspecification failures in estimation."
+  ],
+  "deepSections": [
+    {
+      "id": "likelihood",
+      "title": "Likelihood, log-likelihood, and sufficient information",
+      "body": "For independent observations, L(theta)=product_i p(x_i|theta). Maximizing log L=sum_i log p(x_i|theta) gives the same optimizer because log is monotone, while avoiding underflow and exposing additive contributions. The score is the gradient of log likelihood; observed or expected information describes curvature and often determines asymptotic uncertainty. Sufficient statistics compress the sample without losing likelihood information about theta for a model—for a Bernoulli sample, the head count is sufficient. Likelihood compares parameter values conditional on the observed data; it is not P(theta|x). Likelihood ratios are invariant to parameter-independent constants, but absolute densities require careful units and support."
+    },
+    {
+      "id": "mle-properties",
+      "title": "MLE behavior: invariance, consistency, and failure modes",
+      "body": "Under regularity, identifiability, and correct specification, MLEs are often consistent and asymptotically normal with covariance related to inverse Fisher information. The MLE is invariant under one-to-one transformations: if eta=g(theta), eta_hat=g(theta_hat). Finite-sample bias can remain. Nonidentifiability creates ridges or multiple equivalent optima. Mixture likelihoods can be singular; logistic MLE can diverge under separation; variance estimates can hit boundaries. Local optimization may find a poor mode. Under misspecification, the MLE targets the closest model in a Kullback–Leibler sense rather than truth, and model-based standard errors may be wrong. Sandwich uncertainty and diagnostics may be needed."
+    },
+    {
+      "id": "map-priors",
+      "title": "MAP, priors, and regularization scaling",
+      "body": "MAP maximizes log L(theta)+log pi(theta). A Gaussian N(0,tau squared) prior contributes -||theta|| squared/(2 tau squared); Gaussian observation variance also scales the data term, so the resulting ridge coefficient is not simply 'the prior' without conventions. An independent Laplace prior contributes an L1 penalty and may produce zeros at a posterior mode. Priors can encode signs, monotonicity, plausible scales, or hierarchical sharing more meaningfully than generic shrinkage. Hyperparameters must be chosen without outcome leakage and documented. MAP is sensitive to parameterization because a density transforms with a Jacobian; posterior probabilities are invariant when transformed correctly, but the location of a density mode need not be."
+    },
+    {
+      "id": "point-vs-posterior",
+      "title": "A point is not a posterior or a predictive distribution",
+      "body": "MAP discards posterior width, correlation, skewness, and multimodality. Posterior mean minimizes squared-error loss for the parameter; posterior median minimizes absolute error; MAP has a local density interpretation. A posterior predictive distribution integrates p(y_new|theta) over posterior uncertainty, whereas plugging in theta_MAP ignores that uncertainty. In sparse or safety-critical settings the difference matters for tail risk and abstention. Laplace approximation, variational inference, MCMC, bootstrap, and profile likelihood capture different uncertainty approximations. Choose an estimator and uncertainty method based on the decision loss, not because one optimizer is convenient."
+    },
+    {
+      "id": "uncertainty",
+      "title": "Curvature, profile likelihood, and uncertainty",
+      "body": "At a regular interior optimum, negative Hessian curvature of the log likelihood approximates observed information; its inverse gives an asymptotic covariance estimate. Flat directions signal weak identification and large uncertainty even when optimization reports convergence. Profile likelihood fixes a parameter of interest, reoptimizes nuisance parameters, and uses likelihood-ratio contours that can capture asymmetry better than a Wald interval. Bayesian posterior curvature adds prior information and a Laplace approximation, but can miss skewness or other modes. Compare Hessian eigenvalues, profile traces, bootstrap variation, and predictive calibration. An optimizer tolerance measures numerical stationarity, not inferential precision. Save enough diagnostics to distinguish a sharp data-supported optimum from one created mainly by constraints or priors."
+    }
+  ],
+  "workedExamples": [
+    {
+      "title": "Sparse conversion with a Beta prior",
+      "body": "Derive MLE, posterior, MAP, and posterior predictive mean for the same two observations. The comparison makes clear what each point estimate retains and discards."
+    }
+  ],
+  "exercises": [
+    {
+      "prompt": "For 7 successes in 10 Bernoulli trials, find the MLE.",
+      "solution": "p_hat=7/10=0.7 by maximizing k log p+(n-k)log(1-p)."
+    },
+    {
+      "prompt": "With Beta(2,2) prior and 7/10 data, find posterior mean and MAP.",
+      "solution": "Posterior is Beta(9,5). Mean=9/14. MAP=(9-1)/(9+5-2)=8/12=2/3, since both shape parameters exceed one."
+    },
+    {
+      "prompt": "Explain why a Gaussian prior's ridge strength depends on scale.",
+      "solution": "The penalty coefficient depends on prior variance, observation-noise variance, and the convention used for averaging or summing loss. Feature scaling changes coefficient units and therefore the meaning of an isotropic prior."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "flow",
+      "title": "From model to estimates",
+      "items": [
+        "Specify p(data|theta)",
+        "Sum log likelihood",
+        "MLE: maximize",
+        "Add log prior",
+        "MAP: maximize",
+        "Posterior: normalize/integrate"
+      ],
+      "caption": "MLE and MAP share an optimization backbone but only the posterior retains parameter uncertainty.",
+      "orientation": "horizontal",
+      "afterSection": "likelihood"
+    },
+    {
+      "type": "matrix",
+      "title": "MLE, MAP, and posterior mean",
+      "caption": "These estimates can differ substantially with weak data or skewed posteriors.",
+      "afterSection": "point-vs-posterior",
+      "rows": [
+        "MLE",
+        "MAP",
+        "Posterior mean"
+      ],
+      "cols": [
+        "Uses prior?",
+        "What it returns"
+      ],
+      "cells": [
+        [
+          "No",
+          "Likelihood maximizer"
+        ],
+        [
+          "Yes",
+          "Posterior-density mode"
+        ],
+        [
+          "Yes",
+          "Probability-weighted average"
+        ]
+      ]
+    }
+  ],
+  "lab": {
+    "language": "python",
+    "goal": "Derive Bernoulli MLE, Beta-prior MAP, and posterior mean, then verify each analytic formula on sparse data.",
+    "buildIt": "def bernoulli_mle(k, n):\n    if not 0 <= k <= n or n <= 0: raise ValueError('invalid counts')\n    return k/n\n\ndef beta_posterior(k, n, a, b):\n    return a+k, b+n-k\n\ndef beta_map(alpha, beta):\n    if alpha <= 1 or beta <= 1: raise ValueError('interior MAP formula requires shapes > 1')\n    return (alpha-1)/(alpha+beta-2)\n\nk,n,a,b = 1,2,2.0,8.0\nalpha,beta = beta_posterior(k,n,a,b)\nmle = bernoulli_mle(k,n)\nmap_est = beta_map(alpha,beta)\npost_mean = alpha/(alpha+beta)",
+    "useIt": "import numpy as np\nfrom scipy.stats import beta as beta_dist\ngrid = np.linspace(1e-5, 1-1e-5, 200000)\nnumeric_map = grid[np.argmax(beta_dist.logpdf(grid, alpha, beta))]\nscipy_mean = beta_dist.mean(alpha, beta)",
+    "verifyIt": "assert mle == 0.5\nassert abs(map_est-0.2) < 1e-12\nassert abs(post_mean-0.25) < 1e-12\nassert abs(numeric_map-map_est) < 1e-4\nassert abs(scipy_mean-post_mean) < 1e-12",
+    "shipIt": "Version likelihood, parameterization, feature scale, priors, objective normalization, optimizer diagnostics, and predictive calibration; never deploy a point estimate without failure and uncertainty handling."
+  },
+  "sourceNotes": [
+    {
+      "resource": "stanford-cs229",
+      "contribution": "Connects probabilistic assumptions, likelihood objectives, MAP estimation, and regularization in machine learning."
+    },
+    {
+      "resource": "stanford-stats200",
+      "contribution": "Provides formal likelihood theory, estimator properties, and asymptotic inference context."
+    },
+    {
+      "resource": "scipy-stats",
+      "contribution": "Documents the current Beta distribution implementation used to verify the analytic conjugate example."
+    }
+  ]
 }

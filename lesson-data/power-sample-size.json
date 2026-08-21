@@ -8,41 +8,212 @@
     "da",
     "as"
   ],
-  "interviewAnswer": "Power is the probability of detecting an effect of a specified size when it truly exists. Sample-size planning links baseline variance/rate, significance level, desired power and minimum detectable effect.",
+  "interviewAnswer": "Power is P(reject H0|a specified alternative is true), equal to 1-beta for a fixed design and test. Sample size grows with variance, stricter alpha, higher target power, and smaller effect—often approximately inverse-square in the detectable effect. Plan using the smallest effect worth acting on, realistic baseline/variance, independent unit, allocation, attrition, clustering, multiplicity, and stopping rule. MDE is what a design can reliably detect, not necessarily what matters. Do not use observed post-hoc power as new evidence; report the effect interval.",
   "keyPoints": [
-    "Power is defined relative to an alternative effect size.",
-    "Smaller MDE requires more samples.",
-    "Low power produces noisy, inconclusive experiments."
+    "Power is a curve over alternatives, not one universal number",
+    "Effect threshold and variance drive sample size",
+    "Independent information matters more than row count",
+    "Design corrections must be included before launch",
+    "Simulation audits formulas for real metrics and pipelines"
   ],
   "resources": [
+    "statsmodels-power",
+    "stanford-stats200",
     "openintro-stats",
-    "microsoft-experimentation"
+    "asa-pvalues"
   ],
   "featured": true,
-  "why": "Power, Minimum Detectable Effect & Sample Size appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
-  "intuition": "Power is defined relative to an alternative effect size.",
-  "deepDive": "Power is the probability of detecting an effect of a specified size when it truly exists. Sample-size planning links baseline variance/rate, significance level, desired power and minimum detectable effect. Smaller MDE requires more samples. Low power produces noisy, inconclusive experiments. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
-  "workedExample": "Plan an A/B test to reliably detect a 1% relative conversion lift before launching it.",
+  "why": "Underpowered studies waste traffic and produce ambiguous intervals; overpowered studies may waste time detecting effects too small to matter. Product teams often choose 80% power by convention, back-solve an MDE from available traffic, then mistake detectability for value. Planning forces the decision threshold, baseline variability, unit, and analysis into the open. Interviews test how n changes with effect size and variance. Production planning must also incorporate cluster assignment, unequal traffic costs, guardrails, attrition, repeated looks, and ramp schedules. Because power is conditional on assumptions, a precise sample-size number should be accompanied by sensitivity analysis. Bias and instrumentation errors are not cured by large n.",
+  "intuition": "Picture null and alternative sampling distributions of an estimator. Alpha chooses a rejection boundary in the null tail. Power is the area of the alternative distribution beyond that boundary. Increasing independent sample size narrows both distributions, separating them in standard-error units. A larger true effect also separates their centers. Stricter alpha moves the boundary outward, reducing power unless n grows. More noise broadens distributions and requires more information. If users generate correlated events, adding events without users barely narrows the relevant estimator. An MDE is the alternative whose power reaches the target under the planned design. A minimum worthwhile effect comes from economics or safety. Good plans align them or explain the gap.",
+  "deepDive": "A power calculation is a prospective property of a fully specified decision rule. It includes estimator, variance method, alpha and sidedness, alternative, sample-size allocation, design, and stopping. Different alternatives yield a power function rather than a single property of the dataset.",
+  "workedExample": "Baseline conversion is 10%, and the smallest worthwhile absolute lift is 1 percentage point to 11%. With two-sided alpha 0.05 and 80% power, an approximate two-proportion normal calculation yields about 14,700 users per arm (exact output varies by formula). If users are assigned by household with average size 2 and rho=0.10, DE≈1.1, raising analyzable users to about 16,170 per arm. With 8% outcome attrition, enroll roughly 17,576 per arm. Then simulate the planned estimator at p0=0.10 and p1 in [0.10,0.115], verify null false-positive rate, and translate users into calendar duration using eligible daily traffic.",
   "commonMistakes": [
-    "Applying the method without checking its assumptions or data-generating process.",
-    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+    "Choosing MDE only from available traffic and presenting it as a minimum worthwhile effect.",
+    "Computing post-hoc observed power and treating it as evidence beyond the estimate and p-value.",
+    "Using row count instead of independent assignment units or ignoring cluster design effect.",
+    "Planning with optimistic variance, baseline, compliance, or attrition and no sensitivity analysis.",
+    "Using a fixed-horizon power calculation while continuously peeking or adjusting many primary metrics."
   ],
   "followUps": [
-    "What assumptions does Power, Minimum Detectable Effect & Sample Size make?",
-    "How would you validate or debug Power, Minimum Detectable Effect & Sample Size in practice?"
+    {
+      "question": "What happens to n if the target effect is halved?",
+      "answer": "Under common normal approximations, n scales as 1/delta squared, so halving the effect requires about four times the independent sample size, all else equal."
+    },
+    {
+      "question": "Is 80% power always correct?",
+      "answer": "No. It is a convention. Choose power from the cost of missing a worthwhile effect, test cost, decision reversibility, available traffic, and error trade-offs; safety contexts may demand more."
+    },
+    {
+      "question": "Why avoid observed post-hoc power?",
+      "answer": "Plugging the observed effect into the same test formula makes observed power largely a re-expression of the p-value and encourages circular conclusions. The confidence interval more directly shows uncertainty and compatible effects."
+    }
   ],
-  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
-  "visual": {
-    "type": "concept-map",
-    "title": "Power, Minimum Detectable Effect & Sample Size",
-    "items": [
-      "Power is defined relative to an alternative effect size.",
-      "Smaller MDE requires more samples.",
-      "Low power produces noisy, inconclusive experiments."
-    ],
-    "caption": "A compact concept map for the most important ideas in this lesson."
-  },
+  "production": "Maintain a versioned design document with estimand, unit, baseline, variance source, worthwhile effect, alpha, power, sidedness, allocation, covariates, clusters, attrition, multiplicity, stopping rule, ramp, and outcome delay. Generate sensitivity tables over plausible inputs and simulation-check Type I error and power. Forecast eligible independent units—not events—and monitor enrollment, balance, attrition, cluster sizes, ICC, metric variance, and data latency without unblinding effect-driven changes. Predefine blinded nuisance re-estimation if needed. Secure treatment outcomes and subgroup plans. Store simulator code, RNG streams, software versions, and result summaries. If traffic or variance assumptions fail, extend or stop according to the protocol rather than moving targets. Roll back decisions if integrity checks invalidate the planned operating characteristics.",
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "Statistical power is the probability that a prespecified procedure rejects its null under a particular alternative. Sample-size planning connects that operating characteristic to a meaningful effect, variance, alpha, allocation, design, attrition, and decision horizon. This chapter derives normal-mean scaling, distinguishes minimum detectable effect from minimum worthwhile effect, explains one- versus two-sided tests, unequal allocation, clustering, multiple testing, sequential designs, and simulation-based power for complex estimators. You will learn why post-hoc observed power adds little beyond the p-value, why plugging optimistic variance or conversion assumptions understates required sample size, and why increasing rows does not overcome correlation or bias. The worked example plans a two-arm conversion experiment in absolute percentage points and inflates for attrition and design effect. The lab implements an approximate two-sample proportion calculation, verifies monotonic relationships, and compares a t-test case with statsmodels. Production guidance covers preregistered assumptions, traffic forecasts, guardrails, simulation, re-estimation without unblinding effects, monitoring, and stopping behavior.",
+  "prerequisites": [
+    "hypothesis-testing",
+    "effect-size",
+    "sampling-distributions"
+  ],
+  "learningObjectives": [
+    "Define power as a function of a specific alternative, procedure, design, and sample size.",
+    "Distinguish minimum detectable, minimum worthwhile, and observed effects in planning and interpretation.",
+    "Compute approximate sample sizes and adjust for allocation, clustering, attrition, multiplicity, and sequential monitoring.",
+    "Use simulation to validate analytic power for complex metrics and avoid post-hoc observed-power misuse."
+  ],
+  "deepSections": [
+    {
+      "id": "power-geometry",
+      "title": "Alpha, beta, effect, and the power curve",
+      "body": "For a one-sided normal test with known SE, choose a critical boundary so null rejection probability is alpha. Under alternative delta, power is the probability the shifted estimator crosses that boundary. At delta=0, power equals alpha for a simple boundary. As delta grows in the targeted direction, power rises. Two-sided tests allocate error to both tails and require more separation for the same directional effect. Power should be shown across a range including harm, zero, minimum worthwhile effect, and optimistic effect. Type S (wrong sign) and Type M (magnitude exaggeration conditional on significance) risks can be substantial in low-power studies."
+    },
+    {
+      "id": "sample-formula",
+      "title": "Approximate scaling and planning inputs",
+      "body": "For equal-size normal groups with common SD sigma and target raw difference delta, a common approximation per arm is n≈2 sigma^2(z_(1-alpha/2)+z_power)^2/delta^2. Halving delta quadruples n; doubling sigma quadruples n. Proportions require variance tied to baseline and alternative, and rare events may need exact or simulation methods. Unequal allocation increases total n for fixed precision unless one arm is cheaper or constrained. Use variance from representative historical data without leaking future treatment outcomes. Include uncertainty in baseline and variance through scenarios rather than one optimistic input."
+    },
+    {
+      "id": "design-inflation",
+      "title": "Clustering, attrition, multiplicity, and sequential designs",
+      "body": "For equal cluster size m and intraclass correlation rho, design effect is approximately 1+(m-1)rho; multiply simple-random sample size, then account for the number of independent clusters and small-cluster inference. Inflate for expected attrition by dividing by retained fraction, while addressing whether attrition is differential and biasing. Multiple primary comparisons may use adjusted alpha, increasing n. Covariate adjustment can reduce residual variance if planned and measured pre-treatment. Sequential or group-sequential designs have their own boundaries and expected sample sizes; do not mix a fixed-horizon calculation with continuous peeking. Ramp-up and delayed outcomes determine calendar duration."
+    },
+    {
+      "id": "simulation-practice",
+      "title": "Simulation-based power and what not to do",
+      "body": "For ratios, quantiles, clustered assignment, CUPED, missing outcomes, complex models, or adaptive rules, simulate the full data-generating and analysis pipeline under many alternatives. Include assignment, preprocessing, estimator, exclusions, variance, stopping, and multiplicity. Verify Type I error at the null before trusting power. Post-hoc observed power computed by plugging the observed effect into the prospective formula is a monotone transformation of the test statistic and adds no independent information; use the confidence interval and sensitivity analysis. Re-estimating nuisance variance during a blinded design may be possible, but changing effect targets after seeing treatment differences compromises interpretation."
+    },
+    {
+      "id": "precision-planning",
+      "title": "Planning for estimation precision instead of rejection",
+      "body": "Some decisions need an interval narrow enough for action rather than a chosen rejection probability. Precision planning selects n so the expected or high-probability confidence-interval half-width falls below a tolerance. For a mean with known sigma, half-width is approximately z sigma/sqrt(n); proportions are widest near one-half. Precision criteria avoid framing an exact-zero null when the real question is how accurately an effect must be known. Assurance methods integrate power over uncertainty in nuisance parameters or prior beliefs, producing a probability that a future study meets its goal. Whatever criterion is used, simulate interval width and decision success across plausible baselines, variances, attrition, and effects. State whether n guarantees expected, median, or worst-case precision."
+    }
+  ],
+  "math": "For equal-size two-sample means with known common sigma and two-sided alpha, approximate per-arm n=2 sigma^2(z_(1-alpha/2)+z_(1-beta))^2/delta^2. Standardized effect d=delta/sigma gives n≈2(z_alpha+z_power)^2/d^2. Cluster design effect DE=1+(m-1)rho under equal cluster sizes. Attrition inflation is n_enroll=n_analyzable/(1-a). Exact formulas vary with test, finite df, baseline proportion, allocation, correction, and sequential boundary; official software conventions must be verified.",
+  "workedExamples": [
+    {
+      "title": "Conversion experiment with clustering and attrition",
+      "body": "Start from a business-derived absolute lift, calculate simple-design n, multiply by design effect, divide by retention, then simulation-check the actual estimator and stopping rule."
+    }
+  ],
+  "exercises": [
+    {
+      "prompt": "If SD doubles while effect, alpha, and power stay fixed, how does approximate n change?",
+      "solution": "n is proportional to sigma squared, so it increases by a factor of four."
+    },
+    {
+      "prompt": "A cluster design has m=5 and rho=0.20. Compute equal-size design effect.",
+      "solution": "DE=1+(5-1)*0.20=1.8. Multiply the simple-random information requirement by roughly 1.8, then ensure enough independent clusters."
+    },
+    {
+      "prompt": "You need 10,000 analyzable units and expect 20% attrition. How many enroll?",
+      "solution": "10,000/(1-0.20)=12,500. This inflation addresses quantity, not bias from differential attrition."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "curve",
+      "title": "Power rises with true effect",
+      "series": [
+        {
+          "label": "small n",
+          "points": [
+            [
+              0,
+              0.05
+            ],
+            [
+              0.25,
+              0.12
+            ],
+            [
+              0.5,
+              0.35
+            ],
+            [
+              0.75,
+              0.65
+            ],
+            [
+              1,
+              0.85
+            ]
+          ]
+        },
+        {
+          "label": "large n",
+          "points": [
+            [
+              0,
+              0.05
+            ],
+            [
+              0.25,
+              0.3
+            ],
+            [
+              0.5,
+              0.75
+            ],
+            [
+              0.75,
+              0.96
+            ],
+            [
+              1,
+              1.0
+            ]
+          ]
+        }
+      ],
+      "caption": "Conceptual: power is a function over alternatives; more independent information steepens the curve.",
+      "xLabel": "true effect",
+      "yLabel": "rejection probability",
+      "afterSection": "power-geometry"
+    },
+    {
+      "type": "flow",
+      "title": "Sample-size planning",
+      "items": [
+        "Minimum worthwhile effect",
+        "Baseline + variance",
+        "Alpha + power",
+        "Design inflation",
+        "Attrition + duration",
+        "Simulation audit"
+      ],
+      "caption": "Every numeric sample-size output inherits these assumptions.",
+      "orientation": "horizontal",
+      "afterSection": "sample-formula"
+    }
+  ],
+  "lab": {
+    "language": "python",
+    "goal": "Compute approximate two-proportion sample size, verify monotonic design relationships, and compare an independent t-test case with statsmodels.",
+    "buildIt": "import math\nfrom statistics import NormalDist\n\ndef n_per_arm_proportions(p0,p1,alpha=0.05,power=0.8):\n    if not (0<p0<1 and 0<p1<1 and p0!=p1): raise ValueError('valid distinct probabilities required')\n    z_alpha=NormalDist().inv_cdf(1-alpha/2)\n    z_power=NormalDist().inv_cdf(power)\n    pbar=(p0+p1)/2\n    numerator=(z_alpha*math.sqrt(2*pbar*(1-pbar))+z_power*math.sqrt(p0*(1-p0)+p1*(1-p1)))**2\n    return math.ceil(numerator/(p1-p0)**2)\nn=n_per_arm_proportions(0.10,0.11)\nn_smaller_effect=n_per_arm_proportions(0.10,0.105)",
+    "useIt": "from statsmodels.stats.power import TTestIndPower\nanalysis=TTestIndPower()\nt_n=analysis.solve_power(effect_size=0.30,alpha=0.05,power=0.80,ratio=1.0,alternative='two-sided')\nt_power=analysis.power(effect_size=0.30,nobs1=t_n,alpha=0.05,ratio=1.0,alternative='two-sided')",
+    "verifyIt": "assert n > 0\nassert n_smaller_effect > n\nassert n_per_arm_proportions(0.10,0.12) < n\nassert abs(t_power-0.80) < 1e-6\ndesign_effect=1+(5-1)*0.20\nassert design_effect == 1.8",
+    "shipIt": "Version all design assumptions, calculate on independent units, include clustering/attrition/multiplicity/stopping, and simulation-check both null error and power before enrollment."
+  },
+  "sourceNotes": [
+    {
+      "resource": "statsmodels-power",
+      "contribution": "Documents current official power and sample-size APIs and their parameter conventions."
+    },
+    {
+      "resource": "stanford-stats200",
+      "contribution": "Provides formal Type I/II error and power theory for statistical procedures."
+    },
+    {
+      "resource": "openintro-stats",
+      "contribution": "Connects effect size, power, sample size, experimental design, and accessible interpretation."
+    },
+    {
+      "resource": "asa-pvalues",
+      "contribution": "Supports planning and reporting based on design, effect magnitude, and context rather than thresholds alone."
+    }
+  ]
 }

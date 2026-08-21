@@ -1,6 +1,6 @@
 # Bootstrap & Resampling — Code Lab
 
-Estimate uncertainty with a nonparametric bootstrap.
+Build a bootstrap confidence interval for a median, compare with SciPy BCa output, and verify reproducibility and narrowing with more data.
 
 ## 1. Build it
 

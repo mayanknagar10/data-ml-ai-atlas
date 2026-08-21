@@ -6,31 +6,186 @@
   "roles": [
     "ds"
   ],
-  "interviewAnswer": "Sampling design determines which population the data represents. Simple random sampling gives each unit equal probability; stratification samples within known groups; cluster sampling selects groups and can increase correlation/variance.",
+  "interviewAnswer": "A probability sample gives each frame unit a known nonzero inclusion probability. Simple random sampling selects units directly; stratification samples within homogeneous subgroups to guarantee coverage and often improve precision; cluster sampling selects groups for cost efficiency but induces correlation and often increases variance; multistage designs combine them. Estimate population quantities with design weights, typically inverse inclusion probabilities, and compute design-aware variance using strata, clusters, finite-population corrections, or replicate weights. Large convenience samples do not have these guarantees.",
   "keyPoints": [
-    "Sampling mechanism affects both bias and standard error.",
-    "Stratification can improve precision for important subgroups.",
-    "Clustered samples need clustered uncertainty."
+    "The frame is not automatically the target population",
+    "Known inclusion probabilities enable design-based weighting",
+    "Strata seek internal homogeneity; clusters are often internally heterogeneous but correlated",
+    "Weights affect point estimates and effective information",
+    "Variance must reflect every sampling stage"
   ],
   "resources": [
+    "cdc-survey-variance",
     "openintro-stats",
-    "stanford-stats60"
+    "stanford-stats60",
+    "census-nonresponse"
   ],
   "featured": false,
-  "why": "Sampling Design: Random, Stratified & Cluster Sampling is a standard part of a broad data/ML curriculum because it changes how models are selected, evaluated or operated in real systems.",
-  "intuition": "Sampling mechanism affects both bias and standard error.",
-  "deepDive": "Sampling design determines which population the data represents. Simple random sampling gives each unit equal probability; stratification samples within known groups; cluster sampling selects groups and can increase correlation/variance. Stratification can improve precision for important subgroups. Clustered samples need clustered uncertainty. A strong answer connects the formal idea to validation, data requirements and failure modes instead of treating the method as a recipe.",
-  "workedExample": "Estimate customer satisfaction by stratifying across regions rather than letting the largest region dominate a convenience sample.",
+  "why": "Inference quality begins before modeling. A perfectly computed confidence interval from a biased frame can be tightly wrong. Sampling designs balance travel, recruitment, rare-group coverage, and measurement cost. Data scientists encounter the same logic in annotation, evaluation sets, audits, telemetry subsampling, and human-feedback collection. Interviews ask stratified versus cluster sampling; a mature answer mentions inclusion probabilities, variance, and logistics. In production, samples are often joined to population totals, refreshed over time, or adjusted for nonresponse. Losing frame versions or weight lineage makes estimates irreproducible. Complex design is not a nuisance to drop in preprocessing—it defines the probability law supporting inference.",
+  "intuition": "To estimate a university-wide mean, simple random sampling draws students from one complete list. Stratification first separates undergraduates and graduates, then samples from both; this prevents a small but important group from disappearing and can reduce variance when groups differ but are internally consistent. Cluster sampling draws whole classes because visiting a few classrooms is cheap; students in the same class may be similar, so 100 clustered students carry less information than 100 spread across campus. Multistage sampling selects campuses, then classes, then students. If selection rates differ, each sampled unit represents a different number of population units, so inverse-probability weights reconstruct the target. The design saves cost at the price of more elaborate estimation.",
+  "deepDive": "Design-based inference treats finite-population values as fixed and randomness as coming from sample selection. Inclusion probabilities determine unbiased or approximately unbiased estimators and variance. Model-based inference instead posits a stochastic outcome model; hybrid practice can use both, but assumptions must be explicit.",
+  "workedExample": "A company has 900 engineering and 100 support employees. To guarantee support precision, sample 90 engineers and 50 support staff. Inclusion probabilities are 0.10 and 0.50, so base weights are 10 and 2. Sample satisfaction means are 72 and 60. The unweighted combined mean is (90*72+50*60)/140=67.7, overrepresenting support. The design-weighted mean is (90*10*72+50*2*60)/(90*10+50*2)=70.8, equivalent to population-stratum weighting 0.9*72+0.1*60. Variance must use the two strata and finite sampling fractions, not treat 140 rows as iid.",
   "commonMistakes": [
-    "Choosing the technique without checking whether its assumptions match the problem.",
-    "Optimizing an offline metric without checking realistic validation slices or operational constraints."
+    "Equating the sampling frame with the target population without coverage analysis.",
+    "Using unweighted estimates after disproportionate sampling or weight trimming without bias assessment.",
+    "Treating cluster members as independent and reporting iid standard errors.",
+    "Confusing stratification, which samples every stratum, with selecting a subset of clusters.",
+    "Believing a very large convenience or quota sample has probability-sample guarantees."
   ],
   "followUps": [
-    "When would you not use Sampling Design: Random, Stratified & Cluster Sampling?",
-    "How would you validate or tune Sampling Design: Random, Stratified & Cluster Sampling?"
+    {
+      "question": "Why can stratification reduce variance?",
+      "answer": "If strata are internally homogeneous and differ in means, sampling within every stratum removes between-stratum composition fluctuation and allocates observations efficiently."
+    },
+    {
+      "question": "Why can clustering increase variance?",
+      "answer": "Units within clusters often correlate, so additional members repeat similar information. The design saves collection cost but reduces effective sample size relative to dispersed independent units."
+    },
+    {
+      "question": "What is a sampling weight?",
+      "answer": "A base weight is typically the inverse inclusion probability. Final weights may also include nonresponse adjustment, calibration, trimming, and other factors; their lineage and variance method must be retained."
+    }
   ],
-  "production": "In production, validate on realistic slices, track latency/cost when relevant, and monitor for distribution changes or failure modes that the offline metric can hide.",
+  "production": "Snapshot target definition and every frame used for selection. Store unit IDs, stages, strata, PSUs, inclusion probabilities, base and adjustment weight factors, replicate weights, finite population sizes, eligibility rules, contact outcomes, and benchmark versions. Validate probability bounds, weight sums, duplicate frame links, selected counts, stratum coverage, and reconciliation to controls. Monitor weight concentration, design effect, response by stratum, frame churn, coverage gaps, PSU counts, and variance stability. Use privacy-preserving IDs and minimum domain sizes. Survey software and replicate-weight conventions should be verified against official documentation. Reproduce draws with secure seeded RNG where appropriate while preventing manipulation. If the frame or weights are corrupted, withdraw estimates and rebuild from the preserved snapshot rather than patching final tables. Rollback includes estimates, SEs, and published population totals.",
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "Sampling design determines which population units can enter a dataset and with what probability. Simple random, systematic, stratified, cluster, multistage, and unequal-probability samples trade cost, coverage, and precision differently; their weights and dependence structure must flow into estimation and uncertainty. This chapter defines target and frame populations, inclusion probabilities, base weights, stratification gains, cluster design effects, finite-population correction, probability-proportional-to-size sampling, and design-based versus model-based inference. You will learn why stratification and clustering are not opposites, how self-weighting designs can emerge across stages, why convenience and quota samples do not acquire probability-sample guarantees from large n, and how nonresponse adjustments and calibration alter both bias and variance. The worked example estimates a company-wide mean from disproportionate department strata. The lab implements a Horvitz–Thompson-style weighted mean, verifies recovery on a finite population, and demonstrates stratification variance reduction. Production guidance covers frame snapshots, inclusion-probability lineage, replicate variance, privacy, monitoring, and survey lifecycle controls.",
+  "prerequisites": [
+    "probability-basics",
+    "sampling-distributions",
+    "expectation-variance"
+  ],
+  "learningObjectives": [
+    "Map target population, sampling frame, unit, stages, strata, clusters, and inclusion probabilities before analysis.",
+    "Explain when stratification improves precision and when cluster sampling reduces cost while increasing variance.",
+    "Compute design-weighted estimates and understand finite-population and design-effect adjustments.",
+    "Diagnose coverage, unequal weighting, nonresponse, and variance-estimation failures in complex samples."
+  ],
+  "deepSections": [
+    {
+      "id": "population-frame",
+      "title": "Target, frame, and sampling units",
+      "body": "The target population is the set about which the estimand speaks. The sampling frame is the operational list or mechanism from which units can be selected. Undercoverage excludes eligible target units; overcoverage includes ineligible or duplicate units. Define primary sampling units, later-stage units, eligibility dates, and frame version. An element may have multiple frame entries, changing inclusion probability. A probability sample requires known nonzero inclusion probability for every covered target unit; it does not guarantee zero nonresponse or measurement error. Coverage evaluation compares frame totals and distributions with authoritative benchmarks and investigates unreachable groups."
+    },
+    {
+      "id": "designs",
+      "title": "Simple, systematic, stratified, cluster, and multistage designs",
+      "body": "Simple random sampling selects every size-n subset with equal probability. Systematic sampling chooses a random start and fixed interval; hidden periodicity in frame order can harm it. Stratified sampling partitions the frame and samples independently within strata, guaranteeing subgroup representation; proportional allocation can be self-weighting, while Neyman allocation assigns more sample to large, variable strata for precision. Cluster sampling selects groups and observes all or sampled elements inside them, reducing field cost but adding intracluster correlation. Multistage designs combine strata, PSUs, households, and people. Probability-proportional-to-size sampling can equalize later-stage weights when clusters vary greatly."
+    },
+    {
+      "id": "weights-estimation",
+      "title": "Inclusion probabilities, weights, and finite populations",
+      "body": "Base weight w_i=1/pi_i represents how many population units sampled unit i stands for. Horvitz–Thompson totals sum y_i/pi_i; ratio or Hájek means divide weighted outcome by weighted count and trade small bias for stability. Adjust weights for nonresponse within cells or propensity models, then calibrate/rake to trusted margins. Trimming extreme weights reduces variance but can introduce bias. Effective sample size based on weight concentration is a diagnostic, not a complete variance estimator. When a large fraction of a finite population is sampled without replacement, the finite-population correction reduces variance. Preserve every adjustment factor, cap, and benchmark date."
+    },
+    {
+      "id": "design-variance",
+      "title": "Variance, design effects, and domain estimation",
+      "body": "Strata usually reduce variance when internally homogeneous and all are represented; clusters often increase it because neighbors resemble one another. Taylor linearization, replication methods such as jackknife/BRR/bootstrap, or exact design formulas estimate variance. Replicate weights encode the agency's approved procedure and should be used as documented. Treating a complex survey as iid usually understates SE, as CDC guidance emphasizes. Domain estimates should retain the full sample and define subpopulation indicators so design variance includes correct PSUs/strata; physically filtering can lose variance information in some software. Small numbers of PSUs require special handling. Report unweighted n, weighted population size, design df, and effective precision."
+    },
+    {
+      "id": "allocation",
+      "title": "Optimal allocation under cost and precision constraints",
+      "body": "Proportional stratified allocation n_h proportional to N_h yields equal weights when within-stratum sampling fractions match. Neyman allocation n_h proportional to N_h S_h places more sample in large, variable strata to minimize variance for fixed n. With unequal per-unit costs, optimal allocation also discounts expensive strata by the square root of cost, subject to minimum subgroup requirements. Operational constraints and multiple estimands may override a single-variable optimum. Oversampling rare groups improves their domain precision but requires weights for population totals. Allocation values estimated from old data can drift; use conservative floors and sensitivity analysis. Record whether the design optimizes one primary estimand, balances several, or guarantees reporting standards, because the resulting sample is not universally optimal."
+    }
+  ],
+  "math": "For inclusion indicator I_i with P(I_i=1)=pi_i, Horvitz–Thompson total t_hat=sum_{i in s} y_i/pi_i is design-unbiased because E[I_i y_i/pi_i]=y_i. A Hájek mean is sum w_i y_i/sum w_i. For SRS without replacement, SE(mean)=sqrt((1-n/N) S^2/n) using an appropriate sample estimate. Equal-size cluster design effect is approximately 1+(m-1)rho. Weight-only Kish effective n is (sum w)^2/sum w^2, which omits stratification and clustering.",
+  "workedExamples": [
+    {
+      "title": "Disproportionate department stratification",
+      "body": "Use inverse inclusion probabilities to recover the company population composition, then estimate uncertainty separately within strata with finite-population corrections."
+    }
+  ],
+  "exercises": [
+    {
+      "prompt": "A unit has inclusion probability 0.02. What is its base weight?",
+      "solution": "1/0.02=50; it represents about 50 frame units before nonresponse or calibration adjustments."
+    },
+    {
+      "prompt": "Why does sampling 20 people in each of 50 clusters differ from sampling 1,000 people independently?",
+      "solution": "Within-cluster correlation makes observations partially redundant. Variance depends on cluster sizes and ICC, so effective information can be much lower than 1,000 iid units."
+    },
+    {
+      "prompt": "A sample takes 400 of N=1,000 units without replacement. What finite-population factor multiplies the iid SE approximately?",
+      "solution": "sqrt((N-n)/(N-1))=sqrt(600/999), about 0.775, assuming SRS and a finite-population mean target."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "matrix",
+      "title": "Probability sampling designs",
+      "caption": "Design is an optimization over coverage, information, and collection cost.",
+      "afterSection": "designs",
+      "rows": [
+        "SRS",
+        "Stratified",
+        "Cluster",
+        "Multistage"
+      ],
+      "cols": [
+        "Selection",
+        "Main trade-off"
+      ],
+      "cells": [
+        [
+          "Units directly",
+          "Simple but frame/cost heavy"
+        ],
+        [
+          "Units within every stratum",
+          "Coverage and precision"
+        ],
+        [
+          "Select groups",
+          "Lower cost, correlation"
+        ],
+        [
+          "Groups then subunits",
+          "Operational flexibility"
+        ]
+      ]
+    },
+    {
+      "type": "flow",
+      "title": "Weight lineage",
+      "items": [
+        "Inclusion probability",
+        "Base weight",
+        "Nonresponse adjustment",
+        "Calibration/raking",
+        "Trimming",
+        "Final estimate + design variance"
+      ],
+      "caption": "Every transformation of weights changes interpretation, variance, or bias and must be versioned.",
+      "orientation": "horizontal",
+      "afterSection": "weights-estimation"
+    }
+  ],
+  "lab": {
+    "language": "python",
+    "goal": "Compute inverse-probability weighted estimates, verify a stratified finite-population mean, and show why the unweighted estimate is biased under disproportionate allocation.",
+    "buildIt": "def weighted_mean(values,weights):\n    if len(values)!=len(weights) or any(w<=0 for w in weights): raise ValueError('valid weights required')\n    return sum(v*w for v,w in zip(values,weights))/sum(weights)\n\neng=[72.0]*90; support=[60.0]*50\nvalues=eng+support\nweights=[10.0]*len(eng)+[2.0]*len(support)\ndesign_mean=weighted_mean(values,weights)\nunweighted=sum(values)/len(values)\ntruth=(900*72+100*60)/1000",
+    "useIt": "import numpy as np\nnp_weighted=float(np.average(np.asarray(values),weights=np.asarray(weights)))\nweight_effective_n=(sum(weights)**2)/sum(w*w for w in weights)",
+    "verifyIt": "assert abs(design_mean-truth) < 1e-12\nassert abs(np_weighted-design_mean) < 1e-12\nassert abs(unweighted-truth) > 1.0\nassert 0 < weight_effective_n <= len(values)\nassert abs(sum(weights)-1000) < 1e-12",
+    "shipIt": "Preserve frame, stages, strata, clusters, inclusion probabilities, every weight adjustment, and replicate-variance method; publish weighted estimates with unweighted n and design diagnostics."
+  },
+  "sourceNotes": [
+    {
+      "resource": "cdc-survey-variance",
+      "contribution": "Provides official guidance on incorporating unequal weights, clusters, and strata into estimates and standard errors."
+    },
+    {
+      "resource": "openintro-stats",
+      "contribution": "Provides accessible probability-sampling concepts, stratification, clustering, and inference foundations."
+    },
+    {
+      "resource": "census-nonresponse",
+      "contribution": "Shows how official surveys connect sampling operations with response and bias analysis."
+    },
+    {
+      "resource": "stanford-stats60",
+      "contribution": "Provides university-level foundations in sampling, probability, uncertainty, and statistical reasoning."
+    }
+  ]
 }

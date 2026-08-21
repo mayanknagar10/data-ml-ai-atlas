@@ -1,6 +1,6 @@
 # Data, ML & AI Atlas — Curriculum
 
-**45 modules · 394 topics · 152 curated resources**
+**45 modules · 394 topics · 164 curated resources**
 
 ## 01. 🐍 Python & Software Engineering
 
@@ -62,51 +62,51 @@ Deep-complete: **7/7** · Visual models: **14/7**
 
 Linear algebra, calculus, numerical thinking and optimization foundations.
 
-Deep-complete: **0/8** · Visual models: **5/8**
+Deep-complete: **8/8** · Visual models: **16/8**
 
-- 🔥 **Vectors, Matrices & Dot Products** — ◻ interview-ready · 🖼 visual
-- ⬆️ **Eigenvalues, Eigenvectors & SVD** — ◻ interview-ready · 🖼 visual
-- 🔥 **Derivatives, Gradients & Chain Rule** — ◻ interview-ready · 🖼 visual
-- 🔥 **Gradient Descent & Learning Rate** — ◻ interview-ready · 🖼 visual
-- ⬆️ **Norms, Distances & Similarity** — ◻ interview-ready
-- ⬆️ **Orthogonality, Projections & Least Squares** — ◻ interview-ready · 🖼 visual
-- • **Jacobians, Hessians & Second-order Thinking** — ◻ interview-ready
-- ⬆️ **Numerical Stability: log-sum-exp, overflow & conditioning** — ◻ interview-ready
+- 🔥 **Vectors, Matrices & Dot Products** — ✅ deep · 🖼 visual
+- ⬆️ **Eigenvalues, Eigenvectors & SVD** — ✅ deep · 🖼 visual
+- 🔥 **Derivatives, Gradients & Chain Rule** — ✅ deep · 🖼 visual
+- 🔥 **Gradient Descent & Learning Rate** — ✅ deep · 🖼 visual
+- ⬆️ **Norms, Distances & Similarity** — ✅ deep · 🖼 visual
+- ⬆️ **Orthogonality, Projections & Least Squares** — ✅ deep · 🖼 visual
+- • **Jacobians, Hessians & Second-order Thinking** — ✅ deep · 🖼 visual
+- ⬆️ **Numerical Stability: log-sum-exp, overflow & conditioning** — ✅ deep · 🖼 visual
 
 ## 06. 🎲 Probability
 
 Random variables, distributions, expectation, conditioning and probabilistic reasoning.
 
-Deep-complete: **0/8** · Visual models: **5/8**
+Deep-complete: **8/8** · Visual models: **16/8**
 
-- 🔥 **Conditional Probability & Bayes Rule** — ◻ interview-ready · 🖼 visual
-- ⬆️ **Common Probability Distributions** — ◻ interview-ready · 🖼 visual
-- 🔥 **Expectation, Variance & Covariance** — ◻ interview-ready · 🖼 visual
-- ⬆️ **Law of Large Numbers & Central Limit Theorem** — ◻ interview-ready · 🖼 visual
-- ⬆️ **Joint, Marginal & Conditional Distributions** — ◻ interview-ready
-- ⬆️ **Independence & Conditional Independence** — ◻ interview-ready
-- ⬆️ **Monte Carlo Simulation** — ◻ interview-ready · 🖼 visual
-- • **Law of Total Probability & Total Expectation** — ◻ interview-ready
+- 🔥 **Conditional Probability & Bayes Rule** — ✅ deep · 🖼 visual
+- ⬆️ **Common Probability Distributions** — ✅ deep · 🖼 visual
+- 🔥 **Expectation, Variance & Covariance** — ✅ deep · 🖼 visual
+- ⬆️ **Law of Large Numbers & Central Limit Theorem** — ✅ deep · 🖼 visual
+- ⬆️ **Joint, Marginal & Conditional Distributions** — ✅ deep · 🖼 visual
+- ⬆️ **Independence & Conditional Independence** — ✅ deep · 🖼 visual
+- ⬆️ **Monte Carlo Simulation** — ✅ deep · 🖼 visual
+- • **Law of Total Probability & Total Expectation** — ✅ deep · 🖼 visual
 
 ## 07. 📐 Statistical Inference
 
 Estimation, uncertainty, hypothesis tests, resampling and statistical modeling foundations.
 
-Deep-complete: **0/13** · Visual models: **8/13**
+Deep-complete: **13/13** · Visual models: **26/13**
 
-- 🔥 **Confidence Intervals** — ◻ interview-ready · 🖼 visual
-- 🔥 **Hypothesis Testing & p-values** — ◻ interview-ready · 🖼 visual
-- ⬆️ **MLE vs MAP** — ◻ interview-ready
-- 🔥 **Sampling Distributions & Standard Error** — ◻ interview-ready · 🖼 visual
-- ⬆️ **Bootstrap & Resampling** — ◻ interview-ready · 🖼 visual
-- ⬆️ **Permutation & Randomization Tests** — ◻ interview-ready
-- 🔥 **Multiple Testing & False Discovery Rate** — ◻ interview-ready · 🖼 visual
-- 🔥 **Effect Size vs Statistical Significance** — ◻ interview-ready · 🖼 visual
-- • **ANOVA & Comparing Multiple Groups** — ◻ interview-ready
-- • **Chi-square Tests for Categorical Data** — ◻ interview-ready
-- 🔥 **Power, Minimum Detectable Effect & Sample Size** — ◻ interview-ready · 🖼 visual
-- ⬆️ **Sampling Design: Random, Stratified & Cluster Sampling** — ◻ interview-ready
-- 🔥 **Selection, Coverage & Nonresponse Bias** — ◻ interview-ready · 🖼 visual
+- 🔥 **Confidence Intervals** — ✅ deep · 🖼 visual
+- 🔥 **Hypothesis Testing & p-values** — ✅ deep · 🖼 visual
+- ⬆️ **MLE vs MAP** — ✅ deep · 🖼 visual
+- 🔥 **Sampling Distributions & Standard Error** — ✅ deep · 🖼 visual
+- ⬆️ **Bootstrap & Resampling** — ✅ deep · 🖼 visual
+- ⬆️ **Permutation & Randomization Tests** — ✅ deep · 🖼 visual
+- 🔥 **Multiple Testing & False Discovery Rate** — ✅ deep · 🖼 visual
+- 🔥 **Effect Size vs Statistical Significance** — ✅ deep · 🖼 visual
+- • **ANOVA & Comparing Multiple Groups** — ✅ deep · 🖼 visual
+- • **Chi-square Tests for Categorical Data** — ✅ deep · 🖼 visual
+- 🔥 **Power, Minimum Detectable Effect & Sample Size** — ✅ deep · 🖼 visual
+- ⬆️ **Sampling Design: Random, Stratified & Cluster Sampling** — ✅ deep · 🖼 visual
+- 🔥 **Selection, Coverage & Nonresponse Bias** — ✅ deep · 🖼 visual
 
 ## 08. 🧮 Bayesian Statistics
 

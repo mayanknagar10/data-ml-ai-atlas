@@ -1,3 +1,3 @@
 # Ship it
 
-In product experimentation, predefine the primary metric, sample-size/power plan, stopping rule and guardrail metrics before observing the result.
+Prespecify the statistic and exchangeability/randomization mechanism, log every analysis, use sequentially valid monitoring, and report effect estimates and intervals with the p-value.

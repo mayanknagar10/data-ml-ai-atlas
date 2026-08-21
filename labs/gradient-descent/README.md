@@ -1,6 +1,6 @@
 # Gradient Descent & Learning Rate — Code Lab
 
-See how learning rate changes convergence on a simple quadratic.
+Implement gradient descent with Armijo backtracking for a quadratic and verify gradient correctness, monotonic descent and convergence.
 
 ## 1. Build it
 

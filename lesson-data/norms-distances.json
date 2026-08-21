@@ -9,31 +9,173 @@
     "aie",
     "as"
   ],
-  "interviewAnswer": "Norms measure vector magnitude; distance functions measure separation; similarity functions such as cosine compare direction. The choice changes model geometry, nearest neighbors, clustering and regularization.",
+  "interviewAnswer": "A norm measures magnitude and must be nonnegative, definite, homogeneous and satisfy the triangle inequality. A metric measures pairwise distance and must be nonnegative, identity-preserving, symmetric and satisfy the triangle inequality. L1 sums absolute coordinates, L2 is Euclidean length, and L∞ takes the largest absolute coordinate. Cosine similarity uses angle and ignores positive scale after normalization; cosine distance conventions are not always metrics. Feature scaling defines the geometry, while Mahalanobis distance accounts for covariance through a positive semidefinite precision matrix. Choose the measure from desired invariances and costs, then keep preprocessing and ANN index configuration consistent.",
   "keyPoints": [
-    "L1 and L2 norms behave differently.",
-    "Cosine similarity ignores absolute scale.",
-    "Distance concentration becomes problematic in high dimensions."
+    "Geometry is a modeling choice",
+    "Scaling changes nearest neighbors",
+    "Cosine ignores positive magnitude",
+    "Mahalanobis uses covariance structure",
+    "Index and evaluation metric must agree"
   ],
   "resources": [
     "mit-linear-algebra",
-    "3b1b-linear-algebra"
+    "3b1b-linear-algebra",
+    "numpy-linalg"
   ],
   "featured": false,
-  "why": "Norms, Distances & Similarity is a recurring foundation across data science and machine learning because it affects both theoretical correctness and practical system behavior.",
-  "intuition": "L1 and L2 norms behave differently.",
-  "deepDive": "Norms measure vector magnitude; distance functions measure separation; similarity functions such as cosine compare direction. The choice changes model geometry, nearest neighbors, clustering and regularization. Cosine similarity ignores absolute scale. Distance concentration becomes problematic in high dimensions. The interview-level skill is not merely recalling the definition: explain the assumptions, what diagnostic evidence you would inspect, and what alternative you would choose when those assumptions fail.",
-  "workedExample": "Cosine similarity can match two text embeddings with similar direction even if their norms differ.",
+  "why": "K-nearest neighbors, clustering, anomaly detection, recommenders and embedding search are only as meaningful as their geometry. Age measured in years and income in cents make unscaled Euclidean distance mostly income. Cosine can call a tiny and huge vector identical in direction even when magnitude carries confidence or activity. Correlated features can be counted twice. A mathematically valid metric may also misalign with false-positive and false-negative costs. Production retrieval requires the metric, preprocessing, index and evaluation to be one versioned system.",
+  "intuition": "A norm draws a unit ball around the origin. L2 draws a circle, L1 a diamond and L∞ a square in two dimensions. Those shapes decide which deviations cost equally and which points are near. Scaling an axis stretches the map before measuring. Cosine looks only at direction from the origin, while Mahalanobis first reshapes correlated, differently scaled data into a standardized space.",
+  "deepDive": "The full explanation is organized into the structured sections below.",
+  "workedExample": "Cosine gives A similarity 1 because it points in exactly q's direction, while B has similarity 1/√2. Raw Euclidean distance makes B much closer: `||q−B||=1`, whereas `||q−A||=√162`. Neither result is a contradiction. If vector magnitude reflects document length and should be ignored, L2-normalize query and documents and use cosine or equivalent Euclidean distance on normalized vectors. If magnitude represents calibrated confidence or activity that should matter, discarding it is wrong. Evaluate relevance labels and inspect norm correlations. Store the chosen normalization with the index and reject zero vectors.",
   "commonMistakes": [
-    "Using the concept mechanically without checking assumptions or data semantics.",
-    "Reporting one metric/result without examining uncertainty, slices or failure modes."
+    {
+      "mistake": "Standardize features using the entire dataset before evaluation.",
+      "correction": "That leaks validation/test distribution; fit transform statistics on training data and version them."
+    },
+    {
+      "mistake": "Cosine similarity and dot product are always interchangeable.",
+      "correction": "Only after consistent normalization; raw dot product also depends on vector norms."
+    },
+    {
+      "mistake": "Any distance-like score is a metric.",
+      "correction": "Check identity, symmetry and triangle inequality before relying on metric-index guarantees."
+    }
   ],
   "followUps": [
-    "What assumptions or limitations does Norms, Distances & Similarity have?",
-    "How would you validate Norms, Distances & Similarity on a real dataset?"
+    {
+      "question": "When are cosine and Euclidean rankings equivalent?",
+      "answer": "For L2-normalized vectors, squared Euclidean distance is `2−2cosine`, so one decreases exactly as the other increases."
+    },
+    {
+      "question": "What problem does Mahalanobis distance address?",
+      "answer": "Different scales and correlated directions; it measures Euclidean distance after a covariance-aware linear transformation."
+    },
+    {
+      "question": "Why can distance degrade in high dimensions?",
+      "answer": "Noise accumulates, volume is sparse and nearest/farthest distances may concentrate; learned structure and evaluation are needed."
+    }
   ],
-  "production": "In production, make assumptions explicit, validate on representative slices, compare with a simple baseline and monitor the signals that can drift.",
+  "production": "Version features, learned scaling, embedding model, normalization, metric and ANN configuration as one artifact. Validate dimension, finiteness, missing/zero behavior and index compatibility; evaluate exact and approximate retrieval on representative labels and slices. Monitor norms, neighbor distances, hubness, recall, freshness, latency and drift. Protect and delete sensitive vectors across indexes/backups, bound requests and keep a prior compatible bundle for rollback.",
   "editorial": {
-    "status": "summary"
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "Norms measure vector or matrix magnitude; metrics measure distance between objects; similarity functions rank resemblance but may not satisfy metric axioms. Those choices encode geometry and can change nearest neighbors, clustering, regularization, robustness and retrieval quality. This chapter develops L1, L2, L∞ and general Lp norms, weighted and Mahalanobis distance, cosine similarity, Hamming distance and key matrix norms. You will learn the norm and metric axioms, the role of scaling and covariance, why cosine discards magnitude, how high-dimensional distance concentration changes intuition, and why comparing raw mixed-unit features is usually meaningless. A worked retrieval example contrasts Euclidean and cosine rankings before and after normalization. The lab implements core measures, checks symmetry, triangle inequality examples and library agreement, and rejects zero-vector cosine. Production guidance covers preprocessing/versioning, approximate nearest-neighbor index compatibility, floating-point clipping, missing values, privacy, distribution drift and monitoring of neighbor stability. The goal is to make “distance” a modeled assumption tied to invariances and decision cost, not a default call chosen after features have already defined an accidental geometry.",
+  "prerequisites": [
+    "vectors-matrices"
+  ],
+  "learningObjectives": [
+    "Distinguish norms, metrics and similarities and verify the properties each downstream algorithm assumes.",
+    "Choose Lp, cosine, weighted or Mahalanobis geometry from feature units, invariances, covariance and task cost.",
+    "Operate distance-based systems with stable preprocessing, index-metric consistency, drift checks and meaningful retrieval evaluation."
+  ],
+  "deepSections": [
+    {
+      "id": "axioms-lp",
+      "title": "Norm and metric foundations",
+      "body": "A norm ||x|| on a vector space is nonnegative, equals zero only at zero, is absolutely homogeneous `||αx||=|α| ||x||`, and obeys `||x+y||≤||x||+||y||`. It induces a metric d(x,y)=||x−y||. A metric instead starts with pairwise axioms: nonnegativity, identity of indiscernibles, symmetry and triangle inequality. A similarity may be larger for closer items but need satisfy none of these; algorithms relying on triangle-inequality pruning can fail or lose guarantees with a nonmetric score.\n\nFor p≥1, `||x||_p=(Σ|x_i|^p)^{1/p}`. L1 tolerates a few large coordinate differences differently and produces diamond-shaped balls; L2 is rotation-invariant Euclidean length; L∞ is the maximum absolute difference and enforces a worst-coordinate view. The expression with p<1 encourages sparsity-like behavior but is not a norm because the triangle inequality fails. L0 is informal notation for nonzero count, not a norm.\n\nWeighted norms encode coordinate importance and units. Positive weights in weighted Euclidean distance correspond to scaling axes. Weights should derive from measurement scale or task cost, not be tuned against a leaked test set. Standardization by training statistics can prevent a large-unit feature from dominating, but it does not make every feature semantically comparable."
+    },
+    {
+      "id": "cosine-covariance",
+      "title": "Angle, correlation, and covariance-aware distance",
+      "body": "Cosine similarity is `(x·y)/(||x||_2||y||_2)` for nonzero vectors. It measures angle and is invariant to positive rescaling. If vectors are L2-normalized, squared Euclidean distance and cosine similarity are monotonically related: `||x−y||²=2−2cos(x,y)`. This equivalence explains why an index for normalized inner product can serve cosine ranking, but only when normalization is actually applied. Define behavior for zero vectors rather than returning an unexplained NaN. Floating error can push a computed cosine slightly outside [-1,1], so clip before inverse cosine.\n\nCentered cosine becomes correlation-like and removes coordinate means, which changes the object being compared. Dot product preserves both norm and alignment and may favor high-magnitude items. Decide whether magnitude represents popularity, confidence, exposure or an unwanted nuisance. Retrieval evaluation should reveal this rather than relying on intuition alone.\n\nMahalanobis distance is `sqrt((x−y)^T Σ^{-1}(x−y))`, where Σ is a covariance estimate or another positive semidefinite scale matrix. It downweights high-variance directions and accounts for correlations; equivalently, it is Euclidean distance after whitening. Singular or poorly estimated covariance requires regularization, diagonal approximation, shrinkage or a learned low-rank transform. Estimate it on training data only and monitor drift."
+    },
+    {
+      "id": "high-dimensional",
+      "title": "High-dimensional geometry and alternative domains",
+      "body": "As dimension grows, points can become sparse relative to volume and distances may concentrate: nearest and farthest distances become less separated under some distributions. Irrelevant noisy dimensions accumulate in L2, while a handful of extreme coordinates can dominate L∞. This does not mean all high-dimensional distance is useless; learned embeddings exploit low-dimensional structure, normalization and task supervision. It means raw dimensionality and distribution must be measured.\n\nInspect neighbor-distance ratios, recall, hubness (a few points appearing in many neighbor lists), cluster stability and performance across slices. Dimensionality reduction or feature selection can improve signal but may erase minority structure. Approximate nearest-neighbor algorithms trade exact recall for speed and support different metrics. Index build metric, query preprocessing and reranking metric must match or be explicitly staged.\n\nOther domains need other distances. Hamming counts unequal positions for fixed-length categorical/binary strings. Jaccard compares set intersection to union. Edit distance models insertions, deletions and substitutions. Dynamic time warping aligns sequences at nonlinear time but can match implausible paths without constraints. Geodesic distance is needed on the sphere; treating latitude/longitude as planar coordinates causes distortion. Choose a domain-valid representation before choosing an efficient index."
+    },
+    {
+      "id": "production-geometry",
+      "title": "Evaluation and production geometry",
+      "body": "Version the full transform: field selection, missing-value policy, categorical encoding, centering/scaling, embedding model, normalization and metric. Fit learned statistics only on training/reference data. The same raw item processed by two versions may land in incompatible coordinate systems, so rebuild or dual-index migrations. Validate finite values and dimension; reject or explicitly route zero vectors; enforce bounded query sizes.\n\nOffline evaluation uses labeled relevance, recall@k, precision@k, ranking metrics and task-specific costs, plus ANN recall against an exact subset. Compare simple baselines and inspect qualitative neighbors. Segment by language, geography, item popularity and sensitive cohorts because one global metric can hide failures. Online metrics must separate retrieval quality from later ranking and user feedback loops.\n\nMonitor embedding/norm distributions, zero and missing rates, nearest-distance distribution, hubness, index freshness, ANN recall samples, latency and memory. Drift may require recalibration or re-embedding. Do not log raw sensitive vectors casually; embeddings can leak membership or attributes. Apply access control, deletion and retention across indices and backups. Have rollback to a prior compatible embedding-index-metric bundle, not only old application code."
+    }
+  ],
+  "math": "For p≥1, ||x||_p=(Σ_i|x_i|^p)^{1/p}. A norm-induced distance d_p(x,y)=||x−y||_p is a metric. Cosine similarity is s(x,y)=x^Ty/(||x||_2||y||_2) for nonzero x,y. Mahalanobis squared distance is d_M²=(x−y)^TM(x−y), where M is positive semidefinite; if M=L^TL, this equals ||L(x−y)||_2².",
+  "workedExamples": [
+    {
+      "title": "Magnitude versus direction in retrieval",
+      "setup": "A query q=(1,1) compares document A=(10,10) and B=(1,0).",
+      "walkthrough": "Cosine gives A similarity 1 because it points in exactly q's direction, while B has similarity 1/√2. Raw Euclidean distance makes B much closer: `||q−B||=1`, whereas `||q−A||=√162`. Neither result is a contradiction. If vector magnitude reflects document length and should be ignored, L2-normalize query and documents and use cosine or equivalent Euclidean distance on normalized vectors. If magnitude represents calibrated confidence or activity that should matter, discarding it is wrong. Evaluate relevance labels and inspect norm correlations. Store the chosen normalization with the index and reject zero vectors.",
+      "conclusion": "The two measures answer different invariance questions; task evidence decides which geometry is useful."
+    }
+  ],
+  "exercises": [
+    {
+      "difficulty": "recall",
+      "prompt": "State the four norm properties.",
+      "solution": "Nonnegativity, definiteness, absolute homogeneity and the triangle inequality."
+    },
+    {
+      "difficulty": "application",
+      "prompt": "When should cosine be preferred to raw dot product?",
+      "solution": "When direction/pattern matters and positive magnitude is a nuisance; normalize consistently and verify with retrieval metrics."
+    },
+    {
+      "difficulty": "diagnosis",
+      "prompt": "Income dominates a customer nearest-neighbor model. What is likely wrong?",
+      "solution": "Feature units define an unintended geometry. Fit appropriate scaling/weighting on training data and reconsider semantic comparability."
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "mit-linear-algebra",
+      "contribution": "Grounds inner products, orthogonality, norms, positive-definite geometry and linear transformations."
+    },
+    {
+      "resource": "3b1b-linear-algebra",
+      "contribution": "Provides visual intuition for length, angle, basis change and transformed geometry."
+    },
+    {
+      "resource": "numpy-linalg",
+      "contribution": "Documents current norm and linear-algebra implementations used in the verified lab and production code."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "compare",
+      "title": "Unit-ball geometry changes what counts as near",
+      "left": {
+        "title": "Coordinate-focused",
+        "items": [
+          "L1: total absolute deviation",
+          "L∞: worst coordinate deviation",
+          "Axis scaling changes shape"
+        ]
+      },
+      "right": {
+        "title": "Direction / covariance",
+        "items": [
+          "L2: Euclidean rotation-invariant",
+          "Cosine: direction, not magnitude",
+          "Mahalanobis: whitened geometry"
+        ]
+      },
+      "caption": "Each choice encodes invariances and costs; no geometry is universally neutral.",
+      "afterSection": "axioms-lp"
+    },
+    {
+      "type": "flow",
+      "title": "Production retrieval geometry",
+      "items": [
+        "Select domain-valid features",
+        "Fit scale / embedding",
+        "Normalize if required",
+        "Build index with matching metric",
+        "Retrieve + rerank",
+        "Evaluate labels and slices",
+        "Monitor drift + recall"
+      ],
+      "caption": "The metric cannot be separated from preprocessing, index capabilities and evaluation.",
+      "afterSection": "production-geometry"
+    }
+  ],
+  "lab": {
+    "goal": "Implement L1, L2, L∞ and cosine, then verify metric properties, normalized equivalence and NumPy agreement.",
+    "language": "python",
+    "buildIt": "import math\n\ndef lp(x,y,p):\n    if len(x)!=len(y): raise ValueError('shape mismatch')\n    delta=[abs(a-b) for a,b in zip(x,y)]\n    if p==math.inf: return max(delta,default=0.0)\n    if p<1: raise ValueError('p must be at least 1')\n    return sum(value**p for value in delta)**(1/p)\n\ndef cosine(x,y):\n    dot=sum(a*b for a,b in zip(x,y)); nx=math.sqrt(sum(a*a for a in x)); ny=math.sqrt(sum(b*b for b in y))\n    if nx==0 or ny==0: raise ValueError('zero vector')\n    return max(-1.0,min(1.0,dot/(nx*ny)))",
+    "useIt": "import numpy as np\nx=np.array([1.,2.,-1.]); y=np.array([3.,0.,2.]); z=np.array([0.,1.,1.])\nmanual={'l1':lp(x,y,1),'l2':lp(x,y,2),'linf':lp(x,y,math.inf),'cosine':cosine(x,y)}\nlibrary={'l1':np.linalg.norm(x-y,1),'l2':np.linalg.norm(x-y,2),'linf':np.linalg.norm(x-y,np.inf),'cosine':float(x@y/(np.linalg.norm(x)*np.linalg.norm(y)))}",
+    "verifyIt": "assert all(math.isclose(manual[k],library[k]) for k in manual)\nassert math.isclose(lp(x,y,2),lp(y,x,2))\nassert lp(x,z,2)<=lp(x,y,2)+lp(y,z,2)+1e-12\nxn=x/np.linalg.norm(x); yn=y/np.linalg.norm(y)\nassert math.isclose(np.linalg.norm(xn-yn)**2,2-2*cosine(xn,yn),rel_tol=1e-12)\ntry: cosine([0.,0.],[1.,0.])\nexcept ValueError: pass\nelse: raise AssertionError('zero cosine must be defined explicitly')",
+    "shipIt": "Version preprocessing, normalization, metric and index together; validate zero/missing vectors, benchmark ANN recall against exact search, monitor norm/neighbor drift and retain a compatible rollback index."
   }
 }

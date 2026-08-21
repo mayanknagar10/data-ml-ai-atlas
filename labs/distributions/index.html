@@ -1,0 +1,20 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Common Probability Distributions — Code Lab</title><script>(()=>{const s=localStorage.getItem('atlas-theme');const t=s||((matchMedia('(prefers-color-scheme: dark)').matches)?'dark':'light');document.documentElement.dataset.theme=t})()</script><style>:root{--bg:#fff;--text:#121417;--muted:#5d6470;--line:#dfe3e8;--soft:#f6f7f8;--blue:#155eef;--code:#0d1117;color-scheme:light}html[data-theme=dark]{--bg:#0d1117;--text:#eef2f6;--muted:#a8b0ba;--line:#2b333d;--soft:#171d24;--blue:#8fb4ff;--code:#070a0e;color-scheme:dark}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.6 Inter,system-ui,sans-serif}main{max-width:980px;margin:auto;padding:44px 22px 80px}a{color:var(--blue)}h1{font-size:42px;line-height:1.05;margin:8px 0 12px}.k{font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--blue);font-weight:800}.lead{color:var(--muted);font-size:17px}.top{display:flex;justify-content:space-between;gap:16px}button{border:1px solid var(--line);background:var(--soft);color:var(--text);border-radius:8px;padding:7px 9px;cursor:pointer}section{border-top:1px solid var(--line);padding-top:22px;margin-top:26px}pre{background:var(--code);color:#e6edf3;padding:18px;border-radius:12px;overflow:auto;font:13px/1.55 ui-monospace,monospace}.links{display:flex;gap:12px;flex-wrap:wrap;margin:18px 0}.links a{border:1px solid var(--line);border-radius:8px;padding:7px 9px;text-decoration:none;font-size:12px}@media(max-width:600px){h1{font-size:34px}.top{display:block}}</style></head><body><main><div class="top"><div><div class="k">Data, ML & AI Atlas · Runnable Lab</div><h1>Common Probability Distributions</h1></div><button id="t">◐ Theme</button></div><p class="lead">Implement the Binomial PMF, verify normalization and moments, and compare generated samples with NumPy and SciPy references.</p><div class="links"><a href="../../index.html#/lesson/distributions">← Full lesson</a><a href="lab.py">Combined Python file</a><a href="README.md">README</a></div><section><h2>1 · Build it</h2><p>Minimal implementation with as little framework abstraction as practical.</p><pre>import math
+
+def binomial_pmf(k,n,p):
+    if not (isinstance(k,int) and isinstance(n,int) and 0&lt;=k&lt;=n and 0&lt;=p&lt;=1): return 0.0
+    return math.comb(n,k)*(p**k)*((1-p)**(n-k))
+
+def moments(values,probs):
+    mean=sum(x*p for x,p in zip(values,probs))
+    variance=sum((x-mean)**2*p for x,p in zip(values,probs))
+    return mean,variance</pre></section><section><h2>2 · Use it</h2><p>The same idea through a common library or practical API.</p><pre>import numpy as np
+from scipy.stats import binom
+n=20; p=.1; values=list(range(n+1)); probs=[binomial_pmf(k,n,p) for k in values]
+mean,variance=moments(values,probs)
+rng=np.random.default_rng(20260821); samples=rng.binomial(n,p,size=100000)</pre></section><section><h2>3 · Ship it</h2><p>Use verified SciPy distribution/log-tail APIs and independent NumPy Generator streams, version parameter conventions and seeds, monitor tail/dispersion/support drift and keep a validated fallback model.</p></section><section><h2>4 · Verify it</h2><p>Assertions and sanity checks that catch conceptual or implementation mistakes.</p><pre>assert math.isclose(sum(probs),1.0,rel_tol=1e-12)
+assert math.isclose(mean,n*p,rel_tol=1e-12)
+assert math.isclose(variance,n*p*(1-p),rel_tol=1e-12)
+assert np.allclose(probs,binom.pmf(values,n,p))
+assert abs(samples.mean()-n*p)&lt;.02
+assert abs(samples.var()-n*p*(1-p))&lt;.04
+assert all(0&lt;=x&lt;=n for x in samples)</pre></section></main><script>const b=document.getElementById('t');function u(){b.textContent=document.documentElement.dataset.theme==='dark'?'☀ Light':'☾ Dark'}u();b.onclick=()=>{const n=document.documentElement.dataset.theme==='dark'?'light':'dark';document.documentElement.dataset.theme=n;localStorage.setItem('atlas-theme',n);u()}</script></body></html>

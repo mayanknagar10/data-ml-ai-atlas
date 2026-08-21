@@ -1,0 +1,28 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Joint, Marginal &amp; Conditional Distributions — Code Lab</title><script>(()=>{const s=localStorage.getItem('atlas-theme');const t=s||((matchMedia('(prefers-color-scheme: dark)').matches)?'dark':'light');document.documentElement.dataset.theme=t})()</script><style>:root{--bg:#fff;--text:#121417;--muted:#5d6470;--line:#dfe3e8;--soft:#f6f7f8;--blue:#155eef;--code:#0d1117;color-scheme:light}html[data-theme=dark]{--bg:#0d1117;--text:#eef2f6;--muted:#a8b0ba;--line:#2b333d;--soft:#171d24;--blue:#8fb4ff;--code:#070a0e;color-scheme:dark}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.6 Inter,system-ui,sans-serif}main{max-width:980px;margin:auto;padding:44px 22px 80px}a{color:var(--blue)}h1{font-size:42px;line-height:1.05;margin:8px 0 12px}.k{font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--blue);font-weight:800}.lead{color:var(--muted);font-size:17px}.top{display:flex;justify-content:space-between;gap:16px}button{border:1px solid var(--line);background:var(--soft);color:var(--text);border-radius:8px;padding:7px 9px;cursor:pointer}section{border-top:1px solid var(--line);padding-top:22px;margin-top:26px}pre{background:var(--code);color:#e6edf3;padding:18px;border-radius:12px;overflow:auto;font:13px/1.55 ui-monospace,monospace}.links{display:flex;gap:12px;flex-wrap:wrap;margin:18px 0}.links a{border:1px solid var(--line);border-radius:8px;padding:7px 9px;text-decoration:none;font-size:12px}@media(max-width:600px){h1{font-size:34px}.top{display:block}}</style></head><body><main><div class="top"><div><div class="k">Data, ML & AI Atlas · Runnable Lab</div><h1>Joint, Marginal &amp; Conditional Distributions</h1></div><button id="t">◐ Theme</button></div><p class="lead">Normalize and query a discrete joint table, verifying marginals, conditionals, reconstruction, expectations and dependence.</p><div class="links"><a href="../../index.html#/lesson/joint-marginal-conditional">← Full lesson</a><a href="lab.py">Combined Python file</a><a href="README.md">README</a></div><section><h2>1 · Build it</h2><p>Minimal implementation with as little framework abstraction as practical.</p><pre>def validate_joint(table):
+    if any(value&lt;0 for row in table for value in row): raise ValueError(&#x27;negative mass&#x27;)
+    total=sum(map(sum,table))
+    if abs(total-1)&gt;1e-12: raise ValueError(&#x27;not normalized&#x27;)
+
+def marginals(table):
+    validate_joint(table)
+    rows=[sum(row) for row in table]
+    cols=[sum(table[i][j] for i in range(len(table))) for j in range(len(table[0]))]
+    return rows,cols
+
+def conditional_x_given_y(table,j):
+    _,cols=marginals(table); denominator=cols[j]
+    if denominator==0: raise ValueError(&#x27;impossible evidence&#x27;)
+    return [table[i][j]/denominator for i in range(len(table))]</pre></section><section><h2>2 · Use it</h2><p>The same idea through a common library or practical API.</p><pre>joint=[[.24,.16],[.18,.42]]
+weather,demand=marginals(joint)
+# rows: rain,dry; columns: high,low
+p_weather_given_high=conditional_x_given_y(joint,0)
+p_high_given_weather=[joint[i][0]/weather[i] for i in range(2)]</pre></section><section><h2>3 · Ship it</h2><p>Use named dimensions and log-space probability libraries for large models, preserve observation/missingness semantics, monitor normalization/support/conditional drift, protect rare joint cells and keep a compatible inference rollback artifact.</p></section><section><h2>4 · Verify it</h2><p>Assertions and sanity checks that catch conceptual or implementation mistakes.</p><pre>assert weather==[.4,.6] and demand==[.42,.58]
+assert abs(sum(p_weather_given_high)-1)&lt;1e-12
+assert p_high_given_weather==[.6,.3]
+for i in range(2):
+    for j in range(2):
+        assert abs((joint[i][j]/weather[i])*weather[i]-joint[i][j])&lt;1e-12
+assert joint[0][0]!=weather[0]*demand[0]
+try: conditional_x_given_y([[.5,0],[.5,0]],1)
+except ValueError: pass
+else: raise AssertionError(&#x27;zero evidence must fail&#x27;)</pre></section></main><script>const b=document.getElementById('t');function u(){b.textContent=document.documentElement.dataset.theme==='dark'?'☀ Light':'☾ Dark'}u();b.onclick=()=>{const n=document.documentElement.dataset.theme==='dark'?'light':'dark';document.documentElement.dataset.theme=n;localStorage.setItem('atlas-theme',n);u()}</script></body></html>

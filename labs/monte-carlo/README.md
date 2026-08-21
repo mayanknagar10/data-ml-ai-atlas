@@ -1,6 +1,6 @@
 # Monte Carlo Simulation — Code Lab
 
-Estimate a probability with Monte Carlo simulation.
+Estimate an integral using crude and antithetic sampling, verify reproducibility, unbiased target, uncertainty scaling and independent spawned streams.
 
 ## 1. Build it
 

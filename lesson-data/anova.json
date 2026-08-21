@@ -8,30 +8,175 @@
     "da",
     "as"
   ],
-  "interviewAnswer": "ANOVA tests whether group means differ more than expected from within-group variability under model assumptions. A significant omnibus test does not say which groups differ, so post-hoc comparisons require care.",
+  "interviewAnswer": "One-way ANOVA tests H0 that all group means are equal by comparing between-group mean square with within-group mean square. F=MS_between/MS_within, with k-1 and N-k degrees of freedom under the classical independent normal equal-variance model. A significant F says at least one mean differs; it does not identify which. Inspect residuals and design, use Welch ANOVA for unequal variances when appropriate, then apply prespecified contrasts or multiplicity-adjusted post-hoc tests and report effect sizes and intervals.",
   "keyPoints": [
-    "Between-group vs within-group variation.",
-    "Assumptions include independence and model-specific variance/error structure.",
-    "Post-hoc tests need multiplicity control."
+    "ANOVA partitions variability around the grand mean",
+    "The F statistic compares explained with residual variation",
+    "Omnibus rejection does not identify pairs",
+    "Residual independence and variance structure matter",
+    "Contrasts and post-hoc tests need multiplicity discipline"
   ],
   "resources": [
-    "stanford-stats200"
+    "nist-stat-handbook",
+    "stanford-stats200",
+    "scipy-stats",
+    "openintro-stats"
   ],
   "featured": false,
-  "why": "ANOVA & Comparing Multiple Groups appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
-  "intuition": "Between-group vs within-group variation.",
-  "deepDive": "ANOVA tests whether group means differ more than expected from within-group variability under model assumptions. A significant omnibus test does not say which groups differ, so post-hoc comparisons require care. Assumptions include independence and model-specific variance/error structure. Post-hoc tests need multiplicity control. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
-  "workedExample": "Compare average processing time across four deployment configurations before pairwise follow-ups.",
+  "why": "Teams often compare several models, campaigns, regions, or treatments. Repeating unadjusted pairwise tests inflates false-positive risk and fragments one scientific question. ANOVA provides a coherent omnibus comparison and a framework for richer designs. Yet the label is frequently misused: analysts infer that all groups differ, ignore an unbalanced heteroskedastic design, or stop at p<0.05 without estimating meaningful contrasts. Interviews ask for between versus within variance because it reveals whether the candidate understands the geometry. In production, the experimental unit, assignment design, and planned contrasts determine validity. ANOVA is a linear model with categorical predictors, which connects it directly to regression, covariate adjustment, interactions, and robust standard errors.",
+  "intuition": "Place each observation around its group mean and each group mean around the grand mean. If group labels contain no mean signal, the movement of group means should be small relative to scatter within groups. ANOVA measures both on comparable per-degree-of-freedom scales. F near one means between-group variation resembles residual variation under the model; a large F is unusual when all means are equal. Large F could arise because one group differs while the rest match, because several move gradually, or because assumptions are broken. The omnibus statistic deliberately compresses these patterns, so follow-up contrasts recover the scientific question. A plot of group estimates and uncertainty often communicates more than the test table.",
+  "deepDive": "One-way fixed-effects ANOVA is the regression y_ij=mu+alpha_j+epsilon_ij with a parameter constraint or reference coding. The omnibus F test compares a model with group indicators against an intercept-only model.",
+  "workedExample": "Three campaigns have outcomes A=[8,9,10,11], B=[9,10,11,12], C=[15,16,17,18]. Their means are 9.5, 10.5, and 16.5; grand mean is 12.167. Within-group variation is small relative to group-mean separation, so F is large. The omnibus result establishes that not all means are equal. It does not require A versus B to differ. A planned contrast comparing C with the average of A and B directly tests the campaign question; a Tukey or Holm procedure can handle all pairs if they were planned. Report C's raw lift and interval, not only the F test.",
   "commonMistakes": [
-    "Applying the method without checking its assumptions or data-generating process.",
-    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+    "Concluding every pair differs after a significant omnibus F test.",
+    "Running all unadjusted pairwise t-tests instead of a planned family-level procedure.",
+    "Checking normality of pooled raw outcomes rather than residual structure and design.",
+    "Ignoring unequal variances, unbalanced groups, clustering, repeated measures, or outliers.",
+    "Reporting only p-values without group estimates, contrasts, intervals, or effect size."
   ],
   "followUps": [
-    "What assumptions does ANOVA & Comparing Multiple Groups make?",
-    "How would you validate or debug ANOVA & Comparing Multiple Groups in practice?"
+    {
+      "question": "Why not just run pairwise t-tests?",
+      "answer": "Unadjusted pairwise tests inflate family-wise error and answer fragmented questions. An omnibus model plus planned or adjusted contrasts provides coherent error control and often better power."
+    },
+    {
+      "question": "What does significant ANOVA tell you?",
+      "answer": "It rejects the hypothesis that all modeled group means are equal. It does not identify which groups differ, guarantee practical importance, or prove assumptions."
+    },
+    {
+      "question": "When use Welch ANOVA?",
+      "answer": "When independent groups have meaningfully unequal variances, especially with unequal sample sizes. It adjusts the reference calculation; still inspect outliers, independence, and the estimand."
+    }
   ],
-  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "production": "Register experimental unit, groups, allocation, factors, interactions, contrasts, primary outcomes, variance method, and multiplicity family before analysis. Validate group counts, randomization balance, missingness, residuals, influence, variance ratios, and cluster structure. Build reusable tests that verify SST=SSB+SSW and match reference libraries on fixtures. Monitor group composition and variance drift; historical thresholds may fail after population change. Report marginal/group means and contrast intervals in domain units with practical boundaries. Protect small-cell results and sensitive categories. Persist model matrix, coding, contrast weights, software versions, and excluded records. When assumptions fail, switch via a documented rule rather than shopping for significance. Rollback conclusions and downstream launch decisions if assignment or outcome instrumentation was faulty.",
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "Analysis of variance tests whether group means exhibit more between-group variation than expected from within-group variation under a specified model. It avoids the uncontrolled multiplicity of running every pairwise t-test, but a significant omnibus F test says only that not all means are equal. This chapter derives the sums-of-squares decomposition and F ratio, explains degrees of freedom, effect sizes, diagnostics, planned contrasts, post-hoc comparisons, Welch ANOVA, nonparametric alternatives, and extensions to factorial and repeated-measures designs. You will learn why normality concerns residuals rather than raw outcomes, why independence is usually more important than mild normality, and why unequal variance with unbalanced groups can distort classical ANOVA. The worked example decomposes three campaign groups and follows the omnibus test with corrected comparisons. The lab computes one-way ANOVA from first principles, verifies decomposition and translation invariance, and compares with SciPy. Production guidance covers experimental units, contrast registries, assumptions, multiplicity, drift, and reporting estimates rather than only an F statistic.",
+  "prerequisites": [
+    "hypothesis-testing",
+    "effect-size"
+  ],
+  "learningObjectives": [
+    "Derive between-, within-, and total sums of squares and explain the F ratio as signal relative to noise.",
+    "Interpret an omnibus rejection without claiming every group differs from every other group.",
+    "Choose classical, Welch, robust, permutation, or rank-based alternatives according to design and residual behavior.",
+    "Plan contrasts and adjust post-hoc comparisons while reporting group estimates, intervals, and effect sizes."
+  ],
+  "deepSections": [
+    {
+      "id": "decomposition",
+      "title": "Partitioning total variability",
+      "body": "Let ybar_j be group j mean, ybar the grand mean, and n_j group size. Total sum of squares SST=sum_ij(y_ij-ybar)^2. Between sum SSB=sum_j n_j(ybar_j-ybar)^2. Within sum SSW=sum_ij(y_ij-ybar_j)^2. The identity SST=SSB+SSW is geometric: fitted group deviations and residuals are orthogonal in least squares. Degrees of freedom are N-1 total, k-1 between, and N-k within. Mean squares divide each component by its df. F=MSB/MSW. Under H0 and classical assumptions, both estimate common variance but the numerator grows when group means differ."
+    },
+    {
+      "id": "assumptions",
+      "title": "What the classical F reference needs",
+      "body": "Observations should be independent at the experimental-unit level. Residuals within groups are modeled normal with common variance for the exact small-sample F distribution. Moderate normal departures are often less damaging with adequate balanced samples than outliers, dependence, or severe variance imbalance. Diagnose residual versus fitted plots, group spreads, tails, leverage, missingness, and assignment integrity. Do not test normality mechanically and then choose a method solely from another p-value. In clustered or repeated data, use mixed models, generalized estimating equations, cluster-robust methods, or design-based randomization inference."
+    },
+    {
+      "id": "alternatives",
+      "title": "Welch, robust, rank, and permutation approaches",
+      "body": "Welch ANOVA adjusts weighting and degrees of freedom when variances differ and can be preferable for heteroskedastic groups. Robust trimmed-mean methods reduce sensitivity to outliers. Kruskal–Wallis tests distributional/rank differences and is not simply 'ANOVA on medians'; interpretation depends on distribution shapes. Permutation ANOVA can calibrate a chosen statistic when assignment or exchangeability justifies shuffling, with restrictions for blocks and clusters. Transformations may stabilize variance but change the estimand. Choose the method from the data-generating and decision model, then report the effect scale it actually targets."
+    },
+    {
+      "id": "followups",
+      "title": "Contrasts, post-hoc tests, and effect size",
+      "body": "An omnibus rejection licenses investigation under the planned error procedure; it does not show every pair differs. Planned orthogonal or scientifically motivated contrasts are more powerful and interpretable than all pairs. Tukey's method targets family-wise error for pairwise comparisons under its assumptions; Holm can adjust general contrast p-values. Games–Howell is useful for unequal variances. Report group means or marginal means, contrast estimates, intervals, and practical thresholds. Eta squared SSB/SST describes sample variance attributed to group but is biased upward; omega squared applies a correction. Interaction or trend contrasts may answer the real question better than pairwise lists."
+    },
+    {
+      "id": "factorial-models",
+      "title": "Factorial ANOVA, interactions, and estimable contrasts",
+      "body": "With two or more factors, main effects average over levels of other factors and can be misleading when interactions are present. An interaction asks whether one factor's effect changes across another factor. Inspect interaction plots and estimate simple effects or planned contrasts instead of interpreting a main-effect p-value in isolation. In unbalanced observational data, sums of squares labeled Type I, II, and III test different hypotheses and depend on coding; there is no universally correct type. Write the estimable contrast explicitly and use a model matrix that matches it. Random factors, repeated measures, and nested units require mixed or hierarchical models rather than treating every level as a fixed independent group. The design determines the error term and denominator degrees of freedom."
+    }
+  ],
+  "math": "SSB=sum_j n_j(ybar_j-ybar)^2, SSW=sum_j sum_i(y_ij-ybar_j)^2, SST=SSB+SSW. MSB=SSB/(k-1), MSW=SSW/(N-k), and F=MSB/MSW. Under H0 with iid normal errors of common variance, F follows F_(k-1,N-k). Eta squared=SSB/SST. A common omega-squared estimate is (SSB-(k-1)MSW)/(SST+MSW), truncated or interpreted cautiously when negative in samples.",
+  "workedExamples": [
+    {
+      "title": "Three campaigns with one separated group",
+      "body": "Decompose total variability, compute F, then use a planned C-versus-average(A,B) contrast to show why an omnibus result and pairwise claims are different."
+    }
+  ],
+  "exercises": [
+    {
+      "prompt": "ANOVA with k=4 groups and N=40 has what degrees of freedom?",
+      "solution": "Between df=k-1=3, within df=N-k=36, and total df=N-1=39."
+    },
+    {
+      "prompt": "If F is significant, may you claim group 1 differs from group 2?",
+      "solution": "Not without a corresponding planned or multiplicity-adjusted contrast. The omnibus result only says not all group means are equal."
+    },
+    {
+      "prompt": "Why can variance imbalance be especially harmful with unequal n?",
+      "solution": "The pooled within variance weights groups in a way that may mismatch the sampling variance of mean differences, distorting the classical F reference; the direction depends on the pairing of variances and sizes."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "flow",
+      "title": "ANOVA decomposition",
+      "items": [
+        "Grand mean",
+        "Group-mean deviations → SSB",
+        "Within-group deviations → SSW",
+        "SST = SSB + SSW",
+        "F = MSB / MSW"
+      ],
+      "caption": "Least-squares geometry partitions total variation into orthogonal fitted and residual components.",
+      "orientation": "horizontal",
+      "afterSection": "decomposition"
+    },
+    {
+      "type": "matrix",
+      "title": "After the omnibus test",
+      "caption": "Choose follow-ups from the scientific question and error family.",
+      "afterSection": "followups",
+      "rows": [
+        "Any mean differs?",
+        "Planned scientific contrast",
+        "All pairs"
+      ],
+      "cols": [
+        "Tool",
+        "Claim"
+      ],
+      "cells": [
+        [
+          "Omnibus F",
+          "Not all equal"
+        ],
+        [
+          "Contrast test/CI",
+          "Specified combination differs"
+        ],
+        [
+          "Tukey/Holm/Games–Howell",
+          "Adjusted pairwise evidence"
+        ]
+      ]
+    }
+  ],
+  "lab": {
+    "language": "python",
+    "goal": "Compute one-way ANOVA from first principles, verify the sums-of-squares identity and translation invariance, and compare F with SciPy.",
+    "buildIt": "def mean(xs): return sum(xs)/len(xs)\ndef one_way_anova(groups):\n    all_values=[x for g in groups for x in g]; grand=mean(all_values)\n    ss_between=sum(len(g)*(mean(g)-grand)**2 for g in groups)\n    ss_within=sum(sum((x-mean(g))**2 for x in g) for g in groups)\n    ss_total=sum((x-grand)**2 for x in all_values)\n    df_b=len(groups)-1; df_w=len(all_values)-len(groups)\n    f=(ss_between/df_b)/(ss_within/df_w)\n    return f,ss_between,ss_within,ss_total\ngroups=[[8,9,10,11],[9,10,11,12],[15,16,17,18]]\nf,sb,sw,st=one_way_anova(groups)",
+    "useIt": "from scipy.stats import f_oneway\nscipy_result=f_oneway(*groups)",
+    "verifyIt": "assert abs(st-(sb+sw)) < 1e-12\nassert abs(f-scipy_result.statistic) < 1e-12\nshifted=[[x+100 for x in g] for g in groups]\nassert abs(one_way_anova(shifted)[0]-f) < 1e-12\nassert f > 1",
+    "shipIt": "Register units, factors, contrasts, variance model, and multiplicity; validate decomposition and assumptions, then publish domain-unit estimates and adjusted contrast intervals with the omnibus result."
+  },
+  "sourceNotes": [
+    {
+      "resource": "nist-stat-handbook",
+      "contribution": "Provides applied ANOVA decomposition, model assumptions, F inference, and diagnostic context."
+    },
+    {
+      "resource": "stanford-stats200",
+      "contribution": "Connects ANOVA with likelihood, linear models, hypothesis testing, and multiple comparisons."
+    },
+    {
+      "resource": "scipy-stats",
+      "contribution": "Documents the current one-way ANOVA implementation used as an independent lab check."
+    }
+  ]
 }

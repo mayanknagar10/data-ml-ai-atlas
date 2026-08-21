@@ -8,48 +8,172 @@
     "mle",
     "as"
   ],
-  "interviewAnswer": "Expectation is the long-run average of a random variable; variance measures spread around the mean; covariance measures how two variables vary together, with correlation providing a normalized version.",
+  "interviewAnswer": "Expectation is `E[X]=Σx p(x)` or `∫x f(x)dx` when it exists, and linearity gives `E[aX+bY+c]=aE[X]+bE[Y]+c` without independence. Variance is `Var(X)=E[(X−μ)²]=E[X²]−μ²`. For sums, `Var(X+Y)=Var(X)+Var(Y)+2Cov(X,Y)`; covariance vanishes for independent finite-variance variables, but zero covariance does not generally imply independence. Correlation standardizes covariance to [−1,1] when variances are positive and measures linear association, not causation. In data, distinguish population from sample estimators, use stable online/two-pass algorithms and inspect tails and drift beyond mean/variance.",
   "keyPoints": [
-    "Linearity of expectation",
-    "Variance units",
-    "Covariance sign",
-    "Correlation ≠ causation"
+    "Linearity of expectation needs no independence",
+    "Variance of sums includes covariance",
+    "Correlation is standardized linear association",
+    "Moments may not exist or characterize a distribution",
+    "Stable estimation needs denominator and weight semantics"
   ],
   "resources": [
     "harvard-stat110",
-    "statquest"
+    "stanford-stats60",
+    "numpy"
   ],
   "featured": false,
-  "why": "Expectation, variance and covariance are foundational for losses, estimators, uncertainty, PCA, portfolio/risk reasoning, and the bias–variance trade-off.",
-  "intuition": "Expectation is the balance point or long-run average. Variance measures how far values typically spread around that center. Covariance asks whether two variables tend to move together; correlation rescales covariance to a unitless -1 to 1 range.",
-  "deepDive": "Linearity of expectation holds even without independence. Variance is measured in squared units, while standard deviation returns to the original units. Covariance depends on scale; correlation normalizes by both standard deviations. Zero covariance means no linear relationship but does not imply independence except under special distributional assumptions.",
-  "math": "E[aX+bY]=aE[X]+bE[Y]\nVar(X)=E[(X-E[X])²]=E[X²]-E[X]²\nCov(X,Y)=E[(X-E[X])(Y-E[Y])]\nCorr(X,Y)=Cov(X,Y)/(σ_X σ_Y)",
-  "workedExample": "If model error has mean near zero but very high variance, predictions are unbiased on average yet individually unreliable. Reporting only the mean error would hide this instability.",
+  "why": "Expected cost, model loss, traffic, portfolio risk, ensemble error and sample-size calculations all use moments. Common mistakes—adding standard deviations, omitting covariance, using ddof inconsistently, calculating variance by subtracting huge nearly equal values, or reading correlation causally—can materially distort decisions. Moment algebra is powerful precisely because it states what can and cannot be simplified.",
+  "intuition": "Expectation is the balance point of a probability distribution. Variance is its average squared spread around that point. Covariance asks whether two variables tend to deviate from their means in the same direction. When combining uncertain quantities, aligned deviations reinforce risk; opposing deviations cancel; independent deviations add only in variance, not standard deviation.",
+  "deepDive": "The full explanation is organized into the structured sections below.",
+  "math": "E[g(X)]=Σg(x)p(x) or ∫g(x)f(x)dx. `Var(X)=E[(X−μ)²]`; `Cov(X,Y)=E[(X−μ_X)(Y−μ_Y)]`. `Var(a^TX)=a^TΣa`. Total expectation: `E[X]=E[E[X|Y]]`. Total variance: `Var(X)=E[Var(X|Y)]+Var(E[X|Y])`.",
+  "workedExample": "Each variance is 100 and covariance is `0.8×10×10=80`. Expected total is 200 by linearity regardless of dependence. Total variance is `100+100+2×80=360`, so standard deviation is about 18.97—not 20 (adding standard deviations) and not 14.14 (assuming independence). If correlation were −0.8, variance would be 40. Correlation may change during incidents, so a historical estimate can understate joint tail load. Capacity planning should inspect conditional/tail scenarios, not only Normal mean ± standard deviation.",
   "code": "import numpy as np\nx=np.array([1,2,3,4])\ny=np.array([2,4,5,8])\nprint(x.mean(), x.var(ddof=1))\nprint(np.cov(x,y,ddof=1)[0,1])\nprint(np.corrcoef(x,y)[0,1])",
   "commonMistakes": [
-    "Saying correlation implies causation.",
-    "Forgetting that variance is in squared units.",
-    "Assuming zero correlation means independence."
+    {
+      "mistake": "Linearity of expectation requires independence.",
+      "correction": "Expectations of sums always add when defined; independence is used for products and variance simplifications."
+    },
+    {
+      "mistake": "Zero correlation means independence.",
+      "correction": "It only rules out linear covariance; nonlinear dependence can remain unless special joint-family assumptions hold."
+    },
+    {
+      "mistake": "Use `E[X²]−E[X]²` directly on huge-offset data.",
+      "correction": "Subtraction can catastrophically cancel; use centered two-pass or Welford algorithms."
+    }
   ],
   "followUps": [
-    "Why is covariance scale-dependent?",
-    "What is the difference between population and sample variance?",
-    "How does covariance connect to PCA?",
-    "When does zero covariance imply independence?"
+    {
+      "question": "Why is covariance matrix positive semidefinite?",
+      "answer": "For any a, `a^TΣa=Var(a^TX)≥0`."
+    },
+    {
+      "question": "What does total variance separate?",
+      "answer": "Average variance within conditioning groups and variance between their conditional means."
+    },
+    {
+      "question": "When does E[g(X)]=g(E[X])?",
+      "answer": "Generally for affine g; nonlinear equality requires special circumstances. Jensen gives an inequality for convex/concave g."
+    }
   ],
-  "production": "Use variance and covariance to understand feature redundancy, uncertainty, drift, and instability across cohorts. Correlations can change after deployment, so they should be monitored rather than treated as permanent properties.",
-  "visual": {
-    "type": "concept-map",
-    "title": "Expectation, Variance & Covariance",
-    "items": [
-      "Linearity of expectation",
-      "Variance units",
-      "Covariance sign",
-      "Correlation ≠ causation"
-    ],
-    "caption": "A compact concept map for the most important ideas in this lesson."
-  },
+  "production": "Define population/window, units, filters, weights and ddof; use stable mergeable moment algorithms and validate against batch references. Monitor count/effective weight, means, variances, quantiles/tails, covariance conditioning and slice/time dependence. Treat missing/outlier policy explicitly, restrict sensitive aggregates, retain source lineage and checkpointed summaries, and roll back/recompute when invariants or drift thresholds fail.",
   "editorial": {
-    "status": "summary"
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "Expectation is a probability-weighted average of a random variable; variance measures expected squared deviation from its mean; covariance measures linear co-movement. These are properties of a specified distribution, not guarantees about one observation. This chapter develops linearity of expectation, indicator variables, transformations, variance identities, covariance matrices, correlation, Cauchy–Schwarz bounds, conditional moments and laws of total expectation/variance. You will learn why expectations add without independence while variances require covariance terms, why zero covariance does not generally imply independence, and how scaling and nonlinear transformations change moments. A worked portfolio/system-load example derives aggregate variance under dependence. The lab computes exact weighted moments, merges online summaries and compares them with NumPy. Production guidance covers population versus sample denominators, weighted data, missingness, streaming algorithms, numeric cancellation, nonstationarity, tail risk, covariance regularization, privacy and rollback. The objective is to use moments as compact but limited summaries, understand precisely which algebra they support, and avoid turning correlation or an average into a causal or distributional claim.",
+  "prerequisites": [
+    "probability-basics"
+  ],
+  "learningObjectives": [
+    "Compute expectations of functions and exploit linearity and indicator variables without requiring independence.",
+    "Derive variance/covariance rules for sums and affine transformations and interpret covariance matrices geometrically.",
+    "Estimate and operate moments with correct denominators, weights, stable streaming algorithms, drift/tail checks and explicit limits."
+  ],
+  "deepSections": [
+    {
+      "id": "expectation-linearity",
+      "title": "Expectation, transformations, and indicators",
+      "body": "For discrete X, `E[g(X)]=Σ_x g(x)p(x)`; for continuous X, integrate `g(x)f(x)`. You do not need the distribution of g(X) to compute its expectation this way. Expectation may be infinite or undefined for heavy-tailed variables, so algebra requiring finite moments needs assumptions. `E[aX+b]=aE[X]+b`, and linearity extends to sums regardless of dependence.\n\nIndicator I_A equals one when event A occurs, zero otherwise, so `E[I_A]=P(A)`. Counts can be written as sums of indicators, making expected counts the sum of individual probabilities even when events depend. For example, expected number of collisions or occupied bins may be easy while the full count distribution is hard. Independence becomes relevant for products: if X,Y independent and integrable, E[XY]=E[X]E[Y], but the converse is not generally true.\n\nExpectation of a nonlinear function is not generally the function of the expectation. Jensen's inequality says `g(E[X])≤E[g(X)]` for convex g, explaining why variability raises expected convex cost. Ratios, logs and thresholds need full distribution information or approximations; substituting means can bias decisions."
+    },
+    {
+      "id": "variance-covariance",
+      "title": "Variance, covariance, and correlation",
+      "body": "Variance `E[(X−μ)²]` is nonnegative and has squared units. The identity `E[X²]−E[X]²` is algebraically useful but can be numerically unstable in finite precision. Scaling gives `Var(aX+b)=a²Var(X)`. Standard deviation returns original units but does not add for sums.\n\nCovariance `E[(X−μ_X)(Y−μ_Y)] = E[XY]−E[X]E[Y]`. Thus `Var(Σ_iX_i)=Σ_iVar(X_i)+2Σ_{i<j}Cov(X_i,X_j)`. Independence implies zero covariance for finite moments, but dependent symmetric/nonlinear relationships can have zero covariance. Correlation divides by standard deviations and lies in [−1,1] by Cauchy–Schwarz; it is undefined for constant variables and invariant to positive affine scaling.\n\nA covariance matrix Σ has entries Cov(X_i,X_j), is symmetric positive semidefinite, and gives variance of any linear combination a^TX as `a^TΣa`. Near-singular covariance reflects redundant directions or insufficient data and destabilizes inverses. Sample covariance in high dimensions often needs shrinkage or structured assumptions. Correlation matrices remove units but do not solve confounding or nonlinear dependence."
+    },
+    {
+      "id": "conditional-moments",
+      "title": "Conditional moments and decomposition",
+      "body": "Conditional expectation `E[X|Y]` is itself a random variable/function of Y and is the best mean-squared predictor among functions of Y under suitable conditions. The tower property says `E[E[X|Y]]=E[X]`. The law of total variance splits `Var(X)=E[Var(X|Y)]+Var(E[X|Y])`: average within-group uncertainty plus variation of group means.\n\nThis decomposition explains hierarchical data and mixture variance. Overall variance can be large even if every group is tight because means differ; conversely groups can be noisy around a common mean. Aggregating correlations can produce Simpson-like reversals because group composition changes. Report within/between components and the conditioning variables.\n\nFor vector X, the law generalizes to covariance: total covariance equals expected conditional covariance plus covariance of conditional means. Uncertainty propagation through linear maps A is `Cov(AX+b)=AΣA^T`. For nonlinear maps, a Jacobian approximation can be used locally, but tail/nonlinearity may require simulation. Conditional moments are descriptive unless the conditioning/intervention distinction is justified causally."
+    },
+    {
+      "id": "estimation-operation",
+      "title": "Estimating and operating moments",
+      "body": "Population variance divides by population mass. The common unbiased sample variance for IID observations divides the sum of squared deviations by n−1 after estimating the mean; maximum-likelihood Normal variance uses n. Weighted data require clarity: frequency weights, probability weights and inverse-probability weights have different effective sample-size and denominator formulas. Library `ddof` defaults differ.\n\nUse two-pass centered variance or Welford's recurrence rather than one-pass `mean(x²)−mean(x)²` for large offsets. Parallel/streaming summaries can merge count, mean and centered sum of squares exactly up to rounding. Missing-value deletion changes the target population when missingness is informative. Time dependence makes an IID standard error invalid; moments may drift and autocorrelation reduces effective information.\n\nMonitor count/weight, mean, variance, quantiles/tails, covariance conditioning and slice/time changes. Robust summaries complement moments when outliers/heavy tails dominate. Cap or quarantine invalid values according to domain policy, not silently. Covariance and means can reveal sensitive attributes; restrict release and use privacy techniques when appropriate. Version window, filters, weights, units and algorithm; keep previous aggregates/checkpoints for rollback and recompute from source when invariants fail."
+    }
+  ],
+  "workedExamples": [
+    {
+      "title": "Variance of combined service load",
+      "setup": "Services A and B each have mean load 100, standard deviation 10 and correlation 0.8. What is total-load uncertainty?",
+      "walkthrough": "Each variance is 100 and covariance is `0.8×10×10=80`. Expected total is 200 by linearity regardless of dependence. Total variance is `100+100+2×80=360`, so standard deviation is about 18.97—not 20 (adding standard deviations) and not 14.14 (assuming independence). If correlation were −0.8, variance would be 40. Correlation may change during incidents, so a historical estimate can understate joint tail load. Capacity planning should inspect conditional/tail scenarios, not only Normal mean ± standard deviation.",
+      "conclusion": "Dependence controls diversification or reinforcement; covariance terms are not optional."
+    }
+  ],
+  "exercises": [
+    {
+      "difficulty": "recall",
+      "prompt": "Write variance of X+Y.",
+      "solution": "`Var(X)+Var(Y)+2Cov(X,Y)`."
+    },
+    {
+      "difficulty": "application",
+      "prompt": "If X_i are dependent indicators, what is E[ΣX_i]?",
+      "solution": "`ΣP(X_i=1)`; dependence is irrelevant for the expectation."
+    },
+    {
+      "difficulty": "diagnosis",
+      "prompt": "Variance becomes slightly negative in code. What likely happened?",
+      "solution": "Catastrophic cancellation in `mean(x²)−mean(x)²` and rounding; use a stable centered algorithm and clamp only tiny roundoff after diagnosis."
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "harvard-stat110",
+      "contribution": "Provides expectation, indicator, variance, covariance and conditional-expectation identities with rigorous problem solving."
+    },
+    {
+      "resource": "stanford-stats60",
+      "contribution": "Connects averages, variability, correlation and expectation to responsible interpretation and scale."
+    },
+    {
+      "resource": "numpy",
+      "contribution": "Documents current numerical mean, variance, covariance, dtype and missing/axis behavior used in implementation."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "compare",
+      "title": "Combining uncertain quantities",
+      "left": {
+        "title": "Expectation",
+        "items": [
+          "Means add always",
+          "No independence needed",
+          "Indicators simplify counts"
+        ]
+      },
+      "right": {
+        "title": "Variance",
+        "items": [
+          "Variances plus covariance",
+          "Aligned deviations increase spread",
+          "Opposing deviations reduce spread"
+        ]
+      },
+      "caption": "Dependence is invisible to the mean of a sum but central to its uncertainty.",
+      "afterSection": "variance-covariance"
+    },
+    {
+      "type": "flow",
+      "title": "Total variance decomposition",
+      "items": [
+        "Condition on group Y",
+        "Measure Var(X|Y) within each group",
+        "Average within-group variance",
+        "Measure variation of E[X|Y] across groups",
+        "Add within + between"
+      ],
+      "caption": "Overall spread comes from both local noise and changing conditional means.",
+      "afterSection": "conditional-moments"
+    }
+  ],
+  "lab": {
+    "goal": "Compute exact weighted moments and stable mergeable sample summaries, then verify covariance and total-variance identities against NumPy.",
+    "language": "python",
+    "buildIt": "def weighted_moments(values,probs):\n    if abs(sum(probs)-1)>1e-12: raise ValueError('weights must sum to one')\n    mean=sum(x*p for x,p in zip(values,probs))\n    variance=sum((x-mean)**2*p for x,p in zip(values,probs))\n    return mean,variance\n\ndef summary(values):\n    n=0; mean=0.0; m2=0.0\n    for x in values:\n        n+=1; delta=x-mean; mean+=delta/n; m2+=delta*(x-mean)\n    return n,mean,m2\n\ndef merge(a,b):\n    n1,m1,s1=a; n2,m2,s2=b\n    if n1==0:return b\n    if n2==0:return a\n    d=m2-m1; n=n1+n2\n    return n,m1+d*n2/n,s1+s2+d*d*n1*n2/n",
+    "useIt": "import numpy as np\nvalues=[1.,2.,4.]; probs=[.2,.3,.5]; exact=weighted_moments(values,probs)\ndata=np.array([1e9+1,1e9+2,1e9+4,1e9+8],dtype=float)\ncombined=merge(summary(data[:2]),summary(data[2:]))\nx=np.array([1.,2.,3.]); y=np.array([2.,4.,8.])",
+    "verifyIt": "assert np.allclose(exact,[2.8,1.56])\nassert combined[0]==len(data) and np.isclose(combined[1],data.mean())\nassert np.isclose(combined[2]/combined[0],data.var())\ncov=np.cov(x,y,ddof=0)[0,1]\nassert np.isclose(np.var(x+y),np.var(x)+np.var(y)+2*cov)\ngroups={0:[0.,2.],1:[8.,10.]}; all_values=np.array(groups[0]+groups[1])\nwithin=np.mean([np.var(v) for v in groups.values()]); between=np.var([np.mean(v) for v in groups.values()])\nassert np.isclose(all_values.var(),within+between)",
+    "shipIt": "Use stable mergeable summaries with explicit weights/ddof/window, compare streaming against batch fixtures, monitor tails and covariance conditioning, secure aggregates and retain replayable source plus checkpoints for rollback."
   }
 }

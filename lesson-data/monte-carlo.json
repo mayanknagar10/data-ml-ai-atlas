@@ -7,52 +7,177 @@
     "ds",
     "as"
   ],
-  "interviewAnswer": "Monte Carlo approximates expectations or probabilities with repeated random samples. Error typically shrinks with the square root of sample count, so simulation is flexible but can be computationally expensive.",
+  "interviewAnswer": "To estimate `μ=E_p[h(X)]`, draw samples from p and average `μ̂=n^{-1}Σh(X_i)`. For IID finite variance, it is unbiased and has standard error `sqrt(Var(h)/n)`; CLT intervals are approximate and convergence is only `1/√n`. Variance reduction changes sampling or uses correlated known quantities without changing the target. Importance sampling draws from q and weights by p/q, but requires support coverage and can fail when a few weights dominate. Record Generator/algorithm, seed or state, code and sample count; use independent spawned streams in parallel, monitor standard error/effective sample size and separate numerical Monte Carlo error from misspecified-model uncertainty.",
   "keyPoints": [
-    "Use simulation when analytic calculation is hard.",
-    "Random seeds improve reproducibility, not statistical validity.",
-    "Variance reduction can improve efficiency."
+    "Estimator targets an expectation",
+    "IID error shrinks as 1/√n",
+    "Variance reduction uses structure",
+    "Importance weights need support and overlap",
+    "RNG stream/state is part of the artifact"
   ],
   "resources": [
     "harvard-stat110",
-    "numpy"
+    "numpy-random",
+    "scipy-stats"
   ],
   "featured": false,
-  "why": "Monte Carlo Simulation is a recurring foundation across data science and machine learning because it affects both theoretical correctness and practical system behavior.",
-  "intuition": "Use simulation when analytic calculation is hard.",
-  "deepDive": "Monte Carlo approximates expectations or probabilities with repeated random samples. Error typically shrinks with the square root of sample count, so simulation is flexible but can be computationally expensive. Random seeds improve reproducibility, not statistical validity. Variance reduction can improve efficiency. The interview-level skill is not merely recalling the definition: explain the assumptions, what diagnostic evidence you would inspect, and what alternative you would choose when those assumptions fail.",
-  "workedExample": "Estimate probability a capacity system overloads by simulating uncertain daily demand.",
+  "why": "Simulation prices risk, evaluates policies, propagates uncertainty, validates algorithms and approximates intractable integrals. But teams often publish a single seed, reuse identical seeds on parallel workers, stop when the result looks desirable, or quote tiny Monte Carlo error for a wrong model. Rare-event and importance estimates can appear stable while effective sample size is near one. Auditable design and diagnostics are essential.",
+  "intuition": "An expectation is the long-run average height of h(X) under probability landscape p. Monte Carlo throws reproducible darts according to p and averages their heights. More independent darts reduce random noise slowly. Variance reduction aims darts or pairs them so wasted fluctuations cancel, but must preserve the same target and account for weights/correlation.",
+  "deepDive": "The full explanation is organized into the structured sections below.",
+  "workedExample": "Let h(x,y)=1 if x²+y²≤1. Its expectation is quarter-circle area π/4, so `π̂=4 mean(h)`. The indicator variance is p(1−p), giving SE `4 sqrt(p̂(1−p̂)/n)`. A million IID points reduces SE by 1,000 relative to one point, not one million. Use multiple independently spawned streams and merge hit/count totals. Stratifying the square or randomized low-discrepancy points can improve coverage, while a single deterministic grid needs a different error argument. Validate seed-independent estimates and exact bounds 0≤π̂≤4.",
   "commonMistakes": [
-    "Using the concept mechanically without checking assumptions or data semantics.",
-    "Reporting one metric/result without examining uncertainty, slices or failure modes."
+    {
+      "mistake": "A fixed seed proves the result is correct.",
+      "correction": "It enables replay of one deterministic stream; correctness needs model/implementation validation and sampling-error diagnostics."
+    },
+    {
+      "mistake": "Use the same seed on every parallel worker.",
+      "correction": "Workers duplicate streams and effective sample size collapses; spawn independent streams through the RNG API."
+    },
+    {
+      "mistake": "Importance sampling always improves rare-event estimates.",
+      "correction": "Poor support/tail overlap yields dominant weights or infinite variance; inspect ESS and weight tails."
+    }
   ],
   "followUps": [
-    "What assumptions or limitations does Monte Carlo Simulation have?",
-    "How would you validate Monte Carlo Simulation on a real dataset?"
+    {
+      "question": "Why is Monte Carlo slow?",
+      "answer": "For IID finite-variance means, standard error falls only as 1/√n regardless of dimension."
+    },
+    {
+      "question": "What is effective sample size for weights?",
+      "answer": "A diagnostic such as `(Σw)²/Σw²` measuring weight concentration; it is at most n and can be near one."
+    },
+    {
+      "question": "How is quasi-Monte Carlo different?",
+      "answer": "It uses low-discrepancy point sets for even coverage and has non-IID error theory; randomized variants support empirical error estimates."
+    }
   ],
-  "production": "In production, make assumptions explicit, validate on representative slices, compare with a simple baseline and monitor the signals that can drift.",
+  "production": "Specify estimand/model/discretization, RNG algorithm/state/version, independent stream plan, sample/stopping rule and error target. Validate samplers and integrands on analytic cases, use stable mergeable summaries and monitor SE, ESS, weights, acceptance/autocorrelation, nonfinite values and cost. Bound untrusted jobs, separate cryptographic randomness, checkpoint full state and retain a versioned simulation rollback bundle.",
   "lab": {
-    "goal": "Estimate a probability with Monte Carlo simulation.",
+    "goal": "Estimate an integral using crude and antithetic sampling, verify reproducibility, unbiased target, uncertainty scaling and independent spawned streams.",
     "language": "python",
-    "buildIt": "import numpy as np\nrng=np.random.default_rng(0)\nn=200_000\nx=rng.random((n,2))\ninside=(x[:,0]**2+x[:,1]**2)<=1\npi_hat=4*inside.mean()\nprint(pi_hat)\n",
-    "useIt": "batches=inside.reshape(200,-1).mean(axis=1)*4\nprint('SE',batches.std(ddof=1)/np.sqrt(len(batches)))\n",
-    "verifyIt": "assert abs(pi_hat-np.pi)<0.03\n",
-    "shipIt": "Use deterministic seeds for tests, but in production report Monte Carlo error and ensure simulated distributions reflect the decision problem."
-  },
-  "visual": {
-    "type": "flow",
-    "title": "Monte Carlo estimation",
-    "items": [
-      "Sample random inputs",
-      "Evaluate quantity",
-      "Repeat many times",
-      "Average / quantify uncertainty"
-    ],
-    "caption": "Simulation replaces an intractable expectation with repeated random sampling.",
-    "accent": 2,
-    "orientation": "horizontal"
+    "buildIt": "import math\n\ndef summarize(values):\n    n=len(values); mean=sum(values)/n; variance=sum((x-mean)**2 for x in values)/(n-1)\n    return mean,math.sqrt(variance/n)\n\ndef antithetic_exp_uniform(u_values):\n    # Estimate integral_0^1 exp(x) dx by paired average.\n    return [(math.exp(u)+math.exp(1-u))/2 for u in u_values]",
+    "useIt": "import numpy as np\nseed=20260821; n=200000; rng=np.random.default_rng(seed); u=rng.random(n)\ncrude=np.exp(u); paired=np.array(antithetic_exp_uniform(u[:n//2]))\ncrude_est=summarize(crude.tolist()); anti_est=summarize(paired.tolist()); truth=math.e-1\nchildren=np.random.SeedSequence(seed).spawn(2)\nstreams=[np.random.default_rng(child).random(5) for child in children]",
+    "verifyIt": "assert abs(crude_est[0]-truth)<4*crude_est[1]\nassert abs(anti_est[0]-truth)<4*anti_est[1]\nassert anti_est[1]<crude_est[1]\nassert np.array_equal(np.random.default_rng(seed).random(n),u)\nassert not np.array_equal(streams[0],streams[1])\nassert math.isclose(summarize([1.,2.,3.])[0],2.0)\n# SE ratio for fourfold independent size is approximately one half.\na=summarize(np.exp(u[:n//4]).tolist())[1]; b=summarize(np.exp(u).tolist())[1]\nassert .45 < b/a < .55",
+    "shipIt": "Use NumPy Generator with spawned parallel streams, stable batch summaries, declared precision/budget stopping and model/discretization checks; monitor SE/ESS/cost and checkpoint RNG plus summaries for rollback/resume."
   },
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "Monte Carlo methods approximate expectations, probabilities and integrals by sampling from a distribution and averaging a function of the draws. Their power is dimensional flexibility and simple error analysis; their weakness is the slow `1/√n` convergence of independent sampling and the fact that a reproducible random number is not evidence that the modeled distribution is correct. This chapter derives the estimator, variance and standard error, then covers inverse/rejection sampling, importance sampling, antithetic and control variates, stratification, quasi-Monte Carlo, rare events, Markov chain dependence and sequential stopping. You will learn to separate model uncertainty from simulation error, design independent parallel random streams, diagnose weight degeneracy and report confidence/precision rather than one seed's answer. A worked integral estimates π and compares variance-reduction ideas. The lab estimates an integral with crude and antithetic sampling and verifies convergence and reproducibility with NumPy Generator. Production guidance covers RNG state/version compatibility, deterministic replay, cryptographic boundaries, numerical stability, cost budgets, distributed aggregation, monitoring and rollback. The objective is to make simulation an auditable numerical experiment with a defined estimand, sampling law, uncertainty and failure policy.",
+  "prerequisites": [
+    "expectation-variance",
+    "clt",
+    "distributions"
+  ],
+  "learningObjectives": [
+    "Derive Monte Carlo estimators, standard errors and confidence approximations for expectations/probabilities and distinguish simulation from model uncertainty.",
+    "Select and diagnose importance, control, antithetic, stratified, quasi-random or correlated sampling methods from integrand structure and cost.",
+    "Operate reproducible parallel simulations with independent streams, stable aggregation, convergence monitoring, security boundaries and rollback."
+  ],
+  "deepSections": [
+    {
+      "id": "estimator-error",
+      "title": "Estimator, standard error, and convergence",
+      "body": "Let X_i be IID from p and Y_i=h(X_i). The sample mean estimates μ=E[Y]. It is unbiased when expectation exists, with variance σ_Y²/n. Estimate standard error using sample variance, and under CLT conditions report an approximate interval. The `1/√n` rate means one extra decimal digit needs roughly 100 times samples. If evaluation of h dominates cost, batching/vectorization/parallelism help wall time but not statistical rate.\n\nFor probability P(A), use indicator h=I_A; variance is p(1−p). Relative error is poor for rare p because few hits occur. A run with zero hits does not prove zero probability. Exact/binomial or rare-event methods may be needed. Heavy-tailed h can yield unstable or infinite variance, invalidating ordinary error bars. Plot cumulative estimates and standard errors, inspect quantiles/outliers and run independent replicates.\n\nMonte Carlo error is conditional on model p and implementation h. Parameter uncertainty, structural misspecification, discretization bias and data error are separate. Increasing n only reduces sampling noise. A biased simulator can converge precisely to the wrong answer. Validate on analytic special cases and convergence as time-step/grid resolution changes."
+    },
+    {
+      "id": "sampling-methods",
+      "title": "Sampling and transformation methods",
+      "body": "Uniform PRNG output is transformed into target distributions. Inverse-CDF sampling maps U∼Uniform(0,1) through F^{-1}; it is simple when the quantile is tractable/stable. Rejection sampling proposes from q and accepts based on an envelope, requiring a valid finite bound and becoming inefficient in high dimensions. Composition first samples a mixture component then its conditional distribution. Specialized algorithms power Normal, Gamma and other library samplers; use tested implementations.\n\nPseudo-random generators are deterministic state machines designed for statistical simulation, not cryptography. A seed initializes state; reproducibility may depend on bit generator and library compatibility policy, not seed alone. Save algorithm/state/version when exact replay matters. Parallel workers must receive independent spawned streams or substreams; giving every worker the same seed duplicates samples, while ad hoc seed increments can have generator-specific concerns.\n\nQuasi-Monte Carlo uses low-discrepancy deterministic/randomized point sets to cover a unit cube more evenly, often improving integration for smooth finite-dimensional functions. Its error analysis differs from IID; randomized QMC enables replication-based uncertainty. It does not automatically help discontinuous, extremely high-dimensional or poorly transformed integrands."
+    },
+    {
+      "id": "variance-reduction",
+      "title": "Variance reduction and importance sampling",
+      "body": "Antithetic sampling pairs U with 1−U so monotone integrand fluctuations may cancel. The pair estimator remains correct under the transformation, but benefit depends on covariance and can be negative. Control variates use a correlated variable C with known expectation: estimate Y−β(C−E[C]); optimal β depends on covariance and is estimated carefully, preferably without biasing evaluation. Stratification allocates samples across known subregions and weights their conditional means, reducing variation due to uneven coverage.\n\nImportance sampling draws X from q and estimates `E_q[h(X)p(X)/q(X)]`. q must have positive density wherever h(x)p(x) contributes. A proposal closer to important regions can transform rare events, but mismatched tails create enormous/infinite weight variance. Compute log weights, normalize stably and inspect maximum weights, effective sample size `(Σw)²/Σw²`, repeated independent runs and tail behavior. Self-normalized importance sampling handles unknown normalizing constants but is biased finite-sample and has its own diagnostics.\n\nMarkov chain Monte Carlo draws correlated samples from a target via a chain. Ordinary IID standard errors are wrong; assess mixing, multiple chains, autocorrelation/effective sample size and convergence diagnostics. Burn-in does not magically fix poor exploration. MCMC belongs to a broader chapter, but dependence illustrates why sample count is not effective count."
+    },
+    {
+      "id": "simulation-operation",
+      "title": "Experiment design and production operation",
+      "body": "Write a simulation contract: estimand, target distribution, parameter/source versions, sampling algorithm, random-stream plan, sample/stopping rule, discretization, metrics and acceptable error. Pre-specify precision or budget-based stopping; repeated optional looks based on favorable estimates bias reporting. Sequential fixed-width stopping should account for variance-estimation uncertainty and minimum samples. Store independent-replicate summaries.\n\nValidate sampling distributions with moments/quantiles and statistical tests used diagnostically, plus analytic toy cases and invariants. Validate h separately. Use stable online mean/variance and pairwise distributed merges; avoid collecting all samples when summaries suffice, but retain enough trace for diagnosis. Monitor estimated SE, effective sample size, weight concentration, acceptance, autocorrelation, nonfinite values, runtime/cost and between-worker consistency.\n\nBound user-controlled samples/dimension/time to prevent denial of service, and never use simulation PRNGs for tokens or secrets. Protect sensitive synthetic outputs that can leak fitted data. Canary generator/library/hardware changes and compare reproducible fixtures. Checkpoint generator state and partial summaries for resume. Rollback includes code, parameters, random algorithm/state and numerical discretization, not only a seed."
+    }
+  ],
+  "math": "For IID X_i∼p and μ=E_p[h(X)] with finite variance σ², `μ̂_n=(1/n)Σh(X_i)`, E[μ̂]=μ and Var(μ̂)=σ²/n. Importance sampling: `μ=E_q[h(X)w(X)]`, w=p/q, provided q covers contributing support. IID estimated SE is `s_h/√n`; correlated samples require autocovariance/effective-size correction.",
+  "workedExamples": [
+    {
+      "title": "Estimate π by area",
+      "setup": "Draw points uniformly in the unit square and estimate the area of the quarter unit circle.",
+      "walkthrough": "Let h(x,y)=1 if x²+y²≤1. Its expectation is quarter-circle area π/4, so `π̂=4 mean(h)`. The indicator variance is p(1−p), giving SE `4 sqrt(p̂(1−p̂)/n)`. A million IID points reduces SE by 1,000 relative to one point, not one million. Use multiple independently spawned streams and merge hit/count totals. Stratifying the square or randomized low-discrepancy points can improve coverage, while a single deterministic grid needs a different error argument. Validate seed-independent estimates and exact bounds 0≤π̂≤4.",
+      "conclusion": "The estimator, random design and standard error are all part of the reported numerical result."
+    }
+  ],
+  "exercises": [
+    {
+      "difficulty": "recall",
+      "prompt": "How many times more IID samples reduce standard error by factor 10?",
+      "solution": "100 times more samples because SE scales as 1/√n."
+    },
+    {
+      "difficulty": "application",
+      "prompt": "What must an importance proposal q satisfy?",
+      "solution": "q must be positive wherever h(x)p(x) contributes; useful q also provides adequate tail/region overlap to control weight variance."
+    },
+    {
+      "difficulty": "diagnosis",
+      "prompt": "Ten workers each generate the same estimate and combined SE seems tiny. What likely happened?",
+      "solution": "They shared the same seed/stream, duplicating samples; combined n is not effective n."
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "harvard-stat110",
+      "contribution": "Provides expectation, variance, simulation and conditioning foundations behind Monte Carlo estimators."
+    },
+    {
+      "resource": "numpy-random",
+      "contribution": "Documents current Generator/BitGenerator, state, seeding, parallel stream and non-cryptographic boundaries."
+    },
+    {
+      "resource": "scipy-stats",
+      "contribution": "Provides tested distribution, quasi-Monte Carlo and statistical summary functionality for production use."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "flow",
+      "title": "Auditable Monte Carlo experiment",
+      "items": [
+        "Define E_p[h(X)]",
+        "Choose validated sampler",
+        "Spawn independent streams",
+        "Evaluate bounded batches",
+        "Merge mean + variance",
+        "Report SE / ESS",
+        "Stop by declared precision or budget"
+      ],
+      "caption": "A simulation result includes its estimand, random design, uncertainty and stopping policy.",
+      "afterSection": "simulation-operation"
+    },
+    {
+      "type": "compare",
+      "title": "Variance reduction strategies",
+      "left": {
+        "title": "Preserve target by correlation",
+        "items": [
+          "Antithetic pairs",
+          "Control variates",
+          "Stratification",
+          "Randomized QMC"
+        ]
+      },
+      "right": {
+        "title": "Change sampling law",
+        "items": [
+          "Importance sampling",
+          "Reweight by p/q",
+          "Require support coverage",
+          "Monitor weight ESS/tails"
+        ]
+      },
+      "caption": "Every method needs an unbiased/controlled target argument and empirical variance diagnostics.",
+      "afterSection": "variance-reduction"
+    }
+  ]
 }

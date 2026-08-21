@@ -7,49 +7,168 @@
     "all",
     "as"
   ],
-  "interviewAnswer": "A vector represents an ordered set of features or a direction; a matrix represents a linear transformation or collection of vectors. The dot product measures alignment and is the core operation behind linear models, attention scores and neural layers.",
+  "interviewAnswer": "A vector is an ordered coordinate representation; a matrix often represents a linear map or a batch of vectors. If A has shape m×n and x has shape n, then Ax has shape m and each output is a row of A dotted with x. If B is n×p, AB is m×p and composes B followed by A. The dot product measures aligned magnitude and defines geometry; the outer product creates a rank-one matrix. Rank counts independent directions preserved by a map, the column space contains possible outputs, and the null space contains inputs mapped to zero. Track orientation and shapes explicitly, distinguish `@` from elementwise `*`, and solve systems rather than computing inverses explicitly.",
   "keyPoints": [
-    "Geometric and algebraic views",
-    "Matrix multiplication as composition",
-    "Dot product and similarity",
-    "Shapes matter"
+    "Shape is part of meaning",
+    "Matrix multiplication composes maps",
+    "Dot and outer products differ",
+    "Rank counts independent directions",
+    "Solve systems; avoid explicit inverse"
   ],
   "resources": [
     "mit-linear-algebra",
-    "3b1b-linear-algebra"
+    "3b1b-linear-algebra",
+    "numpy-linalg"
   ],
   "featured": true,
-  "why": "Vectors and matrices are the language of embeddings, linear models, neural networks, PCA, attention and almost every numerical ML implementation.",
-  "intuition": "A vector is an ordered list representing a point, direction or feature set. A matrix is a collection of vectors and can be viewed as a linear transformation that rotates, scales, projects or mixes coordinates.",
-  "deepDive": "The dot product measures alignment and also computes weighted sums. Matrix multiplication composes linear transformations and requires inner dimensions to match. Norms measure vector magnitude. Rank tells how many independent directions a matrix contains. In ML, a batch is often a matrix X with rows as samples and columns as features; a linear layer computes XW+b.",
-  "math": "Dot product: x·w = Σ_i x_i w_i\nMatrix product: C_ij = Σ_k A_ik B_kj\nL2 norm: ||x||₂ = sqrt(Σ_i x_i²)",
-  "workedExample": "If X has shape (batch, 10) and W has shape (10, 32), then XW has shape (batch, 32). Each output feature is a dot product between the input and one column of W.",
+  "why": "Most ML bugs involving linear algebra are not advanced-theorem failures. They are silent transposes, unintended broadcasting, inconsistent batch conventions, dtype overflow, or a model trying to estimate directions the data does not identify. Linear algebra supplies a compact language for feature transformations, regression, embeddings, convolutions, attention and optimization. Understanding what a product means lets you validate tensor code, choose stable algorithms and explain when data has lost information.",
+  "intuition": "A matrix is a machine whose columns show where basis directions go. Feeding vector x forms a weighted sum of those columns, with weights from x. Matrix multiplication connects machines: B transforms the input, then A transforms B's output. A dataset matrix uses a different but compatible story—rows are examples and columns are features—so multiplying by a parameter vector takes one dot product per example. Always state which convention you use.",
+  "deepDive": "The full explanation is organized into the structured sections below.",
+  "math": "For A∈R^{m×n}, B∈R^{n×p}, (AB)_{ik}=Σ_{j=1}^n A_{ij}B_{jk}. For x∈R^n, Ax=Σ_j x_j a_j where a_j are A's columns. The fundamental subspaces include Col(A)⊆R^m and Null(A)⊆R^n, with rank(A)+dim Null(A)=n. A linear map satisfies T(αx+βy)=αT(x)+βT(y); an affine map Ax+b adds a translation and is not linear unless b=0.",
+  "workedExample": "Let X have shape 3×4, with rows as examples. Let W have shape 4×2, whose columns parameterize the two outputs, and b have shape 2. Then Z=XW+b has shape 3×2. In indices, Z_{ik}=Σ_{j=1}^4 X_{ij}W_{jk}+b_k. The feature dimension is contracted; batch and output dimensions remain. Broadcasting b across rows is intended because b_k is output-specific. Tests use 3,4,2 rather than equal dimensions so an accidental transpose fails. Verify `Z[i,k]` by a manual dot product, check zero X produces repeated b, and store the feature-name order with W. If X has dependent columns, multiple W values may yield the same predictions even though the product is defined.",
   "code": "import numpy as np\nX=np.random.randn(64,10)\nW=np.random.randn(10,32)\nY=X@W\nprint(Y.shape)  # (64, 32)",
   "commonMistakes": [
-    "Mixing elementwise multiplication with matrix multiplication.",
-    "Ignoring tensor shapes during architecture explanations.",
-    "Saying cosine similarity and dot product are identical without normalization assumptions."
+    {
+      "mistake": "If NumPy broadcasts, the operation must be mathematically intended.",
+      "correction": "Broadcast compatibility checks sizes, not semantic axes; label axes and test asymmetric shapes."
+    },
+    {
+      "mistake": "Matrix multiplication is elementwise multiplication.",
+      "correction": "Matrix multiplication contracts an inner dimension and composes transformations; elementwise multiplication preserves shape."
+    },
+    {
+      "mistake": "Compute an inverse whenever solving Ax=b.",
+      "correction": "Use a factorization-based solve; inverses are usually slower, less stable and unavailable for rectangular/rank-deficient systems."
+    }
   ],
   "followUps": [
-    "What does a dot product mean geometrically?",
-    "What is matrix rank?",
-    "Why does matrix multiplication order matter?",
-    "How are embeddings compared?"
+    {
+      "question": "What does matrix rank mean?",
+      "answer": "The number of independent output directions, equivalently the dimension of the column space and row space."
+    },
+    {
+      "question": "Why is matrix multiplication not commutative?",
+      "answer": "It composes maps in order; changing order changes the intermediate space and transformation and may not even be shape-valid."
+    },
+    {
+      "question": "What is the difference between linear and affine?",
+      "answer": "A linear map is Ax and preserves zero and linear combinations; an affine map Ax+b adds a translation and maps zero to b."
+    }
   ],
-  "production": "Shape reasoning prevents many silent bugs in deep learning, vector search and batched inference. Log/validate tensor dimensions at system boundaries.",
-  "visual": {
-    "type": "flow",
-    "title": "Linear transformation",
-    "items": [
-      "Input vector x",
-      "Matrix W",
-      "Output vector Wx"
-    ],
-    "caption": "A matrix can be viewed as a transformation that rotates, scales, projects or mixes coordinates.",
-    "accent": 1,
-    "orientation": "horizontal"
-  },
+  "production": "Persist axis meaning, feature order, dtype and preprocessing with every artifact. Validate shapes, finiteness, ranges, rank/conditioning when relevant and small trusted cases. Use optimized solve/decomposition routines, control threads and batch sizes, preserve sparsity, and test low-precision or accelerator changes against accuracy tolerances. Monitor shape errors, NaN/Inf, latency, memory and output drift; restrict access to sensitive feature and embedding matrices.",
   "editorial": {
-    "status": "summary"
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "Vectors and matrices are representations of linear relationships, not just rectangular containers of numbers. A vector can encode coordinates, features, parameters, probabilities or a direction; a matrix can encode a linear map, a collection of observations, a graph or a change of basis. This chapter builds the subject from shape and orientation through vector addition, scaling, inner and outer products, matrix-vector and matrix-matrix multiplication, transpose, identity, inverse, rank, column space, null space and affine bias. You will learn to read every multiplication as both a shape contract and a composition of transformations, distinguish elementwise multiplication from contraction, and explain why solving a linear system is preferable to explicitly forming an inverse. A worked batch prediction traces indices and dimensions from features to outputs. The implementation material exposes multiplication with loops, then uses NumPy while checking shapes and invariants. Production guidance covers dtype, broadcasting, memory layout, batching, sparse structure, conditioning, thread oversubscription, serialization and privacy. The goal is to make shape reasoning and geometric meaning automatic enough that later topics—least squares, gradients, attention, embeddings and neural networks—feel like precise extensions rather than new notation to memorize.",
+  "prerequisites": [],
+  "learningObjectives": [
+    "Interpret vectors and matrices simultaneously as arrays, coordinate representations, collections of examples and linear transformations.",
+    "Derive shapes and index formulas for dot, outer, matrix-vector and matrix-matrix products and reject invalid broadcasting.",
+    "Use rank, column space and null space to reason about solvability, identifiability and information loss in real systems."
+  ],
+  "deepSections": [
+    {
+      "id": "objects-shapes",
+      "title": "Vectors, matrices, orientation, and shape",
+      "body": "A vector in R^n is an ordered n-tuple once a basis is chosen. Geometrically it can represent a displacement; in data work it may represent one example's features, one embedding, or model parameters. A matrix A∈R^{m×n} has m rows and n columns. Its meaning comes from the domain, codomain and chosen bases, not only values. A column-vector convention treats A as a map R^n→R^m. A tabular dataset often stores N examples as rows X∈R^{N×d}; then predictions Xw use the same rule with one output per row.\n\nAddition requires equal shape and combines corresponding coordinates. Scalar multiplication stretches or reverses a vector. Transpose exchanges axes: if A is m×n, A^T is n×m. For real vectors, a row x^T and column y can form the scalar x^T y, while xy^T is an outer product matrix. In code, a one-dimensional array may have shape `(n,)` rather than explicit `(n,1)`, so transpose can appear to do nothing. Add axes deliberately when orientation matters.\n\nShapes function like types. Before computing, label every axis: batch, feature, output, time, head or class. A valid numerical shape can still be semantically wrong—for example, broadcasting a per-class bias across the feature axis when dimensions happen to match. Name axes in comments/tests and include small asymmetric cases that expose swaps."
+    },
+    {
+      "id": "products-transformations",
+      "title": "Products as contractions and transformations",
+      "body": "The inner or dot product x^T y=Σ_i x_i y_i returns a scalar. It is bilinear and, in Euclidean coordinates, connects algebra to length and angle. An outer product xy^T has entries x_i y_j and rank at most one. Elementwise or Hadamard multiplication x⊙y preserves shape. These operations answer different questions; overloaded library functions and broadcasting make the distinction important.\n\nFor A∈R^{m×n} and x∈R^n, y=Ax has y_i=Σ_j A_{ij}x_j. Each output is a row-vector dot product, and simultaneously y is a linear combination of A's columns. For A∈R^{m×n} and B∈R^{n×p}, C=AB has C_{ik}=Σ_j A_{ij}B_{jk}. The shared dimension n is contracted and the outer dimensions m,p remain. Composition order matters: AB means apply B first, then A under column-vector convention; generally AB≠BA.\n\nAssociativity permits `(AB)x=A(Bx)`, but computational cost and intermediate memory differ. If x is a vector, applying B then A can be much cheaper than forming AB. Distributivity supports batching and decomposition. Matrix multiplication is not elementwise and cannot be justified by “matching total element counts.” Write index notation for one output when a tensor contraction is unclear."
+    },
+    {
+      "id": "subspaces-rank",
+      "title": "Column space, null space, rank, and solvability",
+      "body": "The column space of A is the set of all Ax: every output reachable by combining columns. The null space is the set of x with Ax=0: input directions erased by the transformation. Rank is the dimension of the column space and equals the number of independent rows. By rank-nullity for A:R^n→R^m, rank(A)+nullity(A)=n. A rank-deficient design matrix contains redundant or unobserved feature directions, so different parameter vectors can produce the same predictions.\n\nThe system Ax=b has an exact solution only when b lies in the column space. If columns are independent and m≥n, a solution is unique when it exists. If the null space is nontrivial, adding any null vector to a solution produces another. Overdetermined inconsistent systems lead to least squares; underdetermined systems need a criterion such as minimum norm or regularization. Rank in floating point is threshold-dependent because tiny singular values may represent noise rather than meaningful directions.\n\nThe identity I leaves vectors unchanged. An inverse A^{-1} exists only for a square full-rank matrix and reverses the map. In numerical work, compute `solve(A,b)` rather than `inv(A)@b`: factorization-based solves are typically more stable and efficient. Rectangular or singular problems use least squares or pseudoinverse concepts, with conditioning and regularization considered separately."
+    },
+    {
+      "id": "implementation-operation",
+      "title": "Implementation, batching, and production checks",
+      "body": "Dense multiplication cost for m×n times n×p is roughly proportional to mnp scalar multiply-adds, but optimized BLAS libraries use cache blocking, vector instructions, multiple cores and accelerators. Memory layout and contiguous access affect throughput. Sparse matrices store only nonzeros and can reduce work dramatically when sparsity patterns and operations are supported; converting to dense may destroy that benefit. Batch dimensions let libraries execute many products efficiently, but broadcasting rules must match intended semantics.\n\nDtype affects range, precision, memory and hardware. Integer multiplication can overflow; low-precision floating point may need higher-precision accumulation or loss scaling. Validate finiteness, shapes, units and expected norm/range before and after critical transforms. Compare a small case with a trusted implementation, test identity and associativity within tolerance, and use relative as well as absolute tolerance. Exact equality is inappropriate after most floating-point operations.\n\nIn production, record feature order and preprocessing with the model; a mathematically valid matrix applied to reordered columns is wrong. Bound input sizes to prevent memory denial of service, control BLAS/thread pools to avoid oversubscription, batch under latency limits, and monitor NaN/Inf, shape failures and output drift. Quantization, sparse kernels and accelerator changes require accuracy regression. Embeddings and matrices can contain sensitive information, so apply access control and retention policy to artifacts and logs."
+    }
+  ],
+  "workedExamples": [
+    {
+      "title": "Batch linear prediction with explicit axes",
+      "setup": "Three examples have four features and a model produces two outputs plus a bias.",
+      "walkthrough": "Let X have shape 3×4, with rows as examples. Let W have shape 4×2, whose columns parameterize the two outputs, and b have shape 2. Then Z=XW+b has shape 3×2. In indices, Z_{ik}=Σ_{j=1}^4 X_{ij}W_{jk}+b_k. The feature dimension is contracted; batch and output dimensions remain. Broadcasting b across rows is intended because b_k is output-specific. Tests use 3,4,2 rather than equal dimensions so an accidental transpose fails. Verify `Z[i,k]` by a manual dot product, check zero X produces repeated b, and store the feature-name order with W. If X has dependent columns, multiple W values may yield the same predictions even though the product is defined.",
+      "conclusion": "Shape derivation tells both the code operation and the semantic axes that must be preserved."
+    }
+  ],
+  "exercises": [
+    {
+      "difficulty": "recall",
+      "prompt": "If A is 5×3 and B is 3×7, what is the shape of AB and which dimension is contracted?",
+      "solution": "AB is 5×7; the shared dimension of size 3 is summed over."
+    },
+    {
+      "difficulty": "application",
+      "prompt": "Interpret Xw when X is N×d and w is d.",
+      "solution": "It produces N scalar predictions, one dot product between each example row and the feature-parameter vector."
+    },
+    {
+      "difficulty": "diagnosis",
+      "prompt": "Two different parameter vectors make identical predictions for every training row. What linear-algebra property explains this?",
+      "solution": "Their difference lies in the null space of the design matrix; the matrix is rank-deficient in that parameter direction."
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "mit-linear-algebra",
+      "contribution": "Provides rigorous coverage of Ax=b, subspaces, rank, transformations, multiplication and inverse/solve concepts."
+    },
+    {
+      "resource": "3b1b-linear-algebra",
+      "contribution": "Supplies geometric intuition for vectors, bases, linear maps, products and subspaces."
+    },
+    {
+      "resource": "numpy-linalg",
+      "contribution": "Documents current array products and production linear-algebra routines backed by BLAS/LAPACK."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "flow",
+      "title": "Matrix product as axis contraction",
+      "items": [
+        "X: batch × feature",
+        "W: feature × output",
+        "Contract shared feature axis",
+        "Z: batch × output",
+        "Broadcast output bias"
+      ],
+      "caption": "The shared axis is summed; the surviving axes define the result and its semantic meaning.",
+      "afterSection": "products-transformations"
+    },
+    {
+      "type": "compare",
+      "title": "Four products, four meanings",
+      "left": {
+        "title": "Scalar or same-shape",
+        "items": [
+          "Dot: aligned magnitude → scalar",
+          "Hadamard: coordinatewise → same shape"
+        ]
+      },
+      "right": {
+        "title": "New transformation",
+        "items": [
+          "Outer: pair every coordinate → matrix",
+          "Matrix product: compose maps → contracted shape"
+        ]
+      },
+      "caption": "Similar notation can hide different shape and geometric contracts.",
+      "afterSection": "objects-shapes"
+    }
+  ],
+  "lab": {
+    "goal": "Implement matrix multiplication from its index definition, then verify shape, manual entries, identity, associativity and NumPy agreement.",
+    "language": "python",
+    "buildIt": "def matmul(a,b):\n    if not a or not b or len(a[0])!=len(b): raise ValueError('shape mismatch')\n    if any(len(row)!=len(a[0]) for row in a) or any(len(row)!=len(b[0]) for row in b): raise ValueError('ragged')\n    return [[sum(a[i][k]*b[k][j] for k in range(len(b))) for j in range(len(b[0]))] for i in range(len(a))]\n\ndef transpose(a):\n    return [list(col) for col in zip(*a)]",
+    "useIt": "import numpy as np\nA=[[1.,2.,3.],[4.,5.,6.]]\nB=[[2.,0.],[1.,1.],[0.,3.]]\nmanual=matmul(A,B)\nnp_result=np.asarray(A)@np.asarray(B)\nI=np.eye(2)\nC=np.array([[1.,2.],[0.,1.]])",
+    "verifyIt": "assert manual==[[4.0,11.0],[13.0,23.0]]\nassert np.allclose(manual,np_result)\nassert np_result.shape==(2,2)\nassert np_result[1,0]==sum(A[1][k]*B[k][0] for k in range(3))\nassert np.allclose(I@np_result,np_result)\nassert np.allclose((np_result@C)@I,np_result@(C@I))\ntry: matmul([[1,2]],[[1,2]])\nexcept ValueError: pass\nelse: raise AssertionError('invalid contraction must fail')",
+    "shipIt": "Use named axis contracts, trusted BLAS/LAPACK routines, dtype and finiteness checks, thread/batch limits, versioned feature order and numerical regression before deploying matrix-heavy paths."
   }
 }

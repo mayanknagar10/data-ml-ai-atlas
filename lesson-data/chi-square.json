@@ -8,31 +8,179 @@
     "da",
     "as"
   ],
-  "interviewAnswer": "Chi-square tests compare observed categorical counts with counts expected under a null such as independence. They operate on counts, not percentages detached from sample size.",
+  "interviewAnswer": "Pearson's chi-square statistic sums (observed-expected)^2/expected across categorical cells. For an r-by-c independence table, expected count is row total times column total divided by grand total and df=(r-1)(c-1), assuming independent units and adequate asymptotic counts. A significant result says the variables are associated, not which cells differ or that one causes the other. Inspect standardized residuals, report an effect size such as Cramér's V, adjust post-hoc analyses, and use exact or Monte Carlo methods for sparse tables.",
   "keyPoints": [
-    "Expected cell counts matter for approximation quality.",
-    "Independence is a common null.",
-    "Effect size still matters."
+    "Expected counts come from the null and fixed margins",
+    "Each cell contributes a squared standardized discrepancy",
+    "Degrees of freedom reflect marginal constraints",
+    "Sparse or dependent data break the usual reference",
+    "Association magnitude and cell pattern follow the omnibus test"
   ],
   "resources": [
+    "nist-stat-handbook",
     "openintro-stats",
-    "stanford-stats200"
+    "scipy-stats",
+    "cdc-survey-variance"
   ],
   "featured": false,
-  "why": "Chi-square Tests for Categorical Data appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
-  "intuition": "Expected cell counts matter for approximation quality.",
-  "deepDive": "Chi-square tests compare observed categorical counts with counts expected under a null such as independence. They operate on counts, not percentages detached from sample size. Independence is a common null. Effect size still matters. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
-  "workedExample": "Test whether device type and conversion outcome are associated in a contingency table.",
+  "why": "Categorical questions appear everywhere: device by failure type, region by churn state, model by error category, or treatment by outcome. A contingency table is easy to create, which makes it easy to misuse. Analysts test percentages instead of counts, treat thousands of repeated events as independent, combine categories after seeing significance, or conclude causation from association. A single chi-square p-value also hides whether one rare cell or a broad pattern drives the result. Interviews ask expected-count formulas and assumptions, but production work additionally needs category lineage, stable denominators, privacy safeguards, and effect interpretation. Chi-square is best seen as a model comparison for counts rather than a ritual attached to a crosstab.",
+  "intuition": "Under independence, knowing the row should not change the column distribution. If 30% of all observations converted, each row is expected to have roughly 30% conversions, scaled to its row total. Compare every observed cell with that expected value. A discrepancy of 10 matters more when only 5 were expected than when 5,000 were expected, so Pearson divides squared discrepancy by expected count. The contributions add; cells with large contributions reveal where the table departs from the null. Because row and column totals constrain the table, only (r-1)(c-1) cell directions vary freely. As sample size grows, even tiny association can be highly significant, so pair the test with residuals and a magnitude measure.",
+  "deepDive": "Categorical-count tests begin with a multinomial, product-multinomial, or randomization sampling model. Similar formulas can correspond to different conditioning schemes, and independent observational units remain essential. The chi-square reference is an asymptotic approximation to the statistic's null distribution.",
+  "workedExample": "A channel-by-conversion table is [[90,10],[160,40],[150,50]] for Email, Search, and Social with columns no/yes. Row totals are 100, 200, 200; the conversion total is 100 of 500, so independence expects yes counts [20,40,40]. Email has 10 fewer conversions than expected and Social has 10 more; Search matches expectation. Compute all six cell contributions, not only the yes cells, and sum to X^2. If the omnibus test rejects, standardized residuals identify Email and Social as drivers. Report channel conversion rates 10%, 20%, and 25%, Cramér's V, and note that channel was not randomized, so this is association rather than channel causal effect.",
   "commonMistakes": [
-    "Applying the method without checking its assumptions or data-generating process.",
-    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+    "Applying the formula to percentages rather than original counts and sample sizes.",
+    "Treating repeated rows from the same unit as independent categorical observations.",
+    "Using an asymptotic chi-square reference with sparse expected counts or structural zeros without diagnosis.",
+    "Concluding causation or claiming every category differs after an omnibus rejection.",
+    "Inspecting many cell residuals without adjustment and reporting only the most surprising one."
   ],
   "followUps": [
-    "What assumptions does Chi-square Tests for Categorical Data make?",
-    "How would you validate or debug Chi-square Tests for Categorical Data in practice?"
+    {
+      "question": "How are expected counts computed for independence?",
+      "answer": "Multiply the cell's row total by its column total and divide by grand total. This is the fitted count under the product of estimated marginal proportions."
+    },
+    {
+      "question": "What if expected counts are small?",
+      "answer": "Inspect the whole table and design. Consider an exact or Monte Carlo test, substantively justified category pooling, or a sparse categorical model; do not rely mechanically on an asymptotic reference."
+    },
+    {
+      "question": "Does significant chi-square imply a strong relationship?",
+      "answer": "No. Significance combines discrepancy with sample size. Report cell rates/residuals and an association measure such as Cramér's V, then judge practical importance."
+    }
   ],
-  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "production": "Version category definitions, ordering, unknown handling, observation unit, population window, and table construction. Validate that counts reconcile with source totals and expected margins. Monitor rare-level frequency, structural/sampling zeros, expected-count distribution, residual hotspots, Cramér's V, sample size, and cluster duplication. Apply design-aware methods for surveys and repeated units. Prespecify category pooling and post-hoc residual families. Enforce minimum cell sizes and disclosure controls for sensitive groups; avoid dashboards that expose rare identities. Keep raw counts alongside percentages and test metadata. Test implementations with known tables, transpose invariance, marginal preservation, and contribution sums. When taxonomy changes, do not compare old and new chi-square statistics without a mapping. Roll back downstream alerts if category instrumentation or deduplication failed.",
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "Chi-square methods compare observed categorical counts with counts expected under a null model. The goodness-of-fit test asks whether one categorical distribution matches specified probabilities; the independence or homogeneity test asks whether two categorical variables are associated or whether group distributions agree. This chapter derives Pearson's statistic from standardized cell residuals, explains degrees of freedom and expected-count calculation, connects the contingency-table test with likelihood-ratio and log-linear models, and distinguishes association from causation. You will learn why tests operate on counts rather than percentages, when asymptotic calibration is unreliable, how sparse tables and structural zeros require exact, Monte Carlo, or category-restructuring approaches, and why a significant table needs cell-level residuals and effect sizes such as Cramér's V. The worked example analyzes channel by conversion status and identifies which cells drive the result. The lab computes expected counts and Pearson's statistic from first principles, verifies marginal preservation and decomposition, and compares with SciPy. Production guidance covers category contracts, rare-level handling, weighting, multiplicity, privacy, and drift.",
+  "prerequisites": [
+    "hypothesis-testing",
+    "distributions"
+  ],
+  "learningObjectives": [
+    "Distinguish chi-square goodness-of-fit, independence, and homogeneity questions and formulate their null models.",
+    "Compute expected counts, Pearson cell contributions, the total statistic, and correct degrees of freedom.",
+    "Diagnose sparse counts, structural zeros, dependence, sampling weights, and post-hoc cell inspection.",
+    "Report residual patterns and association magnitude without interpreting association as causation."
+  ],
+  "deepSections": [
+    {
+      "id": "test-types",
+      "title": "Goodness of fit, independence, and homogeneity",
+      "body": "Goodness of fit compares one observed count vector O_i with fully specified null probabilities p_i, so E_i=n p_i and typically df=k-1 minus parameters estimated from the same data. Independence uses one joint sample cross-classified by two variables and tests p_ij=p_i+ p_+j, estimating expected counts from both margins. Homogeneity compares category distributions across independently sampled populations; its table statistic can be identical but the design and verbal conclusion differ. A two-by-two treatment table may also be analyzed through risk difference, ratio, odds ratio, exact randomization, or regression. Choose based on estimand rather than defaulting to chi-square."
+    },
+    {
+      "id": "pearson",
+      "title": "Expected counts, residuals, and degrees of freedom",
+      "body": "For r-by-c independence, E_ij=(row_i total)(column_j total)/N. Pearson X^2=sum_ij (O_ij-E_ij)^2/E_ij. Raw Pearson residual is (O-E)/sqrt(E); adjusted standardized residuals account for estimated row and column proportions and are more comparable. The total decomposes into cell contributions, but examining many residuals after a significant omnibus test creates multiplicity and selection concerns. Degrees of freedom (r-1)(c-1) arise because fixed margins impose r+c-1 independent constraints on rc cells. For goodness of fit, estimating model parameters consumes additional df. Software conventions should be verified."
+    },
+    {
+      "id": "sparse-alternatives",
+      "title": "Sparse tables, zeros, and alternative calibration",
+      "body": "The chi-square approximation can be poor when expected counts are small or the table is sparse. The familiar 'all expected at least five' is a conservative heuristic, not a universal theorem. Fisher's exact test conditions on margins for a two-by-two table and tests an odds-ratio null; larger exact tests can be expensive. Monte Carlo sampling from the correct null provides calibrated approximations. Combining rare categories is acceptable only when substantively defensible and preferably prespecified. A structural zero is impossible by design and should not be treated as a sampling zero. For ordered categories, a trend test can be more powerful than an unordered omnibus test. Penalized or hierarchical models help with many sparse levels."
+    },
+    {
+      "id": "design-effect",
+      "title": "Dependence, weights, effect size, and causality",
+      "body": "Repeated observations from a user, clustered survey samples, and time dependence violate multinomial independence. Survey-weighted tables require design-based tests such as Rao–Scott adjustments, not simply feeding weighted noninteger counts to an ordinary test. A significant association may reflect confounding, selection, measurement, or reverse causality. Cramér's V=sqrt(X^2/(N min(r-1,c-1))) summarizes strength but remains sample/population dependent and does not convey direction; for two-by-two tables report risks and odds ratios with intervals. Visualize observed-minus-expected residuals and report absolute cell rates. Large N can make negligible associations significant."
+    },
+    {
+      "id": "model-connection",
+      "title": "Log-linear and regression connections",
+      "body": "A contingency table can be modeled with Poisson log-linear terms. Independence corresponds to row and column main effects without their interaction; adding the interaction saturates a two-way table. Pearson X-squared and likelihood-ratio G-squared compare observed counts with the fitted independence model and become asymptotically equivalent. Logistic regression conditions on one margin and expresses a binary column outcome through row predictors, allowing covariate adjustment and interpretable odds ratios. These models extend beyond an omnibus table but add specification choices and sparse-cell risks. For multiway tables, marginal associations can reverse after stratification, echoing Simpson's paradox. Choose a model that preserves the sampling design and report adjusted and unadjusted patterns rather than treating one aggregated chi-square result as complete."
+    }
+  ],
+  "math": "For independence, E_ij=R_i C_j/N and X^2=sum_ij (O_ij-E_ij)^2/E_ij, approximately chi-square with (r-1)(c-1) df under H0 and regularity. The likelihood-ratio statistic G^2=2 sum O_ij log(O_ij/E_ij), treating zero terms as zero, has the same asymptotic reference. Cramér's V=sqrt(X^2/[N min(r-1,c-1)]). Pearson cell contributions are nonnegative and sum exactly to X^2, providing an audit trail from table to statistic.",
+  "workedExamples": [
+    {
+      "title": "Acquisition channel and conversion",
+      "body": "Construct expected counts from margins, decompose Pearson's statistic by cell, inspect residual direction, and translate the association back to channel-specific rates without making a causal claim."
+    }
+  ],
+  "exercises": [
+    {
+      "prompt": "A row total is 80, column total 50, and N=200. What is expected count under independence?",
+      "solution": "E=80*50/200=20."
+    },
+    {
+      "prompt": "What are df for a 3-by-4 independence table?",
+      "solution": "(3-1)(4-1)=6, assuming no structural zeros or additional fitted constraints."
+    },
+    {
+      "prompt": "Why can a huge chi-square test reject for an unimportant association?",
+      "solution": "The statistic scales with N for a fixed discrepancy in proportions. With huge samples, tiny deviations become detectable; effect size and domain consequences must be reported."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "flow",
+      "title": "From contingency table to evidence",
+      "items": [
+        "Observed counts",
+        "Fit expected counts from margins",
+        "Compute cell residuals",
+        "Sum Pearson contributions",
+        "Inspect effect + pattern"
+      ],
+      "caption": "The omnibus statistic is an auditable sum of cell-level departures from the null model.",
+      "orientation": "horizontal",
+      "afterSection": "pearson"
+    },
+    {
+      "type": "matrix",
+      "title": "Categorical tests",
+      "caption": "The table formula may look similar while the design and conclusion differ.",
+      "afterSection": "test-types",
+      "rows": [
+        "Goodness of fit",
+        "Independence",
+        "Homogeneity"
+      ],
+      "cols": [
+        "Sampling picture",
+        "Expected counts"
+      ],
+      "cells": [
+        [
+          "One count vector",
+          "Specified probabilities"
+        ],
+        [
+          "One joint sample",
+          "Estimated margins"
+        ],
+        [
+          "Several populations",
+          "Pooled category proportions"
+        ]
+      ]
+    }
+  ],
+  "lab": {
+    "language": "python",
+    "goal": "Compute a Pearson independence test from scratch, verify expected margins and cell decomposition, and compare with SciPy.",
+    "buildIt": "def chi_square_independence(table):\n    rows=len(table); cols=len(table[0])\n    row_totals=[sum(row) for row in table]\n    col_totals=[sum(table[i][j] for i in range(rows)) for j in range(cols)]\n    total=sum(row_totals)\n    expected=[[row_totals[i]*col_totals[j]/total for j in range(cols)] for i in range(rows)]\n    contributions=[[(table[i][j]-expected[i][j])**2/expected[i][j] for j in range(cols)] for i in range(rows)]\n    statistic=sum(sum(row) for row in contributions)\n    return statistic,expected,contributions,(rows-1)*(cols-1)\ntable=[[90,10],[160,40],[150,50]]\nstatistic,expected,contrib,df=chi_square_independence(table)",
+    "useIt": "import numpy as np\nfrom scipy.stats import chi2_contingency\nresult=chi2_contingency(np.asarray(table),correction=False)",
+    "verifyIt": "assert abs(statistic-result.statistic) < 1e-12\nassert df == result.dof == 2\nassert np.allclose(expected,result.expected_freq)\nassert all(abs(sum(expected[i])-sum(table[i])) < 1e-12 for i in range(len(table)))\nassert abs(sum(sum(row) for row in contrib)-statistic) < 1e-12",
+    "shipIt": "Version taxonomy and independent unit, retain counts and expected cells, diagnose sparse/clustered designs, protect rare categories, and publish residual patterns plus effect size with the omnibus result."
+  },
+  "sourceNotes": [
+    {
+      "resource": "nist-stat-handbook",
+      "contribution": "Provides official applied definitions of chi-square reference distributions, tests, and count-based diagnostics."
+    },
+    {
+      "resource": "openintro-stats",
+      "contribution": "Connects categorical tables, expected counts, inference, and interpretable effect reporting."
+    },
+    {
+      "resource": "scipy-stats",
+      "contribution": "Documents the current contingency-table implementation used for independent verification."
+    },
+    {
+      "resource": "cdc-survey-variance",
+      "contribution": "Explains why complex survey weights and clustering require design-aware variance and test procedures."
+    }
+  ]
 }

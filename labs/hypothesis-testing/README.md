@@ -1,6 +1,6 @@
 # Hypothesis Testing & p-values — Code Lab
 
-Compute a simple two-sample mean test and connect the statistic to the null hypothesis.
+Build an exact sign-flip randomization test, compare its tail count with SciPy, and verify null calibration by construction.
 
 ## 1. Build it
 

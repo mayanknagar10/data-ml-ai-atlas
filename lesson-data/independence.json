@@ -7,31 +7,173 @@
     "ds",
     "as"
   ],
-  "interviewAnswer": "Independence means the joint factorizes into marginals; conditional independence means two variables become independent after conditioning on a third set. Conditional independence is central to graphical models and causal reasoning.",
+  "interviewAnswer": "Events A and B are independent when `P(A∩B)=P(A)P(B)`, equivalently `P(A|B)=P(A)` when defined. Variables X,Y are independent when their joint factorizes `p(x,y)=p(x)p(y)` over all values. Conditional independence `X ⟂ Y | Z` means `p(x,y|z)=p(x|z)p(y|z)` for relevant z. Pairwise independence does not imply mutual independence, and zero covariance does not imply independence except under special families. Conditioning on a common cause can remove association; conditioning on a collider can create it. Independence claims depend on the population/model and may fail after selection or deployment shift.",
   "keyPoints": [
-    "Zero correlation does not generally imply independence.",
-    "Conditioning can remove or create dependence.",
-    "DAG separation statements are about conditional independence."
+    "Independence is joint factorization",
+    "Pairwise is weaker than mutual",
+    "Uncorrelated is weaker than independent",
+    "Conditioning can remove or create dependence",
+    "The claim is population and model relative"
   ],
   "resources": [
     "harvard-stat110",
-    "harvard-causal-diagrams"
+    "harvard-causal-diagrams",
+    "stanford-stats60"
   ],
   "featured": false,
-  "why": "Independence & Conditional Independence is a recurring foundation across data science and machine learning because it affects both theoretical correctness and practical system behavior.",
-  "intuition": "Zero correlation does not generally imply independence.",
-  "deepDive": "Independence means the joint factorizes into marginals; conditional independence means two variables become independent after conditioning on a third set. Conditional independence is central to graphical models and causal reasoning. Conditioning can remove or create dependence. DAG separation statements are about conditional independence. The interview-level skill is not merely recalling the definition: explain the assumptions, what diagnostic evidence you would inspect, and what alternative you would choose when those assumptions fail.",
-  "workedExample": "Two symptoms may be dependent overall but independent after conditioning on their common disease cause.",
+  "why": "Independence assumptions reduce exponential probability models and justify variance formulas, likelihood products and randomized comparisons. When wrong, naive Bayes double-counts evidence, validation leaks through grouped records, and analysts adjust for colliders. Statistical tests also have low power in sparse high-dimensional strata. Engineers need to state and stress-test the assumption rather than treating “independent samples” as boilerplate.",
+  "intuition": "Two dice rolled separately are independent because knowing one does not change beliefs about the other. If both readings are driven by the same hidden temperature, they become associated; revealing temperature may separate them. If two independent causes can each trigger an alarm, observing that the alarm fired makes one cause less likely when the other is known—the collider creates dependence after selection.",
+  "deepDive": "The full explanation is organized into the structured sections below.",
+  "workedExample": "Within each temperature state, `P(X=1,Y=1|Z)=P(X=1|Z)P(Y=1|Z)`, so X⟂Y|Z. Marginally, P(X=1)=P(Y=1)=0.5, but P(both)=0.5×0.81+0.5×0.01=0.41, not 0.25; mixing over common cause Z creates dependence. If instead Z were an alarm triggered independently by X or Y, conditioning on Z=1 would couple the causes. The data story/graph decides whether conditioning blocks or opens a path.",
   "commonMistakes": [
-    "Using the concept mechanically without checking assumptions or data semantics.",
-    "Reporting one metric/result without examining uncertainty, slices or failure modes."
+    {
+      "mistake": "Zero correlation proves independence.",
+      "correction": "It only checks linear covariance; nonlinear dependence or higher-order constraints can remain."
+    },
+    {
+      "mistake": "Pairwise independence implies mutual independence.",
+      "correction": "Higher-order dependence can constrain triples or larger sets even when every pair factorizes."
+    },
+    {
+      "mistake": "Condition on every available variable to remove bias.",
+      "correction": "Conditioning on colliders/descendants can create bias and mediators change the causal estimand."
+    }
   ],
   "followUps": [
-    "What assumptions or limitations does Independence & Conditional Independence have?",
-    "How would you validate Independence & Conditional Independence on a real dataset?"
+    {
+      "question": "When does zero covariance imply independence?",
+      "answer": "For jointly multivariate Normal variables and some special families, not generally."
+    },
+    {
+      "question": "What is collider bias?",
+      "answer": "Conditioning/selection on a common effect of two variables opens an association between them."
+    },
+    {
+      "question": "Why is conditional independence useful?",
+      "answer": "It factorizes high-dimensional joints, reducing parameters/computation and enabling modular inference."
+    }
   ],
-  "production": "In production, make assumptions explicit, validate on representative slices, compare with a simple baseline and monitor the signals that can drift.",
+  "production": "Version population, selection, unit, graph, conditioning set and feature time. Split/evaluate at independent units, log selection and label policies, monitor dependence/calibration/residual/cluster drift and treat non-rejection as weak evidence. Guard against collider adjustment and leakage, protect joint sensitive patterns, and roll back the factorization, model and feature pipeline together when assumptions fail.",
   "editorial": {
-    "status": "summary"
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "Independence is a precise factorization statement: learning one event or variable does not change the distribution of another. Conditional independence makes the same claim within each value of a conditioning set and is the key simplification behind graphical models, naive Bayes, randomized experiments and modular probabilistic reasoning. This chapter distinguishes pairwise from mutual independence, zero covariance from independence, and marginal from conditional independence. It explains common-cause confounding, mediation, colliders and selection, showing why conditioning can remove dependence in one graph and create it in another. You will learn to test factorization in finite tables, use d-separation as a graph-based implication under a causal/probabilistic model, and avoid reading observed conditional independence as automatic causal proof. A worked alarm example contrasts marginal dependence through a hidden cause with conditional independence after that cause is known. The lab constructs exact binary tables and simulates collider bias. Production guidance covers feature leakage, naive conditional assumptions, sparse conditional tests, distribution shift, selection logs, graph/version governance, fairness, privacy and rollback. The objective is to treat every independence claim as relative to a distribution, conditioning set and population—not as an intrinsic relationship between column names.",
+  "prerequisites": [
+    "joint-marginal-conditional"
+  ],
+  "learningObjectives": [
+    "Verify event/random-variable independence and distinguish pairwise, mutual, conditional and mean/uncorrelated relationships.",
+    "Reason about chains, forks and colliders using factorization and d-separation without confusing association with intervention.",
+    "Validate and operate conditional-independence assumptions under selection, sparse data, drift, leakage and high-stakes decision constraints."
+  ],
+  "deepSections": [
+    {
+      "id": "factorization-levels",
+      "title": "Independence and its levels",
+      "body": "For events with positive probabilities, independence can be written as product of marginals or unchanged conditional probability. For random variables, the full joint CDF/PMF/PDF factorizes. It must hold for all measurable sets/values, not only one summary. Independence implies expectations factorize for suitable functions: E[g(X)h(Y)]=E[g(X)]E[h(Y)]. This implies zero covariance when moments exist, but the reverse only checks one linear product.\n\nPairwise independence says every pair in a collection is independent. Mutual independence requires every finite subcollection's joint events to factorize. Three binary variables can be pairwise independent while one is deterministically the parity of the other two, so the triple is dependent. Identically distributed also does not imply independent; time-series values can share a marginal while being autocorrelated. IID combines both distinct claims.\n\nIndependence is not “no relationship” in a metaphysical sense. It is a property under a probability distribution/population. A mixture over environments can make conditionally independent variables marginally dependent, while aggregation can hide within-group dependence. Measurement error, repeated users, shared devices and temporal overlap violate nominal row independence."
+    },
+    {
+      "id": "conditional-graphs",
+      "title": "Conditional independence and graph structures",
+      "body": "`X ⟂ Y | Z` means that within each relevant z, the conditional joint factorizes. It does not imply marginal independence, and marginal independence does not imply conditional independence. In a fork X←Z→Y, the common cause generally creates marginal association; conditioning on Z blocks the path. In a chain X→Z→Y, conditioning on mediator Z blocks the association transmitted through that chain, though it changes the estimand for causal questions.\n\nIn a collider X→Z←Y, X and Y can be marginally independent, but conditioning on Z or its descendant opens an association. Selection into a dataset is often a collider: being hired, hospitalized or reviewed depends on multiple causes. Adjusting for every available variable is therefore not automatically safer.\n\nDirected acyclic graphs encode factorization and, with the Markov assumption, imply conditional independences found by d-separation. Graphs do not become causal merely by drawing arrows; causal interpretation needs assumptions about data generation, interventions, hidden variables and faithfulness. Observed independences can be coincidental parameter cancellations, and finite samples cannot prove exact zero dependence."
+    },
+    {
+      "id": "modeling-testing",
+      "title": "Model assumptions and empirical checking",
+      "body": "Naive Bayes assumes features are conditionally independent given class, factorizing likelihood into feature terms. The assumption is often false, yet classification can work because decision boundaries remain useful. Correlated evidence can create overconfident probabilities, so calibrate and compare with less restrictive baselines. Hidden Markov models assume conditional independence of emissions and a Markov state transition; time/order violations matter.\n\nEmpirical tests depend on variable type and null hypothesis. Contingency-table chi-square or exact tests address discrete association; correlation tests address linear association; kernel/mutual-information approaches target broader dependence with tuning and sample complexity. Conditional independence is harder because strata proliferate and conditioning variables can be continuous/high-dimensional. Failure to reject is not proof, especially with low power; huge samples reject negligible departures. Report effect size and decision sensitivity.\n\nUse design where possible: randomized assignment establishes independence from pre-treatment potential confounders in expectation, with implementation/noncompliance caveats. For evaluation, split by independent unit (user, patient, time block) rather than row when observations cluster. Cluster-aware uncertainty or block bootstrap may be needed. Diagnose autocorrelation and duplicate entities."
+    },
+    {
+      "id": "operation-selection",
+      "title": "Selection, drift, and production controls",
+      "body": "Version the population, sampling/selection policy, graph/conditioning set, feature timestamps and factorization. Log why records enter training, review and labeling pipelines. Monitor correlations/dependence proxies within key strata, calibration and residual structure, repeated-entity rates and selection changes. A conditional assumption learned in one environment can fail when policies or user mix change.\n\nAvoid leakage by ensuring features are available at prediction time and by separating correlated units across train/test. Downstream labels may be observed only for selected actions, creating a collider/feedback loop; random audits or exploration can identify performance. Do not condition fairness evaluation solely on variables affected by the decision without a causal rationale.\n\nIndependence claims about sensitive attributes do not guarantee privacy; combinations and proxies can reveal them. Limit high-dimensional joint releases. When factorization fails materially, fall back to a richer joint model, recalibration/abstention or human review. Keep the previous graph/model/feature pipeline together for rollback and record assumption tests as evidence, not certification."
+    }
+  ],
+  "math": "Events A,B independent iff P(A∩B)=P(A)P(B). Random variables independent iff `p(x,y)=p(x)p(y)` (or equivalent set factorization). Conditional independence `X⟂Y|Z` iff `p(x,y|z)=p(x|z)p(y|z)` for z with defined conditional law. Mutual independence requires `P(∩_{i∈S}A_i)=∏_{i∈S}P(A_i)` for every finite subset S.",
+  "workedExamples": [
+    {
+      "title": "Two sensors share a hidden environment",
+      "setup": "Temperature state Z is hot/cold equally likely. Given Z, sensor alarms X and Y fire independently with probability 0.9 when hot and 0.1 when cold.",
+      "walkthrough": "Within each temperature state, `P(X=1,Y=1|Z)=P(X=1|Z)P(Y=1|Z)`, so X⟂Y|Z. Marginally, P(X=1)=P(Y=1)=0.5, but P(both)=0.5×0.81+0.5×0.01=0.41, not 0.25; mixing over common cause Z creates dependence. If instead Z were an alarm triggered independently by X or Y, conditioning on Z=1 would couple the causes. The data story/graph decides whether conditioning blocks or opens a path.",
+      "conclusion": "Conditional independence can coexist with strong marginal dependence, and the direction of graph structure matters."
+    }
+  ],
+  "exercises": [
+    {
+      "difficulty": "recall",
+      "prompt": "How does conditional independence factorize a joint?",
+      "solution": "`p(x,y|z)=p(x|z)p(y|z)` for relevant z."
+    },
+    {
+      "difficulty": "application",
+      "prompt": "Two independent diseases can each cause hospitalization. What happens if analysis includes only hospitalized patients?",
+      "solution": "Hospitalization is a collider; selection can induce a negative/other association between the diseases."
+    },
+    {
+      "difficulty": "diagnosis",
+      "prompt": "Random row splitting gives unrealistically high accuracy on repeated-user data. Why?",
+      "solution": "Rows are dependent within user and user-specific information leaks across splits; split by user or deployment unit."
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "harvard-stat110",
+      "contribution": "Provides rigorous independence, conditional independence and pairwise/mutual counterexamples."
+    },
+    {
+      "resource": "harvard-causal-diagrams",
+      "contribution": "Provides graph-based reasoning for forks, chains, colliders, d-separation and conditioning choices."
+    },
+    {
+      "resource": "stanford-stats60",
+      "contribution": "Connects dependence, correlation, experiments and responsible observational interpretation."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "compare",
+      "title": "Conditioning has opposite effects",
+      "left": {
+        "title": "Fork X←Z→Y",
+        "items": [
+          "Common cause creates association",
+          "Condition on Z blocks path",
+          "X⟂Y|Z may hold"
+        ]
+      },
+      "right": {
+        "title": "Collider X→Z←Y",
+        "items": [
+          "Causes may be marginally independent",
+          "Condition on Z opens path",
+          "Selection creates association"
+        ]
+      },
+      "caption": "Whether conditioning helps depends on graph structure, not a universal adjustment rule.",
+      "afterSection": "conditional-graphs"
+    },
+    {
+      "type": "flow",
+      "title": "Audit an independence assumption",
+      "items": [
+        "Name population + unit",
+        "State exact factorization",
+        "Draw generative/selection graph",
+        "Check design and timestamps",
+        "Measure useful departures",
+        "Stress under drift",
+        "Fallback if decision changes"
+      ],
+      "caption": "Empirical non-rejection is one piece of evidence, not proof of structural independence.",
+      "afterSection": "modeling-testing"
+    }
+  ],
+  "lab": {
+    "goal": "Verify conditional versus marginal independence in exact tables and demonstrate collider dependence through simulation.",
+    "language": "python",
+    "buildIt": "def independent(table,tol=1e-12):\n    total=sum(map(sum,table)); rows=[sum(r)/total for r in table]; cols=[sum(table[i][j] for i in range(len(table)))/total for j in range(len(table[0]))]\n    return all(abs(table[i][j]/total-rows[i]*cols[j])<tol for i in range(len(rows)) for j in range(len(cols)))\n\ndef mixture(tables,weights):\n    return [[sum(weights[k]*tables[k][i][j] for k in range(len(tables))) for j in range(len(tables[0][0]))] for i in range(len(tables[0]))]",
+    "useIt": "# Conditional tables indexed alarm/no-alarm for two sensors\nhot=[[.81,.09],[.09,.01]]; cold=[[.01,.09],[.09,.81]]\nmarginal=mixture([hot,cold],[.5,.5])\nimport numpy as np\nrng=np.random.default_rng(7); n=500000\nx=rng.integers(0,2,n); y=rng.integers(0,2,n); selected=(x|y).astype(bool)\nselected_corr=np.corrcoef(x[selected],y[selected])[0,1]",
+    "verifyIt": "assert independent(hot) and independent(cold)\nassert not independent(marginal)\nassert abs(sum(map(sum,marginal))-1)<1e-12\nassert abs(selected_corr+0.5)<.02\nassert abs(np.corrcoef(x,y)[0,1])<.01\n# Pairwise independence does not imply triple mutual independence: parity z=x xor y\nassert all(abs(np.corrcoef(a,b)[0,1])<.01 for a,b in ((x,y),(x,x^y),(y,x^y)))\nassert np.all((x^y)==np.bitwise_xor(x,y))",
+    "shipIt": "Use unit-aware splits and explicit selection/graph metadata, monitor dependence/calibration drift, audit collider/leakage paths, protect joint sensitive data and keep a richer-model or prior-factorization rollback option."
   }
 }

@@ -1186,38 +1186,51 @@
         "all",
         "as"
       ],
-      "interviewAnswer": "A vector represents an ordered set of features or a direction; a matrix represents a linear transformation or collection of vectors. The dot product measures alignment and is the core operation behind linear models, attention scores and neural layers.",
+      "interviewAnswer": "A vector is an ordered coordinate representation; a matrix often represents a linear map or a batch of vectors. If A has shape m×n and x has shape n, then Ax has shape m and each output is a row of A dotted with x. If B is n×p, AB is m×p and composes B followed by A. The dot product measures aligned magnitude and defines geometry; the outer product creates a rank-one matrix. Rank counts independent directions preserved by a map, the column space contains possible outputs, and the null space contains inputs mapped to zero. Track orientation and shapes explicitly, distinguish `@` from elementwise `*`, and solve systems rather than computing inverses explicitly.",
       "keyPoints": [
-        "Geometric and algebraic views",
-        "Matrix multiplication as composition",
-        "Dot product and similarity",
-        "Shapes matter"
+        "Shape is part of meaning",
+        "Matrix multiplication composes maps",
+        "Dot and outer products differ",
+        "Rank counts independent directions",
+        "Solve systems; avoid explicit inverse"
       ],
       "resources": [
         "mit-linear-algebra",
-        "3b1b-linear-algebra"
+        "3b1b-linear-algebra",
+        "numpy-linalg"
       ],
       "featured": true,
+      "description": "Vectors and matrices are representations of linear relationships, not just rectangular containers of numbers. A vector can encode coordinates, features, parameters, probabilities or a direction; a matrix can encode a linear map, a collection of observations, a graph or a change of basis. This chapter builds the subject from shape and orientation through vector addition, scaling, inner and outer products, matrix-vector and matrix-matrix multiplication, transpose, identity, inverse, rank, column space, null space and affine bias. You will learn to read every multiplication as both a shape contract and a composition of transformations, distinguish elementwise multiplication from contraction, and explain why solving a linear system is preferable to explicitly forming an inverse. A worked batch prediction traces indices and dimensions from features to outputs. The implementation material exposes multiplication with loops, then uses NumPy while checking shapes and invariants. Production guidance covers dtype, broadcasting, memory layout, batching, sparse structure, conditioning, thread oversubscription, serialization and privacy. The goal is to make shape reasoning and geometric meaning automatic enough that later topics—least squares, gradients, attention, embeddings and neural networks—feel like precise extensions rather than new notation to memorize.",
+      "prerequisites": [],
+      "learningObjectives": [
+        "Interpret vectors and matrices simultaneously as arrays, coordinate representations, collections of examples and linear transformations.",
+        "Derive shapes and index formulas for dot, outer, matrix-vector and matrix-matrix products and reject invalid broadcasting.",
+        "Use rank, column space and null space to reason about solvability, identifiability and information loss in real systems."
+      ],
       "editorial": {
-        "status": "summary"
+        "status": "verified",
+        "verifiedOn": "2026-08-21"
       },
-      "status": "summary",
-      "hasLab": false,
-      "labGoal": "",
-      "visualCount": 1,
+      "status": "verified",
+      "hasLab": true,
+      "labGoal": "Implement matrix multiplication from its index definition, then verify shape, manual entries, identity, associativity and NumPy agreement.",
+      "visualCount": 2,
       "visualSummaries": [
         {
           "type": "flow",
-          "title": "Linear transformation"
+          "title": "Matrix product as axis contraction"
+        },
+        {
+          "type": "compare",
+          "title": "Four products, four meanings"
         }
       ],
       "followUpQuestions": [
-        "What does a dot product mean geometrically?",
-        "What is matrix rank?",
-        "Why does matrix multiplication order matter?",
-        "How are embeddings compared?"
+        "What does matrix rank mean?",
+        "Why is matrix multiplication not commutative?",
+        "What is the difference between linear and affine?"
       ],
-      "estimatedMinutes": 2
+      "estimatedMinutes": 11
     },
     {
       "slug": "eigen-svd",
@@ -1230,38 +1243,54 @@
         "aie",
         "as"
       ],
-      "interviewAnswer": "Eigenvectors are directions preserved by a linear transformation up to scaling. SVD decomposes any matrix into orthogonal directions and singular values, making it useful for compression, PCA intuition and low-rank approximation.",
+      "interviewAnswer": "An eigenvector v of square A satisfies Av=λv, so its direction is preserved and scaled by eigenvalue λ. General matrices may have complex eigenvalues or lack a full eigenbasis; real symmetric matrices have orthonormal eigenvectors and real eigenvalues. Any m×n matrix has an SVD `A=UΣVᵀ`: V gives orthonormal input directions, Σ nonnegative gains, and U the corresponding output directions. Singular values expose rank and conditioning, and keeping the top k terms gives the best rank-k approximation in Frobenius and spectral norm. PCA is SVD/eigendecomposition applied to centered data/covariance, with preprocessing fitted on training data.",
       "keyPoints": [
-        "Eigen equation Av=λv",
+        "Eigenvectors preserve direction",
         "SVD works for rectangular matrices",
-        "Low-rank approximation",
-        "Connection to PCA"
+        "Singular values quantify gain",
+        "Truncation is optimal for reconstruction norms",
+        "PCA requires centering and leakage control"
       ],
       "resources": [
         "mit-linear-algebra",
-        "3b1b-linear-algebra"
+        "3b1b-linear-algebra",
+        "numpy-linalg"
       ],
       "featured": false,
+      "description": "Eigenvectors identify directions preserved by a square linear transformation up to scale; singular value decomposition (SVD) gives an orthonormal input/output basis and nonnegative gains for any rectangular matrix. This chapter distinguishes eigendecomposition from SVD, derives their geometry, and connects them through `AᵀA` and `AAᵀ`. You will learn when a real matrix may lack a complete real eigenbasis, why symmetric matrices behave especially well, how singular values reveal rank and conditioning, and how truncated SVD yields the best low-rank approximation under standard norms. The chapter connects these ideas to principal component analysis, latent semantic structure, image compression, pseudoinverse and iterative power methods while separating centered covariance PCA from an uncentered matrix factorization. A worked 2×2 example verifies reconstruction and rank-one error. The lab implements power iteration and uses NumPy SVD with sign-invariant checks. Production guidance covers scaling, missing data, randomized algorithms, component stability, sign/rotation ambiguity, reconstruction versus downstream utility, privacy, resource cost and rollback. The aim is to make decompositions tools for understanding which directions a system amplifies, suppresses or cannot identify—not mysterious functions that merely return three arrays.",
+      "prerequisites": [
+        "vectors-matrices",
+        "projections-least-squares"
+      ],
+      "learningObjectives": [
+        "Explain eigenvectors/eigenvalues and singular vectors/values geometrically and state when each decomposition applies.",
+        "Use singular values to reason about rank, conditioning, pseudoinverse, energy and optimal low-rank approximation.",
+        "Apply PCA or truncated SVD without leakage, centering mistakes or invalid interpretations of unstable components."
+      ],
       "editorial": {
-        "status": "summary"
+        "status": "verified",
+        "verifiedOn": "2026-08-21"
       },
-      "status": "summary",
-      "hasLab": false,
-      "labGoal": "",
-      "visualCount": 1,
+      "status": "verified",
+      "hasLab": true,
+      "labGoal": "Implement dominant-eigenvector power iteration, then verify SVD reconstruction, orthogonality, sign-invariant eigen behavior and optimal rank-one error.",
+      "visualCount": 2,
       "visualSummaries": [
         {
-          "type": "layers",
-          "title": "SVD decomposition"
+          "type": "flow",
+          "title": "SVD maps a sphere to an ellipsoid"
+        },
+        {
+          "type": "compare",
+          "title": "Eigen versus singular decomposition"
         }
       ],
       "followUpQuestions": [
-        "Why does SVD work for rectangular matrices?",
-        "How does SVD relate to PCA?",
-        "What does a small singular value mean?",
-        "What is condition number?"
+        "How are eigenvalues and singular values related?",
+        "What does a tiny singular value imply?",
+        "What does truncated SVD optimize?"
       ],
-      "estimatedMinutes": 1
+      "estimatedMinutes": 10
     },
     {
       "slug": "derivatives-gradients",
@@ -1272,40 +1301,53 @@
         "all",
         "as"
       ],
-      "interviewAnswer": "A derivative measures local change; a gradient collects partial derivatives and points toward steepest increase. Backpropagation efficiently applies the chain rule through a computation graph.",
+      "interviewAnswer": "The derivative is the linear map that best approximates a function near a point. In one dimension, `f(x+h)=f(x)+f'(x)h+o(h)`. For scalar `f:R^n→R`, the differential is `df=∇f(x)^T dx`; the directional derivative along unit u is `∇f·u`, so the Euclidean gradient points toward steepest local increase. For compositions, derivatives multiply in the chain rule. Reverse-mode autodiff propagates a scalar output sensitivity backward through local Jacobian-transpose products, making it efficient for many parameters and one loss. Track tensor shapes, evaluate derivatives at forward-pass values, and verify custom or risky gradients against finite differences on small cases.",
       "keyPoints": [
-        "Partial derivatives",
-        "Gradient direction",
-        "Chain rule",
-        "Jacobian intuition"
+        "Derivative is a local linear map",
+        "Gradient represents the differential under an inner product",
+        "Chain rule composes sensitivities",
+        "Reverse mode uses vector-Jacobian products",
+        "Finite differences validate but do not replace derivatives"
       ],
       "resources": [
+        "stanford-cs229",
         "mit-6s191",
-        "3b1b-neural",
-        "mit-linear-algebra",
-        "3b1b-linear-algebra"
+        "boyd-convex"
       ],
       "featured": false,
+      "description": "A derivative is the coefficient of the best local linear approximation, not merely a symbolic slope rule. For a scalar function of one variable it measures first-order change; for a scalar function of many variables the gradient collects partial derivatives and points in the direction of steepest increase under Euclidean geometry. For vector-valued functions the local linear map is a Jacobian. This chapter develops limits, differentials, directional derivatives, partial derivatives, gradients and the multivariable chain rule, then shows how computation graphs organize reverse-mode backpropagation. You will learn to track shapes and evaluation points, distinguish a derivative from a finite difference, handle broadcasting and shared parameters, and recognize nondifferentiable or saturated regions. A worked two-layer scalar graph traces forward values and reverse sensitivities. The lab implements central differences and a tiny dual-number forward derivative, then checks an analytic chain-rule result. Production guidance covers gradient checks, autodiff modes, nondeterminism, precision, exploding/vanishing gradients, custom operations, monitoring and secure artifact handling. The goal is to see differentiation as propagation of local sensitivity through a composed system, which makes both mathematical derivations and debugging modern ML code much more reliable.",
+      "prerequisites": [
+        "vectors-matrices"
+      ],
+      "learningObjectives": [
+        "Interpret derivatives, differentials, directional derivatives and gradients as local linear approximations with explicit assumptions and shapes.",
+        "Apply scalar and multivariable chain rules through a computation graph and explain forward versus reverse accumulation.",
+        "Validate and operate automatic differentiation using analytic invariants, finite-difference checks, precision controls and failure diagnostics."
+      ],
       "editorial": {
-        "status": "summary"
+        "status": "verified",
+        "verifiedOn": "2026-08-21"
       },
-      "status": "summary",
-      "hasLab": false,
-      "labGoal": "",
-      "visualCount": 1,
+      "status": "verified",
+      "hasLab": true,
+      "labGoal": "Implement a dual-number forward derivative and central-difference gradient check, then verify a chained analytic derivative.",
+      "visualCount": 2,
       "visualSummaries": [
         {
           "type": "flow",
-          "title": "Gradient as local direction"
+          "title": "Reverse-mode sensitivity flow"
+        },
+        {
+          "type": "compare",
+          "title": "Derivative computation methods"
         }
       ],
       "followUpQuestions": [
-        "Why does backprop use reverse mode?",
-        "What is a Jacobian?",
-        "What causes vanishing gradients?",
-        "Why can gradient descent get stuck or oscillate?"
+        "Why is reverse mode efficient for neural networks?",
+        "What is a directional derivative?",
+        "What does detach/stop-gradient do?"
       ],
-      "estimatedMinutes": 1
+      "estimatedMinutes": 10
     },
     {
       "slug": "convexity",
@@ -1354,42 +1396,54 @@
         "all",
         "as"
       ],
-      "interviewAnswer": "Gradient descent updates parameters in the negative-gradient direction. Too large a learning rate can overshoot or diverge; too small a rate makes optimization painfully slow.",
+      "interviewAnswer": "Gradient descent updates `θ_{t+1}=θ_t−η_t∇f(θ_t)`. The negative gradient is steepest local descent in Euclidean geometry, while the learning rate decides how far the local approximation is trusted. For an L-smooth objective, a step below roughly `2/L` gives stable descent in the quadratic case; on a positive-definite quadratic, convergence speed depends on condition number. Mini-batch SGD uses noisy unbiased or approximately unbiased gradients for scale and sometimes useful noise. Momentum averages directions; preconditioning rescales coordinates. Monitor loss, gradient/update norms, validation metrics and numerical health, and checkpoint weights, optimizer, scheduler, random/data state together.",
       "keyPoints": [
-        "Batch/SGD/mini-batch",
-        "Learning rate",
-        "Momentum",
-        "Schedulers"
+        "Direction and step size are separate",
+        "Curvature sets stability scale",
+        "Conditioning sets speed disparity",
+        "SGD introduces gradient noise",
+        "Checkpoint the whole training state"
       ],
       "resources": [
-        "stanford-cs229",
-        "mit-6s191",
-        "statquest",
-        "mit-linear-algebra",
-        "d2l",
-        "google-mlcc-exercises"
+        "boyd-convex",
+        "stanford-ee364a",
+        "stanford-cs229"
       ],
       "featured": true,
+      "description": "Gradient descent iteratively updates parameters opposite the gradient to reduce a differentiable objective, but its behavior is governed by local curvature, scaling, noise and step-size policy. This chapter derives descent from first-order approximation and the descent lemma, analyzes a quadratic through Hessian eigenvalues, and explains why learning rates that are too large oscillate or diverge while tiny rates stall along flat directions. You will learn full-batch, stochastic and mini-batch gradients; momentum and preconditioning; learning-rate warmup, decay and line search; stopping criteria; saddle points; and the difference between optimization loss, validation metric and business objective. A worked anisotropic quadratic makes conditioning and zig-zagging concrete. The lab implements gradient descent with backtracking and verifies monotonic decrease, gradient accuracy and convergence. Production guidance covers reproducibility, checkpoint/optimizer state, gradient accumulation, mixed precision, clipping, distributed reductions, cost, monitoring, rollback and safe failure. The objective is not to memorize optimizer names but to reason about the update as a dynamical system whose scale and noise must match the model, data and operational budget.",
+      "prerequisites": [
+        "derivatives-gradients",
+        "norms-distances"
+      ],
+      "learningObjectives": [
+        "Derive gradient-descent updates from local approximation and analyze learning-rate stability on smooth quadratics.",
+        "Distinguish batch, stochastic, momentum and preconditioned updates and choose schedules/stopping rules from measurable behavior.",
+        "Operate training with reproducible checkpoints, numerical safeguards, validation separation, cost controls and rollback."
+      ],
       "editorial": {
-        "status": "summary"
+        "status": "verified",
+        "verifiedOn": "2026-08-21"
       },
-      "status": "summary",
+      "status": "verified",
       "hasLab": true,
-      "labGoal": "See how learning rate changes convergence on a simple quadratic.",
-      "visualCount": 1,
+      "labGoal": "Implement gradient descent with Armijo backtracking for a quadratic and verify gradient correctness, monotonic descent and convergence.",
+      "visualCount": 2,
       "visualSummaries": [
         {
-          "type": "curve",
-          "title": "Optimization trajectory"
+          "type": "compare",
+          "title": "Learning rate on one steep direction"
+        },
+        {
+          "type": "flow",
+          "title": "Reliable training loop"
         }
       ],
       "followUpQuestions": [
-        "What happens if learning rate is too high?",
-        "Why use mini-batches?",
+        "Why can gradient descent zig-zag?",
         "What does momentum do?",
-        "Why use learning-rate warmup?"
+        "Why separate training loss and validation metric?"
       ],
-      "estimatedMinutes": 2
+      "estimatedMinutes": 10
     },
     {
       "slug": "probability-basics",
@@ -1402,38 +1456,51 @@
         "aie",
         "as"
       ],
-      "interviewAnswer": "Conditional probability updates the probability of an event given evidence. Bayes rule reverses a conditional using prior probability and likelihood, and underlies probabilistic inference and many classifiers.",
+      "interviewAnswer": "Conditional probability is `P(A|B)=P(A∩B)/P(B)` for `P(B)>0`; it restricts the population to cases where B occurred. The multiplication rule is `P(A∩B)=P(A|B)P(B)`. Bayes' rule reverses the condition: `P(A|B)=P(B|A)P(A)/P(B)`, where the denominator can be expanded across mutually exclusive hypotheses. The prior/base rate matters: a highly sensitive test can have low positive predictive value when the condition is rare. Define events and population explicitly, use counts to sanity-check, and remember Bayes updates beliefs within the assumed likelihood and prior—it does not prove causality or model correctness.",
       "keyPoints": [
-        "P(A|B)",
-        "Prior/likelihood/posterior",
-        "Base rates",
-        "Independence"
+        "Name the experiment and events",
+        "Conditioning changes the reference population",
+        "Joint equals conditional times marginal",
+        "Bayes combines likelihood and base rate",
+        "Posterior quality depends on model and data"
       ],
       "resources": [
         "harvard-stat110",
-        "statquest"
+        "stanford-stats60",
+        "think-bayes"
       ],
       "featured": false,
+      "description": "Probability is a mathematical language for uncertain outcomes under a stated model. Events are subsets of a sample space; probability assigns them coherent weights. Conditional probability restricts attention to cases where evidence occurred, the multiplication rule connects joint and conditional events, and Bayes' rule reverses a condition by combining likelihood with a base rate. This chapter develops complements, unions, intersections, inclusion–exclusion, odds, partitions, diagnostic testing and repeated evidence while separating mathematical probability from causal claims and poorly calibrated subjective confidence. You will learn to define the population and experiment before calculating, avoid confusing `P(A|B)` with `P(B|A)`, and recognize when selection or model misspecification invalidates a posterior. A worked medical-screening example uses a natural-frequency table to make false positives and prevalence visible. The lab enumerates a finite population and verifies Bayes through counts and formulas. Production guidance covers prevalence drift, calibration, threshold decisions, uncertain labels, monitoring, privacy, adversarial likelihood inputs and rollback. The objective is to make every probability statement answer four questions: probability of what event, under which population/model, conditional on what information, and for which decision.",
+      "prerequisites": [],
+      "learningObjectives": [
+        "Represent uncertain experiments with sample spaces and events and apply probability axioms, complements, unions, intersections and inclusion–exclusion.",
+        "Derive conditional probability, multiplication, total probability and Bayes' rule and solve base-rate-sensitive problems with natural frequencies.",
+        "Translate probabilistic outputs into monitored decisions while distinguishing calibration, causation, selection, model uncertainty and cost."
+      ],
       "editorial": {
-        "status": "summary"
+        "status": "verified",
+        "verifiedOn": "2026-08-21"
       },
-      "status": "summary",
-      "hasLab": false,
-      "labGoal": "",
-      "visualCount": 1,
+      "status": "verified",
+      "hasLab": true,
+      "labGoal": "Compute diagnostic Bayes probabilities from natural frequencies and verify formula/count agreement, normalization and prevalence sensitivity.",
+      "visualCount": 2,
       "visualSummaries": [
         {
-          "type": "concept-map",
-          "title": "Probability building blocks"
+          "type": "flow",
+          "title": "Bayesian update as odds flow"
+        },
+        {
+          "type": "compare",
+          "title": "Rare-test positive population"
         }
       ],
       "followUpQuestions": [
-        "What is the difference between independence and conditional independence?",
-        "Why can a good classifier have low precision on rare events?",
-        "How does Naive Bayes use conditional independence?",
-        "What is a prior and when should it matter?"
+        "Why does prevalence affect precision?",
+        "What is a likelihood ratio?",
+        "When can sequential evidence updates multiply?"
       ],
-      "estimatedMinutes": 2
+      "estimatedMinutes": 10
     },
     {
       "slug": "distributions",
@@ -1445,38 +1512,53 @@
         "mle",
         "as"
       ],
-      "interviewAnswer": "Know when Bernoulli, Binomial, Poisson, Normal and related distributions are appropriate. The distribution is a model for the data-generating process, not merely a curve-fitting choice.",
+      "interviewAnswer": "A discrete distribution assigns probability mass `p(x)=P(X=x)` that sums to one. A continuous distribution has density f whose integral over a region is probability; `P(X=x)=0` at any exact point for a continuous variable even when density is positive. The CDF `F(x)=P(X≤x)` works for both. Choose a family from support and mechanism: Bernoulli for one binary trial, Binomial for a fixed number of conditionally independent equal-probability trials, Poisson for event counts under a rate model, Exponential for memoryless waiting time, Normal for additive symmetric variation, and Beta for a probability parameter. Verify parameter conventions, tails and data assumptions rather than relying on shape alone.",
       "keyPoints": [
-        "Support",
-        "Parameters",
-        "Expectation/variance",
-        "When each model makes sense"
+        "Support comes before family",
+        "Density is not point probability",
+        "Parameters encode a generative story",
+        "Tail behavior drives risk",
+        "Library conventions must be verified"
       ],
       "resources": [
         "harvard-stat110",
-        "statquest"
+        "scipy-stats",
+        "numpy-random"
       ],
       "featured": false,
+      "description": "A probability distribution describes how mass or density is assigned to a random variable under a model. Choosing a distribution means choosing support, parameter interpretation, tail behavior, dependence assumptions and a data-generating story—not matching a familiar bell-shaped plot. This chapter distinguishes probability mass functions, density functions, cumulative distribution functions and quantiles, then develops Bernoulli, Binomial, Categorical, Poisson, Geometric, Uniform, Normal, Exponential, Gamma, Beta and related approximations. You will learn when probabilities come from mass versus density, how location/scale/rate parameterizations differ across libraries, why the Normal can be a poor model for counts or heavy tails, and how memorylessness and support constraints encode assumptions. A worked support-ticket example contrasts Binomial and Poisson models and checks the rare-event approximation. The lab implements a Binomial PMF and verifies moments and sampling against NumPy/SciPy. Production guidance covers truncation, censoring, mixtures, zero inflation, parameter estimation, posterior predictive/model checks, numerical log probabilities, version drift and safe simulation. The objective is to choose and validate a distribution from the mechanism and decision consequences rather than from convenience.",
+      "prerequisites": [
+        "probability-basics"
+      ],
+      "learningObjectives": [
+        "Distinguish PMF, PDF, CDF, survival function and quantile and use each correctly for discrete and continuous variables.",
+        "Select common distributions from support and generative assumptions and translate parameterizations across formulas and libraries.",
+        "Validate probabilistic models with moments, tail/quantile checks, simulation, calibration and production drift/failure monitoring."
+      ],
       "editorial": {
-        "status": "summary"
+        "status": "verified",
+        "verifiedOn": "2026-08-21"
       },
-      "status": "summary",
-      "hasLab": false,
-      "labGoal": "",
-      "visualCount": 1,
+      "status": "verified",
+      "hasLab": true,
+      "labGoal": "Implement the Binomial PMF, verify normalization and moments, and compare generated samples with NumPy and SciPy references.",
+      "visualCount": 2,
       "visualSummaries": [
         {
-          "type": "curve",
-          "title": "Distribution shapes"
+          "type": "compare",
+          "title": "Probability mass versus density"
+        },
+        {
+          "type": "flow",
+          "title": "Distribution choice from mechanism"
         }
       ],
       "followUpQuestions": [
-        "When is Poisson a reasonable model?",
-        "What is the relationship between Bernoulli and Binomial?",
-        "Why does the Normal distribution appear so often?",
-        "What distribution would you use for waiting times?"
+        "When is Poisson a Binomial approximation?",
+        "What does memoryless mean?",
+        "Why use a survival function directly?"
       ],
-      "estimatedMinutes": 2
+      "estimatedMinutes": 10
     },
     {
       "slug": "expectation-variance",
@@ -1488,38 +1570,53 @@
         "mle",
         "as"
       ],
-      "interviewAnswer": "Expectation is the long-run average of a random variable; variance measures spread around the mean; covariance measures how two variables vary together, with correlation providing a normalized version.",
+      "interviewAnswer": "Expectation is `E[X]=Σx p(x)` or `∫x f(x)dx` when it exists, and linearity gives `E[aX+bY+c]=aE[X]+bE[Y]+c` without independence. Variance is `Var(X)=E[(X−μ)²]=E[X²]−μ²`. For sums, `Var(X+Y)=Var(X)+Var(Y)+2Cov(X,Y)`; covariance vanishes for independent finite-variance variables, but zero covariance does not generally imply independence. Correlation standardizes covariance to [−1,1] when variances are positive and measures linear association, not causation. In data, distinguish population from sample estimators, use stable online/two-pass algorithms and inspect tails and drift beyond mean/variance.",
       "keyPoints": [
-        "Linearity of expectation",
-        "Variance units",
-        "Covariance sign",
-        "Correlation ≠ causation"
+        "Linearity of expectation needs no independence",
+        "Variance of sums includes covariance",
+        "Correlation is standardized linear association",
+        "Moments may not exist or characterize a distribution",
+        "Stable estimation needs denominator and weight semantics"
       ],
       "resources": [
         "harvard-stat110",
-        "statquest"
+        "stanford-stats60",
+        "numpy"
       ],
       "featured": false,
+      "description": "Expectation is a probability-weighted average of a random variable; variance measures expected squared deviation from its mean; covariance measures linear co-movement. These are properties of a specified distribution, not guarantees about one observation. This chapter develops linearity of expectation, indicator variables, transformations, variance identities, covariance matrices, correlation, Cauchy–Schwarz bounds, conditional moments and laws of total expectation/variance. You will learn why expectations add without independence while variances require covariance terms, why zero covariance does not generally imply independence, and how scaling and nonlinear transformations change moments. A worked portfolio/system-load example derives aggregate variance under dependence. The lab computes exact weighted moments, merges online summaries and compares them with NumPy. Production guidance covers population versus sample denominators, weighted data, missingness, streaming algorithms, numeric cancellation, nonstationarity, tail risk, covariance regularization, privacy and rollback. The objective is to use moments as compact but limited summaries, understand precisely which algebra they support, and avoid turning correlation or an average into a causal or distributional claim.",
+      "prerequisites": [
+        "probability-basics"
+      ],
+      "learningObjectives": [
+        "Compute expectations of functions and exploit linearity and indicator variables without requiring independence.",
+        "Derive variance/covariance rules for sums and affine transformations and interpret covariance matrices geometrically.",
+        "Estimate and operate moments with correct denominators, weights, stable streaming algorithms, drift/tail checks and explicit limits."
+      ],
       "editorial": {
-        "status": "summary"
+        "status": "verified",
+        "verifiedOn": "2026-08-21"
       },
-      "status": "summary",
-      "hasLab": false,
-      "labGoal": "",
-      "visualCount": 1,
+      "status": "verified",
+      "hasLab": true,
+      "labGoal": "Compute exact weighted moments and stable mergeable sample summaries, then verify covariance and total-variance identities against NumPy.",
+      "visualCount": 2,
       "visualSummaries": [
         {
-          "type": "concept-map",
-          "title": "Expectation, Variance & Covariance"
+          "type": "compare",
+          "title": "Combining uncertain quantities"
+        },
+        {
+          "type": "flow",
+          "title": "Total variance decomposition"
         }
       ],
       "followUpQuestions": [
-        "Why is covariance scale-dependent?",
-        "What is the difference between population and sample variance?",
-        "How does covariance connect to PCA?",
-        "When does zero covariance imply independence?"
+        "Why is covariance matrix positive semidefinite?",
+        "What does total variance separate?",
+        "When does E[g(X)]=g(E[X])?"
       ],
-      "estimatedMinutes": 2
+      "estimatedMinutes": 10
     },
     {
       "slug": "clt",
@@ -1530,38 +1627,55 @@
         "ds",
         "as"
       ],
-      "interviewAnswer": "The law of large numbers explains why sample averages stabilize around expectations. The CLT explains why normalized sums often approach a Normal distribution, enabling many confidence intervals and tests.",
+      "interviewAnswer": "The LLN says a sample average converges to the population expectation under conditions; it explains consistency. The IID finite-variance CLT says `√n(Ȳ−μ)/σ` converges in distribution to standard Normal; it explains approximate sampling uncertainty and `SE(Ȳ)=σ/√n`. It does not say the raw data become Normal. Approximation quality depends on skew, tails, rarity and dependence, not a universal n threshold. Clustered/time-correlated data have smaller effective sample size and need cluster-robust, block or model-based methods. Verify with design-aware simulation/bootstrap and use the estimated standard error appropriate to the sampling process.",
       "keyPoints": [
-        "Different theorems",
-        "Sampling distribution",
-        "Conditions matter",
-        "Why Normal approximations appear"
+        "LLN is convergence of averages",
+        "CLT is scaled sampling distribution",
+        "Standard error shrinks as 1/√n under IID",
+        "Data need not be Normal",
+        "Dependence changes effective sample size"
       ],
       "resources": [
         "harvard-stat110",
-        "statquest"
+        "stanford-stats60",
+        "numpy-random"
       ],
       "featured": false,
+      "description": "The law of large numbers (LLN) explains convergence of sample averages to an expectation; the central limit theorem (CLT) explains why a properly centered and scaled sum often has an approximately Normal distribution. They answer different questions and require assumptions that real data can violate. This chapter develops weak/strong LLN intuition, standard error, IID CLT, finite variance, rate/quality of approximation, continuity correction and the delta method. It then examines dependence, clustering, heavy tails, rare events, bounded and non-identical variables, bootstrap connections and why “n>30” is not a theorem. You will learn to separate population size from effective sample size, distinguish the distribution of data from the sampling distribution of a statistic, and choose cluster/time-aware uncertainty. A worked conversion-rate example calculates standard error and diagnoses user-level dependence. The lab simulates Bernoulli/exponential sample means across n and verifies `1/√n` scaling and approximate coverage. Production guidance covers sampling frames, sequential looks, drift, label delay, random streams, monitoring, privacy and rollback. The objective is to use asymptotics as checked approximations, not automatic permission to attach a Normal interval to any large table.",
+      "prerequisites": [
+        "expectation-variance",
+        "distributions",
+        "independence"
+      ],
+      "learningObjectives": [
+        "Distinguish LLN convergence from CLT distributional approximation and state the assumptions/normalization for each.",
+        "Compute standard errors for means/proportions and diagnose dependence, heavy tails, skew, rare events and effective sample size.",
+        "Validate and operate asymptotic uncertainty using simulation/resampling, design-aware estimators, monitoring and safe reporting."
+      ],
       "editorial": {
-        "status": "summary"
+        "status": "verified",
+        "verifiedOn": "2026-08-21"
       },
-      "status": "summary",
-      "hasLab": false,
-      "labGoal": "",
-      "visualCount": 1,
+      "status": "verified",
+      "hasLab": true,
+      "labGoal": "Simulate non-Normal sample means, verify `1/sqrt(n)` standard-error scaling and approximate CLT interval coverage with reproducible streams.",
+      "visualCount": 2,
       "visualSummaries": [
         {
+          "type": "compare",
+          "title": "Two asymptotic laws, two questions"
+        },
+        {
           "type": "flow",
-          "title": "Central Limit Theorem intuition"
+          "title": "Choose an uncertainty unit"
         }
       ],
       "followUpQuestions": [
-        "Does the CLT require the original data to be Normal?",
-        "What changes when observations are dependent?",
-        "Why does standard error shrink like 1/sqrt(n)?",
-        "What is the difference between convergence in probability and in distribution?"
+        "How do LLN and CLT differ?",
+        "What is standard error?",
+        "Why does dependence matter?"
       ],
-      "estimatedMinutes": 2
+      "estimatedMinutes": 9
     },
     {
       "slug": "confidence-intervals",
@@ -1573,38 +1687,55 @@
         "da",
         "as"
       ],
-      "interviewAnswer": "A frequentist 95% confidence interval is produced by a procedure that would contain the true parameter in 95% of repeated samples. It is not literally a 95% probability statement about a fixed parameter after observing the data.",
+      "interviewAnswer": "A 95% frequentist confidence interval comes from a procedure that would contain the true parameter in 95% of repeated samples under its model and sampling assumptions. After observing one interval, the fixed parameter is either inside it or not; 95% is not its posterior probability. A useful answer states the estimand, construction, assumptions, and whether the interval excludes both the null value and business-relevant thresholds. Use design-aware, profile, score, or bootstrap intervals when a simple symmetric Wald interval is unreliable.",
       "keyPoints": [
-        "Standard error",
-        "Coverage interpretation",
-        "Sample size",
-        "Assumptions"
+        "Coverage belongs to the procedure",
+        "Estimate plus critical value times SE is only one construction",
+        "Bias is not represented by a narrow interval",
+        "Prediction intervals include future outcome noise",
+        "Business thresholds matter alongside zero"
       ],
       "resources": [
-        "statquest",
-        "harvard-stat110"
+        "stanford-stats200",
+        "nist-stat-handbook",
+        "asa-pvalues",
+        "scipy-stats"
       ],
       "featured": false,
+      "description": "A confidence interval is the output of a procedure designed to cover an unknown target at a stated long-run rate under specified assumptions. This chapter builds that sentence into a practical workflow. It derives a t interval for a mean, explains the duality between two-sided tests and intervals, distinguishes confidence intervals from credible and prediction intervals, and compares normal, t, Wilson, profile-likelihood, and bootstrap constructions. It emphasizes that confidence level is a property of the procedure before data are observed—not a posterior probability assigned to a fixed frequentist parameter afterward. You will learn why interval width responds to standard error and confidence level, how bias and optional stopping destroy nominal coverage, why a symmetric Wald interval can be absurd near boundaries, and how to communicate compatibility without reducing inference to “significant” or “not significant.” The worked example treats a conversion lift whose interval crosses both zero and a business threshold. The lab verifies repeated-sample coverage and shows that one observed interval either covers or does not.",
+      "prerequisites": [
+        "sampling-distributions"
+      ],
+      "learningObjectives": [
+        "Interpret frequentist confidence intervals through repeated-sample coverage without assigning probability to a fixed parameter.",
+        "Construct and diagnose t, proportion, bootstrap, and prediction intervals under their assumptions.",
+        "Connect interval width to standard error, confidence level, sample design, and multiplicity.",
+        "Use intervals to reason about practical thresholds, equivalence, and uncertainty rather than binary significance."
+      ],
       "editorial": {
-        "status": "summary"
+        "status": "verified",
+        "verifiedOn": "2026-08-21"
       },
-      "status": "summary",
-      "hasLab": false,
-      "labGoal": "",
-      "visualCount": 1,
+      "status": "verified",
+      "hasLab": true,
+      "labGoal": "Verify long-run coverage of a t interval and show why an observed confidence interval is not a posterior probability statement.",
+      "visualCount": 2,
       "visualSummaries": [
         {
           "type": "curve",
-          "title": "Confidence interval around an estimate"
+          "title": "Repeated intervals and fixed truth"
+        },
+        {
+          "type": "matrix",
+          "title": "Interval families answer different questions"
         }
       ],
       "followUpQuestions": [
-        "How does sample size affect interval width?",
-        "What is the difference between a confidence interval and prediction interval?",
-        "When would you use a bootstrap interval?",
-        "How does repeated testing affect coverage?"
+        "Why does a 99% interval tend to be wider than a 95% interval?",
+        "What does it mean when a 95% interval includes zero?",
+        "When is a bootstrap interval appropriate?"
       ],
-      "estimatedMinutes": 2
+      "estimatedMinutes": 10
     },
     {
       "slug": "hypothesis-testing",
@@ -1616,38 +1747,56 @@
         "da",
         "as"
       ],
-      "interviewAnswer": "A p-value is the probability, assuming the null hypothesis and test assumptions are true, of seeing a result at least as extreme as the observed one. It is not the probability that the null hypothesis is true.",
+      "interviewAnswer": "A p-value is the probability, assuming the null model and test assumptions, of obtaining a statistic at least as extreme as observed. It is not the probability the null is true, not the false-positive probability of this result, and not effect size. A complete test specifies the estimand, null and alternative, statistic, reference distribution, sidedness, alpha, and stopping rule before looking. Then report the estimate and interval, check assumptions and multiplicity, and interpret the result against practical costs.",
       "keyPoints": [
-        "Null/alternative",
-        "Test statistic",
-        "Type I/II errors",
-        "Statistical vs practical significance"
+        "The null is a complete enough data-generating claim to calibrate a statistic",
+        "p-values are conditional tail areas, not posterior probabilities",
+        "Alpha controls a procedure's Type I error under valid use",
+        "Power depends on a specific alternative",
+        "Evidence, effect magnitude, and action utility are distinct"
       ],
       "resources": [
-        "statquest",
-        "harvard-stat110"
+        "asa-pvalues",
+        "stanford-stats200",
+        "nist-stat-handbook",
+        "scipy-stats"
       ],
       "featured": true,
+      "description": "Hypothesis testing is a calibrated procedure for measuring how incompatible observed data are with a specified null model, not a machine for assigning truth probabilities to hypotheses. This chapter connects the scientific question, estimand, null and alternative, test statistic, reference distribution, p-value, decision rule, Type I error, Type II error, power, effect size, and confidence interval. It contrasts Fisher-style evidence with Neyman–Pearson decision rules without pretending that one p-value settles a scientific or product decision. You will learn how sidedness, optional stopping, model assumptions, randomization, and multiple testing alter validity; why “fail to reject” is not “accept”; and why a tiny p-value may accompany a negligible effect in a huge dataset. The worked example separates statistical evidence from launch utility. The lab implements a one-sample randomization test and verifies its tail count against SciPy. Production guidance covers preregistration, metric governance, sequential monitoring, audit trails, privacy, and reporting estimates with uncertainty rather than threshold badges.",
+      "prerequisites": [
+        "sampling-distributions",
+        "confidence-intervals"
+      ],
+      "learningObjectives": [
+        "Translate a domain question into an estimand, explicit null/alternative, statistic, and valid reference distribution.",
+        "Interpret p-values, Type I/II errors, and power without common probability reversals.",
+        "Choose sidedness and stopping rules before observing results and diagnose assumption violations.",
+        "Report effect estimates, intervals, practical thresholds, and multiplicity context alongside test results."
+      ],
       "editorial": {
-        "status": "summary"
+        "status": "verified",
+        "verifiedOn": "2026-08-21"
       },
-      "status": "summary",
+      "status": "verified",
       "hasLab": true,
-      "labGoal": "Compute a simple two-sample mean test and connect the statistic to the null hypothesis.",
-      "visualCount": 1,
+      "labGoal": "Build an exact sign-flip randomization test, compare its tail count with SciPy, and verify null calibration by construction.",
+      "visualCount": 2,
       "visualSummaries": [
         {
+          "type": "flow",
+          "title": "A defensible test"
+        },
+        {
           "type": "curve",
-          "title": "Null distribution and rejection region"
+          "title": "Null reference and observed tail"
         }
       ],
       "followUpQuestions": [
-        "What is statistical power?",
-        "Type I vs Type II error?",
-        "When would you use a non-parametric test?",
-        "How does multiple testing change interpretation?"
+        "What is the difference between alpha and a p-value?",
+        "Does p=0.001 prove the alternative?",
+        "How should continuous experiment monitoring be handled?"
       ],
-      "estimatedMinutes": 2
+      "estimatedMinutes": 10
     },
     {
       "slug": "ab-testing",
@@ -1703,34 +1852,55 @@
         "da",
         "as"
       ],
-      "interviewAnswer": "Maximum likelihood chooses parameters that make observed data most likely. MAP adds a prior and chooses the most probable parameters after combining prior and likelihood; many regularizers can be interpreted as MAP priors.",
+      "interviewAnswer": "MLE maximizes p(data|theta), treating the observed data as fixed and theta as the optimization variable. MAP maximizes p(data|theta)p(theta), equivalently log likelihood plus log prior. A zero-mean Gaussian prior often yields an L2 penalty and a Laplace prior an L1 penalty, with scaling determined by noise and prior parameters. Both return point estimates; MAP is not full Bayesian inference and is not invariant to arbitrary reparameterization. Validate the model, identifiability, optimization, and predictive calibration separately.",
       "keyPoints": [
-        "Likelihood vs probability",
-        "Prior",
-        "Regularization link",
-        "Bayesian interpretation"
+        "Likelihood is a function of parameters, not a normalized parameter probability",
+        "Logs turn products into stable sums",
+        "MAP adds prior information and can regularize weak data",
+        "Point estimation discards posterior shape",
+        "A converged optimizer can fit a wrong or unidentified model"
       ],
       "resources": [
         "stanford-cs229",
-        "harvard-stat110",
-        "statquest"
+        "stanford-stats200",
+        "scipy-stats"
       ],
       "featured": false,
-      "editorial": {
-        "status": "summary"
-      },
-      "status": "summary",
-      "hasLab": false,
-      "labGoal": "",
-      "visualCount": 0,
-      "visualSummaries": [],
-      "followUpQuestions": [
-        "Why do we maximize log-likelihood instead of likelihood?",
-        "How does ridge regression connect to a Gaussian prior?",
-        "What is the difference between MAP and posterior mean?",
-        "When does the prior matter less?"
+      "description": "Maximum likelihood estimation chooses parameter values that make the observed data most likely under a specified statistical model. Maximum a posteriori estimation multiplies that likelihood by a prior density and chooses the posterior mode. This chapter carefully distinguishes probability of data given parameters from a probability distribution over parameters, derives log-likelihood objectives for Bernoulli and Gaussian models, connects Gaussian and Laplace priors to common regularizers, and explains why MAP remains a point estimate rather than full Bayesian inference. You will learn how identifiability, constraints, reparameterization, boundary solutions, weak data, and misspecified likelihoods affect both methods; why maximizing a density is coordinate-sensitive; and why optimization convergence does not prove statistical validity. The worked example derives smoothed Bernoulli estimates and contrasts MLE, MAP, and posterior mean. The lab implements them from first principles and verifies against an analytic Beta–Binomial result. Production guidance covers numerical stability, calibration, prior governance, reproducibility, monitoring, and rollback when data or likelihood assumptions shift.",
+      "prerequisites": [
+        "distributions",
+        "expectation-variance"
       ],
-      "estimatedMinutes": 1
+      "learningObjectives": [
+        "Write likelihood and log-likelihood objectives without reversing their conditioning.",
+        "Derive MLE and MAP estimates for simple models and connect priors to regularization penalties.",
+        "Distinguish MAP, posterior mean, posterior predictive inference, and full posterior uncertainty.",
+        "Diagnose identifiability, numerical, boundary, prior, and misspecification failures in estimation."
+      ],
+      "editorial": {
+        "status": "verified",
+        "verifiedOn": "2026-08-21"
+      },
+      "status": "verified",
+      "hasLab": true,
+      "labGoal": "Derive Bernoulli MLE, Beta-prior MAP, and posterior mean, then verify each analytic formula on sparse data.",
+      "visualCount": 2,
+      "visualSummaries": [
+        {
+          "type": "flow",
+          "title": "From model to estimates"
+        },
+        {
+          "type": "matrix",
+          "title": "MLE, MAP, and posterior mean"
+        }
+      ],
+      "followUpQuestions": [
+        "Why maximize log likelihood?",
+        "When do MLE and MAP become similar?",
+        "Why is MAP not invariant to reparameterization?"
+      ],
+      "estimatedMinutes": 10
     },
     {
       "slug": "linear-regression",
@@ -8313,35 +8483,56 @@
         "da",
         "as"
       ],
-      "interviewAnswer": "A sampling distribution describes how an estimator would vary across repeated samples. Standard error measures that estimator uncertainty; it is not the standard deviation of the raw observations.",
+      "interviewAnswer": "A sampling distribution describes how a statistic would vary over repeated samples from the same data-generating process and design. Its standard deviation is the statistic's standard error. For an independent sample mean with finite variance, SE is sigma divided by square root n, estimated by s divided by square root n. That is different from the standard deviation of individual observations. The formula changes under clustering, time dependence, unequal weights, or finite-population sampling, and a small SE says nothing about selection bias.",
       "keyPoints": [
-        "Estimator variability shrinks with more information/sample size.",
-        "SE and population SD answer different questions.",
-        "Sampling design affects uncertainty."
+        "Random data make estimators random before sampling",
+        "Standard error measures estimator variability, not raw spread",
+        "Independence and design determine effective information",
+        "Bias and variance are separate failure modes",
+        "Simulation can audit analytic uncertainty formulas"
       ],
       "resources": [
         "stanford-stats200",
-        "openintro-stats"
+        "openintro-stats",
+        "cdc-survey-variance",
+        "numpy-random"
       ],
       "featured": true,
+      "description": "A sampling distribution is the probability distribution of a statistic over repeated samples generated by the same population and sampling design. It is the bridge from observed data to uncertainty about an estimator. This chapter separates the population distribution, the empirical distribution of one sample, and the sampling distribution of an estimator; derives the standard error of a mean; explains why standard deviation and standard error answer different questions; and shows how dependence, unequal weights, clustering, and finite populations change the calculation. You will learn when a central-limit approximation is credible, why an unbiased estimator can still be too noisy to use, and why a low standard error cannot repair selection bias. The worked example and lab simulate repeated samples so that sampling variability is visible rather than merely asserted. Production guidance covers unit-of-analysis mistakes, correlated observations, design-aware uncertainty, reproducible simulation, and monitoring effective sample size. The goal is to make every later interval, test, and power calculation rest on a clear data-generating and sampling model.",
+      "prerequisites": [
+        "expectation-variance",
+        "clt"
+      ],
+      "learningObjectives": [
+        "Distinguish a population distribution, a sample distribution, and an estimator's sampling distribution.",
+        "Derive and interpret standard error for independent means and recognize when the square-root-n rule fails.",
+        "Diagnose how bias, dependence, weighting, clustering, and finite-population sampling affect uncertainty.",
+        "Estimate sampling uncertainty analytically or by simulation and verify the result against repeated samples."
+      ],
       "editorial": {
-        "status": "summary"
+        "status": "verified",
+        "verifiedOn": "2026-08-21"
       },
-      "status": "summary",
-      "hasLab": false,
-      "labGoal": "",
-      "visualCount": 1,
+      "status": "verified",
+      "hasLab": true,
+      "labGoal": "Simulate a sampling distribution, verify the analytic SE, and show how cluster dependence invalidates a row-level iid calculation.",
+      "visualCount": 2,
       "visualSummaries": [
         {
-          "type": "concept-map",
-          "title": "Sampling Distributions & Standard Error"
+          "type": "matrix",
+          "title": "Three different distributions"
+        },
+        {
+          "type": "curve",
+          "title": "Sampling means concentrate"
         }
       ],
       "followUpQuestions": [
-        "What assumptions does Sampling Distributions & Standard Error make?",
-        "How would you validate or debug Sampling Distributions & Standard Error in practice?"
+        "Why is standard error usually smaller than standard deviation?",
+        "Can an estimator have zero standard error and still be wrong?",
+        "How would you estimate SE when no closed form is available?"
       ],
-      "estimatedMinutes": 1
+      "estimatedMinutes": 10
     },
     {
       "slug": "bootstrap",
@@ -8353,35 +8544,56 @@
         "da",
         "as"
       ],
-      "interviewAnswer": "The bootstrap approximates an estimator’s sampling distribution by repeatedly resampling the observed dataset with replacement. It is useful when analytic standard errors are difficult but the sample is reasonably representative.",
+      "interviewAnswer": "The nonparametric bootstrap treats the empirical distribution as an estimate of the population: draw many size-n samples with replacement, recompute the entire estimator, and use the resulting distribution for standard errors or intervals. It works when the observed sample represents the repetition mechanism and the estimator is sufficiently regular. Resample the independent unit—pairs, users, clusters, or time blocks—not blindly rows. Bootstrap cannot repair selection bias, absent rare classes, or a fundamentally misspecified pipeline, and interval choice and Monte Carlo error must be reported.",
       "keyPoints": [
-        "Resample rows with replacement.",
-        "Recompute the statistic each time.",
-        "Use the empirical distribution for uncertainty."
+        "Resampling approximates repeated sampling from an estimated population",
+        "Replacement preserves iid draws from the empirical distribution",
+        "The estimator must be recomputed end to end",
+        "Dependence determines the resampling unit",
+        "Coverage must be checked rather than assumed"
       ],
       "resources": [
+        "efron-bootstrap",
         "stanford-stats200",
+        "scipy-stats",
         "isl"
       ],
       "featured": false,
+      "description": "The bootstrap estimates an estimator's sampling behavior by repeatedly sampling with replacement from the empirical distribution and recomputing the complete statistic. It is powerful because it can approximate standard errors, bias, and confidence intervals when analytic derivations are inconvenient, but it is not assumption-free. This chapter develops the plug-in principle, explains why replacement matters, distinguishes ordinary, paired, stratified, cluster, block, parametric, and residual bootstraps, and compares percentile, basic, normal, and bias-corrected accelerated intervals. You will learn when the empirical distribution is a reasonable stand-in for the population, why rare events and nonsmooth statistics cause instability, and why resampling rows breaks dependence. The worked example estimates a difference in medians while preserving treatment groups. The lab implements a bootstrap distribution from first principles, compares it with SciPy's current API, verifies reproducibility and interval behavior, and demonstrates the effect of sample size. Production guidance covers resampling grain, pipeline refitting, Monte Carlo error, seeds, compute budgets, privacy, and coverage audits.",
+      "prerequisites": [
+        "sampling-distributions",
+        "confidence-intervals"
+      ],
+      "learningObjectives": [
+        "Explain the empirical plug-in principle and why bootstrap resamples have the original sample size with replacement.",
+        "Choose a resampling scheme that preserves pairing, groups, clusters, time dependence, weights, and model-fitting steps.",
+        "Compare common bootstrap interval constructions and diagnose skewness, bias, discreteness, and boundary failure.",
+        "Implement reproducible bootstrap uncertainty and verify it against simulation or an official library."
+      ],
       "editorial": {
-        "status": "summary"
+        "status": "verified",
+        "verifiedOn": "2026-08-21"
       },
-      "status": "summary",
+      "status": "verified",
       "hasLab": true,
-      "labGoal": "Estimate uncertainty with a nonparametric bootstrap.",
-      "visualCount": 1,
+      "labGoal": "Build a bootstrap confidence interval for a median, compare with SciPy BCa output, and verify reproducibility and narrowing with more data.",
+      "visualCount": 2,
       "visualSummaries": [
         {
           "type": "flow",
-          "title": "Bootstrap workflow"
+          "title": "Ordinary bootstrap"
+        },
+        {
+          "type": "matrix",
+          "title": "Resampling schemes follow dependence"
         }
       ],
       "followUpQuestions": [
-        "What assumptions does Bootstrap & Resampling make?",
-        "How would you validate or debug Bootstrap & Resampling in practice?"
+        "Why sample with replacement?",
+        "What does increasing B accomplish?",
+        "When would you use a block bootstrap?"
       ],
-      "estimatedMinutes": 2
+      "estimatedMinutes": 10
     },
     {
       "slug": "permutation-tests",
@@ -8393,30 +8605,54 @@
         "da",
         "as"
       ],
-      "interviewAnswer": "A permutation test builds a null distribution by shuffling labels in a way justified by exchangeability under the null. It is especially useful for transparent nonparametric testing.",
+      "interviewAnswer": "A permutation test compares an observed statistic with values obtained by shuffling in a way justified under the null. In a randomized experiment, reassign labels according to the actual assignment mechanism; in observational data, a label shuffle additionally requires exchangeability. Preserve pairs, blocks, clusters, and treatment counts. Exact enumeration is possible for small designs; otherwise sample permutations and use a correction such as (b+1)/(B+1). The p-value is valid for the specified statistic, null, design, and extremeness rule—not because permutation is automatically nonparametric.",
       "keyPoints": [
-        "Define a statistic before shuffling.",
-        "Shuffle only under a valid exchangeability assumption.",
-        "p-value is the tail probability under the randomization/null procedure."
+        "Randomization mechanism can supply the null distribution",
+        "Exchangeability is a substantive assumption",
+        "Pairs, blocks, and clusters constrain valid transformations",
+        "The statistic determines sensitivity and two-sided ordering",
+        "Monte Carlo p-values have simulation uncertainty"
       ],
       "resources": [
         "stanford-stats200",
+        "scipy-stats",
         "openintro-stats"
       ],
       "featured": false,
-      "editorial": {
-        "status": "summary"
-      },
-      "status": "summary",
-      "hasLab": false,
-      "labGoal": "",
-      "visualCount": 0,
-      "visualSummaries": [],
-      "followUpQuestions": [
-        "What assumptions does Permutation & Randomization Tests make?",
-        "How would you validate or debug Permutation & Randomization Tests in practice?"
+      "description": "Permutation and randomization tests build a reference distribution by applying transformations that are valid under a null hypothesis—often reallocating treatment labels or swapping paired signs—and comparing the observed statistic with that distribution. Their strength is transparent design-based calibration with few distributional assumptions; their danger is the casual belief that any labels may be shuffled. This chapter distinguishes Fisher randomization inference from observational permutation tests, defines exchangeability, shows exact and Monte Carlo tail calculations, handles paired and blocked designs, and explains studentization, ties, two-sided definitions, and the plus-one correction for sampled permutations. You will learn how interference, clustering, covariate-adaptive assignment, unequal variances, and data-dependent statistic selection invalidate naive shuffles. The worked example uses a randomized conversion experiment with a difference-in-means statistic. The lab enumerates a small exact test, compares it with SciPy, and verifies symmetry and p-value bounds. Production guidance covers assignment reconstruction, reproducible RNG, batch computation, audit logs, precision, and sequential use.",
+      "prerequisites": [
+        "hypothesis-testing"
       ],
-      "estimatedMinutes": 1
+      "learningObjectives": [
+        "Identify the exact transformation group justified by random assignment or exchangeability under the null.",
+        "Construct exact and Monte Carlo permutation distributions for independent, paired, blocked, and clustered designs.",
+        "Choose and predefine a statistic and two-sided extremeness rule appropriate to the alternative.",
+        "Diagnose invalid shuffles caused by dependence, unequal assignment, interference, or post-selection."
+      ],
+      "editorial": {
+        "status": "verified",
+        "verifiedOn": "2026-08-21"
+      },
+      "status": "verified",
+      "hasLab": true,
+      "labGoal": "Enumerate an exact two-sample permutation test, verify its tail calculation against SciPy, and preserve fixed group sizes.",
+      "visualCount": 2,
+      "visualSummaries": [
+        {
+          "type": "flow",
+          "title": "Design-based reference distribution"
+        },
+        {
+          "type": "matrix",
+          "title": "Transformation sets"
+        }
+      ],
+      "followUpQuestions": [
+        "What is exchangeability?",
+        "When is a permutation test exact?",
+        "Why studentize a permutation statistic?"
+      ],
+      "estimatedMinutes": 9
     },
     {
       "slug": "multiple-testing",
@@ -8428,34 +8664,55 @@
         "da",
         "as"
       ],
-      "interviewAnswer": "When many hypotheses are tested, false positives accumulate. Family-wise methods such as Bonferroni control any false positive; FDR methods such as Benjamini–Hochberg control the expected proportion among discoveries.",
+      "interviewAnswer": "With m tests, individual alpha does not control the overall error. Bonferroni and Holm control the probability of at least one false rejection in a defined family; BH controls the expected false discovery proportion under its conditions and is usually more powerful when many discoveries are acceptable. For BH, sort p-values, find the largest k with p_(k)<=kq/m, and reject through k. Define the family before seeing results, account for dependence and selection, report adjusted values and effect sizes, and do not call FDR the probability each discovery is false.",
       "keyPoints": [
-        "More tests → more opportunities for false positives.",
-        "FWER and FDR are different guarantees.",
-        "Pre-register primary metrics when possible."
+        "Multiplicity begins with a declared family",
+        "FWER controls any false rejection; FDR controls expected false proportion",
+        "Holm dominates simple Bonferroni while retaining strong FWER control",
+        "BH is a step-up rule with dependence conditions",
+        "Adjustment does not repair biased tests or post-selection"
       ],
       "resources": [
-        "stanford-stats200"
+        "benjamini-hochberg",
+        "stanford-stats200",
+        "scipy-stats",
+        "asa-pvalues"
       ],
       "featured": true,
+      "description": "Testing many hypotheses creates many opportunities for false discoveries. Multiplicity is not solved by interpreting each p-value in isolation; the analyst must define a family, choose an error criterion, and apply a procedure whose dependence assumptions and selection process match the problem. This chapter derives why unadjusted family-wise error grows, contrasts family-wise error rate with false discovery rate, explains Bonferroni, Holm, Benjamini–Hochberg, and Benjamini–Yekutieli ideas, and distinguishes adjusted p-values from local false-discovery probabilities. You will learn how hierarchical testing, gatekeeping, preregistration, holdout confirmation, and selective inference control different risks; why correlated tests complicate guarantees; and why adding hypotheses after looking changes the family. The worked example applies BH to ten feature metrics and interprets the rejection threshold. The lab implements Holm and BH from scratch, verifies monotonic adjusted values against SciPy, and checks invariants. Production guidance covers metric-family governance, lineage, online testing, dashboards, reproducibility, and audit of all attempted analyses.",
+      "prerequisites": [
+        "hypothesis-testing"
+      ],
+      "learningObjectives": [
+        "Quantify how repeated testing inflates the chance and number of false positives.",
+        "Choose between FWER and FDR according to the cost and volume of false discoveries.",
+        "Implement Bonferroni/Holm and Benjamini–Hochberg procedures with valid ordering and monotonicity.",
+        "Define hypothesis families and diagnose dependence, selection, and reporting practices that invalidate nominal control."
+      ],
       "editorial": {
-        "status": "summary"
+        "status": "verified",
+        "verifiedOn": "2026-08-21"
       },
-      "status": "summary",
-      "hasLab": false,
-      "labGoal": "",
-      "visualCount": 1,
+      "status": "verified",
+      "hasLab": true,
+      "labGoal": "Implement Holm FWER and BH FDR adjusted p-values, verify monotonicity, and compare BH output with SciPy.",
+      "visualCount": 2,
       "visualSummaries": [
         {
-          "type": "bars",
-          "title": "Why multiple testing matters"
+          "type": "matrix",
+          "title": "Two family-level error goals"
+        },
+        {
+          "type": "curve",
+          "title": "BH step-up geometry"
         }
       ],
       "followUpQuestions": [
-        "What assumptions does Multiple Testing & False Discovery Rate make?",
-        "How would you validate or debug Multiple Testing & False Discovery Rate in practice?"
+        "When prefer FWER over FDR?",
+        "Why is Holm generally preferable to plain Bonferroni?",
+        "Does BH work under correlated tests?"
       ],
-      "estimatedMinutes": 1
+      "estimatedMinutes": 10
     },
     {
       "slug": "effect-size",
@@ -8467,35 +8724,55 @@
         "da",
         "as"
       ],
-      "interviewAnswer": "Statistical significance asks whether an effect is hard to explain by noise under a null; effect size asks whether the magnitude is practically meaningful. Large samples can make tiny effects significant.",
+      "interviewAnswer": "Effect size is the magnitude of the estimand—such as a 1.2 percentage-point lift, relative risk, mean difference, correlation, or standardized mean difference. A p-value combines magnitude with uncertainty and sample size, so a tiny effect can be significant in a huge sample and a useful effect nonsignificant in a small one. Report the effect in domain units first, its interval, baseline risk, and a predefined minimum worthwhile effect. Standardized measures aid comparison but depend on the chosen standard deviation and population.",
       "keyPoints": [
-        "Report magnitude and uncertainty, not p-value alone.",
-        "Practical significance depends on costs/base rates.",
-        "Confidence intervals communicate plausible effect ranges."
+        "Magnitude and evidence are separate",
+        "Domain units usually lead communication",
+        "Relative measures require baseline risk",
+        "Standardized effects depend on reference variability",
+        "Practical thresholds should be set before results"
       ],
       "resources": [
         "openintro-stats",
-        "microsoft-experimentation"
+        "asa-pvalues",
+        "stanford-stats200"
       ],
       "featured": true,
+      "description": "Effect size describes the magnitude of a difference or association; statistical significance describes how incompatible data are with a null model relative to sampling uncertainty. They answer different questions. This chapter covers raw effects, relative effects, standardized mean differences, correlations, odds and risk ratios, number needed to treat, and model-performance changes. It explains why standardization aids comparison but can hide domain meaning, how small-sample bias corrections such as Hedges' g work, and why odds ratios are often misread as risk ratios. You will learn to define a smallest effect of practical interest, pair estimates with uncertainty, distinguish clinical or business importance from detectability, and avoid interpreting noisy subgroup effect sizes without shrinkage. The worked example compares an accurately estimated tiny conversion lift with a larger uncertain one. The lab implements Cohen's d and Hedges' g, verifies scale/translation invariance, and checks against the raw mean difference. Production guidance covers estimand contracts, metric units, heterogeneous effects, decision curves, monitoring, and communication.",
+      "prerequisites": [
+        "confidence-intervals",
+        "hypothesis-testing"
+      ],
+      "learningObjectives": [
+        "Select raw, relative, standardized, or probability-scale effect measures that match the decision and outcome type.",
+        "Explain why p-values depend on effect magnitude, noise, sample size, and design while effect size is not significance.",
+        "Compute standardized mean differences with appropriate pooled variance and small-sample correction.",
+        "Interpret effects against predefined practical thresholds and report uncertainty, baseline risk, and heterogeneity."
+      ],
       "editorial": {
-        "status": "summary"
+        "status": "verified",
+        "verifiedOn": "2026-08-21"
       },
-      "status": "summary",
-      "hasLab": false,
-      "labGoal": "",
-      "visualCount": 1,
+      "status": "verified",
+      "hasLab": true,
+      "labGoal": "Compute Cohen's d and Hedges' g, verify translation/scale invariance, and keep the raw effect beside the standardized result.",
+      "visualCount": 2,
       "visualSummaries": [
         {
-          "type": "concept-map",
-          "title": "Effect Size vs Statistical Significance"
+          "type": "matrix",
+          "title": "Magnitude, evidence, and decision"
+        },
+        {
+          "type": "curve",
+          "title": "Same effect, different uncertainty"
         }
       ],
       "followUpQuestions": [
-        "What assumptions does Effect Size vs Statistical Significance make?",
-        "How would you validate or debug Effect Size vs Statistical Significance in practice?"
+        "Why can a tiny effect have a tiny p-value?",
+        "When prefer raw over standardized effect?",
+        "Why can odds ratio exaggerate intuition for common outcomes?"
       ],
-      "estimatedMinutes": 1
+      "estimatedMinutes": 9
     },
     {
       "slug": "anova",
@@ -8507,29 +8784,56 @@
         "da",
         "as"
       ],
-      "interviewAnswer": "ANOVA tests whether group means differ more than expected from within-group variability under model assumptions. A significant omnibus test does not say which groups differ, so post-hoc comparisons require care.",
+      "interviewAnswer": "One-way ANOVA tests H0 that all group means are equal by comparing between-group mean square with within-group mean square. F=MS_between/MS_within, with k-1 and N-k degrees of freedom under the classical independent normal equal-variance model. A significant F says at least one mean differs; it does not identify which. Inspect residuals and design, use Welch ANOVA for unequal variances when appropriate, then apply prespecified contrasts or multiplicity-adjusted post-hoc tests and report effect sizes and intervals.",
       "keyPoints": [
-        "Between-group vs within-group variation.",
-        "Assumptions include independence and model-specific variance/error structure.",
-        "Post-hoc tests need multiplicity control."
+        "ANOVA partitions variability around the grand mean",
+        "The F statistic compares explained with residual variation",
+        "Omnibus rejection does not identify pairs",
+        "Residual independence and variance structure matter",
+        "Contrasts and post-hoc tests need multiplicity discipline"
       ],
       "resources": [
-        "stanford-stats200"
+        "nist-stat-handbook",
+        "stanford-stats200",
+        "scipy-stats",
+        "openintro-stats"
       ],
       "featured": false,
-      "editorial": {
-        "status": "summary"
-      },
-      "status": "summary",
-      "hasLab": false,
-      "labGoal": "",
-      "visualCount": 0,
-      "visualSummaries": [],
-      "followUpQuestions": [
-        "What assumptions does ANOVA & Comparing Multiple Groups make?",
-        "How would you validate or debug ANOVA & Comparing Multiple Groups in practice?"
+      "description": "Analysis of variance tests whether group means exhibit more between-group variation than expected from within-group variation under a specified model. It avoids the uncontrolled multiplicity of running every pairwise t-test, but a significant omnibus F test says only that not all means are equal. This chapter derives the sums-of-squares decomposition and F ratio, explains degrees of freedom, effect sizes, diagnostics, planned contrasts, post-hoc comparisons, Welch ANOVA, nonparametric alternatives, and extensions to factorial and repeated-measures designs. You will learn why normality concerns residuals rather than raw outcomes, why independence is usually more important than mild normality, and why unequal variance with unbalanced groups can distort classical ANOVA. The worked example decomposes three campaign groups and follows the omnibus test with corrected comparisons. The lab computes one-way ANOVA from first principles, verifies decomposition and translation invariance, and compares with SciPy. Production guidance covers experimental units, contrast registries, assumptions, multiplicity, drift, and reporting estimates rather than only an F statistic.",
+      "prerequisites": [
+        "hypothesis-testing",
+        "effect-size"
       ],
-      "estimatedMinutes": 1
+      "learningObjectives": [
+        "Derive between-, within-, and total sums of squares and explain the F ratio as signal relative to noise.",
+        "Interpret an omnibus rejection without claiming every group differs from every other group.",
+        "Choose classical, Welch, robust, permutation, or rank-based alternatives according to design and residual behavior.",
+        "Plan contrasts and adjust post-hoc comparisons while reporting group estimates, intervals, and effect sizes."
+      ],
+      "editorial": {
+        "status": "verified",
+        "verifiedOn": "2026-08-21"
+      },
+      "status": "verified",
+      "hasLab": true,
+      "labGoal": "Compute one-way ANOVA from first principles, verify the sums-of-squares identity and translation invariance, and compare F with SciPy.",
+      "visualCount": 2,
+      "visualSummaries": [
+        {
+          "type": "flow",
+          "title": "ANOVA decomposition"
+        },
+        {
+          "type": "matrix",
+          "title": "After the omnibus test"
+        }
+      ],
+      "followUpQuestions": [
+        "Why not just run pairwise t-tests?",
+        "What does significant ANOVA tell you?",
+        "When use Welch ANOVA?"
+      ],
+      "estimatedMinutes": 9
     },
     {
       "slug": "chi-square",
@@ -8541,30 +8845,56 @@
         "da",
         "as"
       ],
-      "interviewAnswer": "Chi-square tests compare observed categorical counts with counts expected under a null such as independence. They operate on counts, not percentages detached from sample size.",
+      "interviewAnswer": "Pearson's chi-square statistic sums (observed-expected)^2/expected across categorical cells. For an r-by-c independence table, expected count is row total times column total divided by grand total and df=(r-1)(c-1), assuming independent units and adequate asymptotic counts. A significant result says the variables are associated, not which cells differ or that one causes the other. Inspect standardized residuals, report an effect size such as Cramér's V, adjust post-hoc analyses, and use exact or Monte Carlo methods for sparse tables.",
       "keyPoints": [
-        "Expected cell counts matter for approximation quality.",
-        "Independence is a common null.",
-        "Effect size still matters."
+        "Expected counts come from the null and fixed margins",
+        "Each cell contributes a squared standardized discrepancy",
+        "Degrees of freedom reflect marginal constraints",
+        "Sparse or dependent data break the usual reference",
+        "Association magnitude and cell pattern follow the omnibus test"
       ],
       "resources": [
+        "nist-stat-handbook",
         "openintro-stats",
-        "stanford-stats200"
+        "scipy-stats",
+        "cdc-survey-variance"
       ],
       "featured": false,
-      "editorial": {
-        "status": "summary"
-      },
-      "status": "summary",
-      "hasLab": false,
-      "labGoal": "",
-      "visualCount": 0,
-      "visualSummaries": [],
-      "followUpQuestions": [
-        "What assumptions does Chi-square Tests for Categorical Data make?",
-        "How would you validate or debug Chi-square Tests for Categorical Data in practice?"
+      "description": "Chi-square methods compare observed categorical counts with counts expected under a null model. The goodness-of-fit test asks whether one categorical distribution matches specified probabilities; the independence or homogeneity test asks whether two categorical variables are associated or whether group distributions agree. This chapter derives Pearson's statistic from standardized cell residuals, explains degrees of freedom and expected-count calculation, connects the contingency-table test with likelihood-ratio and log-linear models, and distinguishes association from causation. You will learn why tests operate on counts rather than percentages, when asymptotic calibration is unreliable, how sparse tables and structural zeros require exact, Monte Carlo, or category-restructuring approaches, and why a significant table needs cell-level residuals and effect sizes such as Cramér's V. The worked example analyzes channel by conversion status and identifies which cells drive the result. The lab computes expected counts and Pearson's statistic from first principles, verifies marginal preservation and decomposition, and compares with SciPy. Production guidance covers category contracts, rare-level handling, weighting, multiplicity, privacy, and drift.",
+      "prerequisites": [
+        "hypothesis-testing",
+        "distributions"
       ],
-      "estimatedMinutes": 1
+      "learningObjectives": [
+        "Distinguish chi-square goodness-of-fit, independence, and homogeneity questions and formulate their null models.",
+        "Compute expected counts, Pearson cell contributions, the total statistic, and correct degrees of freedom.",
+        "Diagnose sparse counts, structural zeros, dependence, sampling weights, and post-hoc cell inspection.",
+        "Report residual patterns and association magnitude without interpreting association as causation."
+      ],
+      "editorial": {
+        "status": "verified",
+        "verifiedOn": "2026-08-21"
+      },
+      "status": "verified",
+      "hasLab": true,
+      "labGoal": "Compute a Pearson independence test from scratch, verify expected margins and cell decomposition, and compare with SciPy.",
+      "visualCount": 2,
+      "visualSummaries": [
+        {
+          "type": "flow",
+          "title": "From contingency table to evidence"
+        },
+        {
+          "type": "matrix",
+          "title": "Categorical tests"
+        }
+      ],
+      "followUpQuestions": [
+        "How are expected counts computed for independence?",
+        "What if expected counts are small?",
+        "Does significant chi-square imply a strong relationship?"
+      ],
+      "estimatedMinutes": 9
     },
     {
       "slug": "power-sample-size",
@@ -8576,35 +8906,57 @@
         "da",
         "as"
       ],
-      "interviewAnswer": "Power is the probability of detecting an effect of a specified size when it truly exists. Sample-size planning links baseline variance/rate, significance level, desired power and minimum detectable effect.",
+      "interviewAnswer": "Power is P(reject H0|a specified alternative is true), equal to 1-beta for a fixed design and test. Sample size grows with variance, stricter alpha, higher target power, and smaller effect—often approximately inverse-square in the detectable effect. Plan using the smallest effect worth acting on, realistic baseline/variance, independent unit, allocation, attrition, clustering, multiplicity, and stopping rule. MDE is what a design can reliably detect, not necessarily what matters. Do not use observed post-hoc power as new evidence; report the effect interval.",
       "keyPoints": [
-        "Power is defined relative to an alternative effect size.",
-        "Smaller MDE requires more samples.",
-        "Low power produces noisy, inconclusive experiments."
+        "Power is a curve over alternatives, not one universal number",
+        "Effect threshold and variance drive sample size",
+        "Independent information matters more than row count",
+        "Design corrections must be included before launch",
+        "Simulation audits formulas for real metrics and pipelines"
       ],
       "resources": [
+        "statsmodels-power",
+        "stanford-stats200",
         "openintro-stats",
-        "microsoft-experimentation"
+        "asa-pvalues"
       ],
       "featured": true,
+      "description": "Statistical power is the probability that a prespecified procedure rejects its null under a particular alternative. Sample-size planning connects that operating characteristic to a meaningful effect, variance, alpha, allocation, design, attrition, and decision horizon. This chapter derives normal-mean scaling, distinguishes minimum detectable effect from minimum worthwhile effect, explains one- versus two-sided tests, unequal allocation, clustering, multiple testing, sequential designs, and simulation-based power for complex estimators. You will learn why post-hoc observed power adds little beyond the p-value, why plugging optimistic variance or conversion assumptions understates required sample size, and why increasing rows does not overcome correlation or bias. The worked example plans a two-arm conversion experiment in absolute percentage points and inflates for attrition and design effect. The lab implements an approximate two-sample proportion calculation, verifies monotonic relationships, and compares a t-test case with statsmodels. Production guidance covers preregistered assumptions, traffic forecasts, guardrails, simulation, re-estimation without unblinding effects, monitoring, and stopping behavior.",
+      "prerequisites": [
+        "hypothesis-testing",
+        "effect-size",
+        "sampling-distributions"
+      ],
+      "learningObjectives": [
+        "Define power as a function of a specific alternative, procedure, design, and sample size.",
+        "Distinguish minimum detectable, minimum worthwhile, and observed effects in planning and interpretation.",
+        "Compute approximate sample sizes and adjust for allocation, clustering, attrition, multiplicity, and sequential monitoring.",
+        "Use simulation to validate analytic power for complex metrics and avoid post-hoc observed-power misuse."
+      ],
       "editorial": {
-        "status": "summary"
+        "status": "verified",
+        "verifiedOn": "2026-08-21"
       },
-      "status": "summary",
-      "hasLab": false,
-      "labGoal": "",
-      "visualCount": 1,
+      "status": "verified",
+      "hasLab": true,
+      "labGoal": "Compute approximate two-proportion sample size, verify monotonic design relationships, and compare an independent t-test case with statsmodels.",
+      "visualCount": 2,
       "visualSummaries": [
         {
-          "type": "concept-map",
-          "title": "Power, Minimum Detectable Effect & Sample Size"
+          "type": "curve",
+          "title": "Power rises with true effect"
+        },
+        {
+          "type": "flow",
+          "title": "Sample-size planning"
         }
       ],
       "followUpQuestions": [
-        "What assumptions does Power, Minimum Detectable Effect & Sample Size make?",
-        "How would you validate or debug Power, Minimum Detectable Effect & Sample Size in practice?"
+        "What happens to n if the target effect is halved?",
+        "Is 80% power always correct?",
+        "Why avoid observed post-hoc power?"
       ],
-      "estimatedMinutes": 1
+      "estimatedMinutes": 9
     },
     {
       "slug": "bayes-update",
@@ -12228,30 +12580,53 @@
         "aie",
         "as"
       ],
-      "interviewAnswer": "Norms measure vector magnitude; distance functions measure separation; similarity functions such as cosine compare direction. The choice changes model geometry, nearest neighbors, clustering and regularization.",
+      "interviewAnswer": "A norm measures magnitude and must be nonnegative, definite, homogeneous and satisfy the triangle inequality. A metric measures pairwise distance and must be nonnegative, identity-preserving, symmetric and satisfy the triangle inequality. L1 sums absolute coordinates, L2 is Euclidean length, and L∞ takes the largest absolute coordinate. Cosine similarity uses angle and ignores positive scale after normalization; cosine distance conventions are not always metrics. Feature scaling defines the geometry, while Mahalanobis distance accounts for covariance through a positive semidefinite precision matrix. Choose the measure from desired invariances and costs, then keep preprocessing and ANN index configuration consistent.",
       "keyPoints": [
-        "L1 and L2 norms behave differently.",
-        "Cosine similarity ignores absolute scale.",
-        "Distance concentration becomes problematic in high dimensions."
+        "Geometry is a modeling choice",
+        "Scaling changes nearest neighbors",
+        "Cosine ignores positive magnitude",
+        "Mahalanobis uses covariance structure",
+        "Index and evaluation metric must agree"
       ],
       "resources": [
         "mit-linear-algebra",
-        "3b1b-linear-algebra"
+        "3b1b-linear-algebra",
+        "numpy-linalg"
       ],
       "featured": false,
-      "editorial": {
-        "status": "summary"
-      },
-      "status": "summary",
-      "hasLab": false,
-      "labGoal": "",
-      "visualCount": 0,
-      "visualSummaries": [],
-      "followUpQuestions": [
-        "What assumptions or limitations does Norms, Distances & Similarity have?",
-        "How would you validate Norms, Distances & Similarity on a real dataset?"
+      "description": "Norms measure vector or matrix magnitude; metrics measure distance between objects; similarity functions rank resemblance but may not satisfy metric axioms. Those choices encode geometry and can change nearest neighbors, clustering, regularization, robustness and retrieval quality. This chapter develops L1, L2, L∞ and general Lp norms, weighted and Mahalanobis distance, cosine similarity, Hamming distance and key matrix norms. You will learn the norm and metric axioms, the role of scaling and covariance, why cosine discards magnitude, how high-dimensional distance concentration changes intuition, and why comparing raw mixed-unit features is usually meaningless. A worked retrieval example contrasts Euclidean and cosine rankings before and after normalization. The lab implements core measures, checks symmetry, triangle inequality examples and library agreement, and rejects zero-vector cosine. Production guidance covers preprocessing/versioning, approximate nearest-neighbor index compatibility, floating-point clipping, missing values, privacy, distribution drift and monitoring of neighbor stability. The goal is to make “distance” a modeled assumption tied to invariances and decision cost, not a default call chosen after features have already defined an accidental geometry.",
+      "prerequisites": [
+        "vectors-matrices"
       ],
-      "estimatedMinutes": 1
+      "learningObjectives": [
+        "Distinguish norms, metrics and similarities and verify the properties each downstream algorithm assumes.",
+        "Choose Lp, cosine, weighted or Mahalanobis geometry from feature units, invariances, covariance and task cost.",
+        "Operate distance-based systems with stable preprocessing, index-metric consistency, drift checks and meaningful retrieval evaluation."
+      ],
+      "editorial": {
+        "status": "verified",
+        "verifiedOn": "2026-08-21"
+      },
+      "status": "verified",
+      "hasLab": true,
+      "labGoal": "Implement L1, L2, L∞ and cosine, then verify metric properties, normalized equivalence and NumPy agreement.",
+      "visualCount": 2,
+      "visualSummaries": [
+        {
+          "type": "compare",
+          "title": "Unit-ball geometry changes what counts as near"
+        },
+        {
+          "type": "flow",
+          "title": "Production retrieval geometry"
+        }
+      ],
+      "followUpQuestions": [
+        "When are cosine and Euclidean rankings equivalent?",
+        "What problem does Mahalanobis distance address?",
+        "Why can distance degrade in high dimensions?"
+      ],
+      "estimatedMinutes": 10
     },
     {
       "slug": "projections-least-squares",
@@ -12262,34 +12637,54 @@
         "ds",
         "as"
       ],
-      "interviewAnswer": "Least squares can be understood as projecting the target vector onto the column space of the design matrix; the residual is orthogonal to that space at the optimum.",
+      "interviewAnswer": "Least squares chooses x̂ minimizing `||Ax−b||²`. At the optimum the residual r=b−Ax̂ is orthogonal to the column space, giving `AᵀA x̂=Aᵀb`. The fitted values are the projection of b onto Col(A). Normal equations are useful for derivation but square the condition number; production solvers use QR or SVD. If A is rank-deficient, coefficients are not unique and the pseudoinverse returns a minimum-norm solution. Always include the intended intercept, inspect rank and conditioning, evaluate out of sample, and remember that unbiasedness or confidence intervals require assumptions beyond numerical minimization.",
       "keyPoints": [
-        "Projection geometry explains normal equations.",
-        "Rank deficiency makes solutions non-unique without additional choices.",
-        "QR/SVD are numerically preferable to explicit matrix inverse."
+        "Fitted values lie in column space",
+        "Residual is orthogonal to features",
+        "Normal equations are a derivation",
+        "QR/SVD are safer solvers",
+        "Rank deficiency breaks coefficient uniqueness"
       ],
       "resources": [
-        "mit-linear-algebra"
+        "mit-linear-algebra",
+        "numpy-linalg",
+        "boyd-convex"
       ],
       "featured": false,
+      "description": "Orthogonal projection chooses the point in a subspace closest to a target, and least squares uses that geometry to fit inconsistent linear systems. Given a design matrix A and observations b, the fitted vector A x̂ is the projection of b onto A's column space, so the residual is orthogonal to every column. This chapter derives normal equations, explains why QR and singular value decomposition are safer computational routes, and connects rank, pseudoinverse, minimum-norm solutions, regularization, leverage and residual diagnostics. You will learn to construct projection onto a vector or orthonormal basis, distinguish coefficient uncertainty from predictive error, include intercepts and categorical encodings correctly, and identify when collinearity or ill-conditioning makes coefficients unstable even though predictions look reasonable. A worked line fit checks residual orthogonality by hand and with NumPy. Production guidance covers train/test separation, scaling, solver choice, dtype, robust alternatives, monitoring, privacy, artifact versioning and rollback. The objective is to connect the geometric statement “closest point in a subspace” to practical regression code and to know where ordinary least squares assumptions stop supporting statistical conclusions.",
+      "prerequisites": [
+        "vectors-matrices",
+        "norms-distances"
+      ],
+      "learningObjectives": [
+        "Derive projection and least-squares optimality from residual orthogonality and the geometry of column space.",
+        "Choose QR, SVD, pseudoinverse or regularization instead of relying blindly on normal equations or explicit inverse.",
+        "Validate fits using rank, conditioning, residual structure, leakage-safe evaluation and production monitoring."
+      ],
       "editorial": {
-        "status": "summary"
+        "status": "verified",
+        "verifiedOn": "2026-08-21"
       },
-      "status": "summary",
-      "hasLab": false,
-      "labGoal": "",
-      "visualCount": 1,
+      "status": "verified",
+      "hasLab": true,
+      "labGoal": "Project by solving least squares and verify the normal-equation, orthogonality, minimum-error and NumPy invariants.",
+      "visualCount": 2,
       "visualSummaries": [
         {
-          "type": "scatter",
-          "title": "Least-squares projection"
+          "type": "flow",
+          "title": "Least squares as orthogonal decomposition"
+        },
+        {
+          "type": "compare",
+          "title": "Same objective, different numerical routes"
         }
       ],
       "followUpQuestions": [
-        "What assumptions or limitations does Orthogonality, Projections & Least Squares have?",
-        "How would you validate Orthogonality, Projections & Least Squares on a real dataset?"
+        "Why is the residual orthogonal to every feature column?",
+        "Why prefer QR to normal equations?",
+        "What does the pseudoinverse return?"
       ],
-      "estimatedMinutes": 1
+      "estimatedMinutes": 10
     },
     {
       "slug": "jacobian-hessian",
@@ -12302,30 +12697,54 @@
         "aie",
         "as"
       ],
-      "interviewAnswer": "The Jacobian collects first derivatives of vector-valued functions; the Hessian contains second derivatives of a scalar objective and describes local curvature.",
+      "interviewAnswer": "For f:R^n→R^m, the Jacobian J has entries `J_ij=∂f_i/∂x_j` under the output-by-input convention and maps a small input change to `df≈J dx`. A JVP computes Jv; a VJP computes uᵀJ and is what reverse mode uses. For scalar f, the Hessian H has `H_ij=∂²f/∂x_i∂x_j` and gives the quadratic term `½dxᵀHdx`. At a stationary point, positive-definite H indicates a strict local minimum, negative definite a maximum, and mixed eigenvalue signs a saddle. Full matrices are usually avoided; autodiff computes products, while Newton/Gauss-Newton methods solve damped systems with conditioning and validation checks.",
       "keyPoints": [
-        "Gradient gives first-order direction.",
-        "Hessian eigenvalues describe local curvature.",
-        "Second-order methods can converge quickly but are expensive in high dimensions."
+        "Jacobian maps input perturbations to output perturbations",
+        "JVP and VJP avoid full matrices",
+        "Hessian encodes local curvature",
+        "Eigenvalue signs classify stationary geometry",
+        "Newton steps require safe solves and damping"
       ],
       "resources": [
-        "mit-linear-algebra",
-        "stanford-cs229"
+        "boyd-convex",
+        "stanford-ee364a",
+        "numpy-linalg"
       ],
       "featured": false,
-      "editorial": {
-        "status": "summary"
-      },
-      "status": "summary",
-      "hasLab": false,
-      "labGoal": "",
-      "visualCount": 0,
-      "visualSummaries": [],
-      "followUpQuestions": [
-        "What assumptions or limitations does Jacobians, Hessians & Second-order Thinking have?",
-        "How would you validate Jacobians, Hessians & Second-order Thinking on a real dataset?"
+      "description": "The Jacobian is the matrix representation of a vector-valued function's local linear map; the Hessian records second derivatives of a scalar function and describes local curvature. These objects clarify tensor shapes, sensitivity, inverse problems, uncertainty propagation and optimization, but full materialization is often unnecessary or impossible at ML scale. This chapter derives Jacobian-vector products (JVPs), vector-Jacobian products (VJPs), Hessian-vector products, quadratic Taylor models, curvature eigenvalues and positive-definiteness tests. You will learn to distinguish output-by-input conventions, interpret mixed partial symmetry under regularity assumptions, identify minima, maxima and saddles, and explain why Newton's method can fail when curvature is indefinite or the linear solve is unstable. A worked two-input/two-output map and scalar objective checks all shapes. The lab compares analytic Jacobian/Hessian values to finite differences and validates directional products. Production guidance covers autodiff mode choice, Gauss-Newton and Fisher approximations, damping, conjugate gradients, conditioning, precision, custom operations, monitoring and rollback. The objective is to use derivative operators and products as practical tools instead of treating giant derivative matrices as objects that must always be formed.",
+      "prerequisites": [
+        "derivatives-gradients",
+        "eigen-svd"
       ],
-      "estimatedMinutes": 1
+      "learningObjectives": [
+        "Derive Jacobian, JVP, VJP, Hessian and Hessian-vector shapes and interpret them as local sensitivity operators.",
+        "Use Hessian eigenstructure and quadratic models to classify stationary points and reason about conditioning and Newton-like steps.",
+        "Choose exact products or structured approximations with numerical checks, damping, scalable solves and production monitoring."
+      ],
+      "editorial": {
+        "status": "verified",
+        "verifiedOn": "2026-08-21"
+      },
+      "status": "verified",
+      "hasLab": true,
+      "labGoal": "Implement central-difference Jacobian and Hessian checks, then verify JVP, VJP, symmetry and analytic curvature.",
+      "visualCount": 2,
+      "visualSummaries": [
+        {
+          "type": "flow",
+          "title": "Derivative operators without giant matrices"
+        },
+        {
+          "type": "compare",
+          "title": "Hessian eigenvalue signatures"
+        }
+      ],
+      "followUpQuestions": [
+        "What is the difference between a JVP and VJP?",
+        "How can you compute Hv without H?",
+        "Why add damping to Newton?"
+      ],
+      "estimatedMinutes": 10
     },
     {
       "slug": "numerical-stability",
@@ -12338,30 +12757,55 @@
         "aie",
         "as"
       ],
-      "interviewAnswer": "Mathematically equivalent formulas can behave very differently in floating point. Stable implementations avoid overflow/underflow, poor conditioning and subtractive cancellation.",
+      "interviewAnswer": "Floating point represents a finite set of values with limited precision and exponent range, so operations round, addition is non-associative, large exponentials overflow, tiny values underflow and subtracting nearly equal numbers loses significant digits. Stable algorithms reformulate without changing the mathematical result: log-sum-exp subtracts the maximum, softmax shares that shift, probabilities multiply in log space, and linear systems use factorization-based solves rather than inverses or normal equations. Conditioning is sensitivity of the problem; stability is behavior of the algorithm. Use condition estimates, scale-aware tolerances, higher-precision accumulation where needed, nonfinite monitoring and adversarial numerical tests across hardware.",
       "keyPoints": [
-        "Use log-sum-exp for softmax/log-likelihoods.",
-        "Avoid explicit matrix inversion when solves/decompositions are available.",
-        "Scale values and inspect NaN/Inf early."
+        "Finite precision changes algebraic behavior",
+        "Conditioning belongs to the problem",
+        "Stability belongs to the algorithm",
+        "Shift/scaling avoids range failure",
+        "Solve and factorize; do not invert"
       ],
       "resources": [
-        "numpy",
-        "deep-learning-book"
+        "goldberg-floating",
+        "scipy-logsumexp",
+        "numpy-linalg"
       ],
       "featured": false,
-      "editorial": {
-        "status": "summary"
-      },
-      "status": "summary",
-      "hasLab": false,
-      "labGoal": "",
-      "visualCount": 0,
-      "visualSummaries": [],
-      "followUpQuestions": [
-        "What assumptions or limitations does Numerical Stability: log-sum-exp, overflow & conditioning have?",
-        "How would you validate Numerical Stability: log-sum-exp, overflow & conditioning on a real dataset?"
+      "description": "Numerical stability asks whether an algorithm produces an accurate result in finite-precision arithmetic; conditioning asks whether the underlying problem itself is sensitive to small input changes. This chapter develops floating-point representation, unit roundoff, overflow, underflow, subnormals, cancellation and non-associativity, then derives stable log-sum-exp, softmax, log-probability, variance, norm and linear-system practices. You will learn to distinguish forward from backward error, use condition numbers, avoid explicit inverses and normal equations, choose dtypes and tolerances, and detect when no algorithm can recover information absent from ill-conditioned data. A worked extreme-logit example shows why subtracting the maximum preserves softmax exactly in real arithmetic while preventing overflow. The lab implements stable log-sum-exp/softmax and compensated summation with invariants against high-precision references. Production guidance covers mixed precision, loss scaling, deterministic reductions, NaN/Inf policy, telemetry, cross-hardware regression, adversarial inputs, resource limits and rollback. The goal is to make numerical behavior part of algorithm design and system observability rather than a late response to a mysterious NaN.",
+      "prerequisites": [
+        "vectors-matrices",
+        "eigen-svd",
+        "derivatives-gradients"
       ],
-      "estimatedMinutes": 1
+      "learningObjectives": [
+        "Explain floating-point rounding, range limits, cancellation and non-associativity and predict common failure modes.",
+        "Separate problem conditioning from algorithm stability using forward/backward error and condition-number reasoning.",
+        "Implement and operate stable transformations, reductions and linear solves with dtype-aware tests, telemetry and safe failure policy."
+      ],
+      "editorial": {
+        "status": "verified",
+        "verifiedOn": "2026-08-21"
+      },
+      "status": "verified",
+      "hasLab": true,
+      "labGoal": "Implement stable log-sum-exp, softmax and compensated summation, then verify extreme-value invariants and high-precision agreement.",
+      "visualCount": 2,
+      "visualSummaries": [
+        {
+          "type": "compare",
+          "title": "Problem sensitivity versus algorithm behavior"
+        },
+        {
+          "type": "flow",
+          "title": "Stable softmax transformation"
+        }
+      ],
+      "followUpQuestions": [
+        "What is the difference between conditioning and stability?",
+        "Why subtract the maximum in softmax?",
+        "Why avoid normal equations numerically?"
+      ],
+      "estimatedMinutes": 10
     },
     {
       "slug": "joint-marginal-conditional",
@@ -12372,30 +12816,54 @@
         "ds",
         "as"
       ],
-      "interviewAnswer": "A joint distribution describes variables together; marginalization sums/integrates out variables; conditioning updates the distribution given observed information.",
+      "interviewAnswer": "The joint distribution `p(x,y)` assigns probability to combinations. Marginals sum or integrate out unobserved variables: `p(x)=Σ_y p(x,y)`. For `p(y)>0`, `p(x|y)=p(x,y)/p(y)`. Conversely `p(x,y)=p(x|y)p(y)`, and this chain rule extends to many variables. A joint determines all marginals and conditionals, but a marginal does not preserve dependence. For continuous variables, densities integrate rather than give point probability. Conditioning means learning an observed event; it is not the same as intervening causally. Validate support and normalization and use log-space inference for tiny high-dimensional probabilities.",
       "keyPoints": [
-        "Marginalize unwanted variables.",
-        "Conditional distributions depend on evidence.",
-        "Bayes rule reverses conditioning."
+        "Joint keeps co-occurrence",
+        "Marginal sums out variables",
+        "Conditional slices and renormalizes",
+        "Chain rule factorizes any joint",
+        "Conditioning is observation, not intervention"
       ],
       "resources": [
         "harvard-stat110",
-        "stanford-stats60"
+        "stanford-stats60",
+        "scipy-stats"
       ],
       "featured": false,
-      "editorial": {
-        "status": "summary"
-      },
-      "status": "summary",
-      "hasLab": false,
-      "labGoal": "",
-      "visualCount": 0,
-      "visualSummaries": [],
-      "followUpQuestions": [
-        "What assumptions or limitations does Joint, Marginal & Conditional Distributions have?",
-        "How would you validate Joint, Marginal & Conditional Distributions on a real dataset?"
+      "description": "A joint distribution describes uncertainty about variables together; marginals summarize one variable by summing or integrating out the others; conditional distributions renormalize a slice after observing information. These operations are the grammar behind probabilistic models, likelihoods, missing-data reasoning and graphical models. This chapter develops discrete probability tables and continuous joint densities, support, normalization, CDFs, conditional expectation, transformations and the chain/product rule. You will learn that marginals lose dependence information, that conditioning can change both support and association, and that a valid-looking collection of conditionals may not correspond to one compatible joint distribution. A worked weather-demand table computes marginals, conditionals, covariance and a posterior-like update. The lab normalizes a joint table and verifies marginalization, conditional normalization, reconstruction and expectation. Production guidance covers sparse/high-dimensional representations, zero-probability conditioning, density/log normalization, missing-not-at-random selection, privacy, drift, inference approximation and rollback. The objective is to move fluently among joint, marginal and conditional views while always naming which variables were observed, integrated out or intervened upon.",
+      "prerequisites": [
+        "probability-basics",
+        "expectation-variance"
       ],
-      "estimatedMinutes": 1
+      "learningObjectives": [
+        "Construct and validate discrete/continuous joint distributions and derive marginals, conditionals and expectations by sum/integration.",
+        "Use chain-rule factorizations and transformations while distinguishing conditioning from marginalization and intervention.",
+        "Operate high-dimensional probabilistic representations with stable normalization, support/selection assumptions, approximation checks and privacy controls."
+      ],
+      "editorial": {
+        "status": "verified",
+        "verifiedOn": "2026-08-21"
+      },
+      "status": "verified",
+      "hasLab": true,
+      "labGoal": "Normalize and query a discrete joint table, verifying marginals, conditionals, reconstruction, expectations and dependence.",
+      "visualCount": 2,
+      "visualSummaries": [
+        {
+          "type": "flow",
+          "title": "Three views of one probability table"
+        },
+        {
+          "type": "compare",
+          "title": "Observation versus action"
+        }
+      ],
+      "followUpQuestions": [
+        "How do you get a marginal from a joint?",
+        "Does a joint determine conditionals?",
+        "Why use log probabilities in inference?"
+      ],
+      "estimatedMinutes": 10
     },
     {
       "slug": "independence",
@@ -12406,30 +12874,53 @@
         "ds",
         "as"
       ],
-      "interviewAnswer": "Independence means the joint factorizes into marginals; conditional independence means two variables become independent after conditioning on a third set. Conditional independence is central to graphical models and causal reasoning.",
+      "interviewAnswer": "Events A and B are independent when `P(A∩B)=P(A)P(B)`, equivalently `P(A|B)=P(A)` when defined. Variables X,Y are independent when their joint factorizes `p(x,y)=p(x)p(y)` over all values. Conditional independence `X ⟂ Y | Z` means `p(x,y|z)=p(x|z)p(y|z)` for relevant z. Pairwise independence does not imply mutual independence, and zero covariance does not imply independence except under special families. Conditioning on a common cause can remove association; conditioning on a collider can create it. Independence claims depend on the population/model and may fail after selection or deployment shift.",
       "keyPoints": [
-        "Zero correlation does not generally imply independence.",
-        "Conditioning can remove or create dependence.",
-        "DAG separation statements are about conditional independence."
+        "Independence is joint factorization",
+        "Pairwise is weaker than mutual",
+        "Uncorrelated is weaker than independent",
+        "Conditioning can remove or create dependence",
+        "The claim is population and model relative"
       ],
       "resources": [
         "harvard-stat110",
-        "harvard-causal-diagrams"
+        "harvard-causal-diagrams",
+        "stanford-stats60"
       ],
       "featured": false,
-      "editorial": {
-        "status": "summary"
-      },
-      "status": "summary",
-      "hasLab": false,
-      "labGoal": "",
-      "visualCount": 0,
-      "visualSummaries": [],
-      "followUpQuestions": [
-        "What assumptions or limitations does Independence & Conditional Independence have?",
-        "How would you validate Independence & Conditional Independence on a real dataset?"
+      "description": "Independence is a precise factorization statement: learning one event or variable does not change the distribution of another. Conditional independence makes the same claim within each value of a conditioning set and is the key simplification behind graphical models, naive Bayes, randomized experiments and modular probabilistic reasoning. This chapter distinguishes pairwise from mutual independence, zero covariance from independence, and marginal from conditional independence. It explains common-cause confounding, mediation, colliders and selection, showing why conditioning can remove dependence in one graph and create it in another. You will learn to test factorization in finite tables, use d-separation as a graph-based implication under a causal/probabilistic model, and avoid reading observed conditional independence as automatic causal proof. A worked alarm example contrasts marginal dependence through a hidden cause with conditional independence after that cause is known. The lab constructs exact binary tables and simulates collider bias. Production guidance covers feature leakage, naive conditional assumptions, sparse conditional tests, distribution shift, selection logs, graph/version governance, fairness, privacy and rollback. The objective is to treat every independence claim as relative to a distribution, conditioning set and population—not as an intrinsic relationship between column names.",
+      "prerequisites": [
+        "joint-marginal-conditional"
       ],
-      "estimatedMinutes": 1
+      "learningObjectives": [
+        "Verify event/random-variable independence and distinguish pairwise, mutual, conditional and mean/uncorrelated relationships.",
+        "Reason about chains, forks and colliders using factorization and d-separation without confusing association with intervention.",
+        "Validate and operate conditional-independence assumptions under selection, sparse data, drift, leakage and high-stakes decision constraints."
+      ],
+      "editorial": {
+        "status": "verified",
+        "verifiedOn": "2026-08-21"
+      },
+      "status": "verified",
+      "hasLab": true,
+      "labGoal": "Verify conditional versus marginal independence in exact tables and demonstrate collider dependence through simulation.",
+      "visualCount": 2,
+      "visualSummaries": [
+        {
+          "type": "compare",
+          "title": "Conditioning has opposite effects"
+        },
+        {
+          "type": "flow",
+          "title": "Audit an independence assumption"
+        }
+      ],
+      "followUpQuestions": [
+        "When does zero covariance imply independence?",
+        "What is collider bias?",
+        "Why is conditional independence useful?"
+      ],
+      "estimatedMinutes": 10
     },
     {
       "slug": "monte-carlo",
@@ -12440,35 +12931,55 @@
         "ds",
         "as"
       ],
-      "interviewAnswer": "Monte Carlo approximates expectations or probabilities with repeated random samples. Error typically shrinks with the square root of sample count, so simulation is flexible but can be computationally expensive.",
+      "interviewAnswer": "To estimate `μ=E_p[h(X)]`, draw samples from p and average `μ̂=n^{-1}Σh(X_i)`. For IID finite variance, it is unbiased and has standard error `sqrt(Var(h)/n)`; CLT intervals are approximate and convergence is only `1/√n`. Variance reduction changes sampling or uses correlated known quantities without changing the target. Importance sampling draws from q and weights by p/q, but requires support coverage and can fail when a few weights dominate. Record Generator/algorithm, seed or state, code and sample count; use independent spawned streams in parallel, monitor standard error/effective sample size and separate numerical Monte Carlo error from misspecified-model uncertainty.",
       "keyPoints": [
-        "Use simulation when analytic calculation is hard.",
-        "Random seeds improve reproducibility, not statistical validity.",
-        "Variance reduction can improve efficiency."
+        "Estimator targets an expectation",
+        "IID error shrinks as 1/√n",
+        "Variance reduction uses structure",
+        "Importance weights need support and overlap",
+        "RNG stream/state is part of the artifact"
       ],
       "resources": [
         "harvard-stat110",
-        "numpy"
+        "numpy-random",
+        "scipy-stats"
       ],
       "featured": false,
+      "description": "Monte Carlo methods approximate expectations, probabilities and integrals by sampling from a distribution and averaging a function of the draws. Their power is dimensional flexibility and simple error analysis; their weakness is the slow `1/√n` convergence of independent sampling and the fact that a reproducible random number is not evidence that the modeled distribution is correct. This chapter derives the estimator, variance and standard error, then covers inverse/rejection sampling, importance sampling, antithetic and control variates, stratification, quasi-Monte Carlo, rare events, Markov chain dependence and sequential stopping. You will learn to separate model uncertainty from simulation error, design independent parallel random streams, diagnose weight degeneracy and report confidence/precision rather than one seed's answer. A worked integral estimates π and compares variance-reduction ideas. The lab estimates an integral with crude and antithetic sampling and verifies convergence and reproducibility with NumPy Generator. Production guidance covers RNG state/version compatibility, deterministic replay, cryptographic boundaries, numerical stability, cost budgets, distributed aggregation, monitoring and rollback. The objective is to make simulation an auditable numerical experiment with a defined estimand, sampling law, uncertainty and failure policy.",
+      "prerequisites": [
+        "expectation-variance",
+        "clt",
+        "distributions"
+      ],
+      "learningObjectives": [
+        "Derive Monte Carlo estimators, standard errors and confidence approximations for expectations/probabilities and distinguish simulation from model uncertainty.",
+        "Select and diagnose importance, control, antithetic, stratified, quasi-random or correlated sampling methods from integrand structure and cost.",
+        "Operate reproducible parallel simulations with independent streams, stable aggregation, convergence monitoring, security boundaries and rollback."
+      ],
       "editorial": {
-        "status": "summary"
+        "status": "verified",
+        "verifiedOn": "2026-08-21"
       },
-      "status": "summary",
+      "status": "verified",
       "hasLab": true,
-      "labGoal": "Estimate a probability with Monte Carlo simulation.",
-      "visualCount": 1,
+      "labGoal": "Estimate an integral using crude and antithetic sampling, verify reproducibility, unbiased target, uncertainty scaling and independent spawned streams.",
+      "visualCount": 2,
       "visualSummaries": [
         {
           "type": "flow",
-          "title": "Monte Carlo estimation"
+          "title": "Auditable Monte Carlo experiment"
+        },
+        {
+          "type": "compare",
+          "title": "Variance reduction strategies"
         }
       ],
       "followUpQuestions": [
-        "What assumptions or limitations does Monte Carlo Simulation have?",
-        "How would you validate Monte Carlo Simulation on a real dataset?"
+        "Why is Monte Carlo slow?",
+        "What is effective sample size for weights?",
+        "How is quasi-Monte Carlo different?"
       ],
-      "estimatedMinutes": 2
+      "estimatedMinutes": 10
     },
     {
       "slug": "law-total-expectation",
@@ -12479,29 +12990,54 @@
         "ds",
         "as"
       ],
-      "interviewAnswer": "Condition on useful groups, solve within each group, then average using group probabilities. These identities are powerful for mixture distributions, debugging aggregate metrics and Bayesian reasoning.",
+      "interviewAnswer": "If events B_i form a partition, `P(A)=Σ_iP(A|B_i)P(B_i)`. For a conditioning variable Z, `E[X]=E[E[X|Z]]`, the tower property. Total variance is `Var(X)=E[Var(X|Z)]+Var(E[X|Z])`, separating average within-group variance from variation between group means. The weights must be probabilities for the target population, not arbitrary averages of group metrics. These laws are identities and require no independence, but each conditional quantity and group weight must refer to the same well-defined population and observation process.",
       "keyPoints": [
-        "P(A)=sum P(A|B)P(B).",
-        "E[X]=E[E[X|Y]].",
-        "Stratification can explain aggregate differences."
+        "Partition cases must be disjoint and exhaustive",
+        "Weight conditional answers by target probability",
+        "Tower property averages conditional means",
+        "Total variance equals within plus between",
+        "Composition changes aggregate metrics"
       ],
       "resources": [
-        "harvard-stat110"
+        "harvard-stat110",
+        "think-bayes",
+        "stanford-stats60"
       ],
       "featured": false,
-      "editorial": {
-        "status": "summary"
-      },
-      "status": "summary",
-      "hasLab": false,
-      "labGoal": "",
-      "visualCount": 0,
-      "visualSummaries": [],
-      "followUpQuestions": [
-        "What assumptions or limitations does Law of Total Probability & Total Expectation have?",
-        "How would you validate Law of Total Probability & Total Expectation on a real dataset?"
+      "description": "The laws of total probability, expectation and variance solve an uncertain problem by conditioning on a useful partition and averaging the conditional answers with the correct weights. They formalize mixture models, subgroup aggregation, hierarchical risk, hidden states, recursive dynamic programming and Bayesian prediction. This chapter derives each law, the tower property and within/between variance decomposition, then shows how choosing a conditioning variable can simplify or complicate a calculation. You will learn to distinguish conditional weights from observed sample proportions, avoid averaging rates without population weights, and use the complement event or first-step analysis strategically. A worked customer-support example combines channel-specific escalation probabilities and expected handling times while exposing composition drift. The lab computes mixture probabilities and moments and verifies them against direct enumeration. Production guidance covers changing segment mix, post-stratification, sparse groups, delayed/missing labels, numerical log mixtures, hierarchical shrinkage, monitoring, privacy and rollback. The objective is to use conditioning as a controlled decomposition—state the exhaustive cases, solve each case, then reassemble—while recognizing that aggregate performance can move even when every conditional performance stays fixed.",
+      "prerequisites": [
+        "joint-marginal-conditional",
+        "expectation-variance"
       ],
-      "estimatedMinutes": 1
+      "learningObjectives": [
+        "Derive and apply total probability, tower expectation and total variance over event partitions or conditioning variables.",
+        "Use first-step/latent-group conditioning and interpret within-group versus between-group uncertainty and composition effects.",
+        "Operate mixture and stratified estimates with correct weights, sparse-group uncertainty, drift monitoring, privacy and stable rollback."
+      ],
+      "editorial": {
+        "status": "verified",
+        "verifiedOn": "2026-08-21"
+      },
+      "status": "verified",
+      "hasLab": true,
+      "labGoal": "Compute total probability, expectation and variance for a finite mixture and verify them against direct enumeration and composition changes.",
+      "visualCount": 2,
+      "visualSummaries": [
+        {
+          "type": "flow",
+          "title": "Condition, solve, and recombine"
+        },
+        {
+          "type": "compare",
+          "title": "Two sources of total uncertainty"
+        }
+      ],
+      "followUpQuestions": [
+        "What conditions must partition events satisfy?",
+        "What is the tower property?",
+        "How can aggregate performance change without subgroup degradation?"
+      ],
+      "estimatedMinutes": 9
     },
     {
       "slug": "normalization-db",
@@ -13578,30 +14114,57 @@
       "roles": [
         "ds"
       ],
-      "interviewAnswer": "Sampling design determines which population the data represents. Simple random sampling gives each unit equal probability; stratification samples within known groups; cluster sampling selects groups and can increase correlation/variance.",
+      "interviewAnswer": "A probability sample gives each frame unit a known nonzero inclusion probability. Simple random sampling selects units directly; stratification samples within homogeneous subgroups to guarantee coverage and often improve precision; cluster sampling selects groups for cost efficiency but induces correlation and often increases variance; multistage designs combine them. Estimate population quantities with design weights, typically inverse inclusion probabilities, and compute design-aware variance using strata, clusters, finite-population corrections, or replicate weights. Large convenience samples do not have these guarantees.",
       "keyPoints": [
-        "Sampling mechanism affects both bias and standard error.",
-        "Stratification can improve precision for important subgroups.",
-        "Clustered samples need clustered uncertainty."
+        "The frame is not automatically the target population",
+        "Known inclusion probabilities enable design-based weighting",
+        "Strata seek internal homogeneity; clusters are often internally heterogeneous but correlated",
+        "Weights affect point estimates and effective information",
+        "Variance must reflect every sampling stage"
       ],
       "resources": [
+        "cdc-survey-variance",
         "openintro-stats",
-        "stanford-stats60"
+        "stanford-stats60",
+        "census-nonresponse"
       ],
       "featured": false,
-      "editorial": {
-        "status": "summary"
-      },
-      "status": "summary",
-      "hasLab": false,
-      "labGoal": "",
-      "visualCount": 0,
-      "visualSummaries": [],
-      "followUpQuestions": [
-        "When would you not use Sampling Design: Random, Stratified & Cluster Sampling?",
-        "How would you validate or tune Sampling Design: Random, Stratified & Cluster Sampling?"
+      "description": "Sampling design determines which population units can enter a dataset and with what probability. Simple random, systematic, stratified, cluster, multistage, and unequal-probability samples trade cost, coverage, and precision differently; their weights and dependence structure must flow into estimation and uncertainty. This chapter defines target and frame populations, inclusion probabilities, base weights, stratification gains, cluster design effects, finite-population correction, probability-proportional-to-size sampling, and design-based versus model-based inference. You will learn why stratification and clustering are not opposites, how self-weighting designs can emerge across stages, why convenience and quota samples do not acquire probability-sample guarantees from large n, and how nonresponse adjustments and calibration alter both bias and variance. The worked example estimates a company-wide mean from disproportionate department strata. The lab implements a Horvitz–Thompson-style weighted mean, verifies recovery on a finite population, and demonstrates stratification variance reduction. Production guidance covers frame snapshots, inclusion-probability lineage, replicate variance, privacy, monitoring, and survey lifecycle controls.",
+      "prerequisites": [
+        "probability-basics",
+        "sampling-distributions",
+        "expectation-variance"
       ],
-      "estimatedMinutes": 1
+      "learningObjectives": [
+        "Map target population, sampling frame, unit, stages, strata, clusters, and inclusion probabilities before analysis.",
+        "Explain when stratification improves precision and when cluster sampling reduces cost while increasing variance.",
+        "Compute design-weighted estimates and understand finite-population and design-effect adjustments.",
+        "Diagnose coverage, unequal weighting, nonresponse, and variance-estimation failures in complex samples."
+      ],
+      "editorial": {
+        "status": "verified",
+        "verifiedOn": "2026-08-21"
+      },
+      "status": "verified",
+      "hasLab": true,
+      "labGoal": "Compute inverse-probability weighted estimates, verify a stratified finite-population mean, and show why the unweighted estimate is biased under disproportionate allocation.",
+      "visualCount": 2,
+      "visualSummaries": [
+        {
+          "type": "matrix",
+          "title": "Probability sampling designs"
+        },
+        {
+          "type": "flow",
+          "title": "Weight lineage"
+        }
+      ],
+      "followUpQuestions": [
+        "Why can stratification reduce variance?",
+        "Why can clustering increase variance?",
+        "What is a sampling weight?"
+      ],
+      "estimatedMinutes": 9
     },
     {
       "slug": "selection-nonresponse-bias",
@@ -13611,35 +14174,56 @@
       "roles": [
         "ds"
       ],
-      "interviewAnswer": "More data does not fix a systematically unrepresentative sample. Selection and nonresponse bias occur when inclusion/response is related to the outcome or variables of interest.",
+      "interviewAnswer": "Selection bias occurs when inclusion depends on variables related to the outcome after conditioning on what the analysis uses. Coverage bias comes from the frame missing or duplicating target units; nonresponse bias comes when sampled respondents differ from nonrespondents on the estimand. Bias is not determined by response rate alone: it depends on response–outcome association. Weighting or imputation can correct differences explained by observed variables with overlap and valid models, but not unknown unmeasured selection without assumptions. Compare to frame benchmarks, model response, conduct targeted follow-up, and report sensitivity analyses.",
       "keyPoints": [
-        "Distinguish sampling variance from systematic bias.",
-        "Weighting can help only when selection is modeled with adequate information.",
-        "Instrumentation and eligibility define the population actually observed."
+        "Large n attacks variance, not systematic selection",
+        "Response rate is a risk indicator, not a bias estimate",
+        "Adjustment needs outcome-relevant observed variables and positivity",
+        "Conditioning on a collider can create association",
+        "Residual selection uncertainty requires sensitivity and external evidence"
       ],
       "resources": [
+        "census-nonresponse",
+        "cdc-survey-variance",
         "openintro-stats",
-        "stanford-stats60"
+        "harvard-causal-diagrams"
       ],
       "featured": true,
+      "description": "Selection, coverage, and nonresponse bias arise when observed units differ systematically from the target population in ways related to the outcome or estimand. More rows reduce sampling variance but do not automatically reduce these biases; a massive opt-in dataset can be precisely wrong. This chapter decomposes total survey error, distinguishes target population, frame coverage, unit nonresponse, item nonresponse, attrition, and conditioning on selection, and explains why response rate alone does not determine bias. You will learn to draw selection diagrams, compare respondents with frame benchmarks, use inverse-probability weighting, calibration, imputation, follow-up samples, and sensitivity analysis, while stating the untestable assumptions each method needs. The worked example shows how differential response reverses an apparent support rate and how weighting helps only with observed adjustment variables. The lab simulates outcome-related response, quantifies bias, applies poststratification, and verifies when correction succeeds or fails. Production guidance covers contact paradata, consent, privacy, weight lineage, monitoring, bounded corrections, and transparent residual-uncertainty reporting.",
+      "prerequisites": [
+        "sampling-design",
+        "joint-marginal-conditional"
+      ],
+      "learningObjectives": [
+        "Separate undercoverage, overcoverage, unit nonresponse, item nonresponse, attrition, and measurement error in a total-error framework.",
+        "Explain why response rate and sample size alone do not identify nonresponse or selection bias.",
+        "Apply weighting, calibration, imputation, follow-up, and sensitivity methods with explicit exchangeability and positivity assumptions.",
+        "Design diagnostics and monitoring that compare observed samples with frames, benchmarks, and hard-to-reach follow-up data."
+      ],
       "editorial": {
-        "status": "summary"
+        "status": "verified",
+        "verifiedOn": "2026-08-21"
       },
-      "status": "summary",
-      "hasLab": false,
-      "labGoal": "",
-      "visualCount": 1,
+      "status": "verified",
+      "hasLab": true,
+      "labGoal": "Simulate outcome-related response, quantify respondent bias, apply poststratification, and verify exactly when observed-group adjustment recovers the population.",
+      "visualCount": 2,
       "visualSummaries": [
         {
-          "type": "concept-map",
-          "title": "Selection, Coverage & Nonresponse Bias"
+          "type": "flow",
+          "title": "Where a target population becomes an observed dataset"
+        },
+        {
+          "type": "matrix",
+          "title": "Bias diagnostics and what they reveal"
         }
       ],
       "followUpQuestions": [
-        "When would you not use Selection, Coverage & Nonresponse Bias?",
-        "How would you validate or tune Selection, Coverage & Nonresponse Bias?"
+        "Can a 90% response rate still be biased?",
+        "When does inverse response weighting work?",
+        "How do you assess unmeasured selection?"
       ],
-      "estimatedMinutes": 1
+      "estimatedMinutes": 9
     },
     {
       "slug": "hyperparameter-tuning",

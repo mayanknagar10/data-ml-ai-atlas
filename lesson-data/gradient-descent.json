@@ -7,94 +7,175 @@
     "all",
     "as"
   ],
-  "interviewAnswer": "Gradient descent updates parameters in the negative-gradient direction. Too large a learning rate can overshoot or diverge; too small a rate makes optimization painfully slow.",
+  "interviewAnswer": "Gradient descent updates `θ_{t+1}=θ_t−η_t∇f(θ_t)`. The negative gradient is steepest local descent in Euclidean geometry, while the learning rate decides how far the local approximation is trusted. For an L-smooth objective, a step below roughly `2/L` gives stable descent in the quadratic case; on a positive-definite quadratic, convergence speed depends on condition number. Mini-batch SGD uses noisy unbiased or approximately unbiased gradients for scale and sometimes useful noise. Momentum averages directions; preconditioning rescales coordinates. Monitor loss, gradient/update norms, validation metrics and numerical health, and checkpoint weights, optimizer, scheduler, random/data state together.",
   "keyPoints": [
-    "Batch/SGD/mini-batch",
-    "Learning rate",
-    "Momentum",
-    "Schedulers"
+    "Direction and step size are separate",
+    "Curvature sets stability scale",
+    "Conditioning sets speed disparity",
+    "SGD introduces gradient noise",
+    "Checkpoint the whole training state"
   ],
   "resources": [
-    "stanford-cs229",
-    "mit-6s191",
-    "statquest",
-    "mit-linear-algebra",
-    "d2l",
-    "google-mlcc-exercises"
+    "boyd-convex",
+    "stanford-ee364a",
+    "stanford-cs229"
   ],
   "featured": true,
-  "why": "Learning rate and optimization behavior are among the most common practical ML/DL interview topics because they directly determine whether training converges.",
-  "intuition": "Gradient descent repeatedly asks: which local direction increases the loss fastest? Then it takes a step in the opposite direction. The learning rate controls how large that step is.",
-  "deepDive": "Batch gradient descent uses all samples per update; stochastic/mini-batch methods use noisy gradient estimates that are cheaper and can help exploration. A learning rate that is too high can oscillate or diverge; too low wastes compute and can stall. Schedules, warmup, momentum and adaptive optimizers modify the effective step over time. Non-convex deep networks do not guarantee reaching a global minimum.",
-  "math": "θ_{t+1}=θ_t - η_t g_t, where g_t estimates ∇L(θ_t)",
-  "workedExample": "If training loss jumps wildly and becomes NaN after a few steps, first lower the learning rate and inspect gradient norms before changing the architecture.",
+  "why": "A correct gradient does not guarantee useful training. Poor feature scaling creates narrow valleys; a fixed learning rate that is safe for steep curvature barely moves in flat directions; mixed precision can underflow; a validation metric can worsen while training loss falls. Optimizer choices also change compute, communication and reproducibility. Understanding the base dynamics lets engineers diagnose training instead of changing optimizers blindly.",
+  "intuition": "The gradient is a downhill arrow drawn from the tangent plane. The learning rate is stride length. On a round bowl, repeated steps head directly to the bottom. In a narrow tilted valley, the steep wall gradient causes side-to-side motion while progress along the valley is slow. Rescaling, momentum or curvature-aware preconditioning makes the landscape easier to traverse.",
+  "deepDive": "The full explanation is organized into the structured sections below.",
+  "math": "Update: θ_{t+1}=θ_t−η_tg_t. For exact gradient on quadratic f(θ)=½θ^THθ−b^Tθ with H≻0, error e_{t+1}=(I−ηH)e_t; convergence requires spectral radius max_i|1−ηλ_i|<1. With 0<η<2/λmax this holds. For L-smooth f, `f(θ−η∇f)≤f(θ)−η(1−Lη/2)||∇f||²`.",
+  "workedExample": "Gradient is (100x,y) and Hessian eigenvalues are 100 and 1, so condition number is 100. With η=0.01, x becomes zero in one ideal step while y multiplies by 0.99 and needs hundreds of steps. With η=0.019, x multiplies by −0.9 and oscillates while y slowly shrinks. At η=0.021, x multiplies by −1.1 and diverges because the step exceeds 2/100. Rescaling x or preconditioning by approximately diag(1/100,1) makes both directions comparable. Backtracking detects a stable step without knowing λmax, while a stochastic objective would make its sufficient-decrease tests noisy.",
   "code": "optimizer=torch.optim.SGD(model.parameters(), lr=1e-2, momentum=.9)\nfor x,y in loader:\n    optimizer.zero_grad(); loss=criterion(model(x),y)\n    loss.backward(); optimizer.step()",
   "commonMistakes": [
-    "Assuming a smaller learning rate is always safer or better.",
-    "Changing many hyperparameters before checking the learning-rate curve.",
-    "Forgetting optimizer.zero_grad() in PyTorch training loops."
+    {
+      "mistake": "If loss decreases, the learning rate is optimal.",
+      "correction": "It may be stable but far too small; inspect convergence speed, update norms and validation behavior."
+    },
+    {
+      "mistake": "Changing batch size leaves optimizer behavior unchanged.",
+      "correction": "It changes gradient variance, number of steps, normalization and often the useful schedule/rate."
+    },
+    {
+      "mistake": "Saving model weights is enough to resume training.",
+      "correction": "Optimizer moments, scheduler, scaler, RNG and sampler/data position are part of the dynamical state."
+    }
   ],
   "followUps": [
-    "What happens if learning rate is too high?",
-    "Why use mini-batches?",
-    "What does momentum do?",
-    "Why use learning-rate warmup?"
+    {
+      "question": "Why can gradient descent zig-zag?",
+      "answer": "In ill-conditioned valleys the gradient points strongly across steep walls, so a safe scalar step oscillates while moving slowly along flat directions."
+    },
+    {
+      "question": "What does momentum do?",
+      "answer": "It accumulates a velocity from past gradients, smoothing alternating directions and accelerating persistent ones."
+    },
+    {
+      "question": "Why separate training loss and validation metric?",
+      "answer": "The optimizer directly reduces the training objective; generalization and business utility are evaluated on held-out data and may move differently."
+    }
   ],
-  "production": "Training pipelines should log learning rate, loss and gradient/parameter health with checkpoints so failed runs are diagnosable and resumable.",
+  "production": "Version data/order, objective, batch/effective batch, optimizer equations, schedule, precision and distributed reduction. Monitor loss components, validation slices, learning/update/gradient/parameter norms, clipping, nonfinite values, throughput and cost. Atomically checkpoint full training state, test resume equivalence, bound failure/retry budgets, validate before promotion and keep compatible model plus preprocessing for rollback.",
   "lab": {
-    "goal": "See how learning rate changes convergence on a simple quadratic.",
+    "goal": "Implement gradient descent with Armijo backtracking for a quadratic and verify gradient correctness, monotonic descent and convergence.",
     "language": "python",
-    "buildIt": "def optimize(lr,steps=30):\n    x=8.0; hist=[]\n    for _ in range(steps):\n        grad=2*(x-3)          # d/dx (x-3)^2\n        x-=lr*grad; hist.append(x)\n    return x,hist\nfor lr in [0.05,0.4,1.1]:\n    print(lr,optimize(lr)[0])\n",
-    "useIt": "import torch\nx=torch.tensor(8.0,requires_grad=True)\nopt=torch.optim.SGD([x],lr=.1)\nfor _ in range(30):\n    opt.zero_grad(); loss=(x-3)**2; loss.backward(); opt.step()\nprint(x.item())\n",
-    "verifyIt": "assert abs(optimize(.1,60)[0]-3)<1e-4\n"
-  },
-  "visual": {
-    "type": "curve",
-    "title": "Optimization trajectory",
-    "series": [
-      {
-        "label": "loss",
-        "points": [
-          [
-            0,
-            0.92
-          ],
-          [
-            0.12,
-            0.7
-          ],
-          [
-            0.25,
-            0.54
-          ],
-          [
-            0.4,
-            0.4
-          ],
-          [
-            0.55,
-            0.31
-          ],
-          [
-            0.72,
-            0.24
-          ],
-          [
-            0.88,
-            0.21
-          ],
-          [
-            1,
-            0.2
-          ]
-        ]
-      }
-    ],
-    "caption": "A good learning rate reduces loss steadily; too large can oscillate or diverge.",
-    "xLabel": "training step",
-    "yLabel": "loss"
+    "buildIt": "def objective(v):\n    x,y=v; return 0.5*(100*x*x+y*y)\n\ndef gradient(v):\n    x,y=v; return [100*x,y]\n\ndef step_with_backtracking(v,start=1.0,c=1e-4):\n    g=gradient(v); eta=start; current=objective(v); norm2=sum(value*value for value in g)\n    while objective([v[i]-eta*g[i] for i in range(2)]) > current-c*eta*norm2:\n        eta*=0.5\n        if eta<1e-12: raise RuntimeError('line search failed')\n    return [v[i]-eta*g[i] for i in range(2)],eta",
+    "useIt": "v=[1.0,1.0]; history=[objective(v)]; rates=[]\nfor _ in range(800):\n    v,eta=step_with_backtracking(v); history.append(objective(v)); rates.append(eta)\n\ndef central(i,h=1e-6):\n    plus=list(v); minus=list(v); plus[i]+=h; minus[i]-=h\n    return (objective(plus)-objective(minus))/(2*h)",
+    "verifyIt": "assert all(b<=a+1e-15 for a,b in zip(history,history[1:]))\nassert history[-1] < 1e-10\nassert max(rates)<=1.0 and min(rates)>0\nassert all(abs(central(i)-gradient(v)[i])<1e-8 for i in range(2))\nunstable=[1.0,1.0]\nfor _ in range(5):\n    g=gradient(unstable); unstable=[unstable[i]-0.021*g[i] for i in range(2)]\nassert abs(unstable[0])>1.0",
+    "shipIt": "Use tested library optimizers for models, log effective batch/rate and numerical signals, checkpoint full state atomically, enforce cost/failure budgets and gate deployment with held-out slice evaluation plus rollback."
   },
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "Gradient descent iteratively updates parameters opposite the gradient to reduce a differentiable objective, but its behavior is governed by local curvature, scaling, noise and step-size policy. This chapter derives descent from first-order approximation and the descent lemma, analyzes a quadratic through Hessian eigenvalues, and explains why learning rates that are too large oscillate or diverge while tiny rates stall along flat directions. You will learn full-batch, stochastic and mini-batch gradients; momentum and preconditioning; learning-rate warmup, decay and line search; stopping criteria; saddle points; and the difference between optimization loss, validation metric and business objective. A worked anisotropic quadratic makes conditioning and zig-zagging concrete. The lab implements gradient descent with backtracking and verifies monotonic decrease, gradient accuracy and convergence. Production guidance covers reproducibility, checkpoint/optimizer state, gradient accumulation, mixed precision, clipping, distributed reductions, cost, monitoring, rollback and safe failure. The objective is not to memorize optimizer names but to reason about the update as a dynamical system whose scale and noise must match the model, data and operational budget.",
+  "prerequisites": [
+    "derivatives-gradients",
+    "norms-distances"
+  ],
+  "learningObjectives": [
+    "Derive gradient-descent updates from local approximation and analyze learning-rate stability on smooth quadratics.",
+    "Distinguish batch, stochastic, momentum and preconditioned updates and choose schedules/stopping rules from measurable behavior.",
+    "Operate training with reproducible checkpoints, numerical safeguards, validation separation, cost controls and rollback."
+  ],
+  "deepSections": [
+    {
+      "id": "descent-dynamics",
+      "title": "From local model to iterative descent",
+      "body": "For differentiable f, `f(θ+Δ)≈f(θ)+∇f(θ)^TΔ`. Among Euclidean steps of fixed small norm, choosing Δ opposite the gradient gives the largest predicted decrease. Gradient descent sets Δ=−η∇f. This is a local argument; finite steps also see curvature. If f has an L-Lipschitz gradient, the descent lemma bounds `f(θ−ηg)≤f(θ)−η(1−Lη/2)||g||²`, so η<2/L gives a decrease for nonzero g under the bound.\n\nA stationary point has zero gradient but may be a local minimum, maximum or saddle. Convex differentiable objectives make every local minimum global; strongly convex objectives give uniqueness and rates. Neural-network objectives are nonconvex, so theory is more limited, yet gradient and curvature diagnostics remain useful. Parameter symmetries create flat directions and multiple equivalent minima.\n\nScaling changes dynamics. If one coordinate's curvature is a thousand times another, the largest stable scalar step is set by the steep direction. Standardizing inputs, normalization and reparameterization can improve conditioning. The negative gradient is steepest only under Euclidean norm; preconditioning chooses a different geometry by multiplying the gradient with a positive-definite scale matrix."
+    },
+    {
+      "id": "quadratic-learning-rate",
+      "title": "Quadratics, eigenvalues, and learning-rate stability",
+      "body": "For `f(θ)=½θ^THθ−b^Tθ` with symmetric positive-definite H, the error from optimum evolves as `e_{t+1}=(I−ηH)e_t`. In H's eigenbasis, each component multiplies by `1−ηλ_i`. Stability requires magnitude below one for all eigenvalues, so `0<η<2/λmax`. Components with small eigenvalues shrink slowly when a single η must accommodate λmax. Condition number κ=λmax/λmin describes this spread.\n\nIf η approaches the upper stability boundary, steep directions oscillate; above it they diverge. A very small η decreases smoothly but wastes iterations. Exact line search on a quadratic selects the best step along the current gradient but can still zig-zag under poor conditioning. Backtracking line search starts from a candidate step and shrinks until a sufficient-decrease condition holds, useful for deterministic smooth problems but expensive when each evaluation is costly or noisy.\n\nLearning-rate schedules address different phases. Warmup limits unstable early updates when activations/optimizer statistics are uncalibrated. Decay reduces noise and refines late training. Cosine, step and polynomial schedules are policies, not universal laws. Report schedule relative to optimizer steps, effective batch size and gradient accumulation; changing any of these can change the useful rate."
+    },
+    {
+      "id": "stochastic-momentum",
+      "title": "Stochastic gradients, momentum, and adaptive scaling",
+      "body": "Full-batch gradients use every example and can be prohibitively expensive. SGD samples one example; mini-batch SGD averages a subset and exploits hardware. When sampling and weighting match the objective, the mini-batch gradient is an unbiased estimator, with variance decreasing as batch size grows under assumptions. Correlated batches, class reweighting, hard-negative mining and distributed sharding change the estimator and must be documented.\n\nMomentum maintains a velocity that averages directions, dampening oscillation and accelerating persistent components. Exact formulas differ across classical, Nesterov and framework conventions, so compare implementations carefully. Adaptive methods estimate coordinatewise first/second moments and rescale updates; they can train poorly scaled models effectively but do not remove the need for a learning-rate schedule, epsilon choice, weight-decay semantics or generalization evaluation. Decoupled weight decay differs from adding L2 penalty under adaptive scaling.\n\nGradient clipping by norm prevents individual updates from exceeding a threshold and is important for some recurrent/large models, but frequent clipping signals instability or scale mismatch. Gradient accumulation emulates a larger batch only when loss scaling, normalization, randomness and optimizer stepping are handled consistently. Distributed all-reduce must specify sum versus mean; a world-size mistake changes the effective learning rate."
+    },
+    {
+      "id": "training-operation",
+      "title": "Stopping, monitoring, and production training",
+      "body": "Stop based on a combination of budget, gradient/update magnitude, training progress and validation behavior. Tiny loss change can mean convergence, an overly small rate, saturation or numeric underflow. A small gradient can indicate a minimum, saddle or dead activation. Early stopping selects a checkpoint using validation data and therefore is part of model selection; retain an untouched final test set. Training loss, validation task metric and business/constraint metrics are distinct.\n\nLog objective components, learning rate, batch/effective batch, gradient norm, update norm, parameter norm, clipping fraction, nonfinite counts, throughput, memory and validation slices. Detect divergence quickly, skip or fail safely on nonfinite gradients according to policy, and cap retries/cost. Mixed precision uses scaled losses and higher-precision accumulation where needed; track scale overflows. Reproducibility records code, data snapshot/order, seed, initialization, libraries, hardware and distributed topology, while acknowledging nondeterministic kernels.\n\nCheckpoint atomically and include weights, optimizer moments, scheduler, scaler, step, random generators and data-sampler position. Validate a checkpoint before promotion. Resume tests should match an uninterrupted short run within defined tolerance. Security includes untrusted training data, artifact integrity and access to gradients/checkpoints. Deploy through evaluation and canary gates, monitor post-deployment outcomes and keep a prior compatible model/preprocessing bundle for rollback."
+    }
+  ],
+  "workedExamples": [
+    {
+      "title": "An anisotropic quadratic",
+      "setup": "Minimize f(x,y)=½(100x²+y²) from (1,1).",
+      "walkthrough": "Gradient is (100x,y) and Hessian eigenvalues are 100 and 1, so condition number is 100. With η=0.01, x becomes zero in one ideal step while y multiplies by 0.99 and needs hundreds of steps. With η=0.019, x multiplies by −0.9 and oscillates while y slowly shrinks. At η=0.021, x multiplies by −1.1 and diverges because the step exceeds 2/100. Rescaling x or preconditioning by approximately diag(1/100,1) makes both directions comparable. Backtracking detects a stable step without knowing λmax, while a stochastic objective would make its sufficient-decrease tests noisy.",
+      "conclusion": "The steepest curvature determines stability and the flattest direction determines slow progress for a scalar learning rate."
+    }
+  ],
+  "exercises": [
+    {
+      "difficulty": "recall",
+      "prompt": "What is the stable constant-step interval for a positive-definite quadratic with largest eigenvalue L?",
+      "solution": "`0<η<2/L`; smaller restrictions may be used for monotonicity or conservative guarantees."
+    },
+    {
+      "difficulty": "application",
+      "prompt": "How can scaling help a narrow quadratic valley?",
+      "solution": "Rescale/precondition coordinates so curvature eigenvalues are more similar, permitting comparable progress in all directions."
+    },
+    {
+      "difficulty": "diagnosis",
+      "prompt": "Training resumes with a sudden loss spike although weights loaded correctly. What state may be missing?",
+      "solution": "Optimizer moments, scheduler step, loss scaler, RNG or data-sampler position may not have been restored."
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "boyd-convex",
+      "contribution": "Provides first-order methods, descent conditions, convexity, line search, conditioning and convergence foundations."
+    },
+    {
+      "resource": "stanford-ee364a",
+      "contribution": "Supplies university lecture material and examples for gradient methods, smoothness, Newton/preconditioned ideas and implementation."
+    },
+    {
+      "resource": "stanford-cs229",
+      "contribution": "Connects batch/stochastic optimization and learning-rate behavior to machine-learning objectives and evaluation."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "compare",
+      "title": "Learning rate on one steep direction",
+      "left": {
+        "title": "Stable",
+        "items": [
+          "Small: smooth but slow",
+          "Near boundary: oscillatory decay",
+          "Schedule reduces late noise"
+        ]
+      },
+      "right": {
+        "title": "Unstable",
+        "items": [
+          "Step crosses valley repeatedly",
+          "Magnitude grows above 2/L",
+          "NaN/Inf can follow"
+        ]
+      },
+      "caption": "Curvature sets a stability scale; conditioning determines how much other directions lag behind.",
+      "afterSection": "quadratic-learning-rate"
+    },
+    {
+      "type": "flow",
+      "title": "Reliable training loop",
+      "items": [
+        "Sample documented batch",
+        "Forward objective components",
+        "Backward + finite checks",
+        "Clip/scale by policy",
+        "Optimizer + schedule step",
+        "Validate and monitor",
+        "Atomic full-state checkpoint"
+      ],
+      "caption": "Optimization is an operated state machine, not only a parameter subtraction.",
+      "afterSection": "training-operation"
+    }
+  ]
 }

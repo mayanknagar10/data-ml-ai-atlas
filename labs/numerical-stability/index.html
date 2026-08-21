@@ -1,0 +1,35 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Numerical Stability: log-sum-exp, overflow &amp; conditioning — Code Lab</title><script>(()=>{const s=localStorage.getItem('atlas-theme');const t=s||((matchMedia('(prefers-color-scheme: dark)').matches)?'dark':'light');document.documentElement.dataset.theme=t})()</script><style>:root{--bg:#fff;--text:#121417;--muted:#5d6470;--line:#dfe3e8;--soft:#f6f7f8;--blue:#155eef;--code:#0d1117;color-scheme:light}html[data-theme=dark]{--bg:#0d1117;--text:#eef2f6;--muted:#a8b0ba;--line:#2b333d;--soft:#171d24;--blue:#8fb4ff;--code:#070a0e;color-scheme:dark}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.6 Inter,system-ui,sans-serif}main{max-width:980px;margin:auto;padding:44px 22px 80px}a{color:var(--blue)}h1{font-size:42px;line-height:1.05;margin:8px 0 12px}.k{font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--blue);font-weight:800}.lead{color:var(--muted);font-size:17px}.top{display:flex;justify-content:space-between;gap:16px}button{border:1px solid var(--line);background:var(--soft);color:var(--text);border-radius:8px;padding:7px 9px;cursor:pointer}section{border-top:1px solid var(--line);padding-top:22px;margin-top:26px}pre{background:var(--code);color:#e6edf3;padding:18px;border-radius:12px;overflow:auto;font:13px/1.55 ui-monospace,monospace}.links{display:flex;gap:12px;flex-wrap:wrap;margin:18px 0}.links a{border:1px solid var(--line);border-radius:8px;padding:7px 9px;text-decoration:none;font-size:12px}@media(max-width:600px){h1{font-size:34px}.top{display:block}}</style></head><body><main><div class="top"><div><div class="k">Data, ML & AI Atlas · Runnable Lab</div><h1>Numerical Stability: log-sum-exp, overflow &amp; conditioning</h1></div><button id="t">◐ Theme</button></div><p class="lead">Implement stable log-sum-exp, softmax and compensated summation, then verify extreme-value invariants and high-precision agreement.</p><div class="links"><a href="../../index.html#/lesson/numerical-stability">← Full lesson</a><a href="lab.py">Combined Python file</a><a href="README.md">README</a></div><section><h2>1 · Build it</h2><p>Minimal implementation with as little framework abstraction as practical.</p><pre>import math
+
+def logsumexp(values):
+    if not values: return -math.inf
+    m=max(values)
+    if m==math.inf: return math.inf
+    if m==-math.inf: return -math.inf
+    return m+math.log(sum(math.exp(x-m) for x in values))
+
+def softmax(values):
+    lse=logsumexp(values)
+    if not math.isfinite(lse): raise ValueError(&#x27;softmax requires a finite normalizer&#x27;)
+    return [math.exp(x-lse) for x in values]
+
+def kahan_sum(values):
+    total=0.0; correction=0.0
+    for value in values:
+        adjusted=value-correction; new=total+adjusted
+        correction=(new-total)-adjusted; total=new
+    return total</pre></section><section><h2>2 · Use it</h2><p>The same idea through a common library or practical API.</p><pre>from decimal import Decimal,getcontext
+values=[1000.0,999.0,998.0]
+probs=softmax(values); lse=logsumexp(values)
+getcontext().prec=50
+reference=float(Decimal(1000)+(Decimal(1)+Decimal(-1).exp()+Decimal(-2).exp()).ln())
+sequence=[1e16,1.0,-1e16]</pre></section><section><h2>3 · Ship it</h2><p>Use tested SciPy/framework primitives and stable solvers, maintain extreme-scale regression suites per dtype/hardware, monitor nonfinite/condition/residual signals, bound adversarial inputs and retain a stable numerical fallback for rollback.</p></section><section><h2>4 · Verify it</h2><p>Assertions and sanity checks that catch conceptual or implementation mistakes.</p><pre>assert all(math.isfinite(p) and p&gt;=0 for p in probs)
+assert math.isclose(sum(probs),1.0,rel_tol=1e-14,abs_tol=1e-14)
+assert math.isclose(lse,reference,rel_tol=1e-14)
+shifted=softmax([x-12345 for x in values])
+assert all(math.isclose(a,b,rel_tol=1e-12) for a,b in zip(probs,shifted))
+assert sum(sequence)==0.0
+assert kahan_sum([1e16,-1e16,1.0])==1.0
+assert logsumexp([-math.inf,-math.inf])==-math.inf
+try: softmax([-math.inf,-math.inf])
+except ValueError: pass
+else: raise AssertionError(&#x27;undefined normalizer must fail explicitly&#x27;)</pre></section></main><script>const b=document.getElementById('t');function u(){b.textContent=document.documentElement.dataset.theme==='dark'?'☀ Light':'☾ Dark'}u();b.onclick=()=>{const n=document.documentElement.dataset.theme==='dark'?'light':'dark';document.documentElement.dataset.theme=n;localStorage.setItem('atlas-theme',n);u()}</script></body></html>

@@ -7,50 +7,177 @@
     "ds",
     "as"
   ],
-  "interviewAnswer": "The law of large numbers explains why sample averages stabilize around expectations. The CLT explains why normalized sums often approach a Normal distribution, enabling many confidence intervals and tests.",
+  "interviewAnswer": "The LLN says a sample average converges to the population expectation under conditions; it explains consistency. The IID finite-variance CLT says `√n(Ȳ−μ)/σ` converges in distribution to standard Normal; it explains approximate sampling uncertainty and `SE(Ȳ)=σ/√n`. It does not say the raw data become Normal. Approximation quality depends on skew, tails, rarity and dependence, not a universal n threshold. Clustered/time-correlated data have smaller effective sample size and need cluster-robust, block or model-based methods. Verify with design-aware simulation/bootstrap and use the estimated standard error appropriate to the sampling process.",
   "keyPoints": [
-    "Different theorems",
-    "Sampling distribution",
-    "Conditions matter",
-    "Why Normal approximations appear"
+    "LLN is convergence of averages",
+    "CLT is scaled sampling distribution",
+    "Standard error shrinks as 1/√n under IID",
+    "Data need not be Normal",
+    "Dependence changes effective sample size"
   ],
   "resources": [
     "harvard-stat110",
-    "statquest"
+    "stanford-stats60",
+    "numpy-random"
   ],
   "featured": false,
-  "why": "The LLN and CLT explain why averages stabilize and why Normal-based confidence intervals and tests often work even when individual observations are not Normal.",
-  "intuition": "The law of large numbers is about where the sample average goes as sample size increases. The central limit theorem is about the shape of the sampling distribution after centering and scaling. They answer different questions.",
-  "deepDive": "Under suitable conditions, the sample mean converges to the population expectation (LLN). Separately, the standardized sum or mean converges in distribution toward a Normal law (CLT). The approximation can be poor for small samples, heavy tails, strong dependence, or non-identically distributed data; blindly invoking the CLT is not a substitute for checking the data-generating process.",
-  "math": "LLN: X̄_n → μ as n→∞ (in an appropriate convergence sense)\nCLT: √n (X̄_n-μ)/σ ⇒ N(0,1)",
-  "workedExample": "Individual transaction amounts may be strongly right-skewed, but the distribution of the average transaction amount across many independent samples can become approximately Normal as sample size grows.",
+  "why": "Confidence intervals, experiment readouts, monitoring thresholds and Monte Carlo error often rely on asymptotics. Treating millions of events as independent when they come from thousands of users creates tiny false standard errors. Heavy tails can make variance unstable, and rare-event proportions can have poor Normal intervals. Understanding what converges and under which sampling design prevents false precision.",
+  "intuition": "The LLN says repeated independent-ish measurements average away noise and settle near the balance point. The CLT zooms into the shrinking error around that point by multiplying it by √n; the shape of that scaled error often approaches a bell curve. Without the zoom, the average collapses to a point, so the two laws describe consistency and uncertainty at different scales.",
+  "deepDive": "The full explanation is organized into the structured sections below.",
+  "math": "LLN: `Ȳ_n→μ` in probability (or almost surely under stronger form/conditions). IID CLT with finite variance σ²>0: `√n(Ȳ_n−μ)/σ ⇒ N(0,1)`. Hence `SE(Ȳ)=σ/√n` under IID. For dependent observations, `Var(Ȳ)=n^{-2}[ΣVar(X_i)+2Σ_{i<j}Cov(X_i,X_j)]`, not generally σ²/n.",
+  "workedExample": "Treating sessions IID gives approximate SE `sqrt(.05×.95/100000)=0.000689`, a very tight interval. If outcomes cluster by user, session count overstates independent information. Aggregate to user-level outcomes for the target or compute a user-cluster robust/bootstrap SE; the effective sample size might be closer to 10,000 and SE roughly three times larger, depending on cluster structure. The LLN/CLT can still apply over independent users, not sessions. If product mix or conversion propensity drifts during the window, even user independence/stationarity needs review.",
   "code": "import numpy as np\nrng=np.random.default_rng(0)\nmeans=[rng.exponential(1,size=100).mean() for _ in range(5000)]\nprint(np.mean(means), np.std(means))",
   "commonMistakes": [
-    "Saying the CLT means the raw data becomes Normal.",
-    "Treating LLN and CLT as the same theorem.",
-    "Ignoring dependence or heavy-tailed behavior."
+    {
+      "mistake": "The CLT says observed data become Normal.",
+      "correction": "It concerns the centered/scaled sampling distribution of sums/means under assumptions."
+    },
+    {
+      "mistake": "n≥30 guarantees a good Normal approximation.",
+      "correction": "Required n depends on skew, tails, rarity, dependence and statistic; validate coverage/quantiles."
+    },
+    {
+      "mistake": "Every database row is an independent sample.",
+      "correction": "Rows often cluster by entity/time/source; variance must reflect the independent sampling unit."
+    }
   ],
   "followUps": [
-    "Does the CLT require the original data to be Normal?",
-    "What changes when observations are dependent?",
-    "Why does standard error shrink like 1/sqrt(n)?",
-    "What is the difference between convergence in probability and in distribution?"
+    {
+      "question": "How do LLN and CLT differ?",
+      "answer": "LLN gives convergence of averages to the mean; CLT characterizes the √n-scaled error distribution."
+    },
+    {
+      "question": "What is standard error?",
+      "answer": "The standard deviation of an estimator's sampling distribution under the specified design/model."
+    },
+    {
+      "question": "Why does dependence matter?",
+      "answer": "Covariance terms change variance of the sum/mean, often reducing effective sample size far below row count."
+    }
   ],
-  "production": "Many dashboards and experiments use Normal approximations for uncertainty. For small or highly skewed samples, bootstrap or exact methods may be safer.",
-  "visual": {
-    "type": "flow",
-    "title": "Central Limit Theorem intuition",
-    "items": [
-      "Population",
-      "Repeated samples",
-      "Sample means",
-      "Approximately normal"
-    ],
-    "caption": "Under broad conditions, the distribution of sample means becomes approximately normal as sample size grows.",
-    "accent": 2,
-    "orientation": "horizontal"
-  },
+  "production": "Define target, independent unit, sampling/weighting, window and stopping rule. Use cluster/time/design-aware standard errors, validate with unit-aware simulation/bootstrap and monitor tail, autocorrelation, cluster/effective-size and drift signals. Report uncertainty without false precision, bound secure random resampling and roll back or abstain when assumptions/coverage fail.",
   "editorial": {
-    "status": "summary"
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "The law of large numbers (LLN) explains convergence of sample averages to an expectation; the central limit theorem (CLT) explains why a properly centered and scaled sum often has an approximately Normal distribution. They answer different questions and require assumptions that real data can violate. This chapter develops weak/strong LLN intuition, standard error, IID CLT, finite variance, rate/quality of approximation, continuity correction and the delta method. It then examines dependence, clustering, heavy tails, rare events, bounded and non-identical variables, bootstrap connections and why “n>30” is not a theorem. You will learn to separate population size from effective sample size, distinguish the distribution of data from the sampling distribution of a statistic, and choose cluster/time-aware uncertainty. A worked conversion-rate example calculates standard error and diagnoses user-level dependence. The lab simulates Bernoulli/exponential sample means across n and verifies `1/√n` scaling and approximate coverage. Production guidance covers sampling frames, sequential looks, drift, label delay, random streams, monitoring, privacy and rollback. The objective is to use asymptotics as checked approximations, not automatic permission to attach a Normal interval to any large table.",
+  "prerequisites": [
+    "expectation-variance",
+    "distributions",
+    "independence"
+  ],
+  "learningObjectives": [
+    "Distinguish LLN convergence from CLT distributional approximation and state the assumptions/normalization for each.",
+    "Compute standard errors for means/proportions and diagnose dependence, heavy tails, skew, rare events and effective sample size.",
+    "Validate and operate asymptotic uncertainty using simulation/resampling, design-aware estimators, monitoring and safe reporting."
+  ],
+  "deepSections": [
+    {
+      "id": "lln-consistency",
+      "title": "Law of large numbers and consistency",
+      "body": "For IID variables with finite expectation μ, the weak LLN says the sample mean converges in probability to μ: for any ε>0, probability of an error larger than ε goes to zero. Strong LLN gives almost-sure convergence under conditions. Neither supplies a finite-sample confidence level by itself. Convergence can be slow for heavy-tailed/skewed data, and an average of biased or selected samples converges to the wrong population expectation.\n\nVariance of an IID sample mean is σ²/n when finite, which supports Chebyshev bounds and explains noise reduction. Dependence adds covariance terms; positive correlation can keep variance much larger. Identical distribution is not always required—there are LLNs for non-identical and dependent sequences—but assumptions must match the design. Nonstationary data may converge to a moving or mixture target with little decision value.\n\nConsistency of an estimator means convergence to the target as information grows. More rows created by duplicating events do not add information. Population target, sampling frame, weighting and observation process must be defined before invoking the LLN."
+    },
+    {
+      "id": "clt-standard-error",
+      "title": "CLT, standardization, and intervals",
+      "body": "For IID finite-variance X_i, the classical CLT states `(ΣX_i−nμ)/(σ√n)=√n(Ȳ−μ)/σ` converges in distribution to N(0,1). Thus the sampling distribution of Ȳ is approximately Normal with mean μ and standard deviation σ/√n for sufficiently suitable n. Replacing σ by a consistent estimate yields common large-sample intervals; small Normal-population samples lead to t distributions when variance is estimated.\n\nThe approximation concerns repeated samples of the statistic, not the empirical distribution of observations. A skewed Exponential population can have approximately Normal sample means. Berry–Esseen-type results show error depends on third absolute moment and √n under conditions, explaining why tail/skew matter. A continuity correction can improve Normal approximation to lattice/discrete counts.\n\nFor Bernoulli p, mean is p and variance p(1−p), but Wald intervals can fail near 0/1 or with few expected successes/failures. Wilson, exact or Bayesian methods may be better. The delta method linearizes smooth transformations g(Ȳ), giving approximate variance `(g'(μ))²σ²/n`; it fails near nonsmooth points or singular derivatives."
+    },
+    {
+      "id": "dependence-heavy-tail",
+      "title": "Dependence, clustering, and heavy tails",
+      "body": "Repeated events within a user, classroom, hospital or time block are correlated. If clusters are independent but observations within cluster are not, treat clusters as sampling units and use cluster-robust estimators or aggregate/cluster bootstrap. Time series require long-run variance including autocovariances and may use HAC, block bootstrap or explicit models. Effective sample size can be far below row count.\n\nHeavy-tailed distributions may have finite mean but enormous/infinite variance, slowing LLN and invalidating the classical finite-variance CLT. Stable-law limits can replace Normal scaling. Outliers are then expected under the model, not necessarily data errors. Robust estimators such as trimmed means or median-of-means target related quantities/offer different guarantees and should be chosen explicitly.\n\nSampling without replacement from a finite population introduces dependence and finite-population corrections. Survey weights, unequal probabilities and stratification change variance. Adaptive experiments and sequential monitoring create dependence between stopping and estimates; always-valid methods or pre-specified sequential designs are needed rather than repeated fixed-horizon intervals."
+    },
+    {
+      "id": "validate-operate",
+      "title": "Validate and operate asymptotic approximations",
+      "body": "Simulate from a plausible data-generating/design model and examine standardized statistic histograms, quantiles and interval coverage at actual n. Bootstrap resamples according to independent units, not rows by default. Compare analytic standard errors with cluster/block/bootstrap estimates and inspect sensitivity to influential units. Coverage on synthetic IID data validates implementation, not real-world assumptions.\n\nVersion target population, unit, estimator, window, weights, clustering/time rule, standard-error method and stopping policy. Monitor cluster counts/sizes, autocorrelation, tail metrics, effective sample size, label delay and composition drift. Report numerator/denominator and uncertainty together. Avoid displaying false precision or treating overlapping intervals as a complete hypothesis test.\n\nUse reproducible independent random streams for simulation, bound resample cost and protect row/unit data. If diagnostics show poor approximation, use design-based exact/randomization methods, robust/bootstrap alternatives, larger independent sample or abstain. Keep prior metric/uncertainty implementation for rollback and backtest new methods on archived windows without peeking into active decisions."
+    }
+  ],
+  "workedExamples": [
+    {
+      "title": "Conversion rate with repeated users",
+      "setup": "A table has 100,000 sessions and 5% conversion, but only 10,000 users with correlated sessions.",
+      "walkthrough": "Treating sessions IID gives approximate SE `sqrt(.05×.95/100000)=0.000689`, a very tight interval. If outcomes cluster by user, session count overstates independent information. Aggregate to user-level outcomes for the target or compute a user-cluster robust/bootstrap SE; the effective sample size might be closer to 10,000 and SE roughly three times larger, depending on cluster structure. The LLN/CLT can still apply over independent users, not sessions. If product mix or conversion propensity drifts during the window, even user independence/stationarity needs review.",
+      "conclusion": "The unit of independence, not row count, determines information and valid standard error."
+    }
+  ],
+  "exercises": [
+    {
+      "difficulty": "recall",
+      "prompt": "What quantity converges to Normal in the IID CLT?",
+      "solution": "The centered and scaled mean `√n(Ȳ−μ)/σ` (or equivalent standardized sum), not raw observations."
+    },
+    {
+      "difficulty": "application",
+      "prompt": "If IID sample size quadruples, how does mean SE change?",
+      "solution": "It halves, because SE scales as 1/√n."
+    },
+    {
+      "difficulty": "diagnosis",
+      "prompt": "A million events yield unstable daily estimates because they come from 500 devices. What failed?",
+      "solution": "Independence is at device/cluster level, so row-based SE is drastically understated; use cluster-aware analysis."
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "harvard-stat110",
+      "contribution": "Provides LLN, CLT, Normal approximations, conditional expectation and variance foundations with problem sets."
+    },
+    {
+      "resource": "stanford-stats60",
+      "contribution": "Connects sampling variability, estimation, scale and responsible inference to real decisions."
+    },
+    {
+      "resource": "numpy-random",
+      "contribution": "Documents reproducible Generator sampling and parallel streams used to validate asymptotic approximations."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "compare",
+      "title": "Two asymptotic laws, two questions",
+      "left": {
+        "title": "LLN",
+        "items": [
+          "Does the average settle?",
+          "Ȳ→μ",
+          "Consistency",
+          "No finite-sample bell curve promised"
+        ]
+      },
+      "right": {
+        "title": "CLT",
+        "items": [
+          "How does scaled error fluctuate?",
+          "√n(Ȳ−μ)/σ→Normal",
+          "Approximate SE/intervals",
+          "Needs variance/dependence conditions"
+        ]
+      },
+      "caption": "LLN collapses error; CLT zooms in on its distribution.",
+      "afterSection": "clt-standard-error"
+    },
+    {
+      "type": "flow",
+      "title": "Choose an uncertainty unit",
+      "items": [
+        "Identify how observations are generated",
+        "Find independent cluster/time unit",
+        "Estimate design-aware variance",
+        "Validate by block/cluster simulation",
+        "Report effective size",
+        "Monitor dependence drift"
+      ],
+      "caption": "A large row count does not create independent information when records share users, devices or time shocks.",
+      "afterSection": "dependence-heavy-tail"
+    }
+  ],
+  "lab": {
+    "goal": "Simulate non-Normal sample means, verify `1/sqrt(n)` standard-error scaling and approximate CLT interval coverage with reproducible streams.",
+    "language": "python",
+    "buildIt": "import math\n\ndef mean(values): return sum(values)/len(values)\n\ndef interval(sample,z=1.96):\n    m=mean(sample); variance=sum((x-m)**2 for x in sample)/(len(sample)-1); se=math.sqrt(variance/len(sample))\n    return m-z*se,m+z*se",
+    "useIt": "import numpy as np\nrng=np.random.default_rng(20260821); reps=20000\nmeans_25=rng.exponential(1.0,size=(reps,25)).mean(axis=1)\nmeans_100=rng.exponential(1.0,size=(reps,100)).mean(axis=1)\n# independent coverage experiment\nsamples=rng.exponential(1.0,size=(5000,100))\ncovered=np.mean([lo<=1.0<=hi for lo,hi in (interval(row) for row in samples)])",
+    "verifyIt": "assert abs(means_25.mean()-1)<.01 and abs(means_100.mean()-1)<.01\nratio=means_25.std(ddof=1)/means_100.std(ddof=1)\nassert abs(ratio-2)<.08\nstandardized=np.sqrt(100)*(means_100-1.0)\nassert abs(standardized.mean())<.03 and abs(standardized.std(ddof=1)-1)<.03\nassert .935<covered<.96\n# Raw exponential data stay skewed even when means are closer to Normal.\nraw=rng.exponential(1.0,size=100000)\nassert np.quantile(raw,.9)>2.2",
+    "shipIt": "Simulate the actual clustered/time sampling design, use design-aware SE/bootstrap, version units/windows/stopping, monitor effective size/dependence/tails and retain a prior uncertainty pipeline for rollback."
   }
 }

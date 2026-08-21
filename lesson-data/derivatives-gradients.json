@@ -7,52 +7,172 @@
     "all",
     "as"
   ],
-  "interviewAnswer": "A derivative measures local change; a gradient collects partial derivatives and points toward steepest increase. Backpropagation efficiently applies the chain rule through a computation graph.",
+  "interviewAnswer": "The derivative is the linear map that best approximates a function near a point. In one dimension, `f(x+h)=f(x)+f'(x)h+o(h)`. For scalar `f:R^n→R`, the differential is `df=∇f(x)^T dx`; the directional derivative along unit u is `∇f·u`, so the Euclidean gradient points toward steepest local increase. For compositions, derivatives multiply in the chain rule. Reverse-mode autodiff propagates a scalar output sensitivity backward through local Jacobian-transpose products, making it efficient for many parameters and one loss. Track tensor shapes, evaluate derivatives at forward-pass values, and verify custom or risky gradients against finite differences on small cases.",
   "keyPoints": [
-    "Partial derivatives",
-    "Gradient direction",
-    "Chain rule",
-    "Jacobian intuition"
+    "Derivative is a local linear map",
+    "Gradient represents the differential under an inner product",
+    "Chain rule composes sensitivities",
+    "Reverse mode uses vector-Jacobian products",
+    "Finite differences validate but do not replace derivatives"
   ],
   "resources": [
+    "stanford-cs229",
     "mit-6s191",
-    "3b1b-neural",
-    "mit-linear-algebra",
-    "3b1b-linear-algebra"
+    "boyd-convex"
   ],
   "featured": false,
-  "why": "Gradients connect loss functions to parameter updates. Backpropagation is just efficient chain-rule application over a computation graph.",
-  "intuition": "A derivative tells how much an output changes when one input changes slightly. A gradient collects that sensitivity for every input dimension. The chain rule propagates sensitivity through composed operations.",
-  "deepDive": "For a scalar loss L(θ), the gradient ∇θL points in the direction of steepest local increase. Gradient descent moves in the negative direction. The chain rule multiplies local derivatives along computational paths, and reverse-mode autodiff reuses intermediate values efficiently when a scalar loss depends on many parameters.",
-  "math": "If y=f(g(x)), dy/dx = f'(g(x)) g'(x)\nGradient: ∇f=[∂f/∂x₁,...,∂f/∂x_d]\nUpdate: θ ← θ - η∇θL",
-  "workedExample": "For L=(wx-y)², dL/dw = 2(wx-y)x. If the prediction is too high and x is positive, the gradient is positive, so gradient descent reduces w.",
+  "why": "Training neural networks, fitting models, sensitivity analysis, uncertainty propagation and numerical optimization all depend on derivatives. A wrong gradient can still produce decreasing loss for a while, while a correct formula can fail numerically because activations saturate or precision underflows. Memorizing derivative tables is insufficient when tensors are batched, parameters are reused and operations broadcast. The local-linear and computation-graph views give one consistent framework for derivation, implementation and debugging.",
+  "intuition": "Zoom in on a smooth curve until it resembles a line. In many dimensions, zoom in until a nonlinear function resembles a plane or linear map. The gradient is the arrow encoding how a scalar surface tilts. A computation graph is a network of small zoomed-in maps; the chain rule connects them. Reverse mode starts from “one unit of loss” and asks every upstream value how much it contributed.",
+  "deepDive": "The full explanation is organized into the structured sections below.",
+  "math": "Differentiability at x means there exists a linear map Df(x) such that `||f(x+h)−f(x)−Df(x)h||/||h||→0`. For scalar f under Euclidean coordinates, Df(x)h=∇f(x)^T h. If h=f∘g, `Dh(x)=Df(g(x))Dg(x)`. Reverse mode computes cotangent propagation `bar_x=J_g(x)^T bar_y` without explicitly forming J when local vector-Jacobian products are available.",
+  "workedExample": "Forward: a=6, z=7, L=49. Reverse begins with `bar_L=1`. For squaring, `bar_z=2z=14`. Addition gives `bar_a=14` and `bar_b=14`. Multiplication a=wx gives `bar_w=bar_a*x=42` and `bar_x=bar_a*w=28`. Direct expansion `(wx+b)²` yields `dL/dw=2(wx+b)x=42`, confirming the graph. If w were used on two branches, its adjoints would add. A central difference around w=2 should agree within tolerance but degrades if the step is too small.",
   "code": "import torch\nw=torch.tensor(2.0,requires_grad=True)\nx=torch.tensor(3.0); y=torch.tensor(5.0)\nloss=(w*x-y)**2\nloss.backward()\nprint(w.grad)",
   "commonMistakes": [
-    "Saying the gradient always points toward the minimum; it points toward local increase.",
-    "Confusing derivative computation with the optimizer update.",
-    "Ignoring non-differentiable points or numerical issues."
+    {
+      "mistake": "The gradient always points toward the nearest global optimum.",
+      "correction": "It gives steepest local increase under a chosen geometry; nonconvex surfaces and finite steps can behave differently."
+    },
+    {
+      "mistake": "Choose an extremely tiny finite-difference step.",
+      "correction": "Truncation falls initially, then cancellation/roundoff grows; choose scale-aware steps and use double precision."
+    },
+    {
+      "mistake": "A broadcast bias gradient is copied from one example.",
+      "correction": "Because the parameter is shared, reverse mode sums contributions over every broadcast axis/path."
+    }
   ],
   "followUps": [
-    "Why does backprop use reverse mode?",
-    "What is a Jacobian?",
-    "What causes vanishing gradients?",
-    "Why can gradient descent get stuck or oscillate?"
+    {
+      "question": "Why is reverse mode efficient for neural networks?",
+      "answer": "A scalar loss has one output but millions of parameters; one reverse sweep obtains sensitivities for all parameters."
+    },
+    {
+      "question": "What is a directional derivative?",
+      "answer": "The first-order rate along direction u; for differentiable scalar f it is ∇f^Tu."
+    },
+    {
+      "question": "What does detach/stop-gradient do?",
+      "answer": "It treats a value as constant for differentiation, removing chain-rule paths and therefore changing the computed objective gradient."
+    }
   ],
-  "production": "Gradient health is a debugging signal. Track exploding/vanishing norms, NaNs, mixed-precision scaling and whether the intended parameters actually receive gradients.",
-  "visual": {
-    "type": "flow",
-    "title": "Gradient as local direction",
-    "items": [
-      "Current parameters",
-      "Compute gradient",
-      "Step opposite gradient",
-      "Lower loss"
-    ],
-    "caption": "The gradient points toward steepest local increase; optimization usually moves in the negative-gradient direction.",
-    "accent": 1,
-    "orientation": "horizontal"
-  },
+  "production": "Track tensor axes and reduction conventions, verify custom/high-risk gradients with analytic and directional finite-difference checks, and test dtype/device variants. Monitor gradient and update norms, NaN/Inf, saturation and clipping rates; use stable architectures and precision controls. Version framework/compiler/hardware, preprocessing, optimizer and model state, bound graph/batch resources, protect gradient traces and maintain compatible rollback checkpoints.",
   "editorial": {
-    "status": "summary"
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "A derivative is the coefficient of the best local linear approximation, not merely a symbolic slope rule. For a scalar function of one variable it measures first-order change; for a scalar function of many variables the gradient collects partial derivatives and points in the direction of steepest increase under Euclidean geometry. For vector-valued functions the local linear map is a Jacobian. This chapter develops limits, differentials, directional derivatives, partial derivatives, gradients and the multivariable chain rule, then shows how computation graphs organize reverse-mode backpropagation. You will learn to track shapes and evaluation points, distinguish a derivative from a finite difference, handle broadcasting and shared parameters, and recognize nondifferentiable or saturated regions. A worked two-layer scalar graph traces forward values and reverse sensitivities. The lab implements central differences and a tiny dual-number forward derivative, then checks an analytic chain-rule result. Production guidance covers gradient checks, autodiff modes, nondeterminism, precision, exploding/vanishing gradients, custom operations, monitoring and secure artifact handling. The goal is to see differentiation as propagation of local sensitivity through a composed system, which makes both mathematical derivations and debugging modern ML code much more reliable.",
+  "prerequisites": [
+    "vectors-matrices"
+  ],
+  "learningObjectives": [
+    "Interpret derivatives, differentials, directional derivatives and gradients as local linear approximations with explicit assumptions and shapes.",
+    "Apply scalar and multivariable chain rules through a computation graph and explain forward versus reverse accumulation.",
+    "Validate and operate automatic differentiation using analytic invariants, finite-difference checks, precision controls and failure diagnostics."
+  ],
+  "deepSections": [
+    {
+      "id": "local-linear",
+      "title": "Derivatives and local linear approximation",
+      "body": "For scalar f, the derivative at x is the limit `lim_{h→0}(f(x+h)−f(x))/h` when it exists. More informatively, `f(x+h)=f(x)+f'(x)h+r(h)` where `r(h)/|h|→0`. The derivative is local: it does not say a large step follows the tangent, nor that a stationary point is a minimum. Differentiability implies continuity but not the reverse; `|x|` is continuous and nondifferentiable at zero.\n\nA differential writes the same first-order change as `df=f'(x)dx`. Higher-order terms determine approximation error. Taylor expansion, when assumptions hold, adds curvature: `f(x+h)≈f(x)+f'(x)h+½f''(x)h²`. Units help catch mistakes: if x is seconds and f is meters, f' is meters per second. Scaling coordinates changes numeric derivative components.\n\nFinite differences approximate a derivative. Forward difference has truncation error proportional to h; central difference is often more accurate for the same scale. Making h arbitrarily small is not always better because floating-point subtraction cancels and roundoff dominates. Complex-step differentiation avoids subtraction for analytic code paths, while symbolic and automatic differentiation apply exact chain rules to represented operations but still use finite-precision arithmetic."
+    },
+    {
+      "id": "multivariable-gradient",
+      "title": "Partial, directional, and gradient derivatives",
+      "body": "For f:R^n→R, the partial derivative changes one coordinate while holding others fixed. Differentiability requires a single linear approximation `f(x+h)=f(x)+L(h)+o(||h||)`, stronger than existence of all partials. Under the standard Euclidean inner product, the linear functional L can be represented by gradient vector ∇f so `L(h)=∇f^T h`. The derivative is fundamentally the linear functional; the gradient representation depends on the chosen inner product/coordinates.\n\nThe directional derivative along u is `D_u f=∇f^T u` for differentiable f. For unit Euclidean u, Cauchy–Schwarz shows the maximum is `||∇f||`, attained along the gradient. The negative gradient is steepest descent only for that geometry. Feature scaling or a preconditioner changes what equal-size movement means, which motivates natural gradient and second-order/preconditioned methods.\n\nFor a batch loss that is a mean, gradients scale differently than for a sum. Broadcasting creates reductions in backward passes: if a bias is shared across examples, its gradient sums contributions along the broadcast batch axis. A reused parameter receives the sum of sensitivities from every path. Shape checks should name parameter and output axes rather than accepting a gradient that merely has a broadcastable size."
+    },
+    {
+      "id": "chain-computation",
+      "title": "Chain rule and computation graphs",
+      "body": "For scalar composition y=f(g(x)), `dy/dx=f'(g(x))g'(x)`. In multiple dimensions, local linear maps compose. If g:R^n→R^m and f:R^m→R^p, the Jacobian of f∘g is `J_f(g(x))J_g(x)` under a column-Jacobian convention. Order follows map composition and shapes expose mistakes. For a scalar loss, reverse mode avoids materializing full Jacobians by propagating vector-Jacobian products.\n\nA computation graph stores forward intermediate values. Reverse accumulation assigns the output loss adjoint 1 and traverses nodes backward. At multiplication z=ab, contributions are `bar_a += bar_z b` and `bar_b += bar_z a`, evaluated with forward values. At addition, the upstream sensitivity copies to both inputs. Contributions add when paths merge. Stop-gradient/detach intentionally removes a path and must be reviewed because it changes the objective's derivative.\n\nForward mode propagates a tangent/Jacobian-vector product with the forward computation and is efficient for few inputs/directions and many outputs. Reverse mode is efficient for one/few scalar outputs and many inputs, which matches training. Mixed forward/reverse techniques compute Hessian-vector products without a full Hessian. Memory/checkpointing trade recomputation for stored activations. In-place mutations can invalidate saved forward values or autodiff version checks."
+    },
+    {
+      "id": "validation-operation",
+      "title": "Gradient validation and production failure modes",
+      "body": "Validate derivatives on small deterministic inputs using central differences and several random directions: compare `∇f^T v` to `(f(x+hv)−f(x−hv))/(2h)`. Directional checks scale to many parameters and catch global errors, while coordinate checks localize. Use double precision for checks, choose h relative to scale, avoid nondifferentiable boundaries and compare relative error when magnitudes are meaningful. Also test analytic invariants: symmetry, conservation, zero gradients for unused inputs and known simple cases.\n\nExploding gradients arise from products of large Jacobian gains; vanishing gradients from gains below one, saturation or long chains. Monitor gradient norms by layer, parameter/update ratio, NaN/Inf, activation saturation and loss-scale overflows. Gradient clipping changes the update and should be measured, not used to hide a broken model. Normalization, residual paths, initialization and architecture address causes.\n\nCustom kernels and fused operations need verified backward definitions, dtype/device coverage and higher-order behavior when required. Nondeterministic parallel reductions can create small differences; define tolerances and reproducibility scope. Bound input graphs and batch sizes, protect training samples captured in traces, and avoid logging raw gradients that may leak data. Store framework, compiler, hardware, precision and code versions with the model; rollback includes optimizer state and preprocessing, not only weights."
+    }
+  ],
+  "workedExamples": [
+    {
+      "title": "Reverse a small computation graph",
+      "setup": "Let a=wx, z=a+b and loss L=z², with x=3, w=2 and b=1.",
+      "walkthrough": "Forward: a=6, z=7, L=49. Reverse begins with `bar_L=1`. For squaring, `bar_z=2z=14`. Addition gives `bar_a=14` and `bar_b=14`. Multiplication a=wx gives `bar_w=bar_a*x=42` and `bar_x=bar_a*w=28`. Direct expansion `(wx+b)²` yields `dL/dw=2(wx+b)x=42`, confirming the graph. If w were used on two branches, its adjoints would add. A central difference around w=2 should agree within tolerance but degrades if the step is too small.",
+      "conclusion": "Backpropagation is the chain rule plus accumulation over every path, evaluated using saved forward values."
+    }
+  ],
+  "exercises": [
+    {
+      "difficulty": "recall",
+      "prompt": "What is the differential of scalar f:R^n→R under Euclidean coordinates?",
+      "solution": "`df=∇f(x)^T dx`, the first-order scalar change for perturbation dx."
+    },
+    {
+      "difficulty": "application",
+      "prompt": "Differentiate L=(wx+b)^2 with respect to w.",
+      "solution": "Let z=wx+b. By chain rule `dL/dw=2z·x=2(wx+b)x`."
+    },
+    {
+      "difficulty": "diagnosis",
+      "prompt": "A bias gradient is too small by batch size. What reduction mismatch is likely?",
+      "solution": "The implementation averaged where the objective summed, or failed to sum adjoints across the broadcast batch dimension."
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "stanford-cs229",
+      "contribution": "Connects multivariable calculus, gradients and chain-rule derivations to machine-learning objectives."
+    },
+    {
+      "resource": "mit-6s191",
+      "contribution": "Provides current deep-learning treatment of computation graphs, backpropagation and gradient-related training behavior."
+    },
+    {
+      "resource": "boyd-convex",
+      "contribution": "Provides precise differentiation, first-order approximation and optimization geometry foundations."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "flow",
+      "title": "Reverse-mode sensitivity flow",
+      "items": [
+        "Forward values: x → a → z → L",
+        "Seed output adjoint with 1",
+        "Apply each local derivative backward",
+        "Sum sensitivities where paths merge",
+        "Produce gradients for every parameter"
+      ],
+      "caption": "Backpropagation is reverse accumulation of local chain-rule products using the recorded forward computation.",
+      "afterSection": "chain-computation"
+    },
+    {
+      "type": "compare",
+      "title": "Derivative computation methods",
+      "left": {
+        "title": "Finite / symbolic",
+        "items": [
+          "Finite difference: approximate, simple check",
+          "Symbolic: expression manipulation",
+          "Step/expression growth concerns"
+        ]
+      },
+      "right": {
+        "title": "Automatic differentiation",
+        "items": [
+          "Exact chain rule on program",
+          "Forward: few input directions",
+          "Reverse: few scalar outputs"
+        ]
+      },
+      "caption": "Autodiff is neither symbolic simplification nor numerical differencing; it composes represented local derivatives in finite precision.",
+      "afterSection": "validation-operation"
+    }
+  ],
+  "lab": {
+    "goal": "Implement a dual-number forward derivative and central-difference gradient check, then verify a chained analytic derivative.",
+    "language": "python",
+    "buildIt": "class Dual:\n    def __init__(self,value,tangent=0.0): self.value=float(value); self.tangent=float(tangent)\n    def __add__(self,other):\n        other=other if isinstance(other,Dual) else Dual(other)\n        return Dual(self.value+other.value,self.tangent+other.tangent)\n    __radd__=__add__\n    def __mul__(self,other):\n        other=other if isinstance(other,Dual) else Dual(other)\n        return Dual(self.value*other.value,self.tangent*other.value+self.value*other.tangent)\n    __rmul__=__mul__\n\ndef central_diff(f,x,h=1e-6): return (f(x+h)-f(x-h))/(2*h)",
+    "useIt": "def graph(w,x=3.0,b=1.0):\n    z=w*x+b\n    return z*z\nw=Dual(2.0,1.0)\nloss=graph(w)\nanalytic=2*(2*3+1)*3\nnumeric=central_diff(lambda value: graph(value),2.0)",
+    "verifyIt": "assert loss.value==49.0\nassert loss.tangent==analytic==42\nassert abs(numeric-analytic)<1e-8\nfor step in (1e-3,1e-4,1e-5):\n    assert abs(central_diff(lambda value: graph(value),2.0,step)-analytic)<1e-6\nunused=Dual(5.0,1.0)\nassert (Dual(2.0,0.0)*unused).tangent==2.0",
+    "shipIt": "Use framework autodiff for real models, keep double-precision directional checks for custom operations, monitor gradient/update norms and nonfinite values, and version optimizer plus model state for rollback."
   }
 }
