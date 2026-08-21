@@ -1,0 +1,4 @@
+import numpy as np
+rng=np.random.default_rng(0)
+X=rng.normal(size=(1000,32)); X/=np.linalg.norm(X,axis=1,keepdims=True)
+q=X[123]+.01*rng.normal(size=32); q/=np.linalg.norm(q)

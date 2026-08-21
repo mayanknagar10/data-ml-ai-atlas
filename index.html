@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="description" content="Data, ML & AI Atlas — a broad learning platform spanning statistics, analytics, data science, machine learning, data engineering, probabilistic modeling, geospatial analysis and modern AI." />
+  <meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff" />
+  <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0d1117" />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Data, ML & AI Atlas" />
+  <meta property="og:description" content="394 deep lessons across statistics, data science, ML, data engineering and modern AI, with code labs, visuals and curated references." />
+  <meta name="twitter:card" content="summary" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ctext y=%22.9em%22 font-size=%2290%22%3E%F0%9F%97%BA%EF%B8%8F%3C/text%3E%3C/svg%3E" />
+  <title>Data, ML & AI Atlas</title>
+  <script>
+    (() => {
+      const saved = localStorage.getItem("atlas-theme");
+      const theme = saved || (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+      document.documentElement.dataset.theme = theme;
+    })();
+  </script>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="#/">Data, ML & AI Atlas</a>
+    <button id="menuBtn" class="ghost menu-btn" aria-expanded="false" aria-controls="mainNav">☰ Menu</button>
+    <nav id="mainNav">
+      <button id="themeBtn" class="ghost" aria-label="Toggle color theme" title="Toggle color theme">◐ Theme</button>
+      <a href="#/roadmap">Roadmap</a>
+      <a href="#/paths">Study paths</a>
+      <a href="#/analyzer">Resume + JD</a>
+      <a href="#/quiz">Practice</a>
+      <a href="#/labs">Code labs</a>
+      <a href="#/resources">Resources</a>
+      <a href="#/visuals">Visual atlas</a>
+      <a href="book.html">Book view</a>
+    </nav>
+  </header>
+
+  <main id="app"></main>
+
+  <footer>
+    <p>Built as a broad data, statistics, ML and AI learning atlas with an optional interview-revision mode. Sources are curated; explanations are original. Always verify fast-moving tool/API details in official docs.</p>
+  </footer>
+  <script src="data.js"></script>
+  <script src="analyzer.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
