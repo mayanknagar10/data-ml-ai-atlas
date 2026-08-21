@@ -7632,34 +7632,50 @@ const ATLAS = {
         "de",
         "aie"
       ],
-      "interviewAnswer": "Big-O describes how runtime or memory grows with input size. I use it to compare algorithms asymptotically, while remembering constants, cache behavior and real input sizes still matter in practice.",
+      "interviewAnswer": "Big-O gives an asymptotic upper bound on how resource use grows with an input-size variable under a stated computation model. Big-Theta is a tight bound and Big-Omega a lower bound. I separately state worst, expected, or amortized behavior and analyze both time and auxiliary space. Complexity removes constants and lower-order terms, so it is ideal for scalability comparisons but must be combined with representative profiling, memory traffic, and real input sizes for an engineering decision.",
       "keyPoints": [
-        "Know O(1), O(log n), O(n), O(n log n), O(n²).",
-        "Distinguish worst, average and amortized complexity.",
-        "Analyze both time and memory."
+        "Define the size variable",
+        "State bound and case",
+        "Count dominant repeated work",
+        "Analyze auxiliary and output space",
+        "Measure constants at real scale"
       ],
       "resources": [
-        "python-docs"
+        "mit-algorithms",
+        "princeton-algorithms"
       ],
       "featured": false,
+      "description": "Complexity analysis predicts how an algorithm's resource demand grows as a chosen input parameter grows. It is a mathematical model, not a stopwatch result and not a complete performance verdict. This chapter develops Big-O, Big-Omega, and Big-Theta from explicit bounds; separates best, worst, expected, and amortized analysis; and shows how to count loops, recursion, sorting, hashing, and memory. You will learn to choose the correct size variable, account for input representation and output size, recognize hidden work in library calls, and compare algorithms under a stated machine model. A worked deduplication example contrasts a quadratic repeated scan with an expected-linear hash-based pass while keeping hashing assumptions visible. The engineering sections connect asymptotic reasoning to cache behavior, allocation, vectorization, network I/O, tail latency, and profiling. The objective is not to chant a complexity table. It is to produce a defensible growth model, identify the term that will dominate at relevant scale, validate that model with representative measurements, and know when constant factors, data distribution, or a different bottleneck changes the operational choice.",
+      "prerequisites": [],
+      "learningObjectives": [
+        "Derive asymptotic time and auxiliary-space bounds from loops, recurrences, and composed operations.",
+        "Distinguish upper, lower, tight, worst-case, expected, and amortized claims without mixing their assumptions.",
+        "Relate an asymptotic model to profiling evidence, memory limits, latency objectives, and production input distributions."
+      ],
       "editorial": {
-        "status": "summary"
+        "status": "verified",
+        "verifiedOn": "2026-08-21"
       },
-      "status": "summary",
-      "hasLab": false,
-      "labGoal": "",
-      "visualCount": 1,
+      "status": "verified",
+      "hasLab": true,
+      "labGoal": "Measure linear and quadratic deduplication, verify semantic equivalence, and connect observed growth to the derivation.",
+      "visualCount": 2,
       "visualSummaries": [
         {
           "type": "curve",
-          "title": "Growth rates as input size increases"
+          "title": "Conceptual growth rates"
+        },
+        {
+          "type": "flow",
+          "title": "Complexity-to-capacity workflow"
         }
       ],
       "followUpQuestions": [
-        "What assumptions does Big-O Time & Space Complexity make?",
-        "How would you validate or debug Big-O Time & Space Complexity in practice?"
+        "What is the difference between expected and amortized complexity?",
+        "How do you analyze a graph algorithm?",
+        "When would you prefer a worse asymptotic algorithm?"
       ],
-      "estimatedMinutes": 1
+      "estimatedMinutes": 10
     },
     {
       "slug": "hash-tables",
@@ -7669,29 +7685,54 @@ const ATLAS = {
       "roles": [
         "all"
       ],
-      "interviewAnswer": "Hash tables provide average O(1) insert and lookup by mapping keys to buckets; collisions are resolved internally. They are fundamental for joins, deduplication, counting and caches.",
+      "interviewAnswer": "A hash table maps a key's hash into table locations and resolves collisions by chaining or probing. With a suitable hash function and controlled load factor, lookup, insertion, and deletion are expected O(1), while worst case can be O(n) and resizing makes individual operations expensive. Equal keys must have equal stable hashes, so mutable equality-relevant state cannot change while a key is stored. Sets retain keys; dictionaries associate values. Production use also needs memory, eviction, normalization, concurrency, and adversarial-input policies.",
       "keyPoints": [
-        "Average O(1), worst-case can degrade.",
-        "Hashability and collision handling matter.",
-        "Sets are useful for membership and uniqueness."
+        "Hash narrows the search",
+        "Collisions are inevitable",
+        "Equal implies equal hash",
+        "Load factor drives resizing",
+        "Bound state and key lifetime"
       ],
       "resources": [
+        "mit-algorithms",
+        "python-data-model",
         "python-docs"
       ],
       "featured": false,
-      "editorial": {
-        "status": "summary"
-      },
-      "status": "summary",
-      "hasLab": false,
-      "labGoal": "",
-      "visualCount": 0,
-      "visualSummaries": [],
-      "followUpQuestions": [
-        "What assumptions does Hash Tables, Sets & Dictionaries make?",
-        "How would you validate or debug Hash Tables, Sets & Dictionaries in practice?"
+      "description": "A hash table implements a dynamic set or mapping by converting a key into an array location and resolving collisions among keys that land together. This chapter moves from a direct-address table to hashing, then explains hash/equality contracts, load factor, separate chaining, open addressing, resizing, expected versus worst-case cost, iteration semantics, and security concerns. It connects the abstract structure to Python dictionaries and sets without claiming that every implementation detail is a language guarantee. You will build a small chained table, use standard mappings for counting and deduplication, and verify collision, update, deletion, resizing, and duplicate behavior. The design sections extend beyond syntax to caches, joins, idempotency stores, and streaming deduplication, where lifetime and cardinality can matter more than lookup speed. By the end, you should be able to justify a hash table over an ordered structure, state what expected O(1) assumes, recognize an invalid mutable key, estimate memory and resize effects, and design bounds, normalization, concurrency, and observability for a production mapping.",
+      "prerequisites": [
+        "big-o",
+        "python-data-structures"
       ],
-      "estimatedMinutes": 1
+      "learningObjectives": [
+        "Explain hashing from direct addressing through collisions, load factor, resolution, and resize behavior.",
+        "Apply the equality-and-hash contract and distinguish language guarantees from implementation details.",
+        "Design mapping-backed joins, caches, and deduplication with explicit cardinality, lifetime, concurrency, and failure policies."
+      ],
+      "editorial": {
+        "status": "verified",
+        "verifiedOn": "2026-08-21"
+      },
+      "status": "verified",
+      "hasLab": true,
+      "labGoal": "Build a chained hash table that exposes collisions, updates, deletion, resizing, and the equality/hash contract.",
+      "visualCount": 2,
+      "visualSummaries": [
+        {
+          "type": "flow",
+          "title": "Hash-table lookup"
+        },
+        {
+          "type": "compare",
+          "title": "Chaining and open addressing"
+        }
+      ],
+      "followUpQuestions": [
+        "Why must equal keys have equal hashes?",
+        "What is load factor?",
+        "When is a sorted structure preferable?"
+      ],
+      "estimatedMinutes": 10
     },
     {
       "slug": "stacks-queues-heaps",
@@ -7701,29 +7742,55 @@ const ATLAS = {
       "roles": [
         "all"
       ],
-      "interviewAnswer": "Stacks are LIFO, queues FIFO, and heaps maintain fast access to an extreme element. They solve different ordering problems and show up in graph traversal, streaming and top-k systems.",
+      "interviewAnswer": "A stack is last-in-first-out and supports push/pop at one end; a FIFO queue removes the earliest item; a deque supports efficient operations at both ends; and a heap-backed priority queue removes the smallest or largest priority. A binary heap is a partial order: the root is extreme, but the whole array is not sorted. Peek is O(1), push and pop are O(log n), and heap construction is O(n). In production, also define capacity, tie-breaking, concurrency, starvation, and overload behavior.",
       "keyPoints": [
-        "Stack: push/pop.",
-        "Queue: append/dequeue.",
-        "Heap: O(log n) insert/pop, O(1) peek."
+        "Removal rule selects the ADT",
+        "Deque for both ends",
+        "Heap maintains a partial order",
+        "Top-k uses bounded heap state",
+        "Queues require overload policy"
       ],
       "resources": [
+        "mit-algorithms",
+        "python-heapq",
         "python-docs"
       ],
       "featured": false,
-      "editorial": {
-        "status": "summary"
-      },
-      "status": "summary",
-      "hasLab": false,
-      "labGoal": "",
-      "visualCount": 0,
-      "visualSummaries": [],
-      "followUpQuestions": [
-        "What assumptions does Stacks, Queues & Heaps make?",
-        "How would you validate or debug Stacks, Queues & Heaps in practice?"
+      "description": "Stacks, queues, deques, and heaps are small interfaces that encode different ordering policies. A stack exposes the most recently added item, a queue exposes the earliest waiting item, a deque supports both ends, and a priority queue exposes the item with the most urgent priority rather than the oldest arrival. This chapter connects those abstract data types to array and linked representations, Python lists and `collections.deque`, binary heap invariants, top-k streaming, stable tie-breaking, lazy deletion, and bounded backpressure. You will trace breadth-first and depth-first frontiers, build a min-heap from first principles, and use `heapq` without confusing a partial heap order with a sorted sequence. The systems section covers scheduler fairness, stale priority entries, queue overload, starvation, and metrics such as depth and wait time. The central skill is choosing a structure from the removal rule and required operations, then proving the invariant and lifecycle. Complexity tables matter, but correctness also depends on what happens when the structure is empty, full, concurrently mutated, or fed faster than consumers can drain it.",
+      "prerequisites": [
+        "big-o",
+        "python-data-structures",
+        "hash-tables"
       ],
-      "estimatedMinutes": 1
+      "learningObjectives": [
+        "Choose a stack, FIFO queue, deque, or priority queue from the required ordering and operation contract.",
+        "Derive binary-heap index relationships and prove that sift operations preserve the heap invariant.",
+        "Design bounded work queues and top-k structures with tie-breaking, stale-entry, fairness, and overload behavior."
+      ],
+      "editorial": {
+        "status": "verified",
+        "verifiedOn": "2026-08-21"
+      },
+      "status": "verified",
+      "hasLab": true,
+      "labGoal": "Build a binary min-heap, use the standard library for top-k, and verify the invariant after mixed operations.",
+      "visualCount": 2,
+      "visualSummaries": [
+        {
+          "type": "compare",
+          "title": "Which item leaves next?"
+        },
+        {
+          "type": "network",
+          "title": "Array-backed min-heap"
+        }
+      ],
+      "followUpQuestions": [
+        "Why is heap construction O(n) rather than O(n log n)?",
+        "How do you update a heap priority?",
+        "How do you preserve FIFO among equal priorities?"
+      ],
+      "estimatedMinutes": 11
     },
     {
       "slug": "trees-graphs-algorithms",
@@ -7735,29 +7802,54 @@ const ATLAS = {
         "de",
         "ds"
       ],
-      "interviewAnswer": "BFS explores level by level and finds shortest paths in unweighted graphs; DFS explores depth-first and is useful for connectivity, cycles and recursive structure.",
+      "interviewAnswer": "Represent a sparse graph with adjacency lists so storage is O(V+E). BFS uses a FIFO queue and explores by increasing edge distance, which gives shortest paths in an unweighted graph. DFS uses recursion or an explicit stack, explores one branch deeply, and supports connectivity, cycle detection, and topological ordering. Mark vertices discovered when they enter the frontier to avoid duplicate work. A full traversal is O(V+E) with adjacency lists; weighted shortest paths require another algorithm.",
       "keyPoints": [
-        "Represent graphs with adjacency lists for sparse data.",
-        "BFS uses a queue; DFS uses stack/recursion.",
-        "Visited-state handling prevents cycles."
+        "State graph semantics first",
+        "Adjacency lists suit sparse graphs",
+        "BFS gives unweighted distance",
+        "DFS exposes structure",
+        "Discovery state prevents repeated frontier work"
       ],
       "resources": [
-        "stanford-cs246"
+        "mit-algorithms",
+        "princeton-algorithms"
       ],
       "featured": false,
-      "editorial": {
-        "status": "summary"
-      },
-      "status": "summary",
-      "hasLab": false,
-      "labGoal": "",
-      "visualCount": 0,
-      "visualSummaries": [],
-      "followUpQuestions": [
-        "What assumptions does Trees, Graph Traversal, BFS & DFS make?",
-        "How would you validate or debug Trees, Graph Traversal, BFS & DFS in practice?"
+      "description": "Trees and graphs represent relationships, while traversal algorithms turn those relationships into an ordered exploration. This chapter defines vertices, edges, directedness, weights, paths, cycles, connected components, rooted trees, and common adjacency representations. It derives breadth-first search (BFS) and depth-first search (DFS), explains why BFS finds minimum-edge paths in an unweighted graph, and shows how DFS supports cycle detection and topological ordering in directed acyclic graphs. You will learn when to mark a vertex discovered, how parent and color state reconstruct results, why recursive DFS can overflow the call stack, and why a visited set does not automatically solve every graph problem. A worked dependency example performs topological validation and reports a cycle instead of returning a misleading order. Production sections cover graph size, high-degree vertices, duplicate edges, identity normalization, partial data, deterministic output, traversal limits, and graph stores. The goal is not merely to remember queue versus stack: it is to state the graph model, preserve traversal invariants, select an algorithm whose guarantees match edge semantics, and bound the work for real or adversarial graphs.",
+      "prerequisites": [
+        "hash-tables",
+        "stacks-queues-heaps",
+        "big-o"
       ],
-      "estimatedMinutes": 1
+      "learningObjectives": [
+        "Choose adjacency-list, adjacency-matrix, or edge-list representations from density, query, update, and memory needs.",
+        "Trace BFS and DFS states, prove their core guarantees, and reconstruct paths or topological orders.",
+        "Design graph traversal with cycle, duplicate, determinism, high-degree, partial-data, and resource-limit policies."
+      ],
+      "editorial": {
+        "status": "verified",
+        "verifiedOn": "2026-08-21"
+      },
+      "status": "verified",
+      "hasLab": true,
+      "labGoal": "Build BFS path reconstruction and topological validation, then verify cycles, disconnected vertices, and traversal invariants.",
+      "visualCount": 2,
+      "visualSummaries": [
+        {
+          "type": "network",
+          "title": "BFS layers from a source"
+        },
+        {
+          "type": "flow",
+          "title": "Dependency-order validation"
+        }
+      ],
+      "followUpQuestions": [
+        "Why is BFS O(V+E) with adjacency lists?",
+        "How do you reconstruct a shortest path?",
+        "Kahn's algorithm emits only some vertices. What does that mean?"
+      ],
+      "estimatedMinutes": 10
     },
     {
       "slug": "sorting-searching",
@@ -7767,29 +7859,55 @@ const ATLAS = {
       "roles": [
         "all"
       ],
-      "interviewAnswer": "Sorting enables ordered scans and binary search; binary search reduces lookup in sorted data to O(log n). Selection/top-k can often avoid sorting the entire dataset.",
+      "interviewAnswer": "Comparison sorting generally requires Omega(n log n) comparisons in the worst case. Stable sorting preserves the input order of equal keys, which matters for multi-key workflows. Binary search reduces boundary lookup in a sorted or otherwise monotonic domain to O(log n), but the invariant and duplicate policy must be explicit; insertion into a Python list remains O(n). For top-k or kth selection, avoid a full sort when a heap or partition algorithm meets the contract. Production design also considers memory, I/O, determinism, missing values, and concurrent mutation.",
       "keyPoints": [
-        "Binary search requires an ordered monotonic condition.",
-        "Comparison sorting has O(n log n) general lower bound.",
-        "Top-k may use heaps or partition algorithms."
+        "Order contract before algorithm",
+        "Stable ties preserve prior order",
+        "Binary search finds a boundary",
+        "Search O(log n), insertion O(n)",
+        "Partial answers can avoid full sort"
       ],
       "resources": [
-        "python-docs"
+        "mit-algorithms",
+        "python-bisect",
+        "python-heapq",
+        "princeton-algorithms"
       ],
       "featured": false,
-      "editorial": {
-        "status": "summary"
-      },
-      "status": "summary",
-      "hasLab": false,
-      "labGoal": "",
-      "visualCount": 0,
-      "visualSummaries": [],
-      "followUpQuestions": [
-        "What assumptions does Sorting, Binary Search & Selection make?",
-        "How would you validate or debug Sorting, Binary Search & Selection in practice?"
+      "description": "Sorting converts an unordered collection into an order that supports merging, grouping, range queries, deterministic output, and binary search. Binary search is broader than exact lookup: it finds a boundary in a monotonic predicate, provided the invariant and interval convention are correct. Selection algorithms and bounded heaps can answer kth-element or top-k questions without fully sorting all input. This chapter derives comparison-sort limits, contrasts stable and unstable algorithms, explains Python's key-based stable sorting, traces lower-bound binary search with duplicates, and distinguishes O(log n) search from O(n) insertion into an array. It also covers partial selection, external sorting, non-comparison sorting assumptions, floating-point and missing-value order, and concurrent mutation. You will implement stable merge sort and a left-bound search, use `sorted`, `bisect`, and `heapq`, and verify permutation, ordering, stability, and boundary properties. The engineering goal is to choose the least work that satisfies the actual output contract while making ordering, tie, key, memory, and determinism semantics explicit.",
+      "prerequisites": [
+        "big-o",
+        "stacks-queues-heaps"
       ],
-      "estimatedMinutes": 1
+      "learningObjectives": [
+        "Compare sorting algorithms by comparison count, stability, memory, adaptivity, and data-movement behavior.",
+        "Implement binary search with a stated half-open invariant and handle duplicates, insertion points, and monotonic predicates.",
+        "Choose full sort, heap top-k, partition selection, counting/radix methods, or external sort from the output and system constraints."
+      ],
+      "editorial": {
+        "status": "verified",
+        "verifiedOn": "2026-08-21"
+      },
+      "status": "verified",
+      "hasLab": true,
+      "labGoal": "Build stable merge sort and lower-bound binary search, then verify ordering, permutation, stability, duplicates, and boundary invariants.",
+      "visualCount": 2,
+      "visualSummaries": [
+        {
+          "type": "flow",
+          "title": "Lower-bound binary search invariant"
+        },
+        {
+          "type": "compare",
+          "title": "Full order and partial selection"
+        }
+      ],
+      "followUpQuestions": [
+        "Why must comparison sorting take Omega(n log n)?",
+        "What does stable sort guarantee?",
+        "How do you binary-search an answer rather than an array?"
+      ],
+      "estimatedMinutes": 11
     },
     {
       "slug": "sampling-streaming-algorithms",
@@ -7801,29 +7919,55 @@ const ATLAS = {
         "mle",
         "ds"
       ],
-      "interviewAnswer": "When data is too large to hold in memory, streaming algorithms maintain compact summaries such as reservoir samples, sketches or approximate counts.",
+      "interviewAnswer": "A streaming algorithm updates a bounded summary in one or few passes rather than storing all items. Reservoir sampling keeps k uniform positions from a stream of unknown length by retaining item t with probability k/t and replacing a random reservoir position. Count-min sketch uses multiple hashed counter rows; query returns the minimum counter, so it never underestimates nonnegative insertion-only frequency but can overestimate through collisions. These guarantees depend on randomness, hash, update, and window assumptions, and production needs replay-safe checkpoints and accuracy monitoring.",
       "keyPoints": [
-        "Reservoir sampling gives an unbiased fixed-size sample from a stream.",
-        "Approximate sketches trade small error for bounded memory.",
-        "One-pass constraints change algorithm design."
+        "Bounded state changes the problem",
+        "Reservoir gives uniform positions",
+        "Sketches expose explicit error",
+        "Merge only compatible summaries",
+        "Window, replay, and identity are semantics"
       ],
       "resources": [
+        "mmds-book",
         "stanford-cs246"
       ],
       "featured": false,
-      "editorial": {
-        "status": "summary"
-      },
-      "status": "summary",
-      "hasLab": false,
-      "labGoal": "",
-      "visualCount": 0,
-      "visualSummaries": [],
-      "followUpQuestions": [
-        "What assumptions does Sampling & Streaming Algorithms make?",
-        "How would you validate or debug Sampling & Streaming Algorithms in practice?"
+      "description": "Streaming algorithms process items in one or a few passes while keeping state far smaller than the complete history. They are necessary when input is unbounded, arrives faster than storage queries can respond, or is simply too large to materialize. This chapter begins with exact one-pass aggregates, then derives reservoir sampling for a uniform fixed-size sample from an unknown-length stream. It explains how approximate sketches trade memory for controlled error, using count-min sketch as the main example and distinguishing one-sided frequency overestimation from unbiased sampling. You will learn how mergeability supports partitioned processing, why randomness and hash independence assumptions must be stated, how windows change the problem, and why a compact structure is not automatically correct under deletions or concept drift. A worked stream monitor maintains exact totals, a reservoir, and approximate heavy-hitter counts while preserving checkpointable state. Production sections cover event identity, ordering, late data, replay, deduplication, seed/version management, overflow, adversarial keys, accuracy audits, and fallback. The goal is to choose an explicit error and retention contract, not to use approximation merely because it sounds scalable.",
+      "prerequisites": [
+        "big-o",
+        "hash-tables",
+        "python-generators",
+        "probability-basics"
       ],
-      "estimatedMinutes": 1
+      "learningObjectives": [
+        "Derive reservoir sampling's inclusion probability and implement a reproducible fixed-size sample from an unknown-length stream.",
+        "Explain count-min sketch update, query, overestimation, width/depth trade-offs, and merge requirements.",
+        "Design streaming state with explicit windows, replay, identity, checkpoint, numerical, adversarial, and accuracy-audit policies."
+      ],
+      "editorial": {
+        "status": "verified",
+        "verifiedOn": "2026-08-21"
+      },
+      "status": "verified",
+      "hasLab": true,
+      "labGoal": "Build reservoir sampling and count-min sketch, then verify size, reproducibility, no-underestimation, merge compatibility, and approximate uniformity.",
+      "visualCount": 2,
+      "visualSummaries": [
+        {
+          "type": "flow",
+          "title": "Reservoir update at position t"
+        },
+        {
+          "type": "matrix",
+          "title": "Count-min sketch counters"
+        }
+      ],
+      "followUpQuestions": [
+        "Why does reservoir sampling keep every position with probability k/n?",
+        "Why does count-min use the minimum counter?",
+        "Can exact distinct count use bounded memory for an unbounded universe?"
+      ],
+      "estimatedMinutes": 11
     },
     {
       "slug": "eda-workflow",
@@ -16809,6 +16953,38 @@ const ATLAS = {
       "why": "Primary university material for asymptotic analysis, hashing, dynamic arrays, and amortized reasoning.",
       "level": "All levels",
       "url": "https://ocw.mit.edu/courses/6-006-introduction-to-algorithms-fall-2011/"
+    },
+    "princeton-algorithms": {
+      "title": "Algorithms, 4th Edition — Online Materials",
+      "provider": "Princeton University",
+      "url": "https://algs4.cs.princeton.edu/home/",
+      "why": "University-authored explanations and implementations for sorting, priority queues, symbol tables, and graph traversal.",
+      "kind": "Primary course",
+      "level": "All levels"
+    },
+    "python-heapq": {
+      "title": "heapq — Heap Queue Algorithm",
+      "provider": "Python",
+      "url": "https://docs.python.org/3/library/heapq.html",
+      "why": "Official Python min-heap invariant, operations, priority-queue notes, and top-k utilities.",
+      "kind": "Official documentation",
+      "level": "All levels"
+    },
+    "python-bisect": {
+      "title": "bisect — Array Bisection Algorithm",
+      "provider": "Python",
+      "url": "https://docs.python.org/3/library/bisect.html",
+      "why": "Official insertion-point semantics, boundary behavior, performance notes, and thread-safety constraints.",
+      "kind": "Official documentation",
+      "level": "All levels"
+    },
+    "mmds-book": {
+      "title": "Mining of Massive Datasets",
+      "provider": "Stanford University",
+      "url": "https://www.mmds.org/",
+      "why": "Primary university textbook for stream sampling, sketches, approximate counting, and massive-data algorithms.",
+      "kind": "Primary textbook",
+      "level": "All levels"
     }
   }
 };

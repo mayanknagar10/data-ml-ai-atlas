@@ -1,0 +1,38 @@
+import random
+
+def reservoir(items, k, seed=0):
+    rng=random.Random(seed); sample=[]; count=0
+    for count,item in enumerate(items,1):
+        if count <= k: sample.append(item)
+        else:
+            j=rng.randrange(count)
+            if j < k: sample[j]=item
+    return sample,count
+
+class CountMin:
+    def __init__(self,width,depth,seeds):
+        self.width=width; self.seeds=tuple(seeds); self.rows=[[0]*width for _ in range(depth)]
+    def _index(self,key,seed): return hash((seed,key)) % self.width
+    def add(self,key,count=1):
+        if count < 0: raise ValueError('insertion-only')
+        for row,seed in zip(self.rows,self.seeds): row[self._index(key,seed)] += count
+    def estimate(self,key): return min(row[self._index(key,seed)] for row,seed in zip(self.rows,self.seeds))
+
+# ---- Use it ----
+sample,n=reservoir(range(1000),20,seed=7)
+sketch=CountMin(200,4,[11,23,37,53])
+exact={}
+for key in ['a']*50 + ['b']*20 + ['c']*5:
+    sketch.add(key); exact[key]=exact.get(key,0)+1
+estimates={key:sketch.estimate(key) for key in exact}
+
+# ---- Verify it ----
+assert n == 1000 and len(sample) == 20 and len(set(sample)) == 20
+assert sample == reservoir(range(1000),20,seed=7)[0]
+assert all(estimates[key] >= exact[key] for key in exact)
+assert all(estimates[key]-exact[key] <= 75 for key in exact)
+hits=[0]*20
+for seed in range(2000):
+    s,_=reservoir(range(20),1,seed)
+    hits[s[0]] += 1
+assert all(50 < count < 150 for count in hits)

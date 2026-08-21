@@ -8,30 +8,188 @@
     "mle",
     "ds"
   ],
-  "interviewAnswer": "When data is too large to hold in memory, streaming algorithms maintain compact summaries such as reservoir samples, sketches or approximate counts.",
+  "interviewAnswer": "A streaming algorithm updates a bounded summary in one or few passes rather than storing all items. Reservoir sampling keeps k uniform positions from a stream of unknown length by retaining item t with probability k/t and replacing a random reservoir position. Count-min sketch uses multiple hashed counter rows; query returns the minimum counter, so it never underestimates nonnegative insertion-only frequency but can overestimate through collisions. These guarantees depend on randomness, hash, update, and window assumptions, and production needs replay-safe checkpoints and accuracy monitoring.",
   "keyPoints": [
-    "Reservoir sampling gives an unbiased fixed-size sample from a stream.",
-    "Approximate sketches trade small error for bounded memory.",
-    "One-pass constraints change algorithm design."
+    "Bounded state changes the problem",
+    "Reservoir gives uniform positions",
+    "Sketches expose explicit error",
+    "Merge only compatible summaries",
+    "Window, replay, and identity are semantics"
   ],
   "resources": [
+    "mmds-book",
     "stanford-cs246"
   ],
   "featured": false,
-  "why": "Sampling & Streaming Algorithms appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
-  "intuition": "Reservoir sampling gives an unbiased fixed-size sample from a stream.",
-  "deepDive": "When data is too large to hold in memory, streaming algorithms maintain compact summaries such as reservoir samples, sketches or approximate counts. Approximate sketches trade small error for bounded memory. One-pass constraints change algorithm design. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
-  "workedExample": "Keep a uniform sample of 10,000 events from an unknown-length Kafka stream using reservoir sampling.",
+  "why": "Telemetry, clickstreams, logs, network events, and model inference traffic can exceed memory and grow without a known endpoint. Exact storage and repeated full scans may be too costly, yet operators still need samples, counts, distinct estimates, quantiles, and heavy hitters. Streaming algorithms supply useful summaries with bounded state, but their guarantees are narrow. Reservoir sampling is not representative when event positions are not the target population; count-min sketch does not support arbitrary negative updates under the same simple guarantee. In production, replay can double-count and incompatible seeds can make summaries impossible to merge. Interviews test the derivation; engineering requires lifecycle, accuracy, and recovery design.",
+  "intuition": "A reservoir gives every arriving position a chance to displace one of k current representatives. Early items begin with an advantage but face replacement at every later step, exactly balancing their final inclusion probability. A count-min sketch lays several small counter tables over the same keys. Collisions add extra mass; taking the smallest row estimate chooses the least-contaminated view. Both structures save memory by discarding information, so they must expose what question remains answerable and how wrong the answer can be.",
+  "deepDive": "The full explanation is organized into the structured sections below.",
+  "workedExample": "Maintain an exact total and online mean payload size, a reservoir updated with a dedicated RNG, and a count-min sketch with versioned dimensions and seeds. Candidate signatures come from a bounded heap or separate tracker; the sketch estimates their frequency. Checkpoint all state consistently with the consumed source offset. On replay, restore both offset and state rather than applying events twice. Periodically compute exact counts for a sampled bounded interval and compare error. Document that the reservoir is event-uniform, not customer-uniform, and that the sketch covers insertion-only counts in the current window policy.",
   "commonMistakes": [
-    "Applying the method without checking its assumptions or data-generating process.",
-    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+    {
+      "mistake": "A reservoir sample is automatically representative of users.",
+      "correction": "It is uniform over stream positions. Users producing more events receive more positions unless the sampling design changes."
+    },
+    {
+      "mistake": "Count-min sketch returns exact counts for frequent items.",
+      "correction": "It can overestimate any queried key through collisions; width/depth control probabilistic additive error, not exactness."
+    },
+    {
+      "mistake": "Any two sketches of the same shape can be merged.",
+      "correction": "They also need identical hash functions/seeds, counter semantics, normalization, window, and nonoverlapping input accounting."
+    }
   ],
   "followUps": [
-    "What assumptions does Sampling & Streaming Algorithms make?",
-    "How would you validate or debug Sampling & Streaming Algorithms in practice?"
+    {
+      "question": "Why does reservoir sampling keep every position with probability k/n?",
+      "answer": "The new item enters with k/t; each retained earlier item survives each later step with factor (t-1)/t, whose product yields k/n."
+    },
+    {
+      "question": "Why does count-min use the minimum counter?",
+      "answer": "Each row contains the true count plus nonnegative collision mass; the minimum selects the least-contaminated row while retaining no-underestimate behavior."
+    },
+    {
+      "question": "Can exact distinct count use bounded memory for an unbounded universe?",
+      "answer": "Not generally. Exact membership information grows with distinct values; bounded-memory systems use a finite window, external state, or approximation such as HyperLogLog."
+    }
   ],
-  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "production": "Version population, window, normalization, hash/RNG seeds, dimensions, and error guarantees. Checkpoint summaries with source progress, make replay behavior explicit, and merge only compatible nonoverlapping state. Monitor saturation, estimated error against exact audits, heavy-hitter quality, late events, and backpressure. Bound counters and queues, defend against adversarial keys, and provide an exact verification path for high-impact decisions or breached error budgets.",
   "editorial": {
-    "status": "summary"
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "Streaming algorithms process items in one or a few passes while keeping state far smaller than the complete history. They are necessary when input is unbounded, arrives faster than storage queries can respond, or is simply too large to materialize. This chapter begins with exact one-pass aggregates, then derives reservoir sampling for a uniform fixed-size sample from an unknown-length stream. It explains how approximate sketches trade memory for controlled error, using count-min sketch as the main example and distinguishing one-sided frequency overestimation from unbiased sampling. You will learn how mergeability supports partitioned processing, why randomness and hash independence assumptions must be stated, how windows change the problem, and why a compact structure is not automatically correct under deletions or concept drift. A worked stream monitor maintains exact totals, a reservoir, and approximate heavy-hitter counts while preserving checkpointable state. Production sections cover event identity, ordering, late data, replay, deduplication, seed/version management, overflow, adversarial keys, accuracy audits, and fallback. The goal is to choose an explicit error and retention contract, not to use approximation merely because it sounds scalable.",
+  "prerequisites": [
+    "big-o",
+    "hash-tables",
+    "python-generators",
+    "probability-basics"
+  ],
+  "learningObjectives": [
+    "Derive reservoir sampling's inclusion probability and implement a reproducible fixed-size sample from an unknown-length stream.",
+    "Explain count-min sketch update, query, overestimation, width/depth trade-offs, and merge requirements.",
+    "Design streaming state with explicit windows, replay, identity, checkpoint, numerical, adversarial, and accuracy-audit policies."
+  ],
+  "deepSections": [
+    {
+      "id": "streaming-model",
+      "title": "The streaming model and exact bounded aggregates",
+      "body": "A stream algorithm receives items sequentially, usually cannot revisit arbitrary history, and maintains state bounded independently of total length or growing sublinearly. State the model: insertion-only or updates/deletions, one pass or multiple, ordered or partitioned, finite window or all history, and whether approximation or random failure probability is allowed. These choices determine which summaries are valid.\n\nSome queries are exactly streamable with constant state: count, sum, minimum, maximum, and online mean. Welford-style recurrences compute variance more stably than subtracting two large accumulated quantities. Grouped exact counts are not constant state when the number of keys grows. Exact deduplication over unbounded unique IDs requires unbounded information in the general case. A bounded dictionary does not solve this without eviction semantics.\n\nWindows make old information expire. Tumbling and sliding event-time windows require time, ordering, lateness, and revision policies. A summary for all history cannot answer an arbitrary recent window unless it retains decomposable window state. Exponential decay answers a different weighted-history question. Define the population and query before selecting the data structure."
+    },
+    {
+      "id": "reservoir-sampling",
+      "title": "Reservoir sampling and uniform inclusion",
+      "body": "For reservoir size k, store the first k stream items. At one-based position t>k, choose a random integer j uniformly from 1 through t. If j≤k, replace reservoir position j. The new item is included with probability k/t. For any earlier item already in the reservoir before step t, its survival probability is 1-(k/t)(1/k)=1-1/t=(t-1)/t. Inductively, every one of the t positions has final inclusion probability k/t.\n\nThe guarantee is uniform over stream positions, not necessarily users, sessions, time, or a target distribution. High-activity users occupy more positions and therefore appear more often. For user-uniform sampling, sample users or use a design consistent with that estimand. Weighted reservoir variants solve other explicit inclusion goals. Use a well-defined pseudorandom generator, record its seed/state when replay reproducibility matters, and avoid modulo-biased home-grown randomness.\n\nA single reservoir is not merged by simply concatenating partition reservoirs and resampling equally when partitions have different counts. Correct merging must account for each partition's population size or use mergeable priority-based sampling. Preserve item count and compatible sampling metadata. Test statistically across many runs in addition to deterministic invariant tests; one sample cannot demonstrate uniformity."
+    },
+    {
+      "id": "frequency-sketches",
+      "title": "Count-min sketch and approximate frequency",
+      "body": "A count-min sketch has d rows and w counters per row, each with an independently seeded hash. Updating key x by nonnegative amount c increments one counter in every row. Querying x returns the minimum of those counters. Every true update to x reaches all its counters, while collisions add nonnegative counts, so the estimate cannot be below the true insertion-only frequency. The minimum limits collision contamination to the best row.\n\nWith conventional parameterization, width scales as about e/epsilon and depth as about ln(1/delta), giving additive error roughly epsilon times total stream mass with probability at least 1-delta under the hash assumptions. Constants and exact theorem statements depend on the construction. Counters can overflow, hashes can be attacked, and negative updates break the simple one-sided guarantee. Conservative update can reduce overcount in practice but changes the algorithm.\n\nSketches with identical dimensions, hash functions, seeds, counter semantics, and domain normalization can be merged by elementwise addition for disjoint stream partitions. Incompatible sketches must not be silently combined. Heavy-hitter discovery also needs candidate generation because a count-min sketch answers queries for supplied keys; it does not list keys it discarded. Pair it with a candidate structure and verify candidates against exact samples or logs when consequences matter."
+    },
+    {
+      "id": "stream-operations",
+      "title": "Distributed operation, recovery, and accuracy governance",
+      "body": "Stream processing adds delivery and state semantics. At-least-once replay duplicates updates unless the computation is idempotent or deduplicated within a defined scope. Exactly-once claims are end-to-end protocol claims involving sources, state checkpoints, and sinks, not a property of a sketch. Checkpoint the item count, reservoir or counters, RNG state or deterministic sampling identity, hash seeds, schema version, and window metadata atomically enough for the recovery contract.\n\nPartitioning can skew load and accuracy. Hot keys concentrate counters and work; repartitioning changes ownership. Merge only compatible summaries and avoid counting overlapping partitions twice. Late events may revise event-time windows; decide whether results update, drop, or side-output them. Backpressure and bounded input buffers remain necessary because a bounded summary does not bound transport queues.\n\nAudit approximation continuously. Compare sketch estimates with exact counts on sampled keys or periodic bounded windows, measure overestimation distribution and heavy-hitter precision/recall, and alert on saturation or incompatible configuration. Protect hash functions and key sizes at trust boundaries. Provide a fallback to exact computation for high-impact decisions or when error budgets are exceeded. Approximation should be versioned and observable like a model."
+    }
+  ],
+  "math": "Reservoir sampling: at time t>k, include the new item with probability k/t and replace a uniform reservoir slot. An earlier item survives step t with probability (t-1)/t, yielding inclusion k/t by induction. Count-min sketch query is min_r C[r,h_r(x)]; for nonnegative insertion-only updates it is at least f(x), with additive-error probability controlled by width and depth under stated hash assumptions.",
+  "workedExamples": [
+    {
+      "title": "Monitor an unknown-length event stream",
+      "setup": "An operations service needs total volume, a uniform sample of 1,000 event positions, and approximate counts for candidate error signatures.",
+      "walkthrough": "Maintain an exact total and online mean payload size, a reservoir updated with a dedicated RNG, and a count-min sketch with versioned dimensions and seeds. Candidate signatures come from a bounded heap or separate tracker; the sketch estimates their frequency. Checkpoint all state consistently with the consumed source offset. On replay, restore both offset and state rather than applying events twice. Periodically compute exact counts for a sampled bounded interval and compare error. Document that the reservoir is event-uniform, not customer-uniform, and that the sketch covers insertion-only counts in the current window policy.",
+      "conclusion": "Each summary answers a different question and carries its own population, error, and recovery contract; combining them does not create a generic compressed database."
+    }
+  ],
+  "exercises": [
+    {
+      "difficulty": "recall",
+      "prompt": "At stream position 100 with reservoir size 10, what is the new item's inclusion probability?",
+      "solution": "10/100=0.1; if included, it replaces one of the ten slots uniformly."
+    },
+    {
+      "difficulty": "application",
+      "prompt": "Can you merge two count-min sketches with different hash seeds?",
+      "solution": "No. Corresponding counters represent different key mappings; retain separate queries or rebuild with compatible configuration."
+    },
+    {
+      "difficulty": "diagnosis",
+      "prompt": "A restored stream job doubles every approximate count after a crash. What likely failed?",
+      "solution": "The checkpointed summary state and source offset were inconsistent, so already-applied events were replayed into retained state. Restore them under one recovery contract or make updates replay-idempotent."
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "mmds-book",
+      "contribution": "Provides primary treatment of data-stream models, reservoir sampling, frequency moments, and sketching trade-offs."
+    },
+    {
+      "resource": "stanford-cs246",
+      "contribution": "Supplies university course material and exercises connecting streaming algorithms with large-scale mining systems."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "flow",
+      "title": "Reservoir update at position t",
+      "items": [
+        "Read item t",
+        "Draw j uniformly in 1..t",
+        "If j≤k, replace slot j",
+        "Otherwise keep reservoir",
+        "Advance count"
+      ],
+      "caption": "The replacement probability balances early and late positions so each final inclusion probability is k/n.",
+      "afterSection": "reservoir-sampling"
+    },
+    {
+      "type": "matrix",
+      "title": "Count-min sketch counters",
+      "rows": [
+        "hash seed 1",
+        "hash seed 2",
+        "hash seed 3"
+      ],
+      "cols": [
+        "0",
+        "1",
+        "2",
+        "3",
+        "4"
+      ],
+      "cells": [
+        [
+          "3",
+          "8",
+          "1",
+          "0",
+          "5"
+        ],
+        [
+          "2",
+          "4",
+          "7",
+          "1",
+          "3"
+        ],
+        [
+          "6",
+          "2",
+          "3",
+          "5",
+          "1"
+        ]
+      ],
+      "caption": "A key maps to one counter per row; its estimate is the minimum of those collision-contaminated counters. Values are conceptual.",
+      "afterSection": "frequency-sketches"
+    }
+  ],
+  "lab": {
+    "goal": "Build reservoir sampling and count-min sketch, then verify size, reproducibility, no-underestimation, merge compatibility, and approximate uniformity.",
+    "language": "python",
+    "buildIt": "import random\n\ndef reservoir(items, k, seed=0):\n    rng=random.Random(seed); sample=[]; count=0\n    for count,item in enumerate(items,1):\n        if count <= k: sample.append(item)\n        else:\n            j=rng.randrange(count)\n            if j < k: sample[j]=item\n    return sample,count\n\nclass CountMin:\n    def __init__(self,width,depth,seeds):\n        self.width=width; self.seeds=tuple(seeds); self.rows=[[0]*width for _ in range(depth)]\n    def _index(self,key,seed): return hash((seed,key)) % self.width\n    def add(self,key,count=1):\n        if count < 0: raise ValueError('insertion-only')\n        for row,seed in zip(self.rows,self.seeds): row[self._index(key,seed)] += count\n    def estimate(self,key): return min(row[self._index(key,seed)] for row,seed in zip(self.rows,self.seeds))",
+    "useIt": "sample,n=reservoir(range(1000),20,seed=7)\nsketch=CountMin(200,4,[11,23,37,53])\nexact={}\nfor key in ['a']*50 + ['b']*20 + ['c']*5:\n    sketch.add(key); exact[key]=exact.get(key,0)+1\nestimates={key:sketch.estimate(key) for key in exact}",
+    "verifyIt": "assert n == 1000 and len(sample) == 20 and len(set(sample)) == 20\nassert sample == reservoir(range(1000),20,seed=7)[0]\nassert all(estimates[key] >= exact[key] for key in exact)\nassert all(estimates[key]-exact[key] <= 75 for key in exact)\nhits=[0]*20\nfor seed in range(2000):\n    s,_=reservoir(range(20),1,seed)\n    hits[s[0]] += 1\nassert all(50 < count < 150 for count in hits)",
+    "shipIt": "Checkpoint RNG/hash configuration and state with source offsets, define window and population, validate compatible merges, audit approximation against exact samples, monitor saturation/backpressure, and provide an exact fallback."
   }
 }

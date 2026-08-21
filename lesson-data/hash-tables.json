@@ -6,30 +6,175 @@
   "roles": [
     "all"
   ],
-  "interviewAnswer": "Hash tables provide average O(1) insert and lookup by mapping keys to buckets; collisions are resolved internally. They are fundamental for joins, deduplication, counting and caches.",
+  "interviewAnswer": "A hash table maps a key's hash into table locations and resolves collisions by chaining or probing. With a suitable hash function and controlled load factor, lookup, insertion, and deletion are expected O(1), while worst case can be O(n) and resizing makes individual operations expensive. Equal keys must have equal stable hashes, so mutable equality-relevant state cannot change while a key is stored. Sets retain keys; dictionaries associate values. Production use also needs memory, eviction, normalization, concurrency, and adversarial-input policies.",
   "keyPoints": [
-    "Average O(1), worst-case can degrade.",
-    "Hashability and collision handling matter.",
-    "Sets are useful for membership and uniqueness."
+    "Hash narrows the search",
+    "Collisions are inevitable",
+    "Equal implies equal hash",
+    "Load factor drives resizing",
+    "Bound state and key lifetime"
   ],
   "resources": [
+    "mit-algorithms",
+    "python-data-model",
     "python-docs"
   ],
   "featured": false,
-  "why": "Hash Tables, Sets & Dictionaries appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
-  "intuition": "Average O(1), worst-case can degrade.",
-  "deepDive": "Hash tables provide average O(1) insert and lookup by mapping keys to buckets; collisions are resolved internally. They are fundamental for joins, deduplication, counting and caches. Hashability and collision handling matter. Sets are useful for membership and uniqueness. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
-  "workedExample": "Count event frequencies with a dictionary instead of repeatedly scanning a list.",
+  "why": "Mappings and membership tests underpin feature lookup, joins, frequency counts, caches, request deduplication, graph adjacency, and routing. A list scan inside every request can create a scaling incident; an unbounded dictionary can create a memory incident even while each lookup remains fast. Key inconsistencies can create silent misses, while duplicate join keys can multiply records. Hash flooding and attacker-controlled keys make the worst case relevant at trust boundaries. A strong explanation combines the expected-cost mechanism with semantic and lifecycle constraints rather than repeating that dictionaries are O(1).",
+  "intuition": "A direct-address array gives every possible key its own slot but wastes enormous space when the key universe is sparse. Hashing compresses that universe into a practical table. Multiple keys must share candidate locations, so the table keeps enough information to distinguish them. As occupancy rises, collisions and probe lengths grow; resizing restores breathing room. The structure trades ordering and extra memory for quick access by key.",
+  "deepDive": "The full explanation is organized into the structured sections below.",
+  "workedExample": "Maintain a set of seen IDs and a dictionary of category counts. Normalize and validate an ID, skip it if already seen, then insert and increment the category. The pass is expected O(n) with O(u+c) state for u unique IDs and c categories. Tests include deliberately colliding custom keys to prove equality still selects the right entry, duplicated IDs, and invalid keys. For an unbounded stream, replace the unbounded in-memory set with an explicitly windowed or durable idempotency design.",
   "commonMistakes": [
-    "Applying the method without checking its assumptions or data-generating process.",
-    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+    {
+      "mistake": "Hash collisions mean the table returns the wrong value.",
+      "correction": "A correct table resolves collisions and uses equality to identify the key. Collisions affect cost, not mapping correctness."
+    },
+    {
+      "mistake": "Dictionary operations are guaranteed worst-case O(1).",
+      "correction": "They are expected constant time under hashing and load assumptions; collisions and resizing can make individual or worst-case operations linear."
+    },
+    {
+      "mistake": "Any immutable-looking object is a safe key.",
+      "correction": "Hashability requires a stable, consistent equality/hash contract. A tuple containing a list is not hashable, and a mutable custom value can be unsafe."
+    }
   ],
   "followUps": [
-    "What assumptions does Hash Tables, Sets & Dictionaries make?",
-    "How would you validate or debug Hash Tables, Sets & Dictionaries in practice?"
+    {
+      "question": "Why must equal keys have equal hashes?",
+      "answer": "The hash chooses where the lookup searches. If equal values mapped to unrelated search locations, an existing equal key could be missed."
+    },
+    {
+      "question": "What is load factor?",
+      "answer": "It is stored entries divided by table capacity. Higher load increases collision or probe work and drives resize policy."
+    },
+    {
+      "question": "When is a sorted structure preferable?",
+      "answer": "When ordered iteration, predecessor/range queries, compact static storage, or worst-case logarithmic guarantees matter more than expected constant point lookup."
+    }
   ],
-  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "production": "For every long-lived mapping, define key normalization, duplicate semantics, maximum cardinality, retention or eviction, concurrency, persistence, and fallback. Monitor size, memory, hit/miss rate, unmatched keys, duplicates, evictions, and latency percentiles. Validate join cardinality before building tables, protect trust boundaries from oversized or adversarial keys, and use an external durable or distributed store when process-local lifetime is insufficient.",
   "editorial": {
-    "status": "summary"
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "A hash table implements a dynamic set or mapping by converting a key into an array location and resolving collisions among keys that land together. This chapter moves from a direct-address table to hashing, then explains hash/equality contracts, load factor, separate chaining, open addressing, resizing, expected versus worst-case cost, iteration semantics, and security concerns. It connects the abstract structure to Python dictionaries and sets without claiming that every implementation detail is a language guarantee. You will build a small chained table, use standard mappings for counting and deduplication, and verify collision, update, deletion, resizing, and duplicate behavior. The design sections extend beyond syntax to caches, joins, idempotency stores, and streaming deduplication, where lifetime and cardinality can matter more than lookup speed. By the end, you should be able to justify a hash table over an ordered structure, state what expected O(1) assumes, recognize an invalid mutable key, estimate memory and resize effects, and design bounds, normalization, concurrency, and observability for a production mapping.",
+  "prerequisites": [
+    "big-o",
+    "python-data-structures"
+  ],
+  "learningObjectives": [
+    "Explain hashing from direct addressing through collisions, load factor, resolution, and resize behavior.",
+    "Apply the equality-and-hash contract and distinguish language guarantees from implementation details.",
+    "Design mapping-backed joins, caches, and deduplication with explicit cardinality, lifetime, concurrency, and failure policies."
+  ],
+  "deepSections": [
+    {
+      "id": "hashing-model",
+      "title": "From direct addressing to hash functions",
+      "body": "If integer keys range over a small universe U, a direct-address array can store value k at index k with worst-case constant access and O(|U|) space. For sparse or large key universes this is wasteful. A hash function maps keys into m table positions, reducing storage toward the number of stored keys n. When |U| exceeds m, collisions are unavoidable by the pigeonhole principle. Correctness therefore cannot rely on every hash being unique.\n\nThe table first uses a hash to narrow the search, then equality to identify the requested key among candidates. Equal keys must produce equal hashes. Unequal keys may collide. Hash distribution should avoid systematic clustering under the workload, while randomized hashing can make adversarial selection harder. Hashing a variable-length key also takes time proportional to the inspected representation unless a hash is cached, so expected O(1) table operations assume bounded-cost key handling or include that cost separately.\n\nA cryptographic hash and a table hash have different goals. Table hashing emphasizes speed and distribution for indexing; cryptographic hashing requires resistance properties for security. Do not use ordinary object hashes for authentication, integrity, passwords, or stable cross-process identifiers. Runtime hash randomization can also mean that hash values are not stable serialization artifacts."
+    },
+    {
+      "id": "collision-resolution",
+      "title": "Collision resolution, deletion, and load factor",
+      "body": "Separate chaining stores a bucket collection at each index. Expected chain length stays small when hashing distributes n keys across m buckets and the load factor alpha=n/m is controlled. Lookup hashes the key and searches one bucket. Open addressing stores entries in the table array and probes alternative locations; it needs a rule for deletion, often tombstones, because clearing a slot can break a probe chain. Linear probing, quadratic probing, and double hashing trade locality and clustering behavior.\n\nAs load rises, operations require more comparisons or probes. Implementations resize and rehash into a larger table to restore expected performance. Most insertions may be cheap while a resize is linear, yielding amortized expected constant update under a geometric growth strategy. Deletion and repeated churn can leave wasted structure and trigger maintenance. These implementation strategies explain costs but do not all belong to a language's public semantics.\n\nMemory includes empty capacity, hashes or metadata, pointers, bucket structures, and referenced objects. A mapping can use substantially more memory than a dense array or sorted vector. For read-heavy static data, a sorted array with binary search, perfect hashing, a database index, or a compact specialized representation may be better. Choose based on update rate, ordering, key type, memory, and query pattern."
+    },
+    {
+      "id": "key-contract",
+      "title": "Equality, hashability, and mapping semantics",
+      "body": "The essential contract is: if a==b, then hash(a)==hash(b). The reverse is not required. A stored key's hash and equality behavior must remain stable while it is in the table, otherwise lookup may search a different location or compare under changed semantics. Python's immutable built-ins are often hashable, while mutable lists, sets, and dictionaries are not. A tuple is hashable only when all its elements are hashable. Custom classes must coordinate `__eq__` and `__hash__`; value objects are safer when immutable.\n\nNormalize domain keys before hashing: Unicode form, case policy, whitespace, type, timezone, and identifier formatting can determine whether logically equal values match. Do not normalize away meaningful distinctions. Dictionary assignment to an existing equal key replaces its value. In current Python, dictionaries preserve insertion order as a language property, but they remain mappings and key lookup semantics come first. Sets do not promise positional access.\n\nBuilding a dictionary from records also chooses a duplicate policy. A comprehension silently keeps the last value for equal keys. If duplicates indicate corrupt data, validate and fail. If multiple values belong to a key, store a collection or aggregate explicitly. Hash tables accelerate the chosen semantics; they do not decide which record should win."
+    },
+    {
+      "id": "production-hashing",
+      "title": "Hash tables in production systems",
+      "body": "A cache is not complete when it is a dictionary. It needs a maximum size, eviction policy, expiration, invalidation, concurrency control, observability, and behavior when the backing store fails. Request deduplication needs an idempotency window and durable semantics; an in-memory set disappears on restart and grows forever without retention. A hash join needs a cardinality and memory plan; a build-side table that exceeds memory can spill or crash.\n\nConcurrent mutation needs a higher-level correctness design. Individual runtime operations are not a portable transaction across check-then-act sequences. Use locks, atomic store primitives, sharding, or immutable snapshots according to the invariant. Distributed hash partitioning adds ownership changes, replication, hot keys, and rebalancing. Consistent hashing can reduce remapping but does not solve load skew or correctness by itself.\n\nAt untrusted boundaries, limit key sizes and total cardinality, use hardened runtime behavior, and monitor collision-like degradation and CPU. Track mapping size, hit rate, eviction, duplicate rate, unmatched keys, load and resize symptoms, and memory. Define a fallback when the table is full or the cache is unavailable. Expected constant lookup does not cap total storage or guarantee predictable tail latency."
+    }
+  ],
+  "math": "With n stored keys and m slots, load factor alpha=n/m. Under uniform hashing with controlled alpha, expected chaining work is O(1+alpha); open-address performance worsens sharply as occupancy approaches one. Worst-case lookup remains O(n). A geometric resize costs O(n) for that operation but can yield amortized expected O(1) insertion across a sequence.",
+  "workedExamples": [
+    {
+      "title": "Count events and enforce duplicate policy",
+      "setup": "A batch contains event IDs and categories; repeated event IDs are retries and must count once.",
+      "walkthrough": "Maintain a set of seen IDs and a dictionary of category counts. Normalize and validate an ID, skip it if already seen, then insert and increment the category. The pass is expected O(n) with O(u+c) state for u unique IDs and c categories. Tests include deliberately colliding custom keys to prove equality still selects the right entry, duplicated IDs, and invalid keys. For an unbounded stream, replace the unbounded in-memory set with an explicitly windowed or durable idempotency design.",
+      "conclusion": "Two hash tables express two different invariants—processed identity and frequency—and the production design adds retention beyond the algorithm."
+    }
+  ],
+  "exercises": [
+    {
+      "difficulty": "recall",
+      "prompt": "Can two unequal keys have the same hash?",
+      "solution": "Yes. Collisions are expected. Equal keys must share a hash, but unequal keys need not have different hashes."
+    },
+    {
+      "difficulty": "application",
+      "prompt": "Choose a structure for static range queries over sorted timestamps.",
+      "solution": "A sorted array or ordered index supports binary-search boundaries and compact range scans; a hash table does not preserve key order."
+    },
+    {
+      "difficulty": "diagnosis",
+      "prompt": "An in-memory deduplication service is fast but steadily consumes memory. What is missing?",
+      "solution": "A retention or eviction contract. Exact deduplication over an unbounded history requires unbounded state; define a window, durable compacted state, or explicit approximation."
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "mit-algorithms",
+      "contribution": "Provides direct addressing, hashing, collision-resolution, load-factor, resizing, and expected-analysis foundations."
+    },
+    {
+      "resource": "python-data-model",
+      "contribution": "Defines Python equality, hashing, object mutability, and key protocol behavior used in the language-specific discussion."
+    },
+    {
+      "resource": "python-docs",
+      "contribution": "Documents current dictionary and set semantics while separating public behavior from implementation choices."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "flow",
+      "title": "Hash-table lookup",
+      "items": [
+        "Normalize key",
+        "Compute hash",
+        "Choose candidate location",
+        "Resolve collision",
+        "Compare keys",
+        "Return value or miss"
+      ],
+      "caption": "Hashing narrows the search; collision resolution and equality complete the lookup.",
+      "afterSection": "hashing-model"
+    },
+    {
+      "type": "compare",
+      "title": "Chaining and open addressing",
+      "left": {
+        "title": "Separate chaining",
+        "items": [
+          "Bucket holds candidates",
+          "Load may exceed one",
+          "Simple deletion",
+          "Pointer/container overhead"
+        ]
+      },
+      "right": {
+        "title": "Open addressing",
+        "items": [
+          "Probe table slots",
+          "Occupancy must stay bounded",
+          "Deletion needs care",
+          "Strong array locality"
+        ]
+      },
+      "caption": "Both strategies preserve correctness under collisions but have different memory and maintenance behavior.",
+      "afterSection": "collision-resolution"
+    }
+  ],
+  "lab": {
+    "goal": "Build a chained hash table that exposes collisions, updates, deletion, resizing, and the equality/hash contract.",
+    "language": "python",
+    "buildIt": "class HashMap:\n    def __init__(self, capacity=4):\n        self.buckets = [[] for _ in range(capacity)]\n        self.size = 0\n    def _bucket(self, key):\n        return self.buckets[hash(key) % len(self.buckets)]\n    def put(self, key, value):\n        bucket = self._bucket(key)\n        for index, (stored, _) in enumerate(bucket):\n            if stored == key:\n                bucket[index] = (key, value)\n                return\n        bucket.append((key, value)); self.size += 1\n    def get(self, key):\n        for stored, value in self._bucket(key):\n            if stored == key:\n                return value\n        raise KeyError(key)\n    def delete(self, key):\n        bucket = self._bucket(key)\n        for index, (stored, _) in enumerate(bucket):\n            if stored == key:\n                bucket.pop(index); self.size -= 1; return\n        raise KeyError(key)",
+    "useIt": "from collections import Counter\nevents = [('e1', 'click'), ('e2', 'view'), ('e1', 'click')]\nseen = set()\ncounts = Counter()\nfor event_id, kind in events:\n    if event_id in seen:\n        continue\n    seen.add(event_id)\n    counts[kind] += 1",
+    "verifyIt": "class CollisionKey:\n    def __init__(self, value): self.value = value\n    def __hash__(self): return 1\n    def __eq__(self, other): return isinstance(other, CollisionKey) and self.value == other.value\nm = HashMap(2)\na, b = CollisionKey('a'), CollisionKey('b')\nm.put(a, 1); m.put(b, 2)\nassert m.get(a) == 1 and m.get(b) == 2\nm.put(a, 3)\nassert m.get(a) == 3 and m.size == 2\nm.delete(b)\ntry: m.get(b)\nexcept KeyError: pass\nelse: raise AssertionError('deleted key remained')\nassert counts == {'click': 1, 'view': 1}",
+    "shipIt": "Add resize policy, memory and cardinality limits, stable normalization, concurrency control, metrics, and explicit retention or eviction before using a mapping as a cache or deduplication service."
   }
 }

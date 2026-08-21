@@ -48,6 +48,11 @@ class ChapterContractTests(unittest.TestCase):
     def test_complete_fixture_passes(self):
         self.assertEqual(chapter_errors(self.lesson, self.slugs, self.resources), [])
 
+    def test_root_chapter_may_have_an_empty_prerequisite_list(self):
+        lesson = json.loads(json.dumps(self.lesson))
+        lesson["prerequisites"] = []
+        self.assertEqual(chapter_errors(lesson, self.slugs, self.resources), [])
+
     def test_invalid_prerequisite_and_resource_fail(self):
         lesson = json.loads(json.dumps(self.lesson))
         lesson["prerequisites"] = ["missing-lesson"]

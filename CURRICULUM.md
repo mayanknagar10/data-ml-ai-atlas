@@ -1,6 +1,6 @@
 # Data, ML & AI Atlas — Curriculum
 
-**45 modules · 394 topics · 132 curated resources**
+**45 modules · 394 topics · 136 curated resources**
 
 ## 01. 🐍 Python & Software Engineering
 
@@ -19,14 +19,14 @@ Deep-complete: **6/6** · Visual models: **12/6**
 
 Core algorithmic reasoning for coding interviews and scalable data/ML implementations.
 
-Deep-complete: **0/6** · Visual models: **1/6**
+Deep-complete: **6/6** · Visual models: **12/6**
 
-- ⬆️ **Big-O Time & Space Complexity** — ◻ interview-ready · 🖼 visual
-- ⬆️ **Hash Tables, Sets & Dictionaries** — ◻ interview-ready
-- ⬆️ **Stacks, Queues & Heaps** — ◻ interview-ready
-- ⬆️ **Trees, Graph Traversal, BFS & DFS** — ◻ interview-ready
-- ⬆️ **Sorting, Binary Search & Selection** — ◻ interview-ready
-- ⬆️ **Sampling & Streaming Algorithms** — ◻ interview-ready
+- ⬆️ **Big-O Time & Space Complexity** — ✅ deep · 🖼 visual
+- ⬆️ **Hash Tables, Sets & Dictionaries** — ✅ deep · 🖼 visual
+- ⬆️ **Stacks, Queues & Heaps** — ✅ deep · 🖼 visual
+- ⬆️ **Trees, Graph Traversal, BFS & DFS** — ✅ deep · 🖼 visual
+- ⬆️ **Sorting, Binary Search & Selection** — ✅ deep · 🖼 visual
+- ⬆️ **Sampling & Streaming Algorithms** — ✅ deep · 🖼 visual
 
 ## 03. 🗄️ SQL & Relational Databases
 

@@ -9,126 +9,239 @@
     "de",
     "aie"
   ],
-  "interviewAnswer": "Big-O describes how runtime or memory grows with input size. I use it to compare algorithms asymptotically, while remembering constants, cache behavior and real input sizes still matter in practice.",
+  "interviewAnswer": "Big-O gives an asymptotic upper bound on how resource use grows with an input-size variable under a stated computation model. Big-Theta is a tight bound and Big-Omega a lower bound. I separately state worst, expected, or amortized behavior and analyze both time and auxiliary space. Complexity removes constants and lower-order terms, so it is ideal for scalability comparisons but must be combined with representative profiling, memory traffic, and real input sizes for an engineering decision.",
   "keyPoints": [
-    "Know O(1), O(log n), O(n), O(n log n), O(n²).",
-    "Distinguish worst, average and amortized complexity.",
-    "Analyze both time and memory."
+    "Define the size variable",
+    "State bound and case",
+    "Count dominant repeated work",
+    "Analyze auxiliary and output space",
+    "Measure constants at real scale"
   ],
   "resources": [
-    "python-docs"
+    "mit-algorithms",
+    "princeton-algorithms"
   ],
   "featured": false,
-  "why": "Big-O Time & Space Complexity appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
-  "intuition": "Know O(1), O(log n), O(n), O(n log n), O(n²).",
-  "deepDive": "Big-O describes how runtime or memory grows with input size. I use it to compare algorithms asymptotically, while remembering constants, cache behavior and real input sizes still matter in practice. Distinguish worst, average and amortized complexity. Analyze both time and memory. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
-  "workedExample": "Sorting ten million rows with an O(n log n) algorithm is usually viable; an accidental nested O(n²) comparison can become catastrophic.",
+  "why": "An algorithm that is comfortable on a sample can fail catastrophically when the number of records, features, graph edges, vocabulary items, or candidates grows. Complexity analysis catches structural scaling problems before hardware testing can cover every future size. It also explains trade-offs: an index spends memory and build time to accelerate repeated queries; a top-k heap avoids a full sort; batching controls peak memory without reducing total work. Interviewers look for disciplined reasoning rather than a memorized label. In production, the same discipline guides capacity planning, service-level objectives, cost estimates, and incident diagnosis when latency grows nonlinearly.",
+  "intuition": "Imagine increasing only one declared dimension while preserving the model's other assumptions. Big-O asks for a simple envelope that eventually stays above the resource curve; Big-Theta asks for matching upper and lower envelopes of the same order. Constants decide which implementation wins at today's size, while growth rate warns which design becomes untenable as scale moves. The model is useful precisely because it discards detail, so every conclusion must name what was discarded and whether it matters operationally.",
+  "deepDive": "The full explanation is organized into the structured sections below.",
+  "workedExample": "Scanning a growing output list for each ID performs up to 0+1+...+(n-1) equality checks when all IDs are distinct, so time is Theta(n²) and output space is Theta(n). Keeping a hash set of seen IDs makes each membership and insertion expected O(1), so the pass is expected Theta(n), with Theta(n) additional set space. This conclusion assumes ordinary hashing and bounded-cost keys; adversarial collisions or very long keys change the model. Measure both approaches on representative key types and include set memory in capacity planning.",
   "commonMistakes": [
-    "Applying the method without checking its assumptions or data-generating process.",
-    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+    {
+      "mistake": "Big-O means the exact or worst-case runtime in seconds.",
+      "correction": "It is an asymptotic bound on a resource function. Worst-case, expected, and amortized are separate qualifiers, and constants require measurement."
+    },
+    {
+      "mistake": "Two nested loops always imply O(n²).",
+      "correction": "Count total inner executions. Dependent bounds, two-pointer movement, early termination, or different size variables can produce another order."
+    },
+    {
+      "mistake": "O(1) means instant and O(n) is always slower.",
+      "correction": "Constant-time work can have a large constant, and a linear contiguous scan can beat random access at current sizes. O describes growth."
+    }
   ],
   "followUps": [
-    "What assumptions does Big-O Time & Space Complexity make?",
-    "How would you validate or debug Big-O Time & Space Complexity in practice?"
+    {
+      "question": "What is the difference between expected and amortized complexity?",
+      "answer": "Expected analysis averages over randomness or an input distribution; amortized analysis bounds total cost across an operation sequence without probability."
+    },
+    {
+      "question": "How do you analyze a graph algorithm?",
+      "answer": "Use at least V and E. For adjacency lists, a full BFS or DFS is Theta(V+E), assuming constant-time adjacency iteration and visited operations."
+    },
+    {
+      "question": "When would you prefer a worse asymptotic algorithm?",
+      "answer": "For bounded small inputs, lower constants, better locality, simpler correctness, lower memory, or easier operations can dominate. Measure within explicit limits."
+    }
   ],
-  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
-  "visual": {
-    "type": "curve",
-    "title": "Growth rates as input size increases",
-    "series": [
-      {
-        "label": "O(log n)",
-        "points": [
-          [
-            0,
-            0.1
-          ],
-          [
-            0.2,
-            0.17
-          ],
-          [
-            0.4,
-            0.22
-          ],
-          [
-            0.6,
-            0.26
-          ],
-          [
-            0.8,
-            0.29
-          ],
-          [
-            1,
-            0.31
-          ]
-        ]
-      },
-      {
-        "label": "O(n)",
-        "points": [
-          [
-            0,
-            0.05
-          ],
-          [
-            0.2,
-            0.18
-          ],
-          [
-            0.4,
-            0.34
-          ],
-          [
-            0.6,
-            0.5
-          ],
-          [
-            0.8,
-            0.67
-          ],
-          [
-            1,
-            0.84
-          ]
-        ]
-      },
-      {
-        "label": "O(n²)",
-        "points": [
-          [
-            0,
-            0.02
-          ],
-          [
-            0.2,
-            0.05
-          ],
-          [
-            0.4,
-            0.16
-          ],
-          [
-            0.6,
-            0.36
-          ],
-          [
-            0.8,
-            0.64
-          ],
-          [
-            1,
-            0.98
-          ]
-        ]
-      }
-    ],
-    "caption": "Conceptual growth: asymptotic complexity matters as data size scales.",
-    "xLabel": "input size",
-    "yLabel": "relative work"
-  },
+  "production": "Record the input dimensions that drive work, benchmark across their realistic range, and monitor latency and memory by those dimensions. Add hard bounds, timeouts, pagination, or approximation for hostile and unbounded inputs. Include serialization, allocations, and remote calls in the system model. Watch high-percentile pauses hidden by amortized throughput, retain profiles for regressions, and document the maximum supported scale plus a graceful failure or fallback path.",
   "editorial": {
-    "status": "summary"
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "Complexity analysis predicts how an algorithm's resource demand grows as a chosen input parameter grows. It is a mathematical model, not a stopwatch result and not a complete performance verdict. This chapter develops Big-O, Big-Omega, and Big-Theta from explicit bounds; separates best, worst, expected, and amortized analysis; and shows how to count loops, recursion, sorting, hashing, and memory. You will learn to choose the correct size variable, account for input representation and output size, recognize hidden work in library calls, and compare algorithms under a stated machine model. A worked deduplication example contrasts a quadratic repeated scan with an expected-linear hash-based pass while keeping hashing assumptions visible. The engineering sections connect asymptotic reasoning to cache behavior, allocation, vectorization, network I/O, tail latency, and profiling. The objective is not to chant a complexity table. It is to produce a defensible growth model, identify the term that will dominate at relevant scale, validate that model with representative measurements, and know when constant factors, data distribution, or a different bottleneck changes the operational choice.",
+  "prerequisites": [],
+  "learningObjectives": [
+    "Derive asymptotic time and auxiliary-space bounds from loops, recurrences, and composed operations.",
+    "Distinguish upper, lower, tight, worst-case, expected, and amortized claims without mixing their assumptions.",
+    "Relate an asymptotic model to profiling evidence, memory limits, latency objectives, and production input distributions."
+  ],
+  "deepSections": [
+    {
+      "id": "asymptotic-bounds",
+      "title": "Asymptotic bounds and quantifiers",
+      "body": "For nonnegative functions f and g, saying f(n) is O(g(n)) means that constants c > 0 and n0 exist such that f(n) ≤ c·g(n) for all n ≥ n0. The threshold allows finite irregularities; the constant absorbs fixed multipliers. Omega reverses the inequality for a lower bound. Theta requires both and therefore describes a tight asymptotic order. These are sets of functions, so an O(n) function is also O(n²); use the tightest useful correct bound rather than treating O as equality.\n\nDrop constant factors and lower-order terms only after deriving the cost. If T(n)=7n²+20n+900, then T is Theta(n²). This does not mean seven, twenty, and nine hundred are operationally irrelevant. At a fixed n, a linear algorithm with an expensive network call per item can be slower than an in-memory quadratic algorithm on a tiny input. The asymptotic conclusion is about eventual growth under the model.\n\nChoose size variables that match the input. Graph traversal depends on vertices V and edges E. Matrix multiplication depends on multiple dimensions. Parsing text depends on total characters, not merely document count. When key comparison or hashing cost grows with key length, treating it as constant requires a word-RAM or bounded-key assumption. State these variables and assumptions before manipulating notation."
+    },
+    {
+      "id": "cases-amortization",
+      "title": "Worst, expected, average, and amortized cost",
+      "body": "Worst-case complexity takes the maximum cost over valid inputs of size n. Best case takes the minimum and is rarely a safe capacity claim. Average-case analysis requires a probability distribution over inputs. Expected complexity can instead average over algorithmic randomness, as with randomized hashing, while holding the input fixed. Say what expectation is over; 'average O(1)' without a model is incomplete.\n\nAmortized analysis bounds the total cost of a sequence without assuming random inputs. A dynamic array append is usually constant but occasionally reallocates and copies. If geometric growth makes the total copying across n appends linear, the amortized cost per append is constant even though an individual append can be linear. Aggregate, accounting, and potential methods are different proof techniques for the same sequence guarantee. Amortized is not the same as average.\n\nLatency-sensitive systems may care about the expensive individual operation even when amortized throughput is good. A resize, compaction, garbage-collection pause, or rehash can affect tail latency. Reserve capacity, move maintenance off critical paths, or measure high percentiles where the burst matters. Complexity vocabulary should sharpen the service claim rather than hide spikes behind an average."
+    },
+    {
+      "id": "derivation-patterns",
+      "title": "Deriving bounds from code and recurrences",
+      "body": "Sequential blocks add costs and the dominant term remains. Nested loops multiply only when the inner work repeats fully for every outer iteration. A triangular loop with 1+2+...+n iterations is Theta(n²), while two independent passes are Theta(n). A loop that repeatedly halves a positive problem size has logarithmic iterations. Hidden operations matter: slicing a list copies elements, membership in a list scans, string concatenation may copy, and sorting is not a constant-time call.\n\nRecursive algorithms include work at the current call plus subproblem costs. Binary search satisfies T(n)=T(n/2)+Theta(1), yielding Theta(log n). Merge sort satisfies 2T(n/2)+Theta(n), yielding Theta(n log n). A naive recursive Fibonacci tree repeats subproblems and grows exponentially; memoization changes the state graph and cost. Recursion depth also contributes stack space.\n\nOutput size is a lower bound on time and output memory. Producing every pair requires Omega(n²) outputs even with clever enumeration. Distinguish auxiliary space from storage for inputs and returned outputs. An in-place algorithm may use little auxiliary memory while still requiring a large output elsewhere. For pipelines, peak live memory depends on overlapping intermediates, buffers, and ownership—not simply the sum of asymptotic labels."
+    },
+    {
+      "id": "engineering-model",
+      "title": "From growth model to engineering decision",
+      "body": "Two algorithms with the same Big-O can differ through cache locality, branch prediction, vectorization, allocation, parallelism, serialization, and constant factors. A contiguous scan can outperform random-access hashing for small or medium inputs. External sorting changes the relevant cost from CPU comparisons to sequential and random I/O. A distributed algorithm can reduce wall-clock time while increasing total work and coordination. Complexity is one layer of the performance model.\n\nValidate the derivation empirically. Generate representative shapes over a meaningful range, warm up appropriately, isolate the operation, measure wall time and peak memory, and use multiple repetitions. Plot resource use against n and compare ratios or fitted slopes cautiously. A microbenchmark that excludes parsing, copying, or network calls may answer a different question from the service bottleneck. Profile first when optimizing existing software.\n\nConvert scaling into a capacity statement: maximum input under latency and memory budgets, expected growth horizon, degradation behavior, and fallback. Bound untrusted input and guard algorithms with quadratic or exponential worst cases. Monitor cardinalities and latency by input-size bucket. Maintain a simpler baseline and remeasure after runtime or hardware changes. An asymptotic improvement that complicates correctness, rollback, or operations still needs a demonstrated payoff."
+    }
+  ],
+  "math": "f(n) ∈ O(g(n)) iff there exist constants c>0 and n0 such that 0≤f(n)≤c·g(n) for all n≥n0. Theta(g) is O(g) intersect Omega(g). A triangular loop performs n(n-1)/2 operations, which is Theta(n²). Geometric dynamic-array growth makes total copied elements across n appends O(n), so append is amortized O(1).",
+  "workedExamples": [
+    {
+      "title": "Remove duplicate event IDs",
+      "setup": "A batch of n events must preserve first occurrence while rejecting duplicate IDs.",
+      "walkthrough": "Scanning a growing output list for each ID performs up to 0+1+...+(n-1) equality checks when all IDs are distinct, so time is Theta(n²) and output space is Theta(n). Keeping a hash set of seen IDs makes each membership and insertion expected O(1), so the pass is expected Theta(n), with Theta(n) additional set space. This conclusion assumes ordinary hashing and bounded-cost keys; adversarial collisions or very long keys change the model. Measure both approaches on representative key types and include set memory in capacity planning.",
+      "conclusion": "The faster-growth design buys expected linear time with extra memory and a hashing assumption; both the benefit and trade-off are explicit."
+    }
+  ],
+  "exercises": [
+    {
+      "difficulty": "recall",
+      "prompt": "Classify a loop that doubles i from 1 until i≥n.",
+      "solution": "After k iterations i=2^k, so k=ceil(log2 n); time is Theta(log n) if each iteration has constant cost."
+    },
+    {
+      "difficulty": "application",
+      "prompt": "Analyze sorting n records and scanning them once.",
+      "solution": "Comparison sorting dominates at Theta(n log n); the following Theta(n) scan does not change the total. Space depends on the sort implementation and output."
+    },
+    {
+      "difficulty": "diagnosis",
+      "prompt": "A supposedly O(n) loop slows quadratically because it repeatedly appends to an immutable string. Explain.",
+      "solution": "Each concatenation may copy the growing prefix, so total copied characters form a triangular sum. Accumulate pieces and join once or use a suitable buffer."
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "mit-algorithms",
+      "contribution": "Provides the computation models, asymptotic reasoning, recurrences, hashing, sorting, and amortized-analysis foundation."
+    },
+    {
+      "resource": "princeton-algorithms",
+      "contribution": "Supplies algorithm implementations and empirical-analysis context connecting operation counts with experiments."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "curve",
+      "title": "Conceptual growth rates",
+      "series": [
+        {
+          "label": "log n",
+          "points": [
+            [
+              0,
+              0.06
+            ],
+            [
+              0.2,
+              0.14
+            ],
+            [
+              0.4,
+              0.2
+            ],
+            [
+              0.6,
+              0.24
+            ],
+            [
+              0.8,
+              0.27
+            ],
+            [
+              1,
+              0.3
+            ]
+          ]
+        },
+        {
+          "label": "n",
+          "points": [
+            [
+              0,
+              0
+            ],
+            [
+              0.2,
+              0.18
+            ],
+            [
+              0.4,
+              0.36
+            ],
+            [
+              0.6,
+              0.54
+            ],
+            [
+              0.8,
+              0.72
+            ],
+            [
+              1,
+              0.9
+            ]
+          ]
+        },
+        {
+          "label": "n²",
+          "points": [
+            [
+              0,
+              0
+            ],
+            [
+              0.2,
+              0.04
+            ],
+            [
+              0.4,
+              0.16
+            ],
+            [
+              0.6,
+              0.36
+            ],
+            [
+              0.8,
+              0.64
+            ],
+            [
+              1,
+              1
+            ]
+          ]
+        }
+      ],
+      "xLabel": "scaled input size",
+      "yLabel": "scaled work",
+      "caption": "Conceptual curves compare growth after normalization; they are not measured runtimes.",
+      "afterSection": "asymptotic-bounds"
+    },
+    {
+      "type": "flow",
+      "title": "Complexity-to-capacity workflow",
+      "items": [
+        "Define size variables",
+        "Derive operation counts",
+        "State case and assumptions",
+        "Benchmark representative inputs",
+        "Set limits and monitoring"
+      ],
+      "caption": "Asymptotic reasoning becomes actionable when tied to measurements and operational bounds.",
+      "afterSection": "engineering-model"
+    }
+  ],
+  "lab": {
+    "goal": "Measure linear and quadratic deduplication, verify semantic equivalence, and connect observed growth to the derivation.",
+    "language": "python",
+    "buildIt": "def dedupe_scan(items):\n    out = []\n    for item in items:\n        if item not in out:\n            out.append(item)\n    return out\n\ndef dedupe_hash(items):\n    out, seen = [], set()\n    for item in items:\n        if item not in seen:\n            seen.add(item)\n            out.append(item)\n    return out",
+    "useIt": "from time import perf_counter\n\ndef timed(fn, data):\n    start = perf_counter()\n    result = fn(data)\n    return result, perf_counter() - start\n\nsizes = [500, 1000, 2000]\nmeasurements = {n: (timed(dedupe_scan, list(range(n)))[1], timed(dedupe_hash, list(range(n)))[1]) for n in sizes}",
+    "verifyIt": "data = [3, 1, 3, 2, 1]\nexpected = [3, 1, 2]\nassert dedupe_scan(data) == expected\nassert dedupe_hash(data) == expected\nfor n in [0, 1, 10, 100]:\n    values = list(range(n))\n    assert dedupe_scan(values) == dedupe_hash(values)\nassert set(measurements) == {500, 1000, 2000}",
+    "shipIt": "Benchmark representative keys and sizes, record peak memory, set input limits, and monitor latency by cardinality rather than treating the asymptotic label as a performance guarantee."
   }
 }

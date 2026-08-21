@@ -182,7 +182,10 @@ def chapter_errors(
     if status not in {"chapter-complete", "verified"}:
         return errors
 
-    missing = sorted(field for field in FULL_CHAPTER_FIELDS if not lesson.get(field))
+    missing = sorted(
+        field for field in FULL_CHAPTER_FIELDS
+        if field not in lesson or (field != "prerequisites" and not lesson.get(field))
+    )
     errors.extend(f"{slug}: missing {field}" for field in missing)
 
     if word_count(lesson.get("description")) < 150:

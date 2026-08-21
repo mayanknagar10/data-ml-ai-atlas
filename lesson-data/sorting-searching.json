@@ -6,30 +6,179 @@
   "roles": [
     "all"
   ],
-  "interviewAnswer": "Sorting enables ordered scans and binary search; binary search reduces lookup in sorted data to O(log n). Selection/top-k can often avoid sorting the entire dataset.",
+  "interviewAnswer": "Comparison sorting generally requires Omega(n log n) comparisons in the worst case. Stable sorting preserves the input order of equal keys, which matters for multi-key workflows. Binary search reduces boundary lookup in a sorted or otherwise monotonic domain to O(log n), but the invariant and duplicate policy must be explicit; insertion into a Python list remains O(n). For top-k or kth selection, avoid a full sort when a heap or partition algorithm meets the contract. Production design also considers memory, I/O, determinism, missing values, and concurrent mutation.",
   "keyPoints": [
-    "Binary search requires an ordered monotonic condition.",
-    "Comparison sorting has O(n log n) general lower bound.",
-    "Top-k may use heaps or partition algorithms."
+    "Order contract before algorithm",
+    "Stable ties preserve prior order",
+    "Binary search finds a boundary",
+    "Search O(log n), insertion O(n)",
+    "Partial answers can avoid full sort"
   ],
   "resources": [
-    "python-docs"
+    "mit-algorithms",
+    "python-bisect",
+    "python-heapq",
+    "princeton-algorithms"
   ],
   "featured": false,
-  "why": "Sorting, Binary Search & Selection appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
-  "intuition": "Binary search requires an ordered monotonic condition.",
-  "deepDive": "Sorting enables ordered scans and binary search; binary search reduces lookup in sorted data to O(log n). Selection/top-k can often avoid sorting the entire dataset. Comparison sorting has O(n log n) general lower bound. Top-k may use heaps or partition algorithms. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
-  "workedExample": "Find the smallest threshold that satisfies a monotonic SLA condition using binary search.",
+  "why": "Ordering is a foundational systems operation. Database plans sort for merge joins and grouping, ranking pipelines select candidates, time series require chronological order, and reproducible outputs depend on deterministic ties. A faulty comparator can make results inconsistent; an off-by-one binary search can fail only at empty or duplicate boundaries; sorting an entire billion-row stream to retain one hundred items wastes work and memory. Interviewers probe these topics because the invariants are compact but unforgiving. In production, the algorithm sits within data movement, serialization, spill, and distributed partitioning, so the best asymptotic comparison count may not be the best system plan.",
+  "intuition": "Sorting pays once to create structure that later operations exploit. Binary search repeatedly discards a half whose boundary cannot contain the answer. The robust mental model is not 'look for the value' but 'maintain an interval that is guaranteed to contain the first true position.' Selection asks for less information than sorting: if only the largest k are needed, ordering every pair is unnecessary. Match the amount of ordering work to the information the caller will consume.",
+  "deepDive": "The full explanation is organized into the structured sections below.",
+  "workedExample": "Maintain [lo,hi) as the set of possible insertion points. When `times[mid] < cutoff`, discard through mid; otherwise keep mid by moving hi. Return lo, which can equal len(times) when no event qualifies. Verify that every index before lo is less than the cutoff and every index from lo is greater than or equal. Compare the implementation with `bisect_left` over empty, singleton, duplicate, all-before, and all-after cases. The binary lookup is logarithmic, but inserting a late event at that point into an array remains linear.",
   "commonMistakes": [
-    "Applying the method without checking its assumptions or data-generating process.",
-    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+    {
+      "mistake": "Binary search returns an arbitrary matching duplicate.",
+      "correction": "A generic implementation might, but lower/upper-bound variants define the first or after-last boundary and should be chosen explicitly."
+    },
+    {
+      "mistake": "`bisect.insort` inserts in O(log n).",
+      "correction": "Finding the position is logarithmic; shifting the list to insert is O(n) and dominates."
+    },
+    {
+      "mistake": "Top-k always requires sorting all n items.",
+      "correction": "A bounded heap uses O(n log k), and partition selection can use expected O(n) when only a partial order is required."
+    }
   ],
   "followUps": [
-    "What assumptions does Sorting, Binary Search & Selection make?",
-    "How would you validate or debug Sorting, Binary Search & Selection in practice?"
+    {
+      "question": "Why must comparison sorting take Omega(n log n)?",
+      "answer": "There are n! possible distinct orders and a binary comparison decision tree needs at least that many leaves, requiring height Omega(log n!)."
+    },
+    {
+      "question": "What does stable sort guarantee?",
+      "answer": "Records with equal comparison keys retain their relative input order; it does not define that input order or automatically make ties deterministic across unordered sources."
+    },
+    {
+      "question": "How do you binary-search an answer rather than an array?",
+      "answer": "Define a monotonic feasibility predicate and search for its first true boundary, accounting for predicate cost and domain termination."
+    }
   ],
-  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "production": "Define key normalization, missing placement, direction, stability, tie policy, and deterministic secondary keys. Choose partial selection when it satisfies the output, and external or distributed sort when data exceeds memory. Monitor records, bytes, comparisons or key-extraction cost, spill, shuffle skew, and latency. Keep inputs immutable during binary search, validate monotonic predicates, cap untrusted workloads, and regression-test boundary and duplicate behavior.",
   "editorial": {
-    "status": "summary"
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "Sorting converts an unordered collection into an order that supports merging, grouping, range queries, deterministic output, and binary search. Binary search is broader than exact lookup: it finds a boundary in a monotonic predicate, provided the invariant and interval convention are correct. Selection algorithms and bounded heaps can answer kth-element or top-k questions without fully sorting all input. This chapter derives comparison-sort limits, contrasts stable and unstable algorithms, explains Python's key-based stable sorting, traces lower-bound binary search with duplicates, and distinguishes O(log n) search from O(n) insertion into an array. It also covers partial selection, external sorting, non-comparison sorting assumptions, floating-point and missing-value order, and concurrent mutation. You will implement stable merge sort and a left-bound search, use `sorted`, `bisect`, and `heapq`, and verify permutation, ordering, stability, and boundary properties. The engineering goal is to choose the least work that satisfies the actual output contract while making ordering, tie, key, memory, and determinism semantics explicit.",
+  "prerequisites": [
+    "big-o",
+    "stacks-queues-heaps"
+  ],
+  "learningObjectives": [
+    "Compare sorting algorithms by comparison count, stability, memory, adaptivity, and data-movement behavior.",
+    "Implement binary search with a stated half-open invariant and handle duplicates, insertion points, and monotonic predicates.",
+    "Choose full sort, heap top-k, partition selection, counting/radix methods, or external sort from the output and system constraints."
+  ],
+  "deepSections": [
+    {
+      "id": "sorting-contracts",
+      "title": "Ordering contracts, stability, and comparators",
+      "body": "A sort needs a total or suitably consistent order over keys. Specify ascending or descending direction, missing and non-finite placement, locale or normalization for text, tie-breaking, and whether output must be stable. A stable algorithm preserves original relative order among records with equal sort keys. This supports multi-key sorting: perform a stable sort by a secondary key, then a stable sort by the primary key, or more clearly supply a composite key.\n\nPython's `sorted` returns a new list and list `.sort` mutates in place; both are stable and accept a key function. Key extraction is normally performed once per item, avoiding repeated expensive comparator work. Prefer key functions to custom pairwise comparison. Do not rely on an unordered source to supply a meaningful tie order; include a deterministic identifier when persistence or distributed reproducibility matters.\n\nA comparator must be consistent. Cyclic or stateful comparisons invalidate algorithm assumptions. Floating NaN is not ordered like an ordinary number, mixed types may be incomparable, and timestamp strings may not reflect chronological order. Normalize into a documented key domain before sorting. Sorting changes representation, not data truth: duplicate records and invalid timestamps need separate policies."
+    },
+    {
+      "id": "sort-algorithms",
+      "title": "Comparison sorts, lower bounds, and data movement",
+      "body": "Insertion sort grows a sorted prefix and shifts an item into place. It is O(n²) in the worst case but adaptive and simple for small or nearly sorted runs. Merge sort divides, recursively sorts halves, and merges in linear work, giving O(n log n) worst-case time and commonly O(n) auxiliary storage; it can be stable. Heap sort gives O(n log n) worst-case time with low auxiliary storage but is generally unstable and has different locality. Quicksort partitions around a pivot, is often fast in memory, and has O(n log n) expected time with randomized or suitable pivots but O(n²) worst cases without safeguards.\n\nIn the comparison decision-tree model, n distinct items have n! possible orders. A binary comparison tree needs at least n! leaves, so its height is Omega(log(n!))=Omega(n log n). Algorithms can beat this comparison bound only by using more structure, such as bounded integer keys in counting or radix sorting. Those methods pay in key-domain assumptions, auxiliary storage, and passes.\n\nComparisons are not the full cost. Large records should often be sorted by compact keys or references to reduce movement. External merge sort creates sorted runs that fit memory and merges them with mostly sequential I/O. Distributed sorting samples partition boundaries, shuffles records, sorts partitions, and must handle skew and global tie semantics. Measure bytes read, written, shuffled, and spilled as well as CPU."
+    },
+    {
+      "id": "binary-search",
+      "title": "Binary search as boundary finding",
+      "body": "Use a half-open interval [lo, hi) containing every possible answer. For lower bound—the first index i where a[i]≥x—start lo=0, hi=n. While lo<hi, set mid=(lo+hi)//2. If a[mid]<x, indexes through mid cannot be the answer, so lo=mid+1; otherwise mid may be the first answer, so hi=mid. Termination lo==hi returns an insertion point from zero through n. This handles empty input and duplicates without post-hoc patches.\n\nUpper bound finds the first element greater than x by changing the predicate. Exact membership checks whether the returned lower-bound index is in range and equal. Binary search only requires a monotonic predicate: false values followed by true values. It can find the smallest capacity that meets an SLA, the first timestamp at or after a cutoff, or a feasible numeric threshold. The predicate cost multiplies the logarithmic number of evaluations.\n\nPython `bisect_left` and `bisect_right` expose insertion-point semantics. Their search is O(log n), but inserting into a list shifts elements and is O(n); the official performance note makes that distinction explicit. The sequence must remain sorted and must not be concurrently mutated during search. For numeric answer search, define termination tolerance, overflow behavior, and monotonicity; floating search is not identical to discrete index search."
+    },
+    {
+      "id": "selection-production",
+      "title": "Selection, top-k, and system choices",
+      "body": "If only the smallest or largest k items are needed, a bounded heap scans n items in O(n log k) time and O(k) state. It suits streaming and small k. Partition selection, including randomized quickselect, finds a kth order statistic in expected O(n) time and can partition top candidates without ordering them; worst-case safeguards or deterministic selection are available when guarantees matter. `heapq.nsmallest` and `nlargest` choose practical strategies, but their exact implementation policy is not the contract.\n\nA full sort remains appropriate when all items must be ordered, many subsequent range operations reuse the order, or k is close to n. Selection output is often unordered; sorting the retained k costs O(k log k). Define ties at the boundary: exactly k records, all equal-score records, or deterministic IDs. Ranking metrics can change if tie handling is accidental.\n\nProduction pipelines need schema and order versioning. Monitor input size, key extraction failures, spill volume, skewed partitions, comparator errors, and end-to-end latency. Use stable secondary keys for reproducibility, protect untrusted sort sizes, and avoid materializing an infinite source. A database index or search engine may maintain order incrementally, while repeated `insort` into a large array pays linear movement. Choose the system primitive, not only the textbook algorithm."
+    }
+  ],
+  "math": "Any comparison sort on n distinct inputs needs at least log2(n!)=Omega(n log n) comparisons in the worst case. Merge sort satisfies T(n)=2T(n/2)+Theta(n)=Theta(n log n). Binary search performs O(log n) predicate evaluations over n discrete candidates. Heap top-k costs O(n log k) time and O(k) state.",
+  "workedExamples": [
+    {
+      "title": "Find the first timestamp at or after a cutoff",
+      "setup": "A sorted event-time array may be empty and may contain duplicate timestamps. The caller needs the leftmost eligible index for a range scan.",
+      "walkthrough": "Maintain [lo,hi) as the set of possible insertion points. When `times[mid] < cutoff`, discard through mid; otherwise keep mid by moving hi. Return lo, which can equal len(times) when no event qualifies. Verify that every index before lo is less than the cutoff and every index from lo is greater than or equal. Compare the implementation with `bisect_left` over empty, singleton, duplicate, all-before, and all-after cases. The binary lookup is logarithmic, but inserting a late event at that point into an array remains linear.",
+      "conclusion": "Boundary invariants eliminate ambiguous duplicate behavior and make the returned index useful for both membership and range scans."
+    }
+  ],
+  "exercises": [
+    {
+      "difficulty": "recall",
+      "prompt": "What does `bisect_left` return when every element is less than x?",
+      "solution": "It returns len(a), the valid insertion point after the final element."
+    },
+    {
+      "difficulty": "application",
+      "prompt": "Choose an algorithm to retain the largest 50 scores from an unknown-length stream.",
+      "solution": "Use a min-heap capped at 50 for O(n log 50) time and O(50) state, then sort the final heap if presentation order is required."
+    },
+    {
+      "difficulty": "diagnosis",
+      "prompt": "A stable sort gives different tie order across two runs fed from a set. Why?",
+      "solution": "Stability preserves source order among ties, but the set did not supply the required deterministic source order. Add an explicit secondary key."
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "mit-algorithms",
+      "contribution": "Provides sorting analyses, comparison lower bounds, heaps, selection, and binary-search foundations."
+    },
+    {
+      "resource": "python-bisect",
+      "contribution": "Defines official left/right insertion boundaries and clarifies that linear list insertion dominates logarithmic search."
+    },
+    {
+      "resource": "python-heapq",
+      "contribution": "Documents standard top-k and heap operations used for partial selection."
+    },
+    {
+      "resource": "princeton-algorithms",
+      "contribution": "Provides comparative implementations and treatment of stability, merges, priority queues, and empirical algorithm analysis."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "flow",
+      "title": "Lower-bound binary search invariant",
+      "items": [
+        "Possible answers [lo, hi)",
+        "Probe midpoint",
+        "Predicate false: lo=mid+1",
+        "Predicate true: hi=mid",
+        "Return first true index"
+      ],
+      "caption": "A half-open boundary invariant handles empty arrays, duplicates, and end insertion uniformly.",
+      "afterSection": "binary-search"
+    },
+    {
+      "type": "compare",
+      "title": "Full order and partial selection",
+      "left": {
+        "title": "Full sort",
+        "items": [
+          "All n records ordered",
+          "O(n log n) comparisons",
+          "Reusable range scans",
+          "May spill externally"
+        ]
+      },
+      "right": {
+        "title": "Top-k / selection",
+        "items": [
+          "Only boundary information",
+          "O(n log k) heap option",
+          "O(k) streaming state",
+          "Final k may need sorting"
+        ]
+      },
+      "caption": "Compute only the ordering information the caller actually consumes.",
+      "afterSection": "selection-production"
+    }
+  ],
+  "lab": {
+    "goal": "Build stable merge sort and lower-bound binary search, then verify ordering, permutation, stability, duplicates, and boundary invariants.",
+    "language": "python",
+    "buildIt": "def merge_sort(items, key=lambda x: x):\n    if len(items) <= 1: return list(items)\n    middle = len(items)//2\n    left = merge_sort(items[:middle], key); right = merge_sort(items[middle:], key)\n    out=[]; i=j=0\n    while i < len(left) and j < len(right):\n        if key(left[i]) <= key(right[j]): out.append(left[i]); i += 1\n        else: out.append(right[j]); j += 1\n    return out + left[i:] + right[j:]\n\ndef lower_bound(a, x):\n    lo, hi = 0, len(a)\n    while lo < hi:\n        mid = (lo+hi)//2\n        if a[mid] < x: lo = mid+1\n        else: hi = mid\n    return lo",
+    "useIt": "from bisect import bisect_left\nfrom heapq import nlargest\nrecords = [('b', 2), ('a', 1), ('c', 2)]\nordered = sorted(records, key=lambda row: row[1])\nfirst_two = bisect_left([1,2,2,4], 2)\ntop = nlargest(2, records, key=lambda row: row[1])",
+    "verifyIt": "items=[('first',2),('second',1),('third',2)]\nout=merge_sort(items,key=lambda x:x[1])\nassert [x[1] for x in out] == [1,2,2]\nassert [x[0] for x in out if x[1]==2] == ['first','third']\nfor a in [[],[1],[1,2,2,4]]:\n    for x in [0,1,2,3,5]:\n        i=lower_bound(a,x)\n        assert i == bisect_left(a,x)\n        assert all(v < x for v in a[:i])\n        assert all(v >= x for v in a[i:])\nassert first_two == 1 and len(top) == 2",
+    "shipIt": "Version key and tie semantics, test non-finite and duplicate boundaries, measure memory/spill and key cost, add deterministic secondary keys, and select external or distributed execution when inputs exceed one process."
   }
 }

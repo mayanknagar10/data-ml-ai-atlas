@@ -8,30 +8,222 @@
     "de",
     "ds"
   ],
-  "interviewAnswer": "BFS explores level by level and finds shortest paths in unweighted graphs; DFS explores depth-first and is useful for connectivity, cycles and recursive structure.",
+  "interviewAnswer": "Represent a sparse graph with adjacency lists so storage is O(V+E). BFS uses a FIFO queue and explores by increasing edge distance, which gives shortest paths in an unweighted graph. DFS uses recursion or an explicit stack, explores one branch deeply, and supports connectivity, cycle detection, and topological ordering. Mark vertices discovered when they enter the frontier to avoid duplicate work. A full traversal is O(V+E) with adjacency lists; weighted shortest paths require another algorithm.",
   "keyPoints": [
-    "Represent graphs with adjacency lists for sparse data.",
-    "BFS uses a queue; DFS uses stack/recursion.",
-    "Visited-state handling prevents cycles."
+    "State graph semantics first",
+    "Adjacency lists suit sparse graphs",
+    "BFS gives unweighted distance",
+    "DFS exposes structure",
+    "Discovery state prevents repeated frontier work"
   ],
   "resources": [
-    "stanford-cs246"
+    "mit-algorithms",
+    "princeton-algorithms"
   ],
   "featured": false,
-  "why": "Trees, Graph Traversal, BFS & DFS appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
-  "intuition": "Represent graphs with adjacency lists for sparse data.",
-  "deepDive": "BFS explores level by level and finds shortest paths in unweighted graphs; DFS explores depth-first and is useful for connectivity, cycles and recursive structure. BFS uses a queue; DFS uses stack/recursion. Visited-state handling prevents cycles. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
-  "workedExample": "Find degrees of separation between developers in a collaboration graph using BFS.",
+  "why": "Relationships appear in lineage, dependencies, recommendations, social data, routing, feature graphs, and orchestration. A traversal can answer reachability or dependency order, but the guarantee depends on directedness and edge weights. Using BFS for weighted cost can select the wrong path. Marking visited too late can multiply queue entries. A recursive walk over a deep dependency chain can crash. Production graph inputs also contain missing vertices, parallel edges, self-loops, hot hubs, and partial snapshots. Interviews probe the classic algorithms because they reveal precise invariant reasoning; systems work requires adding data contracts and resource bounds.",
+  "intuition": "BFS expands concentric rings from a source: everything one edge away is discovered before anything two edges away. DFS follows one corridor until it cannot continue, then backtracks, making nested and dependency structure visible. The frontier determines the order, while discovery state prevents the explorer from re-entering already claimed territory. Parent links leave breadcrumbs for reconstructing paths or explaining a dependency chain.",
+  "deepDive": "The full explanation is organized into the structured sections below.",
+  "workedExample": "Build a directed adjacency list and indegree count while validating task IDs and duplicate edges. Kahn's algorithm queues every zero-indegree task, emits one, and decrements its consumers. A min-heap or sorted queue can make the order deterministic among simultaneously ready tasks. If the emitted count is smaller than the number of tasks, at least one cycle remains; run a colored DFS over the remaining subgraph to reconstruct a cycle for diagnosis instead of returning a partial order as success. Test disconnected tasks, duplicate declarations, a self-loop, and a long chain.",
   "commonMistakes": [
-    "Applying the method without checking its assumptions or data-generating process.",
-    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+    {
+      "mistake": "BFS finds the lowest-cost path in every graph.",
+      "correction": "It minimizes edge count when edges are unweighted or equal cost. Weighted costs require an appropriate shortest-path algorithm."
+    },
+    {
+      "mistake": "Mark a vertex visited only after dequeuing it.",
+      "correction": "For ordinary BFS, mark on enqueue so multiple incoming edges do not add duplicate frontier entries."
+    },
+    {
+      "mistake": "A visited set alone detects directed cycles in DFS.",
+      "correction": "You must distinguish active from finished vertices; only an edge to the active recursion/stack path proves a directed back edge."
+    }
   ],
   "followUps": [
-    "What assumptions does Trees, Graph Traversal, BFS & DFS make?",
-    "How would you validate or debug Trees, Graph Traversal, BFS & DFS in practice?"
+    {
+      "question": "Why is BFS O(V+E) with adjacency lists?",
+      "answer": "Each vertex is discovered once and each stored adjacency entry is inspected a constant number of times."
+    },
+    {
+      "question": "How do you reconstruct a shortest path?",
+      "answer": "Store a parent when each vertex is first discovered, then walk parents from target to source and reverse the result."
+    },
+    {
+      "question": "Kahn's algorithm emits only some vertices. What does that mean?",
+      "answer": "The remaining directed subgraph has no zero-indegree vertex and therefore contains a cycle; the partial list is not a valid full order."
+    }
   ],
-  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "production": "Validate graph direction, weight, identity, multiplicity, and snapshot semantics. Bound traversal depth, expanded vertices/edges, time, and output, and report budget exhaustion as unknown rather than false. Use iterative DFS for deep graphs, deterministic neighbor/tie policies where outputs are persisted, and cycle paths for diagnostics. Monitor frontier, degree skew, limit exits, and partial-data rates. Treat access control and relationship privacy as part of every graph query.",
   "editorial": {
-    "status": "summary"
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "Trees and graphs represent relationships, while traversal algorithms turn those relationships into an ordered exploration. This chapter defines vertices, edges, directedness, weights, paths, cycles, connected components, rooted trees, and common adjacency representations. It derives breadth-first search (BFS) and depth-first search (DFS), explains why BFS finds minimum-edge paths in an unweighted graph, and shows how DFS supports cycle detection and topological ordering in directed acyclic graphs. You will learn when to mark a vertex discovered, how parent and color state reconstruct results, why recursive DFS can overflow the call stack, and why a visited set does not automatically solve every graph problem. A worked dependency example performs topological validation and reports a cycle instead of returning a misleading order. Production sections cover graph size, high-degree vertices, duplicate edges, identity normalization, partial data, deterministic output, traversal limits, and graph stores. The goal is not merely to remember queue versus stack: it is to state the graph model, preserve traversal invariants, select an algorithm whose guarantees match edge semantics, and bound the work for real or adversarial graphs.",
+  "prerequisites": [
+    "hash-tables",
+    "stacks-queues-heaps",
+    "big-o"
+  ],
+  "learningObjectives": [
+    "Choose adjacency-list, adjacency-matrix, or edge-list representations from density, query, update, and memory needs.",
+    "Trace BFS and DFS states, prove their core guarantees, and reconstruct paths or topological orders.",
+    "Design graph traversal with cycle, duplicate, determinism, high-degree, partial-data, and resource-limit policies."
+  ],
+  "deepSections": [
+    {
+      "id": "graph-models",
+      "title": "Graph models and representations",
+      "body": "A graph G=(V,E) has vertices and edges. Edges may be directed or undirected, weighted or unweighted, simple or allow parallel edges and self-loops. A path follows adjacent edges; a cycle returns to a vertex. A tree is a connected acyclic undirected graph, while a rooted tree additionally defines parent-child direction from a root. A directed acyclic graph (DAG) can have multiple parents and is not necessarily a tree. State these semantics before choosing an algorithm.\n\nAn adjacency list stores neighbors for each vertex and uses O(V+E) space, making full traversal efficient for sparse graphs. An adjacency matrix uses O(V²) space and constant-time edge membership, which can suit dense graphs or vectorized operations. An edge list is compact for transport and batch processing but slow for repeated neighbor lookup unless indexed. Neighbor containers may preserve order, uniqueness, weights, or multiplicity; a set removes parallel edges and changes semantics.\n\nNormalize vertex identity and decide how dangling edges behave. For undirected graphs, store both directions or use a representation that makes symmetry explicit. If deterministic output matters, sort neighbors at a boundary or use a stable construction policy; hash iteration order should not become an accidental API. Building the index costs time and memory and belongs in end-to-end analysis."
+    },
+    {
+      "id": "breadth-first-search",
+      "title": "Breadth-first search and unweighted shortest paths",
+      "body": "BFS initializes the source at distance zero, marks it discovered, and places it in a FIFO queue. Removing vertex u, it inspects every outgoing neighbor v. An undiscovered v receives distance dist[u]+1, parent u, and enters the queue. Marking on enqueue is important: if marking waits until dequeue, multiple parents can enqueue the same vertex, increasing work and making parent choice less controlled.\n\nThe queue order creates layers. Before any distance d+1 vertex is processed, all earlier discovered distance d vertices are ahead of it. The first discovery of v therefore uses a path with the minimum number of edges. Parent pointers reconstruct one such path by walking backward. Multiple shortest paths can exist; neighbor order determines which parent is recorded unless an explicit tie policy is used.\n\nBFS does not minimize arbitrary weighted cost. Use Dijkstra for nonnegative weighted edges and other algorithms where negative weights occur. Multi-source BFS begins with all sources at distance zero and finds the nearest source by edge count. Bidirectional search can reduce explored depth for a single source-target query when reverse traversal and frontier balancing are available, but it adds meeting and path-reconstruction complexity."
+    },
+    {
+      "id": "depth-first-search",
+      "title": "Depth-first search, cycles, and topological order",
+      "body": "DFS marks a vertex active, explores each undiscovered neighbor recursively or with an explicit stack, then marks the vertex finished. In directed graphs, three-color state distinguishes unvisited, active, and finished vertices. An edge to an active vertex is a back edge and proves a directed cycle. An edge to a finished vertex does not. A single boolean visited flag can answer reachability but is insufficient for this cycle distinction.\n\nAppending a vertex when it finishes and reversing the finish list yields a topological order if no directed cycle exists. Every edge u→v then places u before v because v finishes before u when reached through that dependency, or its already-finished order remains compatible. Kahn's algorithm offers an alternative using indegrees and a queue; it can make ready-task scheduling intuitive and detects a cycle when fewer than V vertices are emitted.\n\nRecursive DFS mirrors the mathematical definition but can exceed Python's recursion limit on a deep valid graph. Raising the limit is not a complete production solution because native stack memory remains finite. An explicit stack must record enough state to resume neighbor iteration and preserve discovery/finish semantics. Test deep chains, cycles, disconnected components, self-loops, and duplicate edges."
+    },
+    {
+      "id": "scalable-traversal",
+      "title": "Complexity, boundaries, and production traversal",
+      "body": "With adjacency lists, BFS and DFS inspect each vertex and each stored edge a constant number of times, giving O(V+E) time and O(V) traversal state in addition to graph storage. With an adjacency matrix, scanning neighbors costs O(V) per vertex and full traversal is O(V²). A reachable-subgraph query can stop before visiting the full graph, but worst-case bounds remain. Outputting a path also requires time proportional to its length.\n\nReal graphs have skewed degree. One hub can expand millions of neighbors and dominate latency or memory. Bound depth, vertices, edges, wall time, and result size for interactive or untrusted queries. Use pagination or resumable frontier state when partial exploration is useful. Decide whether a limit returns 'not reachable' or 'unknown within budget'; confusing them is a correctness bug. A changing graph can invalidate traversal assumptions, so use a snapshot, version, or explicitly weak consistency.\n\nMonitor visited size, frontier size, expanded edges, degree distribution, limit exits, cycle counts, and query latency by graph slice. Partitioned traversal adds communication and duplicate coordination; a graph database can provide indexing and durability but not eliminate algorithmic cost. Protect multi-tenant systems from traversal amplification, redact sensitive relationships, and log enough parent/reason information to explain why a node was reached without exposing the entire graph."
+    }
+  ],
+  "math": "For adjacency lists, full BFS/DFS time is Theta(|V|+|E|) and traversal state is O(|V|). BFS invariant: when vertex v is first discovered from u, dist[v]=dist[u]+1 is the minimum number of edges from the source. A topological order exists iff a directed graph is acyclic; every edge u→v must place u before v.",
+  "workedExamples": [
+    {
+      "title": "Validate a feature-pipeline dependency DAG",
+      "setup": "Pipeline tasks point to the tasks that consume their outputs. Execution requires a topological order, and configuration errors may introduce a cycle.",
+      "walkthrough": "Build a directed adjacency list and indegree count while validating task IDs and duplicate edges. Kahn's algorithm queues every zero-indegree task, emits one, and decrements its consumers. A min-heap or sorted queue can make the order deterministic among simultaneously ready tasks. If the emitted count is smaller than the number of tasks, at least one cycle remains; run a colored DFS over the remaining subgraph to reconstruct a cycle for diagnosis instead of returning a partial order as success. Test disconnected tasks, duplicate declarations, a self-loop, and a long chain.",
+      "conclusion": "The algorithm produces an executable order only after proving acyclicity, and the diagnostic path turns a structural failure into actionable configuration feedback."
+    }
+  ],
+  "exercises": [
+    {
+      "difficulty": "recall",
+      "prompt": "Which frontier structure gives BFS its layer order?",
+      "solution": "A FIFO queue: vertices discovered earlier at the current or next layer are removed before later-distance vertices."
+    },
+    {
+      "difficulty": "application",
+      "prompt": "Choose a representation for a graph with ten million vertices and fifty million edges.",
+      "solution": "An adjacency-list or compressed sparse representation is appropriate; a V-by-V matrix is infeasible and wastes space."
+    },
+    {
+      "difficulty": "diagnosis",
+      "prompt": "A recursive DFS crashes on a valid chain of 200,000 tasks. What should change?",
+      "solution": "Use an explicit iterative stack with discovery/finish state; the graph depth exceeded the language/runtime call-stack budget."
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "mit-algorithms",
+      "contribution": "Provides graph representations, BFS shortest-path reasoning, DFS state, topological sorting, and O(V+E) analysis."
+    },
+    {
+      "resource": "princeton-algorithms",
+      "contribution": "Supplies university-authored traversal implementations and examples for paths, components, directed cycles, and ordering."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "network",
+      "title": "BFS layers from a source",
+      "nodes": [
+        {
+          "id": "s",
+          "label": "0: source",
+          "x": 0.12,
+          "y": 0.5,
+          "kind": "a"
+        },
+        {
+          "id": "a",
+          "label": "1",
+          "x": 0.38,
+          "y": 0.25,
+          "kind": "b"
+        },
+        {
+          "id": "b",
+          "label": "1",
+          "x": 0.38,
+          "y": 0.72,
+          "kind": "b"
+        },
+        {
+          "id": "c",
+          "label": "2",
+          "x": 0.68,
+          "y": 0.18,
+          "kind": "c"
+        },
+        {
+          "id": "d",
+          "label": "2",
+          "x": 0.68,
+          "y": 0.5,
+          "kind": "c"
+        },
+        {
+          "id": "e",
+          "label": "2",
+          "x": 0.68,
+          "y": 0.82,
+          "kind": "c"
+        }
+      ],
+      "edges": [
+        [
+          "s",
+          "a"
+        ],
+        [
+          "s",
+          "b"
+        ],
+        [
+          "a",
+          "c"
+        ],
+        [
+          "a",
+          "d"
+        ],
+        [
+          "b",
+          "d"
+        ],
+        [
+          "b",
+          "e"
+        ]
+      ],
+      "caption": "FIFO exploration discovers vertices in nondecreasing number of edges from the source.",
+      "afterSection": "breadth-first-search"
+    },
+    {
+      "type": "flow",
+      "title": "Dependency-order validation",
+      "items": [
+        "Build adjacency and indegree",
+        "Queue zero-indegree tasks",
+        "Emit and decrement consumers",
+        "Compare emitted count with V",
+        "Return order or cycle diagnosis"
+      ],
+      "caption": "A partial order is not success when a directed cycle prevents all tasks from being emitted.",
+      "afterSection": "depth-first-search"
+    }
+  ],
+  "lab": {
+    "goal": "Build BFS path reconstruction and topological validation, then verify cycles, disconnected vertices, and traversal invariants.",
+    "language": "python",
+    "buildIt": "from collections import deque\n\ndef bfs_path(graph, source, target):\n    queue = deque([source]); parent = {source: None}\n    while queue:\n        node = queue.popleft()\n        if node == target: break\n        for neighbor in graph.get(node, []):\n            if neighbor not in parent:\n                parent[neighbor] = node\n                queue.append(neighbor)\n    if target not in parent: return None\n    path = []; node = target\n    while node is not None:\n        path.append(node); node = parent[node]\n    return path[::-1]",
+    "useIt": "import graphlib\ndependencies = {'train': {'features'}, 'deploy': {'train'}, 'features': {'extract'}, 'extract': set()}\norder = list(graphlib.TopologicalSorter(dependencies).static_order())",
+    "verifyIt": "graph = {'s':['a','b'], 'a':['c'], 'b':['c'], 'c':[]}\npath = bfs_path(graph, 's', 'c')\nassert path in (['s','a','c'], ['s','b','c'])\nassert bfs_path(graph, 'c', 's') is None\npos = {node:i for i,node in enumerate(order)}\nfor node, needs in dependencies.items():\n    assert all(pos[need] < pos[node] for need in needs)\ntry:\n    list(graphlib.TopologicalSorter({'a': {'b'}, 'b': {'a'}}).static_order())\nexcept graphlib.CycleError:\n    pass\nelse:\n    raise AssertionError('cycle must fail')",
+    "shipIt": "Add identity and schema validation, deterministic ordering, depth/vertex/edge/time budgets, cycle-path diagnostics, snapshot/version semantics, access control, and traversal metrics."
   }
 }

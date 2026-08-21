@@ -6,30 +6,238 @@
   "roles": [
     "all"
   ],
-  "interviewAnswer": "Stacks are LIFO, queues FIFO, and heaps maintain fast access to an extreme element. They solve different ordering problems and show up in graph traversal, streaming and top-k systems.",
+  "interviewAnswer": "A stack is last-in-first-out and supports push/pop at one end; a FIFO queue removes the earliest item; a deque supports efficient operations at both ends; and a heap-backed priority queue removes the smallest or largest priority. A binary heap is a partial order: the root is extreme, but the whole array is not sorted. Peek is O(1), push and pop are O(log n), and heap construction is O(n). In production, also define capacity, tie-breaking, concurrency, starvation, and overload behavior.",
   "keyPoints": [
-    "Stack: push/pop.",
-    "Queue: append/dequeue.",
-    "Heap: O(log n) insert/pop, O(1) peek."
+    "Removal rule selects the ADT",
+    "Deque for both ends",
+    "Heap maintains a partial order",
+    "Top-k uses bounded heap state",
+    "Queues require overload policy"
   ],
   "resources": [
+    "mit-algorithms",
+    "python-heapq",
     "python-docs"
   ],
   "featured": false,
-  "why": "Stacks, Queues & Heaps appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
-  "intuition": "Stack: push/pop.",
-  "deepDive": "Stacks are LIFO, queues FIFO, and heaps maintain fast access to an extreme element. They solve different ordering problems and show up in graph traversal, streaming and top-k systems. Queue: append/dequeue. Heap: O(log n) insert/pop, O(1) peek. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
-  "workedExample": "Maintain the top 100 anomaly scores from a stream with a bounded min-heap.",
+  "why": "These structures appear whenever work has an order: parsing nested syntax, undo history, graph frontiers, request buffering, event-time merging, model candidate selection, job scheduling, and top-k ranking. Choosing a list as a FIFO queue can cause linear shifts at every removal. Treating a heap as sorted can return wrong ranks. Leaving a service queue unbounded can convert overload into memory exhaustion and extreme latency. Interview questions use these structures to reveal whether a candidate can connect an interface, invariant, and cost. Production systems add the harder decisions: who may enqueue, how consumers coordinate, what is dropped or delayed, and whether high-priority work can starve everything else.",
+  "intuition": "Each structure answers the same question differently: which waiting item is eligible next? A stack says the newest, a queue the oldest, and a priority queue the most urgent. A deque keeps doors at both ends. A binary heap stores a tournament-like partial order: every parent beats its children, so the champion is known without sorting all competitors. When the champion leaves, a local repair restores the invariant. This is enough for repeated extremes and top-k, even though siblings and distant nodes have no total order.",
+  "deepDive": "The full explanation is organized into the structured sections below.",
+  "workedExample": "Use a min-heap containing `(score, sequence, event_id)` and cap it at k=100. Push the first k unique events. For each later score, compare it with the root; replace the root only when it is larger. A sequence number gives deterministic tie-breaking without comparing event payloads. The algorithm stores O(k) candidates and performs O(n log k) work. Verify the retained set against a full sort on small random inputs, then sort the final heap descending for presentation. If scores for the same event can change, define whether identities are deduplicated and use versioned lazy deletion or an indexed structure.",
   "commonMistakes": [
-    "Applying the method without checking its assumptions or data-generating process.",
-    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+    {
+      "mistake": "A heap array is sorted.",
+      "correction": "Only each parent-child relation is ordered. The root is extreme, but arbitrary array positions are not global ranks."
+    },
+    {
+      "mistake": "Use `list.pop(0)` for a large FIFO queue.",
+      "correction": "It shifts remaining elements and is O(n). Use `collections.deque` for efficient operations at both ends."
+    },
+    {
+      "mistake": "An unbounded queue prevents request loss.",
+      "correction": "It converts sustained overload into growing latency and memory. Reliability requires bounded admission, persistence where needed, and an overload policy."
+    }
   ],
   "followUps": [
-    "What assumptions does Stacks, Queues & Heaps make?",
-    "How would you validate or debug Stacks, Queues & Heaps in practice?"
+    {
+      "question": "Why is heap construction O(n) rather than O(n log n)?",
+      "answer": "Bottom-up heapify sifts many nodes near the leaves only a short distance; summing movement over tree levels is linear."
+    },
+    {
+      "question": "How do you update a heap priority?",
+      "answer": "Use an indexed heap with repair operations, or insert a versioned replacement and lazily discard the stale entry, with bounded cleanup."
+    },
+    {
+      "question": "How do you preserve FIFO among equal priorities?",
+      "answer": "Include a monotonically increasing sequence number after priority in each heap entry, so ties compare by arrival order."
+    }
   ],
-  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "production": "Define capacity, ownership, ordering, durability, acknowledgement, retry, idempotency, tie-breaking, fairness, and shutdown for every work queue. Measure depth and oldest age by partition or tenant, plus admission and processing rates. Use bounded heaps for top-k, compact stale entries, and guard non-finite priorities. Reject or degrade before overload consumes all memory. Test consumer crashes and recovery rather than equating an in-memory data structure with delivery guarantees.",
   "editorial": {
-    "status": "summary"
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "Stacks, queues, deques, and heaps are small interfaces that encode different ordering policies. A stack exposes the most recently added item, a queue exposes the earliest waiting item, a deque supports both ends, and a priority queue exposes the item with the most urgent priority rather than the oldest arrival. This chapter connects those abstract data types to array and linked representations, Python lists and `collections.deque`, binary heap invariants, top-k streaming, stable tie-breaking, lazy deletion, and bounded backpressure. You will trace breadth-first and depth-first frontiers, build a min-heap from first principles, and use `heapq` without confusing a partial heap order with a sorted sequence. The systems section covers scheduler fairness, stale priority entries, queue overload, starvation, and metrics such as depth and wait time. The central skill is choosing a structure from the removal rule and required operations, then proving the invariant and lifecycle. Complexity tables matter, but correctness also depends on what happens when the structure is empty, full, concurrently mutated, or fed faster than consumers can drain it.",
+  "prerequisites": [
+    "big-o",
+    "python-data-structures",
+    "hash-tables"
+  ],
+  "learningObjectives": [
+    "Choose a stack, FIFO queue, deque, or priority queue from the required ordering and operation contract.",
+    "Derive binary-heap index relationships and prove that sift operations preserve the heap invariant.",
+    "Design bounded work queues and top-k structures with tie-breaking, stale-entry, fairness, and overload behavior."
+  ],
+  "deepSections": [
+    {
+      "id": "abstract-types",
+      "title": "Ordering contracts and representations",
+      "body": "An abstract data type is defined by operations and semantics, not a particular container. A stack provides push, pop, and peek with last-in-first-out behavior. A queue provides enqueue and dequeue with first-in-first-out behavior. A deque supports insertion and removal at both ends. A priority queue associates an item with a comparable priority and removes an extreme priority. State whether lower or higher values are more urgent and what equal priorities mean.\n\nA dynamic array naturally implements a stack at its end with amortized constant append and constant pop. Removing index zero shifts remaining references and is linear, so a Python list is a poor sustained FIFO. `collections.deque` provides approximately constant-time operations at either end and can be bounded with `maxlen`; random middle access is not its purpose. A linked representation can support constant end operations but pays pointer, allocation, and locality costs.\n\nThe interface protects reasoning. Code that only needs push/pop should not depend on internal indexing. Empty behavior must be explicit: return a sentinel, block, or raise. A sentinel must not collide with valid data. For concurrent queues, blocking, cancellation, timeout, close, and task-acknowledgement semantics are part of the contract, not details added after selecting the container."
+    },
+    {
+      "id": "binary-heaps",
+      "title": "Binary heap invariant and operations",
+      "body": "A min-heap is a complete binary tree where every parent key is less than or equal to its child keys. Completeness packs the tree into an array. With zero-based index i, children are 2i+1 and 2i+2, while a non-root parent is floor((i-1)/2). The minimum is at index zero. The invariant does not order siblings or make an array traversal sorted.\n\nPush appends a leaf and repeatedly swaps it upward while it violates the parent relation. The tree height is floor(log2 n), so push is O(log n). Pop removes the root, moves the last leaf to the root, then swaps it downward with the smaller child until order is restored, also O(log n). Peek is O(1). Bottom-up heap construction sifts internal nodes downward and is O(n), tighter than inserting n items one by one at O(n log n); most nodes are near leaves and move little.\n\nPython `heapq` operates on lists as min-heaps. Composite entries compare lexicographically, so `(priority, sequence, item)` supplies a stable unique tie-breaker and avoids comparing non-orderable items. Negating priorities simulates a max-heap in widely supported code, while current APIs should be checked before relying on newer conveniences. Never mutate an entry's priority in place without repairing the heap."
+    },
+    {
+      "id": "applications",
+      "title": "Traversal frontiers, top-k, and scheduling",
+      "body": "Depth-first traversal uses a stack, explicitly or through recursion. Breadth-first traversal uses a FIFO queue so all distance-d nodes are processed before distance d+1. A sliding window can use a deque, sometimes maintaining a monotonic order so expired or dominated values leave from opposite ends. The correct structure follows the required removal rule; substituting one changes algorithm behavior, not just performance.\n\nTo keep the largest k items from a stream, maintain a min-heap of at most k. Fill it, then compare each new candidate with the root, the smallest retained item. Replace the root only when the candidate is better. Work is O(n log k), state is O(k), and the heap itself is not sorted; sort the final k only if ordered presentation is required. Decide how ties, duplicate identities, and changing scores behave.\n\nPriority schedulers can starve low-priority work. Aging, weighted fair queues, per-tenant quotas, and separate capacity pools are policy mechanisms beyond the heap. Updating a job priority is awkward because a heap lacks direct indexed decrease-key in the basic API. Common implementations insert a new entry and mark the old one stale, then discard stale roots lazily. This needs identity/version tracking and periodic compaction so stale entries do not grow without bound."
+    },
+    {
+      "id": "queueing-production",
+      "title": "Bounded queues, backpressure, and failure behavior",
+      "body": "An unbounded queue hides overload until memory and latency collapse. Little's Law connects average number in a stable system L, arrival rate lambda, and average time W by L=lambda W. If arrival rate persistently exceeds service capacity, backlog cannot stabilize. Set a capacity based on useful waiting time and memory, then choose admission behavior: reject, shed low-priority work, block producers, spill durably, or degrade quality.\n\nMonitor depth, oldest-item age, enqueue/dequeue rates, wait and service time, rejection, retries, and consumer health. Queue depth alone can look safe while one partition or tenant is starved. Preserve ordering only to the extent required; strict global FIFO limits parallelism. Retries can reorder and duplicate work, so consumers need idempotency where effects matter. Acknowledgement timing determines whether crashes lose or replay items.\n\nIn-process structures disappear on restart and do not provide distributed durability. External brokers add replication, partitioning, visibility timeouts, delivery semantics, and operational complexity. Use a local deque or heap for local scheduling, not as an accidental durable queue. Test empty, full, cancellation, duplicate, stale priority, equal priority, consumer crash, and shutdown behavior. A clean shutdown stops admission, drains or persists work according to policy, and exposes unfinished items."
+    }
+  ],
+  "math": "For a zero-based binary heap, left(i)=2i+1, right(i)=2i+2, and parent(i)=floor((i-1)/2). Height is floor(log2 n), giving O(log n) push/pop and O(1) root access. Streaming top-k with a heap costs O(n log k) time and O(k) state. In a stable queue, Little's Law gives L=lambda W.",
+  "workedExamples": [
+    {
+      "title": "Keep the 100 highest anomaly scores",
+      "setup": "A service observes millions of scored events but only needs the highest 100 for review.",
+      "walkthrough": "Use a min-heap containing `(score, sequence, event_id)` and cap it at k=100. Push the first k unique events. For each later score, compare it with the root; replace the root only when it is larger. A sequence number gives deterministic tie-breaking without comparing event payloads. The algorithm stores O(k) candidates and performs O(n log k) work. Verify the retained set against a full sort on small random inputs, then sort the final heap descending for presentation. If scores for the same event can change, define whether identities are deduplicated and use versioned lazy deletion or an indexed structure.",
+      "conclusion": "The bounded heap solves candidate selection, while identity, update, and presentation policies remain explicit surrounding concerns."
+    }
+  ],
+  "exercises": [
+    {
+      "difficulty": "recall",
+      "prompt": "What are the children of heap index 5 in zero-based storage?",
+      "solution": "Indexes 11 and 12, using 2i+1 and 2i+2."
+    },
+    {
+      "difficulty": "application",
+      "prompt": "Choose a structure for a rolling buffer that evicts the oldest item and accepts at the newest end.",
+      "solution": "A bounded deque directly expresses efficient append-right and pop-left behavior."
+    },
+    {
+      "difficulty": "diagnosis",
+      "prompt": "A priority queue crashes when two equal priorities contain dictionary payloads. Why?",
+      "solution": "Tuple comparison falls through to the payload, and dictionaries are not orderable. Add a unique numeric sequence field before the payload."
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "mit-algorithms",
+      "contribution": "Provides heap invariants, operation proofs, bottom-up construction analysis, and traversal frontier foundations."
+    },
+    {
+      "resource": "python-heapq",
+      "contribution": "Defines Python's min-heap representation, operations, combined push/pop calls, and priority-queue implementation notes."
+    },
+    {
+      "resource": "python-docs",
+      "contribution": "Documents deque end-operation behavior and bounded deque semantics used for queue design."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "compare",
+      "title": "Which item leaves next?",
+      "left": {
+        "title": "Stack / FIFO queue",
+        "items": [
+          "Newest or oldest",
+          "No numeric priority",
+          "Deque supports both ends",
+          "Traversal and buffering"
+        ]
+      },
+      "right": {
+        "title": "Priority queue",
+        "items": [
+          "Extreme priority",
+          "Partial heap order",
+          "Tie policy required",
+          "Scheduling and top-k"
+        ]
+      },
+      "caption": "The required removal rule selects the abstract data type.",
+      "afterSection": "abstract-types"
+    },
+    {
+      "type": "network",
+      "title": "Array-backed min-heap",
+      "nodes": [
+        {
+          "id": "0",
+          "label": "2",
+          "x": 0.5,
+          "y": 0.1
+        },
+        {
+          "id": "1",
+          "label": "5",
+          "x": 0.28,
+          "y": 0.42
+        },
+        {
+          "id": "2",
+          "label": "4",
+          "x": 0.72,
+          "y": 0.42
+        },
+        {
+          "id": "3",
+          "label": "9",
+          "x": 0.17,
+          "y": 0.78
+        },
+        {
+          "id": "4",
+          "label": "7",
+          "x": 0.39,
+          "y": 0.78
+        },
+        {
+          "id": "5",
+          "label": "8",
+          "x": 0.63,
+          "y": 0.78
+        },
+        {
+          "id": "6",
+          "label": "6",
+          "x": 0.83,
+          "y": 0.78
+        }
+      ],
+      "edges": [
+        [
+          "0",
+          "1"
+        ],
+        [
+          "0",
+          "2"
+        ],
+        [
+          "1",
+          "3"
+        ],
+        [
+          "1",
+          "4"
+        ],
+        [
+          "2",
+          "5"
+        ],
+        [
+          "2",
+          "6"
+        ]
+      ],
+      "caption": "Every parent is no greater than its children; nodes across branches need not be sorted.",
+      "afterSection": "binary-heaps"
+    }
+  ],
+  "lab": {
+    "goal": "Build a binary min-heap, use the standard library for top-k, and verify the invariant after mixed operations.",
+    "language": "python",
+    "buildIt": "class MinHeap:\n    def __init__(self): self.data = []\n    def push(self, value):\n        a = self.data; a.append(value); i = len(a)-1\n        while i:\n            p = (i-1)//2\n            if a[p] <= a[i]: break\n            a[p], a[i] = a[i], a[p]; i = p\n    def pop(self):\n        if not self.data: raise IndexError('empty heap')\n        a = self.data; root = a[0]; last = a.pop()\n        if a:\n            a[0] = last; i = 0\n            while True:\n                left = 2*i+1\n                if left >= len(a): break\n                right = left+1\n                child = right if right < len(a) and a[right] < a[left] else left\n                if a[i] <= a[child]: break\n                a[i], a[child] = a[child], a[i]; i = child\n        return root",
+    "useIt": "import heapq\nvalues = [7, 1, 9, 3, 8, 2]\nk = 3\ntop = []\nfor value in values:\n    if len(top) < k: heapq.heappush(top, value)\n    elif value > top[0]: heapq.heapreplace(top, value)\nresult = sorted(top, reverse=True)",
+    "verifyIt": "def valid(a):\n    return all((2*i+1 >= len(a) or a[i] <= a[2*i+1]) and (2*i+2 >= len(a) or a[i] <= a[2*i+2]) for i in range(len(a)))\nh = MinHeap()\nfor value in [5, 1, 4, 1, 3]:\n    h.push(value); assert valid(h.data)\nout = []\nwhile h.data:\n    out.append(h.pop()); assert valid(h.data)\nassert out == [1, 1, 3, 4, 5]\nassert result == [9, 8, 7]",
+    "shipIt": "Add stable tie-breakers, identity/version handling, capacity and overload policies, queue metrics, concurrency primitives, and crash/recovery tests appropriate to the chosen durability boundary."
   }
 }
