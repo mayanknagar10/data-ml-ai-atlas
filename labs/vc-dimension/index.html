@@ -1,0 +1,22 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>VC Dimension &amp; Capacity — Code Lab</title><script>(()=>{const s=localStorage.getItem('atlas-theme');const t=s||((matchMedia('(prefers-color-scheme: dark)').matches)?'dark':'light');document.documentElement.dataset.theme=t})()</script><style>:root{--bg:#fff;--text:#121417;--muted:#5d6470;--line:#dfe3e8;--soft:#f6f7f8;--blue:#155eef;--code:#0d1117;color-scheme:light}html[data-theme=dark]{--bg:#0d1117;--text:#eef2f6;--muted:#a8b0ba;--line:#2b333d;--soft:#171d24;--blue:#8fb4ff;--code:#070a0e;color-scheme:dark}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.6 Inter,system-ui,sans-serif}main{max-width:980px;margin:auto;padding:44px 22px 80px}a{color:var(--blue)}h1{font-size:42px;line-height:1.05;margin:8px 0 12px}.k{font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--blue);font-weight:800}.lead{color:var(--muted);font-size:17px}.top{display:flex;justify-content:space-between;gap:16px}button{border:1px solid var(--line);background:var(--soft);color:var(--text);border-radius:8px;padding:7px 9px;cursor:pointer}section{border-top:1px solid var(--line);padding-top:22px;margin-top:26px}pre{background:var(--code);color:#e6edf3;padding:18px;border-radius:12px;overflow:auto;font:13px/1.55 ui-monospace,monospace}.links{display:flex;gap:12px;flex-wrap:wrap;margin:18px 0}.links a{border:1px solid var(--line);border-radius:8px;padding:7px 9px;text-decoration:none;font-size:12px}@media(max-width:600px){h1{font-size:34px}.top{display:block}}</style></head><body><main><div class="top"><div><div class="k">Data, ML & AI Atlas · Runnable Lab</div><h1>VC Dimension &amp; Capacity</h1></div><button id="t">◐ Theme</button></div><p class="lead">Enumerate threshold and interval dichotomies, verify their VC dimensions, and compare growth counts with the Sauer-Shelah combinatorial bound.</p><div class="links"><a href="../../index.html#/lesson/vc-dimension">← Full lesson</a><a href="lab.py">Combined Python file</a><a href="README.md">README</a></div><section><h2>1 · Build it</h2><p>Minimal implementation with as little framework abstraction as practical.</p><pre>import itertools
+import numpy as np
+def threshold_patterns(points):
+    x=np.sort(np.asarray(points,float)); cuts=[x[0]-1,*((x[:-1]+x[1:])/2),x[-1]+1]
+    return {tuple((x&gt;=t).astype(int)) for t in cuts}
+def interval_patterns(points):
+    x=np.sort(np.asarray(points,float)); patterns={tuple(np.zeros(len(x),dtype=int))}
+    for i in range(len(x)):
+        for j in range(i,len(x)): patterns.add(tuple(((x&gt;=x[i])&amp;(x&lt;=x[j])).astype(int)))
+    return patterns
+def shatters(patterns,m): return len(patterns)==2**m
+t1=threshold_patterns([0]); t2=threshold_patterns([0,1]); i2=interval_patterns([0,1]); i3=interval_patterns([0,1,2])</pre></section><section><h2>2 · Use it</h2><p>The same idea through a common library or practical API.</p><pre>from scipy.special import comb
+def sauer(m,d): return int(sum(comb(m,i,exact=True) for i in range(d+1)))
+interval_growth=[len(interval_patterns(range(m))) for m in range(1,7)]</pre></section><section><h2>3 · Ship it</h2><p>Document the exact hypothesis class, intercept and domain assumptions; use VC as structural evidence, then validate the trained algorithm under honest splits, margins, stability, drift and operational metrics.</p></section><section><h2>4 · Verify it</h2><p>Assertions and sanity checks that catch conceptual or implementation mistakes.</p><pre>assert shatters(t1,1) and not shatters(t2,2)
+assert shatters(i2,2) and not shatters(i3,3)
+assert (1,0,1) not in i3 and len(i3)==7
+assert len(t2)==3==sauer(2,1)
+assert interval_growth==[2,4,7,11,16,22]
+assert all(interval_growth[m-1]&lt;=sauer(m,2) for m in range(2,7))
+assert sauer(3,2)==7 and sauer(5,2)==16
+# Relabeling point coordinates without changing order preserves one-dimensional patterns.
+assert interval_patterns([10,20,40])==i3</pre></section></main><script>const b=document.getElementById('t');function u(){b.textContent=document.documentElement.dataset.theme==='dark'?'☀ Light':'☾ Dark'}u();b.onclick=()=>{const n=document.documentElement.dataset.theme==='dark'?'light':'dark';document.documentElement.dataset.theme=n;localStorage.setItem('atlas-theme',n);u()}</script></body></html>

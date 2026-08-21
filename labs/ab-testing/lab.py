@@ -13,8 +13,10 @@ report=ab_proportions(1045,10000,1010,10000)
 planned_n=mean_sample_per_arm(sqrt(0.1*0.9),0.005)
 
 # ---- Use it ----
-from statsmodels.stats.proportion import proportions_ztest
-stat,pvalue=proportions_ztest([1045,1010],[10000,10000])
+from scipy.stats import norm
+pooled=(1045+1010)/(10000+10000)
+stat=(1045/10000-1010/10000)/(pooled*(1-pooled)*(1/10000+1/10000))**0.5
+pvalue=2*norm.sf(abs(stat))
 
 # ---- Verify it ----
 effect,interval,z,p=report

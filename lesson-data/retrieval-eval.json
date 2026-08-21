@@ -6,40 +6,188 @@
   "roles": [
     "ds"
   ],
-  "interviewAnswer": "Retrieval metrics depend on whether you care about finding any relevant result, all relevant results, or graded relevance near the top. MRR emphasizes first relevant rank; NDCG rewards graded relevance with position discount.",
+  "interviewAnswer": "I begin with the retrieval stage and user task. Recall@K is primary for a candidate generator because a reranker cannot recover missing relevant items. MRR emphasizes the first relevant result, MAP averages precision at every relevant hit for binary multi-result tasks, and NDCG discounts rank while supporting graded relevance and normalizing by the ideal ordering. I report per-query metrics then macro averages and distributional slices, not only a traffic-weighted headline. The test collection freezes corpus, queries and judgments; pooled unjudged documents need an explicit policy and can bias new systems. I use paired bootstrap or randomization over queries, report confidence intervals and practical deltas, and include latency, freshness, coverage, safety and online task outcomes. Duplicate results and zero-relevant queries have predefined handling.",
   "keyPoints": [
-    "Define relevance judgments first.",
-    "Recall@K matters for candidate stages.",
-    "NDCG supports graded relevance."
+    "Metric choice encodes how rank position, multiple relevant items and graded relevance create value.",
+    "Compute query-level scores first; aggregation weights determine whose needs dominate the result.",
+    "Unjudged is not automatically nonrelevant, especially for a novel system outside the judgment pool.",
+    "Paired comparisons over the same queries are more informative than independent headline averages.",
+    "Offline relevance must be balanced with latency, coverage, freshness, diversity, safety and online utility."
   ],
   "resources": [
-    "ir-book"
+    "ir-book",
+    "trec-evaluation"
   ],
   "featured": true,
-  "why": "MRR, MAP, Recall@K & NDCG appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
-  "intuition": "Define relevance judgments first.",
-  "deepDive": "Retrieval metrics depend on whether you care about finding any relevant result, all relevant results, or graded relevance near the top. MRR emphasizes first relevant rank; NDCG rewards graded relevance with position discount. Recall@K matters for candidate stages. NDCG supports graded relevance. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
-  "workedExample": "For support search, first-answer usefulness may make MRR important; for RAG candidate retrieval, Recall@K may dominate.",
+  "why": "Search improvements are impossible to reason about from a few hand-picked queries or click-through rate alone. A reusable test collection makes ranker iterations comparable and exposes regressions before users see them. Different metrics, however, reward different products. A support answerer may care about the first correct passage; legal discovery cares about retrieving most relevant material; shopping may have graded usefulness and diversity. A model can improve NDCG on frequent navigational queries while harming rare diagnostic queries, or gain relevance by adding unacceptable latency. Judgments are also samples shaped by assessors and pooling. Evaluation is therefore a measurement system, not a formula: define the information need, unit, corpus, labeling rubric, cutoff, aggregation, uncertainty and launch decision together.",
+  "intuition": "Read a ranked list from top to bottom. Reciprocal rank asks how long the user waits for the first useful result: rank one earns 1, rank two earns 1/2. Average precision gives credit whenever another relevant item appears, multiplying each hit by precision so far and averaging over all known relevant items. DCG lets relevance have grades and discounts later positions because users attend less; NDCG divides by the best possible DCG for that query so scores are comparable across queries with different relevance sets. Recall@K asks what fraction of all relevant items entered the first K. Each is a different view of the same list, so choosing one is choosing a user model.",
+  "deepDive": "Retrieval metrics are compact utility models over ranked judgments. Recall tests coverage, MRR tests first-hit speed, AP tests binary precision throughout a list, and NDCG tests discounted graded gain. Their validity depends on the query and judgment sampling process, unjudged policy and aggregation weights. A trustworthy evaluation preserves per-query paired evidence, uncertainty and slices, then joins offline relevance with operational and online outcomes rather than treating a leaderboard average as the product goal.",
+  "workedExample": "A ranked list has binary relevance [0,1,1,0] and there are three relevant corpus documents. The first hit is rank two, so RR=1/2. Precision at the relevant ranks is 1/2 and 2/3. AP=(1/2+2/3)/3=0.389 because the third relevant document was not retrieved. Recall@4=2/3. If the goal were one answer, MRR emphasizes the rank-two wait; if the goal were discovery, recall and AP expose the missing document.",
   "commonMistakes": [
-    "Applying the method without checking its assumptions or data-generating process.",
-    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+    {
+      "misconception": "MRR summarizes the quality of the entire result list.",
+      "correction": "It uses only the first relevant rank and ignores every later relevant or harmful result."
+    },
+    {
+      "misconception": "Unjudged documents are known nonrelevant.",
+      "correction": "They are missing assessments; treating them as negative can bias against systems that retrieve outside the pool."
+    },
+    {
+      "misconception": "A significant average gain means every query improved.",
+      "correction": "Inspect paired distributions, win/loss counts and critical slices; large regressions can hide under a positive mean."
+    },
+    {
+      "misconception": "Offline clicks can replace relevance judgments directly.",
+      "correction": "Clicks are affected by rank, snippets, trust, exposure and the current system, requiring careful logging and causal correction."
+    }
   ],
   "followUps": [
-    "What assumptions does MRR, MAP, Recall@K & NDCG make?",
-    "How would you validate or debug MRR, MAP, Recall@K & NDCG in practice?"
+    {
+      "question": "When do you prefer MRR over NDCG?",
+      "answer": "When utility is dominated by the first relevant answer and later results contribute little. NDCG suits graded usefulness across several ranks."
+    },
+    {
+      "question": "Why is recall critical before reranking?",
+      "answer": "A reranker can reorder only admitted candidates; any relevant document absent from the candidate set is unrecoverable."
+    },
+    {
+      "question": "How do you compare two rankers statistically?",
+      "answer": "Use per-query paired differences and a paired bootstrap or randomization test, reporting uncertainty and practical magnitude with prespecified outcomes."
+    }
   ],
-  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
-  "visual": {
-    "type": "concept-map",
-    "title": "MRR, MAP, Recall@K & NDCG",
-    "items": [
-      "Define relevance judgments first.",
-      "Recall@K matters for candidate stages.",
-      "NDCG supports graded relevance."
-    ],
-    "caption": "A compact concept map for the most important ideas in this lesson."
-  },
+  "production": "Maintain an evaluation registry with corpus hash, document availability, query sampling frame, intent and locale tags, judgment rubric, assessor and adjudication metadata, pool contributors, unjudged policy, metric implementation hash, cutoff, duplicate policy, aggregation weights and latency environment. Prevent leakage by separating tuning, validation and final temporal or external sets. For each change, store per-query rankings, scores, judgments, explanations, timing and paired deltas so failures are inspectable. Require event counts or judgment coverage for slices, confidence intervals for primary differences, noninferiority on safety and high-value intents, and p95/p99 latency and cost budgets. Refresh a portion of queries and documents while retaining an anchored longitudinal set. Online experiments add task success and harm guardrails. Rollback uses the prior ranker and its compatible evaluation manifest; never rewrite old judgments or metric code silently.",
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "Retrieval evaluation turns ranked lists into evidence about whether a search system serves real information needs. This chapter derives Recall@K, Precision@K, reciprocal rank, average precision, mean average precision, discounted cumulative gain and normalized DCG for binary and graded judgments. It separates first-answer, candidate-generation, broad-discovery and graded-ranking objectives; explains macro versus traffic-weighted aggregation; and treats incomplete judging, pooling, annotator disagreement, query sampling, confidence intervals and significance tests as first-class design issues. It also connects offline relevance to latency, freshness, coverage, diversity, safety and online task success. A worked example computes reciprocal rank, AP and NDCG from one ranked list. The lab implements every core metric from scratch, compares NDCG with scikit-learn, and verifies perfect, empty, duplicate and cutoff behavior. Production guidance versions query sets, corpus snapshots, judgment policies, unjudged handling and metric code; slices results by intent and frequency; and requires paired uncertainty plus practical effect size before rollout. A higher offline average is useful only when the test collection represents deployment and the metric rewards the position and kind of relevance users actually need.",
+  "prerequisites": [
+    "tfidf-bm25",
+    "hypothesis-testing"
+  ],
+  "learningObjectives": [
+    "Compute and interpret Recall@K, reciprocal rank, AP, MAP, DCG and NDCG from ranked judgments.",
+    "Select metrics that match candidate recall, first-answer, exhaustive discovery and graded-ranking tasks.",
+    "Design representative query sets and reliable relevance judgments under pooling and incomplete labels.",
+    "Compare systems with paired uncertainty, meaningful slices, latency and online decision metrics."
+  ],
+  "deepSections": [
+    {
+      "id": "binary-metrics",
+      "title": "Binary metrics encode first-hit, set-coverage and repeated precision goals",
+      "body": "Precision@K is relevant items in the first K divided by K, though some protocols divide by returned count when fewer than K can exist; state the convention. Recall@K divides relevant retrieved by total known relevant and is undefined when no relevant item is known unless a policy assigns zero, one or exclusion. Reciprocal rank is 1/r for the first relevant rank r and zero if absent. It ignores every later result, making it appropriate for a single-answer objective and dangerous for broad research. Average precision sums Precision@r at each relevant rank and divides by the number of relevant documents, usually counting unretrieved relevant documents as zero contribution. MAP is the macro mean of query AP. R-precision evaluates precision after retrieving R results, where R is the number relevant. Duplicated document IDs must not receive repeated credit. Cutoff variants such as AP@K need explicit denominators. Candidate stages usually prioritize recall at a budget while reporting latency and candidate count; final ranks often need position-sensitive precision or gain."
+    },
+    {
+      "id": "graded-metrics",
+      "title": "NDCG handles graded usefulness and steep attention decay",
+      "body": "Discounted cumulative gain sums a gain function of relevance divided by a rank discount. A common form is DCG@K=sum_{r=1}^K (2^{rel_r}-1)/log2(r+1), giving larger separation to high grades and no discount at rank one. A linear gain rel_r is also valid but different. Ideal DCG sorts the available judgments by grade; NDCG is DCG/IDCG and is conventionally zero when IDCG is zero. Normalization supports macro comparison across queries, but does not remove judgment noise or incomplete pools. Rank discount approximates attention, not a physical law; alternative discounts or expected reciprocal rank may better fit a surface with stopping behavior. If multiple intents or subtopics matter, alpha-NDCG and intent-aware measures can penalize redundancy. Define whether filters, unavailable items and unsafe results receive zero, negative utility, or a separate constraint. A ranker's improvement can come from moving one highly graded document to the top even if total relevant coverage falls, so pair NDCG with recall where downstream stages need coverage."
+    },
+    {
+      "id": "test-collections",
+      "title": "Queries and judgments must represent information needs, not only strings",
+      "body": "A classic test collection contains a fixed document corpus, query topics representing information needs, and relevance judgments for query-document pairs. Sample queries across frequency, locale, device, intent, complexity, sensitive categories and failure modes. Deduplicate templated variants and split related queries to avoid tuning on near copies. Assessors need a rubric, context and grade definitions; record disagreement and adjudication rather than hiding ambiguity. Pooling judges top results from several systems to control cost, leaving most corpus documents unjudged. Treating every unjudged document as nonrelevant favors systems similar to the pool contributors and can underestimate a new retriever. Expand pools for promising novel systems, use bpref or inferred measures where appropriate, and audit missingness. Search logs overrepresent existing exposure and successful reformulations while privacy rules constrain reuse. Freeze corpus snapshot, query wording, judgments, cutoff and metric implementation so changes are attributable. Maintain both stable longitudinal benchmarks and refreshed sets for new content and intents."
+    },
+    {
+      "id": "comparison-and-online",
+      "title": "Reliable launch decisions combine paired evidence and system constraints",
+      "body": "Compute a metric per query for both systems and analyze paired differences. A paired bootstrap resamples queries with replacement; a randomization test flips difference signs under an exchangeability null. Report the mean or median delta, confidence interval, win/tie/loss counts and important slices. Multiple metrics, cutoffs and slices create multiplicity, so predeclare a primary outcome and guardrails. Statistical significance can accompany a negligible product effect; set a minimum practical improvement and noninferiority margins for critical slices. Macro means weight each query equally; traffic weighting estimates current exposure but can let head queries dominate and encode the old ranker's behavior. Offline relevance omits presentation, trust and interaction. Online experiments may measure reformulation, successful task completion, abandonment, dwell with careful interpretation, downstream conversion, harmful exposure and latency. Interleaving can compare rankers efficiently for preference but has assumptions. Launch only when quality, latency, cost, freshness, stability and policy guardrails jointly pass."
+    }
+  ],
+  "math": "P@K=(1/K)sum_{r<=K} rel_r and R@K=(sum_{r<=K}rel_r)/R, where R is the number of relevant documents. RR=1/min{r:rel_r=1}, or 0 if absent. AP=(1/R)sum_r P@r*rel_r; MAP is mean AP over queries. DCG@K=sum_{r=1}^K g(rel_r)/log2(r+1), commonly g(rel)=2^rel-1. NDCG@K=DCG@K/IDCG@K when ideal gain is positive. System comparisons use paired per-query differences Delta_q=m_q(B)-m_q(A); resampling queries preserves that pairing.",
+  "workedExamples": [
+    {
+      "title": "Graded ranking",
+      "body": "Grades [3,0,2] at ranks one to three produce DCG=(7/1)+(0/log2 3)+(3/log2 4)=8.5 with exponential gain. IDCG orders [3,2,0], so normalization compares the list with its attainable ideal."
+    },
+    {
+      "title": "Macro versus traffic weighting",
+      "body": "A head query occurring 90 percent of the time improves by 0.01 while ten rare diagnostic queries fall by 0.20. Traffic weighting may look positive; macro and intent slices reveal broad damage. The launch choice depends on declared user priorities and guardrails."
+    }
+  ],
+  "lab": {
+    "language": "python",
+    "goal": "Implement Recall@K, reciprocal rank, AP, MAP and NDCG, compare NDCG with scikit-learn, and verify cutoff, duplicate and ideal-ranking behavior.",
+    "buildIt": "import math\ndef dedupe(ranking): return list(dict.fromkeys(ranking))\ndef recall_at_k(ranking,relevant,k):\n    relevant=set(relevant); return len(set(dedupe(ranking)[:k])&relevant)/len(relevant) if relevant else 0.0\ndef reciprocal_rank(ranking,relevant):\n    relevant=set(relevant)\n    return next((1/i for i,d in enumerate(dedupe(ranking),1) if d in relevant),0.0)\ndef average_precision(ranking,relevant,k=None):\n    relevant=set(relevant); ranked=dedupe(ranking); ranked=ranked if k is None else ranked[:k]\n    if not relevant: return 0.0\n    hits=0; total=0.0\n    for i,d in enumerate(ranked,1):\n        if d in relevant: hits+=1; total+=hits/i\n    return total/len(relevant)\ndef dcg(grades,k): return sum((2**g-1)/math.log2(i+1) for i,g in enumerate(grades[:k],1))\ndef ndcg(grades,k):\n    ideal=dcg(sorted(grades,reverse=True),k); return dcg(grades,k)/ideal if ideal else 0.0\nranking=['a','b','c','d']; relevant={'b','c','z'}; grades=[0,3,2,0]\nrr=reciprocal_rank(ranking,relevant); ap=average_precision(ranking,relevant); r4=recall_at_k(ranking,relevant,4); n4=ndcg(grades,4)",
+    "useIt": "import numpy as np\nfrom sklearn.metrics import ndcg_score\n# scikit-learn consumes gains directly, so transform grades with the chapter's exponential gain.\ny_true=np.array([[2**g-1 for g in grades]],float); y_score=np.array([[4,3,2,1]],float)\nsklearn_n4=float(ndcg_score(y_true,y_score,k=4))",
+    "verifyIt": "assert abs(rr-.5)<1e-12\nassert abs(ap-((1/2+2/3)/3))<1e-12 and abs(r4-2/3)<1e-12\nassert abs(n4-sklearn_n4)<1e-12\nassert ndcg(sorted(grades,reverse=True),4)==1.0\nassert recall_at_k(['a','a','b'],{'a','b'},2)==1.0\nassert reciprocal_rank([],{'x'})==0 and average_precision(['x'],set())==0\nassert average_precision(['a','b'],{'a','b'})==1.0\nassert 0<=n4<=1",
+    "shipIt": "Version corpus, queries, judgments, pools, cutoffs, unjudged and duplicate policies, metric code and aggregation; publish paired uncertainty and slices with latency guardrails, and retain frozen prior evaluations for audit and rollback."
+  },
+  "exercises": [
+    {
+      "prompt": "A first relevant result is at rank five. What is reciprocal rank?",
+      "solution": "1/5=0.2, regardless of any relevant results below rank five."
+    },
+    {
+      "prompt": "Why can NDCG improve while Recall@100 decreases?",
+      "solution": "Highly graded items may move upward, increasing discounted gain, while some other relevant items disappear from the candidate set."
+    },
+    {
+      "prompt": "What is wrong with bootstrapping interval rows or result positions independently?",
+      "solution": "The evaluation unit is normally the query; resample whole queries to preserve each ranked list and paired system comparison."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "funnel",
+      "title": "Retrieval evaluation evidence",
+      "items": [
+        {
+          "label": "Representative query needs",
+          "value": 100
+        },
+        {
+          "label": "Reliable relevance judgments",
+          "value": 82
+        },
+        {
+          "label": "Paired offline metrics",
+          "value": 65
+        },
+        {
+          "label": "Latency and policy guardrails",
+          "value": 48
+        },
+        {
+          "label": "Online task validation",
+          "value": 34
+        }
+      ],
+      "caption": "Conceptual funnel: every later conclusion depends on the quality and support of earlier measurement stages.",
+      "afterSection": "test-collections"
+    },
+    {
+      "type": "compare",
+      "title": "Choose the metric by user goal",
+      "left": {
+        "title": "Single or candidate goal",
+        "items": [
+          "MRR: first useful result",
+          "Recall@K: candidate coverage",
+          "P@K: top-set density",
+          "Latency at the same K"
+        ]
+      },
+      "right": {
+        "title": "Ranked multi-result goal",
+        "items": [
+          "AP/MAP: binary precision path",
+          "NDCG: graded discounted gain",
+          "Intent-aware diversity",
+          "Online task completion"
+        ]
+      },
+      "caption": "No single metric represents every retrieval surface or downstream stage.",
+      "afterSection": "graded-metrics"
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "ir-book",
+      "contribution": "Grounds standard test collections, precision, recall, ranked metrics, relevance assessment and user utility."
+    },
+    {
+      "resource": "trec-evaluation",
+      "contribution": "Provides authoritative benchmark, pooling and relevance-judgment context for reproducible retrieval experiments."
+    }
+  ]
 }

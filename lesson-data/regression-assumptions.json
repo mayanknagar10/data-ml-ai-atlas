@@ -7,41 +7,228 @@
     "ds",
     "as"
   ],
-  "interviewAnswer": "For inference, linear regression relies on assumptions about functional form, independent errors, variance structure and error distribution; for prediction, diagnostics still reveal misspecification, outliers and extrapolation risk.",
+  "interviewAnswer": "I do not ask whether linear regression assumptions hold in the abstract; I ask which claim I need. For unbiased conditional coefficients, the central condition is E[epsilon|X]=0 with a correctly specified conditional mean and usable design rank. Homoskedasticity is mainly needed for the classical covariance formula, and normality mainly for exact small-sample inference. Dependence must match the sampling and covariance estimator. I inspect residual patterns, time or group structure, leverage and influence, not only a normality test. Then I address the cause: respecify the mean, use heteroskedasticity- or cluster-robust inference, model dependence, improve data, or narrow the target population. Diagnostics reveal sensitivity; they do not prove causality or future stability.",
   "keyPoints": [
-    "Inspect residual vs fitted plots.",
-    "Check leverage/influence, not just residual size.",
-    "Heteroscedasticity affects uncertainty estimates."
+    "Assumptions support specific estimands, estimators, intervals, or deployment claims.",
+    "E[epsilon|X]=0 is more central to coefficient bias than residual normality.",
+    "Leverage is unusual X; residual is unusual Y given X; influence combines both.",
+    "Robust covariance changes uncertainty, not fitted coefficients or omitted-variable bias.",
+    "Dependence and selection must be represented in splitting and inference."
   ],
   "resources": [
     "isl",
+    "statsmodels-regression-diagnostics",
+    "nist-regression-diagnostics",
     "stanford-stats200"
   ],
   "featured": true,
-  "why": "Linear Regression Assumptions & Diagnostics appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
-  "intuition": "Inspect residual vs fitted plots.",
-  "deepDive": "For inference, linear regression relies on assumptions about functional form, independent errors, variance structure and error distribution; for prediction, diagnostics still reveal misspecification, outliers and extrapolation risk. Check leverage/influence, not just residual size. Heteroscedasticity affects uncertainty estimates. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
-  "workedExample": "Residual variance increasing with fitted revenue suggests transformation, weighted/robust methods or different uncertainty estimates.",
+  "why": "A regression output table can look precise even when the data do not support its story. Incorrect uncertainty can lead to false scientific claims; an omitted nonlinear relationship can produce systematic prediction error; dependence can make a nominally large sample contain little independent information; a handful of data-pipeline failures can drive a coefficient. Diagnostics give a structured way to ask where information and risk come from. They are also useful beyond classical inference: residual patterns reveal missing features, leverage reveals support boundaries, deletion sensitivity reveals brittle decisions, and time plots reveal regime change. The goal is not to force every diagnostic into an ideal shape. Real outcomes can be skewed, heteroskedastic, clustered, and still support useful models if the estimand, estimator, uncertainty method, and evaluation design match those properties. The dangerous state is an unspoken mismatch.",
+  "intuition": "Think of a fitted regression as a proposed signal plus a leftover process. A good diagnostic asks whether the leftover still contains structure the model or uncertainty calculation claimed to remove. Residuals that curve with fitted values suggest the mean surface is wrong. A fan shape suggests conditional spread changes. Runs over time suggest serial dependence or drift. A quantile plot probes tail and distribution shape, but small deviations need not matter for large-sample prediction. The design matrix has its own geometry. The hat value h_ii measures how much observation i can pull its own fitted value; average leverage is d/n when d parameters include the intercept. A point far in predictor space can have high leverage and fit itself closely, leaving a deceptively small residual. Influence asks a counterfactual sensitivity question: how much would the fitted result move if that case were absent? That requires both leverage and disagreement with the surrounding relationship.",
+  "deepDive": "Regression diagnostics are a model-criticism system. Mean assumptions, variance assumptions, dependence, design geometry, and causal identification are different dimensions and need different evidence. Residual shape probes the modeled conditional mean and error process; leverage probes predictor support; influence probes estimator sensitivity. The correct response is tied to the failure mechanism and intended claim, not to a generic goal of passing normality or deleting every flagged row.",
+  "workedExample": "Five observations follow an approximate positive line, while a sixth sits far to the right. Because its predictor value is extreme, it has high leverage and can rotate the fitted line toward its own outcome. Its residual may then look modest even though deleting it changes the slope substantially. A residual-only screen misses the case; leverage and deletion sensitivity expose it. Whether to keep it depends on provenance and whether that predictor region belongs to the intended population.",
   "commonMistakes": [
-    "Applying the method without checking its assumptions or data-generating process.",
-    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+    {
+      "misconception": "Predictors and outcome must each be normally distributed.",
+      "correction": "Classical exact inference assumes a conditional error distribution. Marginal variables can be nonnormal; focus on the conditional mean, dependence, variance, tails, and intended claim."
+    },
+    {
+      "misconception": "Robust standard errors fix a misspecified regression.",
+      "correction": "They adjust covariance under certain variance misspecification. They do not fix omitted nonlinear signal, confounding, selection, dependence outside the estimator, or measurement error."
+    },
+    {
+      "misconception": "Every high-leverage point should be deleted.",
+      "correction": "Leverage means unusual predictors, not incorrect data. Investigate provenance, target support, and sensitivity; valid boundary cases may be essential."
+    },
+    {
+      "misconception": "A nonsignificant normality test validates the model.",
+      "correction": "Tests have sample-size-dependent power and address one property. They cannot validate conditional mean, independence, causal identification, or future stability."
+    }
   ],
   "followUps": [
-    "What assumptions does Linear Regression Assumptions & Diagnostics make?",
-    "How would you validate or debug Linear Regression Assumptions & Diagnostics in practice?"
+    {
+      "question": "What is the difference between an outlier and a high-leverage point?",
+      "answer": "An outcome outlier has an unusual response conditional on predictors; a high-leverage point has unusual predictors. A case can be either, both, or neither, and influence depends on its effect on the fit."
+    },
+    {
+      "question": "Can OLS be useful under heteroskedasticity?",
+      "answer": "Yes, if the conditional mean is correctly specified and exogeneity holds. Coefficients can still target that mean, while classical standard errors and constant-width prediction intervals need replacement."
+    },
+    {
+      "question": "Why inspect residuals over time?",
+      "answer": "Row-order-independent plots can hide autocorrelation, regime shifts, delayed label changes, or batch failures. Time structure affects both generalization and effective uncertainty."
+    }
   ],
-  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
-  "visual": {
-    "type": "concept-map",
-    "title": "Linear Regression Assumptions & Diagnostics",
-    "items": [
-      "Inspect residual vs fitted plots.",
-      "Check leverage/influence, not just residual size.",
-      "Heteroscedasticity affects uncertainty estimates."
-    ],
-    "caption": "A compact concept map for the most important ideas in this lesson."
-  },
+  "production": "Package diagnostics as operational evidence, not one-time notebook screenshots. Record design rank, condition number, leverage distribution, influential cases, residual slices, chosen covariance estimator, and sensitivity fits. Version the data extraction and unit of independence. At serving time, detect schema changes and feature vectors outside supported ranges; route or flag extreme leverage rather than extrapolating silently. When labels arrive, monitor residual mean, scale, tail loss, coverage, and structure by time, source, geography, and relevant subgroup. Clustered or repeated data require matching evaluation and alert aggregation. Protect raw influential-case records because they may contain sensitive details. Define what triggers investigation, model revision, or rollback. A rollback should restore preprocessing and decision policy as well as coefficients. Do not automatically delete production cases that violate the model; model failure may be the signal that the population or process changed.",
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "Regression assumptions are not a ritual checklist that makes a model valid after a few plots. They connect a particular estimand and inferential procedure to a data-generating and sampling process. This chapter separates assumptions needed for unbiased conditional-mean estimation, classical standard errors, prediction, and causal interpretation. You will reason about linearity in the conditional mean, exogeneity, independence or dependence structure, constant variance, rank, outcome tails, and measurement quality. Residual-versus-fitted, scale-location, quantile, leverage, studentized-residual, and Cook-distance diagnostics are explained as targeted probes rather than pass/fail tests. A worked example shows why a high-leverage observation can have a small residual yet materially move a coefficient. The lab computes the hat matrix diagonal, internally studentized residuals, and Cook's distance from first principles, cross-checks fitted values with scikit-learn, and verifies leverage and deletion behavior. Remedies are matched to causes: change the mean specification for nonlinearity, use an appropriate covariance estimator for variance misspecification, represent clusters or time dependence, improve measurement, or change the estimand. Robust standard errors do not repair bias, and deleting inconvenient points without provenance is not diagnosis.",
+  "prerequisites": [
+    "linear-regression",
+    "hypothesis-testing"
+  ],
+  "learningObjectives": [
+    "Map each regression assumption to the claim or calculation it supports.",
+    "Interpret residual, leverage, studentized-residual, and influence diagnostics jointly.",
+    "Choose remedies that address mean misspecification, variance, dependence, or data quality without conflating them.",
+    "Design diagnostics and monitoring that respect time, groups, selection, and deployment conditions."
+  ],
+  "deepSections": [
+    {
+      "id": "assumptions-by-claim",
+      "title": "Match assumptions to the claim",
+      "body": "The linear conditional-mean model writes Y=X beta+epsilon with E[epsilon|X]=0. This conditional-zero-mean condition implies the design contains no systematic residual signal and supports unbiased least-squares coefficients conditional on X under the stated specification. It can fail through omitted nonlinear terms, omitted common causes, measurement error, simultaneity, selection, or leakage. Full column rank is needed for a unique coefficient vector; near rank deficiency creates instability. Homoskedasticity, Var(epsilon|X)=sigma^2, yields the familiar sigma^2(X^T X)^-1 covariance, but ordinary least squares can still target the conditional mean under heteroskedasticity. Independent errors justify one covariance and effective sample-size story; repeated entities, geographic clusters, networks, or time series require dependence-aware splits and standard errors or an explicit covariance model. Conditional normality is not required for least-squares fitting or Gauss-Markov optimality among linear unbiased estimators. It supports exact finite-sample t and F distributions. With enough independent information, asymptotic or bootstrap procedures may replace it, provided tails and dependence are handled. Causal coefficients require additional exchangeability, positivity, consistency, and design assumptions not diagnosed by residual normality."
+    },
+    {
+      "id": "residual-diagnostics",
+      "title": "Read residual plots as specific probes",
+      "body": "Raw residual e_i=y_i-yhat_i is measured in outcome units. Plot residual against fitted value to look for curvature, missing interactions, and changing variance. Plot against time, batch, source, or a predictor when those axes have process meaning. A scale-location view uses sqrt(|studentized residual|) and makes spread patterns easier to see. A quantile-quantile plot compares ordered standardized residuals with a reference distribution; systematic tail departures matter most for small-sample normal-theory intervals and extreme prediction, not as an automatic reason to abandon regression. Residuals are constrained by fitting and have unequal variance: Var(e_i|X)=sigma^2(1-h_ii). Studentization divides by an estimated standard deviation, making observations more comparable. An externally studentized residual estimates scale with observation i removed and is better for identifying outcome outliers, though multiplicity must be considered when screening many points. Formal tests can have too little power in small samples and reject harmless deviations in huge samples. Use plots, effect sizes, subject knowledge, sensitivity analysis, and out-of-sample evidence together. Always plot diagnostics over the sampling unit; row-level plots can conceal cluster-level structure."
+    },
+    {
+      "id": "leverage-and-influence",
+      "title": "Separate leverage, outlying response, and influence",
+      "body": "The hat matrix H=X(X^T X)^-1X^T maps y to fitted values. Its diagonal h_ii lies between zero and one for ordinary full-rank least squares, sums to d, and averages d/n. High leverage means a predictor configuration is unusual relative to the design. It is not automatically erroneous. A large residual means the outcome is surprising under the fitted conditional mean. Influence measures how much an estimate changes when a case changes or is removed. Cook's distance combines squared residual with h_ii/(1-h_ii)^2, scaled by parameter count and mean squared error; DFBETAs target individual coefficients and DFFITS targets a fitted value. Thresholds such as 2d/n are triage heuristics, not universal deletion rules. A legitimate boundary observation may be the only information about an important deployment region. Conversely, a high-leverage data-entry error can dominate silently because it pulls the line toward itself and reduces its own residual. Investigate provenance, refit with and without the case, report sensitivity, and consider whether the target population includes that region. Deletion is justified by a data or estimand contract, not by the desire for smaller p-values."
+    },
+    {
+      "id": "remedies-and-validation",
+      "title": "Use remedies that address the failure mechanism",
+      "body": "For curved residual structure, add justified transformations, interactions, splines, or a different model and validate complexity out of sample. For unequal variance with a correct conditional mean, heteroskedasticity-consistent covariance can improve inference; weighted least squares is more efficient only when weights represent the variance structure and are estimated safely. For grouped dependence, use cluster-aware covariance and enough independent clusters, plus group-held-out evaluation. For serial structure, use chronological evaluation and model or robustly estimate autocorrelation. For heavy-tailed outcome contamination, robust or quantile regression may target a more stable functional, but leverage contamination still needs attention. For near collinearity, reduce redundant representation, gather information, regularize for prediction, or present joint rather than fragile individual effects. Transformation changes interpretation and back-transformation may require bias correction. Missingness and measurement error require process fixes or explicit models, not only standard-error changes. Every remedy creates a new pipeline that must be evaluated from raw data through transformation, fit, interval, and decision. Reserve a final evaluation window and record diagnostic sensitivity rather than optimizing until plots look clean."
+    }
+  ],
+  "math": "With full-rank design X of n rows and d columns, H=X(X^T X)^-1X^T, yhat=Hy, and e=(I-H)y. H is symmetric and idempotent, so trace(H)=rank(X)=d and sum_i h_ii=d. Under homoskedastic errors, Var(e_i|X)=sigma^2(1-h_ii). An internally studentized residual is r_i=e_i/[s sqrt(1-h_ii)], with s^2=SSE/(n-d). One common Cook distance is D_i=(e_i^2/(d s^2))*h_ii/(1-h_ii)^2. These quantities diagnose the fitted sample; their thresholds are heuristics and do not prove that a row is wrong.",
+  "workedExamples": [
+    {
+      "title": "A small residual can still be influential",
+      "body": "Fit y approximately x on x={0,1,2,3,4,12}. The x=12 row is far from the design center and has large h_ii. If its y value is 9 rather than 12, the fitted line bends toward it, shrinking its own residual. Refit without the row: a material slope change shows influence. Check the source record and deployment support before deciding whether this is a valid boundary case or an error."
+    },
+    {
+      "title": "Heteroskedasticity without mean bias",
+      "body": "Suppose revenue has conditional mean 5+2x but standard deviation grows with x. OLS can still estimate the mean slope if E[epsilon|X]=0, yet the homoskedastic standard error is wrong and high-x predictions are less precise. Use a variance-aware interval or robust covariance and validate coverage by x range; do not claim the coefficient itself is biased solely from the fan shape."
+    }
+  ],
+  "lab": {
+    "language": "python",
+    "goal": "Compute residual, leverage, studentized-residual, and Cook-distance diagnostics from first principles and verify their geometric and deletion-sensitivity invariants.",
+    "buildIt": "import numpy as np\ndef ols_diagnostics(X,y):\n    D=np.column_stack([np.ones(len(X)),np.asarray(X,float)])\n    y=np.asarray(y,float)\n    beta=np.linalg.lstsq(D,y,rcond=None)[0]\n    fitted=D@beta; residual=y-fitted\n    h=np.sum(D*(D@np.linalg.pinv(D.T@D)),axis=1)\n    dof=len(y)-D.shape[1]; mse=(residual@residual)/dof\n    student=residual/np.sqrt(np.maximum(mse*(1-h),1e-15))\n    cook=(residual**2/(D.shape[1]*mse))*h/np.maximum((1-h)**2,1e-15)\n    return beta,fitted,residual,h,student,cook\nX=np.array([[0],[1],[2],[3],[4],[12]],float)\ny=np.array([0.1,1.0,2.1,3.0,4.1,9.0])\nbeta,fitted,residual,h,student,cook=ols_diagnostics(X,y)",
+    "useIt": "from sklearn.linear_model import LinearRegression\nsk=LinearRegression().fit(X,y)\nsk_beta=np.r_[sk.intercept_,sk.coef_.ravel()]\nwithout=LinearRegression().fit(X[:-1],y[:-1])",
+    "verifyIt": "D=np.column_stack([np.ones(len(X)),X])\nassert np.allclose(D.T@residual,0,atol=1e-10)\nassert np.allclose(beta,sk_beta,atol=1e-10)\nassert abs(h.sum()-D.shape[1])<1e-10\nassert np.all((h>=0)&(h<=1+1e-12))\nassert h[-1]==h.max()\nassert cook[-1]==cook.max()\nassert abs(without.coef_[0]-sk.coef_[0])>0.15\nassert np.isfinite(student).all() and np.isfinite(cook).all()",
+    "shipIt": "Persist diagnostic summaries and support ranges with the model, route high-leverage serving cases, monitor residual structure by time and group when labels arrive, and require provenance review plus sensitivity analysis before excluding influential observations."
+  },
+  "exercises": [
+    {
+      "prompt": "Which assumption is most directly violated by a curved residual-versus-fitted pattern?",
+      "solution": "The conditional mean specification is likely incomplete, such as a missing nonlinear term or interaction. Changing only the standard-error formula does not remove the pattern."
+    },
+    {
+      "prompt": "A dataset has 1,000 rows from 20 customers. Why are row-wise standard errors suspect?",
+      "solution": "Rows within customer may be dependent, so 1,000 is not the effective number of independent units. Use a customer-aware sampling, covariance, and evaluation design and recognize that only 20 clusters may limit asymptotics."
+    },
+    {
+      "prompt": "A point has high leverage but zero residual. Can it have Cook influence in the fitted sample?",
+      "solution": "The usual Cook formula is zero when the residual is exactly zero, despite high leverage. It remains a support and future-sensitivity concern, and small data changes may reveal influence."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "scatter",
+      "title": "Residual patterns diagnose different failures",
+      "series": [
+        {
+          "label": "Centered residuals",
+          "points": [
+            [
+              0.08,
+              0.5
+            ],
+            [
+              0.18,
+              0.43
+            ],
+            [
+              0.28,
+              0.39
+            ],
+            [
+              0.38,
+              0.43
+            ],
+            [
+              0.48,
+              0.5
+            ],
+            [
+              0.58,
+              0.58
+            ],
+            [
+              0.68,
+              0.62
+            ],
+            [
+              0.78,
+              0.57
+            ],
+            [
+              0.9,
+              0.48
+            ]
+          ]
+        },
+        {
+          "label": "Zero line",
+          "points": [
+            [
+              0.05,
+              0.5
+            ],
+            [
+              0.95,
+              0.5
+            ]
+          ]
+        }
+      ],
+      "caption": "Conceptual curved residual pattern: remaining structure points to a missing mean term rather than a standard-error problem alone.",
+      "afterSection": "residual-diagnostics"
+    },
+    {
+      "type": "compare",
+      "title": "Three distinct case diagnostics",
+      "left": {
+        "title": "Residual and leverage",
+        "items": [
+          "Residual: unusual Y given X",
+          "Leverage: unusual X",
+          "Either may occur alone",
+          "Inspect provenance and support"
+        ]
+      },
+      "right": {
+        "title": "Influence",
+        "items": [
+          "Measures fitted-result sensitivity",
+          "Combines disagreement and leverage",
+          "Use deletion comparisons",
+          "Thresholds are triage, not verdicts"
+        ]
+      },
+      "caption": "Outlying response, predictor leverage, and influence answer different diagnostic questions.",
+      "afterSection": "leverage-and-influence"
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "nist-regression-diagnostics",
+      "contribution": "Supplies precise leverage, studentized-residual, Cook-distance, and influence definitions plus diagnostic guidance."
+    },
+    {
+      "resource": "statsmodels-regression-diagnostics",
+      "contribution": "Verifies a current implementation-oriented residual and influence plotting workflow."
+    },
+    {
+      "resource": "isl",
+      "contribution": "Provides the statistical-learning view of assumptions, collinearity, outliers, leverage, and model flexibility."
+    }
+  ]
 }

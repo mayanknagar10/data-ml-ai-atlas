@@ -1840,7 +1840,7 @@ const ATLAS = {
       ],
       "resources": [
         "trustworthy-oce-survey",
-        "statsmodels-power",
+        "scipy-stats",
         "stanford-stats200",
         "microsoft-experimentation"
       ],
@@ -1953,40 +1953,56 @@ const ATLAS = {
         "mle",
         "as"
       ],
-      "interviewAnswer": "Linear regression models the target as a weighted sum of features and typically minimizes squared error. Know its assumptions, how coefficients are interpreted, and why multicollinearity/outliers can matter.",
+      "interviewAnswer": "Linear regression models the conditional mean as E[Y|X=x] = beta_0 + x^T beta and estimates beta by minimizing squared residuals. With a full-rank design, the fitted residual is orthogonal to every design column; software normally solves the least-squares system with QR or singular-value decomposition rather than forming an inverse. A coefficient is the expected change in the modeled outcome for a one-unit predictor change while other included predictors are held fixed. That is an associational interpretation unless causal assumptions justify more. I check residual structure, influential points, conditioning, train-serving feature consistency, and extrapolation, and I report intervals or out-of-sample error rather than only R-squared.",
       "keyPoints": [
-        "OLS objective",
-        "Residual assumptions",
-        "R²",
-        "Regularized variants"
+        "A linear model is linear in coefficients; transformed predictors may still be used.",
+        "Least squares projects y onto the design-matrix column space.",
+        "Coefficients are conditional associations unless identification supports causality.",
+        "Prediction intervals are wider than mean-response confidence intervals.",
+        "Use stable solvers and validate outside the training sample."
       ],
       "resources": [
+        "isl",
         "stanford-cs229",
-        "google-mlcc",
-        "statquest",
-        "isl"
+        "sklearn-linear-models",
+        "nist-regression-diagnostics"
       ],
       "featured": false,
+      "description": "Linear regression is the baseline model for estimating how a numerical outcome changes with one or more predictors. Its apparent simplicity hides several separate ideas: a linear conditional-mean specification, least-squares estimation, the geometry of projection, uncertainty statements, and prediction under a stable data-generating process. This chapter develops those ideas without treating the fitted line as automatically causal. You will derive the normal equations, understand why a numerically stable least-squares solver is preferable to explicitly inverting a matrix, interpret coefficients under transformations and interactions, and separate confidence intervals for a mean response from prediction intervals for a new observation. A worked pricing example shows how centering changes the intercept but not predictions. The lab implements ordinary least squares with a QR-style NumPy solver, compares it with scikit-learn, and verifies orthogonality and translation invariants. The production section covers feature contracts, extrapolation, drift, interval coverage, numerical conditioning, and rollback. The boundary is important: linear regression can be an excellent predictive or descriptive model, but causal language requires a separate identification argument and diagnostics cannot prove that argument.",
+      "prerequisites": [
+        "projections-least-squares",
+        "expectation-variance"
+      ],
+      "learningObjectives": [
+        "State the population model, sample objective, and interpretation of a partial regression coefficient.",
+        "Derive the normal equations and explain least squares as an orthogonal projection.",
+        "Distinguish coefficient uncertainty, mean-response uncertainty, and new-observation uncertainty.",
+        "Fit and verify a stable multivariate least-squares implementation without explicit matrix inversion."
+      ],
       "editorial": {
-        "status": "summary"
+        "status": "verified",
+        "verifiedOn": "2026-08-21"
       },
-      "status": "summary",
+      "status": "verified",
       "hasLab": true,
-      "labGoal": "Implement ordinary least squares with gradient descent, then compare it with scikit-learn.",
-      "visualCount": 1,
+      "labGoal": "Fit ordinary least squares from the design matrix, compare with scikit-learn, and verify projection, translation, and rank-sensitive behavior.",
+      "visualCount": 2,
       "visualSummaries": [
         {
           "type": "scatter",
-          "title": "Linear regression"
+          "title": "Projection onto a fitted line"
+        },
+        {
+          "type": "compare",
+          "title": "Two different uncertainty questions"
         }
       ],
       "followUpQuestions": [
-        "What assumptions matter for inference?",
-        "Ridge vs Lasso?",
-        "Why use MSE?",
-        "What is R² and when can it mislead?"
+        "Why can coefficients be unstable while predictions remain stable?",
+        "When should you use heteroskedasticity-robust standard errors?",
+        "Does adding a feature always help?"
       ],
-      "estimatedMinutes": 2
+      "estimatedMinutes": 12
     },
     {
       "slug": "logistic-regression",
@@ -1998,40 +2014,56 @@ const ATLAS = {
         "mle",
         "as"
       ],
-      "interviewAnswer": "Logistic regression models log-odds as a linear function of features and maps them through a sigmoid to a probability. Training usually minimizes log loss rather than MSE.",
+      "interviewAnswer": "Logistic regression assumes logit P(Y=1|x)=beta0+x^T beta, so the sigmoid maps any linear score to a probability. Maximum likelihood is equivalent to minimizing binary cross-entropy; with L2 regularization the objective is convex and usually has a unique stable solution. Exp(beta_j) is the conditional multiplicative change in odds for a one-unit increase in x_j, holding other modeled features fixed. It is not a constant probability increase. I evaluate discrimination and calibration separately, choose a threshold from costs or constraints rather than defaulting to 0.5, and watch for separation, leakage, prior shift, subgroup errors, and train-serving mismatches.",
       "keyPoints": [
-        "Sigmoid",
-        "Log odds",
-        "Decision threshold",
-        "Regularization"
+        "The linear predictor acts on log-odds, while the sigmoid returns probability.",
+        "Cross-entropy is the negative Bernoulli log-likelihood.",
+        "Odds ratios are conditional and are not constant risk differences.",
+        "Regularization stabilizes separation and correlated predictors.",
+        "Calibration, ranking, and threshold utility answer different questions."
       ],
       "resources": [
+        "isl",
         "stanford-cs229",
-        "google-mlcc",
-        "statquest",
-        "isl"
+        "sklearn-linear-models",
+        "nelder-wedderburn-glm"
       ],
       "featured": true,
+      "description": "Logistic regression models a binary outcome by making the log-odds of the positive class linear in the predictors. It is simultaneously a probabilistic classifier, a generalized linear model, and a tool for estimating conditional associations. This chapter connects Bernoulli likelihood, cross-entropy, odds ratios, decision thresholds, regularization, and calibration. You will derive the score and Hessian, understand iteratively reweighted least squares, and see why perfectly separated data can send unregularized coefficients toward infinity. A worked credit example distinguishes a probability change from an odds ratio and shows that the same coefficient has different probability-scale effects at different baselines. The lab implements damped Newton updates, compares probabilities with scikit-learn, and verifies finite likelihood improvement and label-complement symmetry. Production guidance treats probability estimation and decisions as different layers: validate calibration, choose thresholds using asymmetric costs and capacity, monitor class-prior and conditional drift, and provide safe fallback behavior. Logistic regression is interpretable only with careful units, encoding, interactions, and conditioning; exponentiating a coefficient produces a conditional odds ratio, not a universal risk ratio or causal effect.",
+      "prerequisites": [
+        "linear-regression",
+        "mle-map"
+      ],
+      "learningObjectives": [
+        "Derive logistic regression from a Bernoulli likelihood and interpret coefficients on odds and probability scales.",
+        "Explain Newton or iteratively reweighted least-squares fitting and the role of regularization.",
+        "Separate probability quality, ranking quality, threshold decisions, and causal interpretation.",
+        "Detect separation, calibration failure, leakage, and distribution shift in a deployed classifier."
+      ],
       "editorial": {
-        "status": "summary"
+        "status": "verified",
+        "verifiedOn": "2026-08-21"
       },
-      "status": "summary",
+      "status": "verified",
       "hasLab": true,
-      "labGoal": "Build binary logistic regression and verify probabilities/decision boundary.",
-      "visualCount": 1,
+      "labGoal": "Implement L2-regularized logistic regression with damped Newton updates, compare with scikit-learn, and verify likelihood, probability, and label-symmetry invariants.",
+      "visualCount": 2,
       "visualSummaries": [
         {
           "type": "curve",
-          "title": "Logistic decision function"
+          "title": "Logit score mapped to probability"
+        },
+        {
+          "type": "flow",
+          "title": "Probability model to operational action"
         }
       ],
       "followUpQuestions": [
-        "Why use log loss instead of MSE?",
-        "What does regularization do?",
-        "How do you handle nonlinearity?",
-        "How do coefficients map to odds ratios?"
+        "Why does complete separation cause trouble?",
+        "What is the difference between discrimination and calibration?",
+        "How does L2 regularization affect interpretation?"
       ],
-      "estimatedMinutes": 2
+      "estimatedMinutes": 12
     },
     {
       "slug": "decision-trees",
@@ -9518,35 +9550,56 @@ const ATLAS = {
         "ds",
         "as"
       ],
-      "interviewAnswer": "For inference, linear regression relies on assumptions about functional form, independent errors, variance structure and error distribution; for prediction, diagnostics still reveal misspecification, outliers and extrapolation risk.",
+      "interviewAnswer": "I do not ask whether linear regression assumptions hold in the abstract; I ask which claim I need. For unbiased conditional coefficients, the central condition is E[epsilon|X]=0 with a correctly specified conditional mean and usable design rank. Homoskedasticity is mainly needed for the classical covariance formula, and normality mainly for exact small-sample inference. Dependence must match the sampling and covariance estimator. I inspect residual patterns, time or group structure, leverage and influence, not only a normality test. Then I address the cause: respecify the mean, use heteroskedasticity- or cluster-robust inference, model dependence, improve data, or narrow the target population. Diagnostics reveal sensitivity; they do not prove causality or future stability.",
       "keyPoints": [
-        "Inspect residual vs fitted plots.",
-        "Check leverage/influence, not just residual size.",
-        "Heteroscedasticity affects uncertainty estimates."
+        "Assumptions support specific estimands, estimators, intervals, or deployment claims.",
+        "E[epsilon|X]=0 is more central to coefficient bias than residual normality.",
+        "Leverage is unusual X; residual is unusual Y given X; influence combines both.",
+        "Robust covariance changes uncertainty, not fitted coefficients or omitted-variable bias.",
+        "Dependence and selection must be represented in splitting and inference."
       ],
       "resources": [
         "isl",
+        "statsmodels-regression-diagnostics",
+        "nist-regression-diagnostics",
         "stanford-stats200"
       ],
       "featured": true,
+      "description": "Regression assumptions are not a ritual checklist that makes a model valid after a few plots. They connect a particular estimand and inferential procedure to a data-generating and sampling process. This chapter separates assumptions needed for unbiased conditional-mean estimation, classical standard errors, prediction, and causal interpretation. You will reason about linearity in the conditional mean, exogeneity, independence or dependence structure, constant variance, rank, outcome tails, and measurement quality. Residual-versus-fitted, scale-location, quantile, leverage, studentized-residual, and Cook-distance diagnostics are explained as targeted probes rather than pass/fail tests. A worked example shows why a high-leverage observation can have a small residual yet materially move a coefficient. The lab computes the hat matrix diagonal, internally studentized residuals, and Cook's distance from first principles, cross-checks fitted values with scikit-learn, and verifies leverage and deletion behavior. Remedies are matched to causes: change the mean specification for nonlinearity, use an appropriate covariance estimator for variance misspecification, represent clusters or time dependence, improve measurement, or change the estimand. Robust standard errors do not repair bias, and deleting inconvenient points without provenance is not diagnosis.",
+      "prerequisites": [
+        "linear-regression",
+        "hypothesis-testing"
+      ],
+      "learningObjectives": [
+        "Map each regression assumption to the claim or calculation it supports.",
+        "Interpret residual, leverage, studentized-residual, and influence diagnostics jointly.",
+        "Choose remedies that address mean misspecification, variance, dependence, or data quality without conflating them.",
+        "Design diagnostics and monitoring that respect time, groups, selection, and deployment conditions."
+      ],
       "editorial": {
-        "status": "summary"
+        "status": "verified",
+        "verifiedOn": "2026-08-21"
       },
-      "status": "summary",
-      "hasLab": false,
-      "labGoal": "",
-      "visualCount": 1,
+      "status": "verified",
+      "hasLab": true,
+      "labGoal": "Compute residual, leverage, studentized-residual, and Cook-distance diagnostics from first principles and verify their geometric and deletion-sensitivity invariants.",
+      "visualCount": 2,
       "visualSummaries": [
         {
-          "type": "concept-map",
-          "title": "Linear Regression Assumptions & Diagnostics"
+          "type": "scatter",
+          "title": "Residual patterns diagnose different failures"
+        },
+        {
+          "type": "compare",
+          "title": "Three distinct case diagnostics"
         }
       ],
       "followUpQuestions": [
-        "What assumptions does Linear Regression Assumptions & Diagnostics make?",
-        "How would you validate or debug Linear Regression Assumptions & Diagnostics in practice?"
+        "What is the difference between an outlier and a high-leverage point?",
+        "Can OLS be useful under heteroskedasticity?",
+        "Why inspect residuals over time?"
       ],
-      "estimatedMinutes": 1
+      "estimatedMinutes": 12
     },
     {
       "slug": "ridge-lasso-elasticnet",
@@ -9557,35 +9610,55 @@ const ATLAS = {
         "ds",
         "as"
       ],
-      "interviewAnswer": "Ridge uses L2 regularization to shrink coefficients; Lasso uses L1 and can set coefficients exactly to zero; Elastic Net combines both, often helping with correlated features.",
+      "interviewAnswer": "Ridge minimizes squared error plus an L2 coefficient penalty, shrinking correlated or weakly identified directions continuously and improving stability. Lasso uses L1, whose corners can set coefficients exactly to zero, but selection may be unstable among correlated features. Elastic net combines both, often retaining correlated groups while remaining sparse. I standardize continuous features within each training fold, generally exclude the intercept from the penalty, tune alpha and l1_ratio with a split that matches deployment, and reserve a final test set. Regularization trades bias for variance; it does not fix leakage or confounding, and lasso's nonzero set should not be interpreted as a uniquely true or causally important feature list.",
       "keyPoints": [
-        "Regularization trades variance for bias.",
-        "Scale features before coefficient-penalty comparisons.",
-        "Tune strength with validation."
+        "Ridge stabilizes all coefficients; lasso can produce exact zeros.",
+        "Elastic net combines grouping stability with sparsity.",
+        "Penalty strength depends on feature scale and library objective conventions.",
+        "Tune the whole preprocessing-plus-model pipeline on honest folds.",
+        "Sparse prediction and valid post-selection inference are different goals."
       ],
       "resources": [
         "isl",
-        "sklearn"
+        "sklearn-linear-models",
+        "glmnet-coordinate-descent"
       ],
       "featured": true,
+      "description": "Ridge, lasso, and elastic net regularize linear models by charging for coefficient magnitude. They address variance, ill-conditioning, and high-dimensional representation, but they express different beliefs and produce different stability properties. This chapter derives the penalized objectives, explains ridge as continuous shrinkage, lasso as sparse soft-thresholding, and elastic net as a compromise that can keep correlated groups together. You will learn why scaling must be fit inside the training pipeline, why the intercept is usually not penalized, how cross-validation chooses predictive tuning parameters, and why lasso's selected variables are not automatically scientific discoveries. Coefficient paths and bias-variance trade-offs are connected to design geometry and Bayesian priors. A correlated-feature example shows ridge distributing weight while lasso may arbitrarily choose one representative. The lab implements ridge and coordinate-descent lasso from scratch, compares with scikit-learn, and verifies shrinkage, sparsity, permutation, and convergence invariants. Production guidance covers feature-order contracts, sparse schema evolution, convergence, tuning leakage, coefficient drift, challenger evaluation, and rollback. Regularization can stabilize a prediction system; it cannot create information, fix leakage, or make a conditional association causal.",
+      "prerequisites": [
+        "linear-regression",
+        "norms-distances"
+      ],
+      "learningObjectives": [
+        "Compare ridge, lasso, and elastic-net objectives, geometry, and coefficient behavior.",
+        "Implement ridge and lasso mechanisms and verify their solutions against a trusted library.",
+        "Design leakage-safe scaling and cross-validation for regularization strength.",
+        "Explain why sparse selection can be unstable and why predictive tuning is not valid post-selection inference."
+      ],
       "editorial": {
-        "status": "summary"
+        "status": "verified",
+        "verifiedOn": "2026-08-21"
       },
-      "status": "summary",
+      "status": "verified",
       "hasLab": true,
-      "labGoal": "See how L1/L2 regularization changes coefficients.",
-      "visualCount": 1,
+      "labGoal": "Implement ridge and lasso coordinate descent on standardized data, compare with scikit-learn, and verify shrinkage, sparsity, permutation, and objective convergence.",
+      "visualCount": 2,
       "visualSummaries": [
         {
+          "type": "curve",
+          "title": "Coefficient paths as penalty weakens"
+        },
+        {
           "type": "compare",
-          "title": "Regularization behavior"
+          "title": "Regularizer behavior"
         }
       ],
       "followUpQuestions": [
-        "What assumptions does Ridge, Lasso & Elastic Net make?",
-        "How would you validate or debug Ridge, Lasso & Elastic Net in practice?"
+        "Why does lasso produce exact zeros but ridge usually does not?",
+        "When would you prefer elastic net over lasso?",
+        "Can regularized coefficients have ordinary OLS p-values?"
       ],
-      "estimatedMinutes": 2
+      "estimatedMinutes": 12
     },
     {
       "slug": "polynomial-splines",
@@ -9596,29 +9669,54 @@ const ATLAS = {
         "ds",
         "as"
       ],
-      "interviewAnswer": "Basis expansion lets linear models represent nonlinear relationships. High-degree global polynomials can behave badly at boundaries; splines build smoother local pieces joined at knots.",
+      "interviewAnswer": "Polynomial regression adds powers or other fixed basis functions to a linear model, so it is nonlinear in x but linear in coefficients. High-degree global polynomials are often unstable and extrapolate badly. A regression spline uses low-degree polynomial pieces joined at knots, usually with continuity constraints; B-spline bases provide the same function space with better local support and conditioning. I choose knots or a smoothness penalty inside cross-validation, keep the basis transformation inside the pipeline, inspect boundary and derivative behavior, and define an explicit extrapolation policy. Coefficients depend on the basis, so I interpret the fitted curve, contrasts, or derivatives rather than raw spline coefficients.",
       "keyPoints": [
-        "Model remains linear in coefficients despite nonlinear features.",
-        "Splines give local flexibility.",
-        "Regularization/knot choice controls complexity."
+        "Nonlinear in predictors can still be linear in fitted coefficients.",
+        "Global polynomials couple the whole domain; splines provide local flexibility.",
+        "Knots define representation, while penalties or validation control effective complexity.",
+        "Basis coefficients are coordinate-dependent; interpret functions and contrasts.",
+        "Boundary support and extrapolation policy are production requirements."
       ],
       "resources": [
-        "isl"
+        "isl",
+        "sklearn-spline-transformer",
+        "sklearn-linear-models"
       ],
       "featured": false,
-      "editorial": {
-        "status": "summary"
-      },
-      "status": "summary",
-      "hasLab": false,
-      "labGoal": "",
-      "visualCount": 0,
-      "visualSummaries": [],
-      "followUpQuestions": [
-        "What assumptions does Polynomial Regression & Splines make?",
-        "How would you validate or debug Polynomial Regression & Splines in practice?"
+      "description": "Polynomial regression and splines extend linear regression to curved relationships while keeping estimation linear in coefficients. A raw high-degree polynomial is global: changing one coefficient can alter the curve everywhere, boundary behavior can become extreme, and powers can be badly conditioned. Regression splines instead join low-degree polynomial pieces at knots with continuity constraints, creating local flexibility. This chapter develops polynomial bases, truncated-power and B-spline representations, knot placement, natural boundary constraints, smoothing penalties, effective degrees of freedom, and honest complexity selection. You will distinguish interpolation from regression smoothing and understand why basis coefficients are usually less meaningful than the fitted function and its derivatives. A worked dose-response example shows how a cubic spline captures a plateau without forcing oscillation across the domain. The lab builds a truncated cubic regression-spline basis, uses scikit-learn's local B-spline transformer, and verifies continuity, rank, held-out error, and row-order invariance. Production guidance treats knots, boundaries, scaling, and extrapolation policy as versioned model state. Splines improve a conditional-mean specification over observed support; they do not solve confounding, sparse boundary data, or unsupported extrapolation.",
+      "prerequisites": [
+        "linear-regression"
       ],
-      "estimatedMinutes": 1
+      "learningObjectives": [
+        "Explain why polynomial and spline regression remain linear in parameters while modeling nonlinear functions.",
+        "Construct a regression-spline basis and relate knots, degree, continuity, and effective flexibility.",
+        "Choose complexity using leakage-safe validation and diagnose unstable boundary or extrapolation behavior.",
+        "Deploy a basis transform with reproducible knots, scaling, and out-of-range behavior."
+      ],
+      "editorial": {
+        "status": "verified",
+        "verifiedOn": "2026-08-21"
+      },
+      "status": "verified",
+      "hasLab": true,
+      "labGoal": "Build a truncated cubic regression spline, use a local B-spline pipeline, and verify continuity, rank, row-order invariance, and nonlinear held-out improvement.",
+      "visualCount": 2,
+      "visualSummaries": [
+        {
+          "type": "compare",
+          "title": "Global polynomial versus spline"
+        },
+        {
+          "type": "curve",
+          "title": "Local flexibility around knots"
+        }
+      ],
+      "followUpQuestions": [
+        "What is the difference between a regression spline and smoothing spline?",
+        "Why are B-splines numerically attractive?",
+        "How do you model a nonlinear interaction?"
+      ],
+      "estimatedMinutes": 12
     },
     {
       "slug": "gam",
@@ -9629,30 +9727,54 @@ const ATLAS = {
         "ds",
         "as"
       ],
-      "interviewAnswer": "GAMs add flexible smooth functions of individual predictors while retaining an additive, interpretable structure. They are useful when relationships are nonlinear but black-box complexity is unnecessary.",
+      "interviewAnswer": "A GAM models a transformed conditional mean as g(E[Y|X])=beta0+sum_j f_j(X_j), where each f_j is a smooth function represented by a basis and controlled by a roughness penalty. It captures nonlinear marginal effects while preserving an additive structure that is easy to plot and audit. Smooths need centering constraints so the intercept and components are identifiable, and their effective degrees of freedom are selected by cross-validation, REML-like criteria, or related methods. I inspect residuals, boundaries, concurvity, and missing interactions; add tensor-product terms only when justified. Component curves are conditional associations under the fitted model, not causal effects, and deployment must freeze bases, penalties, and extrapolation behavior.",
       "keyPoints": [
-        "Additivity is interpretable but limits interactions unless added explicitly.",
-        "Smoothness must be controlled.",
-        "Works with generalized response families."
+        "GAMs are additive in learned functions rather than necessarily linear in raw predictors.",
+        "Centering smooth components separates them from the intercept.",
+        "Penalties control wiggliness and effective degrees of freedom.",
+        "Concurvity makes component attribution unstable even when prediction is adequate.",
+        "Interactions and boundaries must be modeled and monitored deliberately."
       ],
       "resources": [
         "isl",
-        "stanford-stats202"
+        "statsmodels-gam",
+        "sklearn-spline-transformer"
       ],
       "featured": false,
-      "editorial": {
-        "status": "summary"
-      },
-      "status": "summary",
-      "hasLab": false,
-      "labGoal": "",
-      "visualCount": 0,
-      "visualSummaries": [],
-      "followUpQuestions": [
-        "What assumptions does Generalized Additive Models (GAMs) make?",
-        "How would you validate or debug Generalized Additive Models (GAMs) in practice?"
+      "description": "A generalized additive model (GAM) replaces a single linear predictor with a sum of learned smooth component functions while retaining an additive, inspectable structure. In a Gaussian GAM, E[Y|X]=beta0+f1(X1)+...+fp(Xp); with a link function, the additive predictor can model binary, count, and other exponential-family outcomes. This chapter explains identifiability constraints, spline bases, roughness penalties, backfitting, penalized likelihood, effective degrees of freedom, smoothness selection, uncertainty, and the limits of additive interpretation. You will see how concurvity generalizes collinearity when one feature's smooth function can mimic another's, and how tensor-product or varying-coefficient terms add only the interactions the problem needs. A worked energy-demand example separates nonlinear temperature and hour effects while treating weekday as a linear factor. The lab constructs centered spline blocks, fits a ridge-penalized additive model, compares with a scikit-learn pipeline, and verifies additivity, column permutation, and held-out improvement. Production guidance versions each basis and penalty, monitors feature support and component contributions, and routes unsupported combinations. GAM plots are conditional model components, not automatically causal effects or raw-data averages.",
+      "prerequisites": [
+        "polynomial-splines"
       ],
-      "estimatedMinutes": 1
+      "learningObjectives": [
+        "Formulate Gaussian and generalized additive models and explain component identifiability constraints.",
+        "Relate spline bases, roughness penalties, backfitting, and penalized likelihood to fitted smooth functions.",
+        "Diagnose overfitting, concurvity, missing interactions, boundary weakness, and misleading component plots.",
+        "Build and deploy an additive spline pipeline with reproducible component and support monitoring."
+      ],
+      "editorial": {
+        "status": "verified",
+        "verifiedOn": "2026-08-21"
+      },
+      "status": "verified",
+      "hasLab": true,
+      "labGoal": "Build a centered additive spline design, fit penalized components, compare with an idiomatic scikit-learn pipeline, and verify additivity, permutation, and nonlinear generalization.",
+      "visualCount": 2,
+      "visualSummaries": [
+        {
+          "type": "layers",
+          "title": "Additive predictor decomposition"
+        },
+        {
+          "type": "compare",
+          "title": "Stable prediction can hide unstable attribution"
+        }
+      ],
+      "followUpQuestions": [
+        "What is effective degrees of freedom in a GAM?",
+        "How is a GAM different from polynomial regression?",
+        "What is concurvity?"
+      ],
+      "estimatedMinutes": 12
     },
     {
       "slug": "poisson-regression",
@@ -9663,29 +9785,56 @@ const ATLAS = {
         "ds",
         "as"
       ],
-      "interviewAnswer": "Poisson regression models count outcomes with a log link and assumes the conditional variance equals the conditional mean. Overdispersion often motivates negative-binomial or quasi-likelihood alternatives.",
+      "interviewAnswer": "Poisson regression assumes Y|X has mean mu and log mu=beta0+x^T beta, optionally plus log exposure as a fixed offset. Exp(beta_j) is the conditional multiplicative change in expected count or rate for a one-unit predictor change. The Poisson variance equals its mean, so I check dispersion, residuals, zero and tail calibration, dependence, and exposure construction. Overdispersion may call for robust or quasi-likelihood inference, negative binomial, random effects, or a better mean model; structural zeros may justify hurdle or zero-inflated models only when the process supports them. I evaluate deviance and operational count or rate error on temporal or grouped data and never use ordinary linear regression merely because counts look large.",
       "keyPoints": [
-        "Use exposure/offset for rates.",
-        "Check overdispersion.",
-        "Predictions are nonnegative through log link."
+        "The log link guarantees positive expected counts and yields rate ratios.",
+        "Log exposure is an offset with fixed coefficient one.",
+        "Poisson equidispersion is a conditional variance assumption, not a data-summary rule.",
+        "Overdispersion has multiple causes and does not dictate one universal alternative.",
+        "Validate zeros, tails, dependence, and operational capacity as well as mean deviance."
       ],
       "resources": [
+        "nelder-wedderburn-glm",
+        "sklearn-linear-models",
+        "statsmodels-poisson-postestimation",
         "stanford-stats200"
       ],
       "featured": false,
-      "editorial": {
-        "status": "summary"
-      },
-      "status": "summary",
-      "hasLab": false,
-      "labGoal": "",
-      "visualCount": 0,
-      "visualSummaries": [],
-      "followUpQuestions": [
-        "What assumptions does Poisson & Count Regression make?",
-        "How would you validate or debug Poisson & Count Regression in practice?"
+      "description": "Poisson regression is a generalized linear model for nonnegative event counts. It models log expected count as a linear predictor, which guarantees positive means and gives multiplicative rate interpretations. The model becomes especially useful when observations have unequal exposure: a fixed log-exposure offset converts counts into rates without treating opportunity as an estimated effect. This chapter derives the Poisson likelihood, score, Hessian, deviance, and iteratively reweighted fitting; distinguishes coefficients on count, rate, and response scales; and explains equidispersion, overdispersion, underdispersion, excess zeros, dependence, and truncation. You will compare Poisson, quasi-Poisson covariance, negative-binomial, hurdle, and zero-inflated reasoning without selecting a model from the fraction of zeros alone. A worked incident example shows how to interpret an exposure-adjusted coefficient. The lab fits Poisson regression with an offset from first principles, compares it with scikit-learn's weighted-rate formulation, and verifies exposure and row-order invariants. Production guidance versions exposure units, count windows, and offset rules; monitors deviance, rate calibration, tail error, zero frequency, and capacity impact. A count model describes conditional event intensity—it does not automatically model distinct events, independence, causality, or future process stability.",
+      "prerequisites": [
+        "logistic-regression",
+        "mle-map"
       ],
-      "estimatedMinutes": 1
+      "learningObjectives": [
+        "Formulate and fit a Poisson GLM with a log link and exposure offset.",
+        "Interpret coefficients as conditional rate ratios and compute response-scale contrasts.",
+        "Diagnose overdispersion, excess zeros, dependence, truncation, and exposure errors.",
+        "Choose and validate alternative count models based on a data-generating mechanism and deployment loss."
+      ],
+      "editorial": {
+        "status": "verified",
+        "verifiedOn": "2026-08-21"
+      },
+      "status": "verified",
+      "hasLab": true,
+      "labGoal": "Fit an exposure-offset Poisson model with Newton updates, compare with scikit-learn's weighted-rate formulation, and verify rate, exposure, likelihood, and row-order invariants.",
+      "visualCount": 2,
+      "visualSummaries": [
+        {
+          "type": "flow",
+          "title": "From rate to expected count"
+        },
+        {
+          "type": "compare",
+          "title": "Different sources of extra zeros or variance"
+        }
+      ],
+      "followUpQuestions": [
+        "What does a Poisson coefficient exponentiate to?",
+        "When is negative binomial useful?",
+        "How do robust standard errors differ from a negative-binomial model?"
+      ],
+      "estimatedMinutes": 12
     },
     {
       "slug": "robust-regression",
@@ -9696,30 +9845,55 @@ const ATLAS = {
         "ds",
         "as"
       ],
-      "interviewAnswer": "Robust regression reduces the influence of extreme residuals compared with squared-error OLS, using losses such as Huber or alternative estimators.",
+      "interviewAnswer": "Robust regression limits how much atypical observations can dominate a fit. Huber regression uses squared loss for small standardized residuals and linear loss for large ones, often fit by iteratively reweighted least squares; least absolute deviations targets the conditional median, Theil-Sen uses robust slope aggregation, and RANSAC fits consensus subsets. These methods have different estimands and assumptions. A residual-robust loss does not necessarily protect against a high-leverage x point that pulls the line toward itself, so I inspect design support and influence too. I tune the robustness threshold on honest data, compare ordinary and robust fits, investigate provenance, and monitor the fraction and identity of downweighted cases rather than deleting them silently.",
       "keyPoints": [
-        "Differentiate data errors from valid heavy tails.",
-        "Robust loss changes influence, not the data itself.",
-        "Compare with quantile regression when conditional tails matter."
+        "Squared loss gives unbounded residual influence; robust losses limit tail contribution.",
+        "Huber combines efficient quadratic behavior near zero with linear tails.",
+        "Residual robustness and leverage robustness are different problems.",
+        "Robust estimators may target means, medians, or consensus relationships differently.",
+        "Downweighted observations remain operational signals and require provenance review."
       ],
       "resources": [
-        "sklearn",
+        "huber-1964",
+        "sklearn-linear-models",
+        "nist-regression-diagnostics",
         "isl"
       ],
       "featured": false,
-      "editorial": {
-        "status": "summary"
-      },
-      "status": "summary",
-      "hasLab": false,
-      "labGoal": "",
-      "visualCount": 0,
-      "visualSummaries": [],
-      "followUpQuestions": [
-        "What assumptions does Robust Regression make?",
-        "How would you validate or debug Robust Regression in practice?"
+      "description": "Robust regression reduces the sensitivity of a fitted relationship to contaminated outcomes, heavy tails, and atypical observations. Ordinary least squares squares residuals, so one large miss can dominate the objective. Robust methods change the loss, weighting, or sampling mechanism: Huber M-estimation is quadratic near zero and linear in the tails; least absolute deviations targets a conditional median; Theil-Sen aggregates pairwise slopes; and RANSAC searches for a consensus subset under a declared inlier rule. This chapter explains influence functions, breakdown intuition, scale estimation, iteratively reweighted least squares, and why protection against large residuals does not automatically protect against high-leverage predictor contamination. You will distinguish a data error from a valid rare case and a changed population, compare estimands rather than treating every robust method as interchangeable, and evaluate central and tail performance on clean and stress scenarios. The lab implements Huber iteratively reweighted least squares, compares with scikit-learn, and verifies recovery, bounded sensitivity, and permutation invariants. Production guidance preserves raw-event provenance, logs robust weights, monitors contamination and support, and avoids silently hiding incidents that should trigger investigation.",
+      "prerequisites": [
+        "regression-assumptions"
       ],
-      "estimatedMinutes": 1
+      "learningObjectives": [
+        "Explain how squared, absolute, and Huber losses respond to residual magnitude and which conditional functional they target.",
+        "Implement Huber iteratively reweighted least squares and assess sensitivity to response contamination.",
+        "Distinguish vertical outliers, high leverage, influence, breakdown, and valid rare populations.",
+        "Select and monitor robust methods using provenance, stress tests, and operational loss rather than automatic outlier removal."
+      ],
+      "editorial": {
+        "status": "verified",
+        "verifiedOn": "2026-08-21"
+      },
+      "status": "verified",
+      "hasLab": true,
+      "labGoal": "Implement Huber iteratively reweighted least squares, compare with scikit-learn, and verify recovery, bounded response sensitivity, and row-order invariance.",
+      "visualCount": 2,
+      "visualSummaries": [
+        {
+          "type": "curve",
+          "title": "Squared and Huber loss"
+        },
+        {
+          "type": "compare",
+          "title": "Two different robustness problems"
+        }
+      ],
+      "followUpQuestions": [
+        "What controls the Huber robustness-efficiency trade-off?",
+        "How is RANSAC different from Huber regression?",
+        "What is a breakdown point?"
+      ],
+      "estimatedMinutes": 12
     },
     {
       "slug": "quantile-regression",
@@ -9730,30 +9904,55 @@ const ATLAS = {
         "ds",
         "as"
       ],
-      "interviewAnswer": "Quantile regression estimates conditional quantiles rather than the conditional mean, making it useful for asymmetric distributions and questions about medians or tails.",
+      "interviewAnswer": "Quantile regression models Q_tau(Y|X=x)=x^T beta_tau by minimizing pinball loss rho_tau(r)=tau r for positive residuals and (tau-1)r for negative residuals. Tau 0.5 gives median regression; a high tau targets the conditional upper tail and can reveal effects hidden by mean regression under heteroskedasticity. I fit several declared quantiles, validate pinball loss and exceedance calibration on temporal or grouped data, inspect feature-conditional calibration and crossing, and regularize or use noncrossing methods when needed. A pair of fitted quantiles is not automatically a guaranteed prediction interval, especially after adaptive tuning or distribution shift, and coefficients remain conditional associations unless causal identification is supplied.",
       "keyPoints": [
-        "Pinball/check loss targets a chosen quantile.",
-        "Different quantiles can have different predictor effects.",
-        "Useful for prediction intervals and tail planning."
+        "Pinball loss asymmetrically prices under- and overprediction for a selected quantile.",
+        "Different tau values describe different parts of the conditional outcome distribution.",
+        "Quantile coefficients can vary under heteroskedasticity or shape change.",
+        "Separately fit quantiles may cross and require joint constraints or post-processing.",
+        "Validate exceedance rates conditionally and operationally, not only in aggregate."
       ],
       "resources": [
-        "statsmodels-tsa",
+        "koenker-bassett-1978",
+        "sklearn-linear-models",
         "stanford-stats200"
       ],
       "featured": false,
-      "editorial": {
-        "status": "summary"
-      },
-      "status": "summary",
-      "hasLab": false,
-      "labGoal": "",
-      "visualCount": 0,
-      "visualSummaries": [],
-      "followUpQuestions": [
-        "What assumptions does Quantile Regression make?",
-        "How would you validate or debug Quantile Regression in practice?"
+      "description": "Quantile regression estimates a chosen conditional quantile of an outcome rather than its conditional mean. At tau=0.5 it minimizes absolute residual loss and models the conditional median; at tau=0.9 it describes a high conditional outcome boundary. This chapter derives the asymmetric pinball loss, linear-program formulation, coefficient interpretation, sampling uncertainty, and the way multiple quantiles reveal heteroskedasticity and distributional shape. You will distinguish a conditional quantile curve from a marginal percentile, an individual prediction interval, and a conformal coverage guarantee. The chapter treats quantile crossing, tail data scarcity, regularization, censoring, dependence, and calibration over feature and time slices. A worked delivery-time example shows how traffic may have a modest median effect but a much larger upper-tail effect. The lab solves linear quantile regression with SciPy's linear programming interface, compares it with scikit-learn, and verifies pinball optimality, response translation, and empirical calibration. Production guidance versions tau, scaling, penalty, solver, and crossing policy; monitors exceedance rates, interval width, tail loss, subgroup behavior, and operational capacity. Quantile regression is robust to large response residuals relative to squared loss, but not immune to leverage, selection, unsupported tails, or causal confounding.",
+      "prerequisites": [
+        "linear-regression",
+        "linear-programming"
       ],
-      "estimatedMinutes": 1
+      "learningObjectives": [
+        "Derive the pinball-loss objective and formulate linear quantile regression as a linear program.",
+        "Interpret quantile-specific coefficients and explain what coefficient differences reveal about conditional shape.",
+        "Diagnose quantile crossing, tail scarcity, leverage, censoring, and conditional miscalibration.",
+        "Build and monitor quantile forecasts and intervals without overstating marginal or finite-sample coverage."
+      ],
+      "editorial": {
+        "status": "verified",
+        "verifiedOn": "2026-08-21"
+      },
+      "status": "verified",
+      "hasLab": true,
+      "labGoal": "Solve linear quantile regression as a linear program, compare with scikit-learn, and verify pinball optimality, translation equivariance, and empirical quantile behavior.",
+      "visualCount": 2,
+      "visualSummaries": [
+        {
+          "type": "scatter",
+          "title": "Conditional quantiles under widening spread"
+        },
+        {
+          "type": "compare",
+          "title": "Model-based quantile band versus coverage guarantee"
+        }
+      ],
+      "followUpQuestions": [
+        "Why do quantile-regression lines cross?",
+        "How does median regression differ from robust mean regression?",
+        "Why are extreme quantiles difficult?"
+      ],
+      "estimatedMinutes": 12
     },
     {
       "slug": "hierarchical-clustering",
@@ -10083,7 +10282,7 @@ const ATLAS = {
         "cuped-paper",
         "trustworthy-oce-survey",
         "microsoft-experimentation",
-        "statsmodels-power"
+        "numpy-linalg"
       ],
       "featured": false,
       "description": "Controlled-experiment variance reduction uses pre-treatment information to make treatment-effect estimates more precise without changing the randomized causal contrast. CUPED (Controlled-experiment Using Pre-Experiment Data) adjusts an outcome by a centered covariate measured before assignment, typically the same user metric in a historical window. This chapter derives the optimal linear coefficient, variance reduction factor, unbiasedness under randomization, cross-fitting and regression adjustment, missing pre-period data, triggered metrics, ratio metrics, multiple covariates, heterogeneity, and failure modes. You will learn why correlation determines precision gain, why post-treatment covariates create bias, why centering and a treatment interaction matter, and how to estimate gains on historical A/A-style data rather than selecting a favorable adjustment after seeing outcomes. A worked revenue experiment shows a large variance reduction with unchanged effect expectation. The lab implements CUPED from first principles, compares it with an OLS treatment coefficient, and verifies unbiased effect recovery plus reduced variance over repeated randomized trials. Production guidance covers cutoff enforcement, leakage checks, coefficient versioning, missingness, metric lineage, monitoring, fallback, and rollback. CUPED creates information by removing predictable noise; it cannot repair broken randomization or measurement.",
@@ -11213,29 +11412,54 @@ const ATLAS = {
       "roles": [
         "ds"
       ],
-      "interviewAnswer": "Anomalies can be unusual individual points, unusual only in context, or unusual sequences/groups. The detection method should match the anomaly definition rather than treating every extreme value as the same problem.",
+      "interviewAnswer": "A point anomaly is unusual by itself, a contextual anomaly is unusual only relative to conditions such as time or peer group, and a collective anomaly is a sequence or set whose joint pattern is unusual even when each element is ordinary. Before choosing a detector, I define the observation unit, normal reference population, available context, score, alert budget, investigation action, and label process. I fit transformations only on clean historical reference data and avoid future leakage. Detection scores rank cases; thresholds are operational policies chosen from capacity and cost. I monitor score and alert-rate drift, duplicate incidents, group coverage, delayed labels, and the share of alerts caused by data-pipeline failures.",
       "keyPoints": [
-        "Context can be time, user, device or season.",
-        "Collective anomalies require sequence/group features.",
-        "Anomaly labels are often scarce."
+        "Anomaly is relative to a reference distribution, context, and action.",
+        "Point, contextual, and collective anomalies require different features and units.",
+        "A continuous anomaly score is separate from the alert threshold.",
+        "Reference contamination, future leakage, and cold starts can dominate algorithm choice.",
+        "Investigation feedback and alert burden are part of the model system."
       ],
       "resources": [
+        "anomaly-survey",
         "sklearn-outlier"
       ],
       "featured": false,
-      "editorial": {
-        "status": "summary"
-      },
-      "status": "summary",
-      "hasLab": false,
-      "labGoal": "",
-      "visualCount": 0,
-      "visualSummaries": [],
-      "followUpQuestions": [
-        "What assumptions does Point, Contextual & Collective Anomalies make?",
-        "How would you validate or debug Point, Contextual & Collective Anomalies in practice?"
+      "description": "An anomaly is an observation or pattern that violates an explicitly defined expectation in a context that matters. Point anomalies are individually unusual, contextual anomalies are unusual only given time, segment, or state, and collective anomalies are ordinary-looking elements whose sequence or group is abnormal. This chapter turns that taxonomy into an engineering contract: define the unit, reference population, context, score direction, contamination assumptions, action, label horizon, and cost of review before choosing an algorithm. You will distinguish anomaly detection from novelty detection, supervised rare-event classification, data-quality validation, and change-point detection. Robust scaling, peer groups, seasonal residuals, sequence windows, and representation choices are connected to the kinds of deviation they expose. A worked payment example shows why the same amount can be normal for one merchant and anomalous for another, while a burst of small transactions can be collectively suspicious. The lab builds contextual median/MAD scores and a collective window score, compares with standardized residuals, and verifies invariance and context behavior. Production guidance prioritizes alert budgets, deduplication, investigation feedback, drift, cold starts, and safe fallback over arbitrary score cutoffs.",
+      "prerequisites": [
+        "distributions-outliers",
+        "distributions"
       ],
-      "estimatedMinutes": 1
+      "learningObjectives": [
+        "Classify point, contextual, and collective anomalies and connect each type to a valid reference set and representation.",
+        "Write an anomaly-detection contract covering unit, context, score, threshold, action, feedback, and failure costs.",
+        "Distinguish outlier detection, novelty detection, supervised rare-event prediction, change-point detection, and data validation.",
+        "Build and verify robust contextual and collective scores without using future or cross-entity information."
+      ],
+      "editorial": {
+        "status": "verified",
+        "verifiedOn": "2026-08-21"
+      },
+      "status": "verified",
+      "hasLab": true,
+      "labGoal": "Build robust contextual and collective anomaly scores, compare with standardized residuals, and verify context, translation, and burst-detection invariants.",
+      "visualCount": 2,
+      "visualSummaries": [
+        {
+          "type": "compare",
+          "title": "Three anomaly units"
+        },
+        {
+          "type": "flow",
+          "title": "Anomaly system contract"
+        }
+      ],
+      "followUpQuestions": [
+        "What is the difference between novelty and outlier detection?",
+        "How do you evaluate an unsupervised detector with few labels?",
+        "Why aggregate alerts into incidents?"
+      ],
+      "estimatedMinutes": 12
     },
     {
       "slug": "isolation-forest",
@@ -11245,34 +11469,55 @@ const ATLAS = {
       "roles": [
         "ds"
       ],
-      "interviewAnswer": "Isolation Forest isolates observations through random feature splits; points requiring fewer splits are easier to isolate and receive more anomalous scores. It scales well for tabular unsupervised anomaly detection.",
+      "interviewAnswer": "Isolation Forest creates many random partition trees. Each node chooses a feature and a split within that feature's observed range; points that are few and different tend to be isolated in fewer edges. The anomaly score is roughly 2 raised to minus average path length divided by the expected path length c(psi) for a random binary-search tree of subsample size psi. Subsampling makes training fast and can reduce masking by large normal clusters. Tree scores rank unusualness; contamination generally sets a threshold and does not discover prevalence. I validate feature representation, stability across seeds and reference windows, score direction, alert budget, and labeled or audited incident yield, and I watch for clustered anomalies, duplicates, high-dimensional noise, drift, and unsupported novelty use.",
       "keyPoints": [
-        "No distance metric required.",
-        "Contamination threshold maps scores to alerts.",
-        "Feature scaling is less central than distance-based methods but feature quality still matters."
+        "Shorter average isolation path means more anomalous under the fitted forest.",
+        "c(psi) normalizes paths across subsample size.",
+        "Subsampling is central to both efficiency and detection behavior.",
+        "Feature representation shapes the random partitions even without distance metrics.",
+        "A threshold and contamination setting are policy layers over a score."
       ],
       "resources": [
-        "sklearn-outlier"
+        "isolation-forest-paper",
+        "sklearn-outlier",
+        "anomaly-survey"
       ],
       "featured": false,
+      "description": "Isolation Forest scores anomalies by how quickly random recursive partitions isolate them. Instead of estimating a density or distance directly, each tree selects a feature and a split between observed minimum and maximum; unusual points tend to reach small leaves along shorter paths. This chapter derives path length, the unsuccessful binary-search-tree normalization c(psi), ensemble scoring, subsampling, feature subsampling, and the separate role of contamination or threshold policy. You will understand why the method is computationally attractive, where axis-aligned random cuts work, and why clustered anomalies, irrelevant high-dimensional features, one-hot representations, duplicates, missing values, and concept drift can defeat it. The chapter distinguishes outlier fitting from novelty scoring and explains score-direction differences in library APIs. A worked telemetry example traces a shallow isolation path. The lab builds a true reusable isolation-tree ensemble from scratch, compares it with scikit-learn, and verifies deterministic, translation, range, and injected-outlier invariants. Production guidance freezes sampling, seed, feature and score conventions; monitors path and alert distributions, support, duplicate rates, and incident yield; and uses a later reference window plus an explicit alert budget rather than presenting contamination as a learned prevalence.",
+      "prerequisites": [
+        "anomaly-types",
+        "random-forest"
+      ],
+      "learningObjectives": [
+        "Build isolation trees and compute normalized ensemble anomaly scores from path lengths.",
+        "Explain how subsample size, tree count, feature representation, and contamination affect behavior.",
+        "Diagnose masking, clustered anomalies, irrelevant features, duplicates, and drift.",
+        "Deploy Isolation Forest with reproducible score direction, thresholds, references, and incident-level monitoring."
+      ],
       "editorial": {
-        "status": "summary"
+        "status": "verified",
+        "verifiedOn": "2026-08-21"
       },
-      "status": "summary",
+      "status": "verified",
       "hasLab": true,
-      "labGoal": "Detect unusual points without labels using Isolation Forest.",
-      "visualCount": 1,
+      "labGoal": "Build reusable isolation trees and normalized forest scores, compare with scikit-learn, and verify injected-outlier, determinism, range, and translation invariants.",
+      "visualCount": 2,
       "visualSummaries": [
         {
-          "type": "network",
-          "title": "Isolation Forest intuition"
+          "type": "flow",
+          "title": "One isolation path"
+        },
+        {
+          "type": "curve",
+          "title": "Normalized score versus path length"
         }
       ],
       "followUpQuestions": [
-        "What assumptions does Isolation Forest make?",
-        "How would you validate or debug Isolation Forest in practice?"
+        "Why use small subsamples?",
+        "What happens to duplicate observations?",
+        "Is Isolation Forest suitable for novelty detection?"
       ],
-      "estimatedMinutes": 2
+      "estimatedMinutes": 12
     },
     {
       "slug": "lof-oneclass",
@@ -11282,29 +11527,55 @@ const ATLAS = {
       "roles": [
         "ds"
       ],
-      "interviewAnswer": "LOF compares local density with neighbors, while One-Class SVM learns a boundary around normal data. LOF captures local anomalies; One-Class SVM can be sensitive to scaling and hyperparameters.",
+      "interviewAnswer": "LOF finds points whose local reachability density is low relative to their k nearest neighbors, so a point can be normal inside a sparse cluster even if it is globally far away. A score near one is locally comparable; much above one suggests a local outlier. One-Class SVM instead estimates a regularized support boundary in feature space, often with an RBF kernel; nu controls a trade-off related to training errors and support vectors, while gamma controls boundary scale. I fit scaling on a trusted reference, tune k or gamma/nu on later data and alert capacity, and distinguish LOF's default training-set outlier mode from novelty=True scoring of new points. I monitor distance concentration, neighbor/support-vector stability, reference contamination, score direction, and incident yield.",
       "keyPoints": [
-        "Novelty vs outlier-detection modes differ.",
-        "Local methods struggle in high dimensions.",
-        "Thresholds should be calibrated to alert capacity."
+        "LOF compares local density with neighbor density rather than using one global threshold.",
+        "Reachability distance reduces unstable density estimates around very close neighbors.",
+        "One-Class SVM learns a kernel support boundary, not an event probability.",
+        "Scaling, metric, k, gamma, nu, and reference purity define the detector.",
+        "LOF outlier and novelty modes have different scoring semantics."
       ],
       "resources": [
+        "lof-paper",
+        "one-class-svm-paper",
         "sklearn-outlier"
       ],
       "featured": false,
-      "editorial": {
-        "status": "summary"
-      },
-      "status": "summary",
-      "hasLab": false,
-      "labGoal": "",
-      "visualCount": 0,
-      "visualSummaries": [],
-      "followUpQuestions": [
-        "What assumptions does Local Outlier Factor & One-Class SVM make?",
-        "How would you validate or debug Local Outlier Factor & One-Class SVM in practice?"
+      "description": "Local Outlier Factor (LOF) and One-Class SVM answer two different versions of support-based anomaly detection. LOF compares a point's local reachability density with the densities of its neighbors, making it useful when normal data contain regions of different density. One-Class SVM learns a regularized boundary around reference data in a kernel feature space and is naturally framed as novelty detection. This chapter derives k-distance, reachability distance, local reachability density, LOF, the one-class support-estimation objective, kernel and nu behavior, and the practical difference between transductive training-set outlier detection and scoring unseen observations. You will learn why distance scaling, categorical representation, neighborhood size, curse of dimensionality, reference contamination, kernel bandwidth, and computational cost control results. A worked two-cluster example shows why a global distance score can overflag a sparse legitimate cluster while LOF compares locally. The lab implements LOF from first principles, compares exactly with scikit-learn, adds an RBF One-Class SVM novelty score, and verifies density-ratio, permutation, and injected-outlier behavior. Production guidance freezes reference, scaler, metric, k, kernel, nu, and score direction while monitoring neighbor distances, support vectors, alert burden, and cold-start coverage.",
+      "prerequisites": [
+        "anomaly-types",
+        "knn"
       ],
-      "estimatedMinutes": 1
+      "learningObjectives": [
+        "Compute LOF from k-neighbor reachability distances and explain local density-ratio interpretation.",
+        "Explain One-Class SVM support estimation, kernel bandwidth, nu, and decision score semantics.",
+        "Distinguish training-set outlier detection from novelty scoring and avoid invalid LOF API use.",
+        "Diagnose scaling, high-dimensional distance concentration, reference contamination, and computational constraints."
+      ],
+      "editorial": {
+        "status": "verified",
+        "verifiedOn": "2026-08-21"
+      },
+      "status": "verified",
+      "hasLab": true,
+      "labGoal": "Implement Local Outlier Factor exactly, compare it with scikit-learn, and verify local-density, permutation, and One-Class SVM novelty behavior.",
+      "visualCount": 2,
+      "visualSummaries": [
+        {
+          "type": "scatter",
+          "title": "Local density versus global distance"
+        },
+        {
+          "type": "compare",
+          "title": "Local density and kernel support"
+        }
+      ],
+      "followUpQuestions": [
+        "Why use reachability distance instead of raw distance in LOF?",
+        "How do you choose k?",
+        "What does gamma do in RBF One-Class SVM?"
+      ],
+      "estimatedMinutes": 12
     },
     {
       "slug": "rare-event-evaluation",
@@ -11314,35 +11585,56 @@ const ATLAS = {
       "roles": [
         "ds"
       ],
-      "interviewAnswer": "For rare events, accuracy is usually misleading. Evaluate precision/recall, PR-AUC, recall at alert budget, expected cost and time-to-detection; choose thresholds based on operational capacity and error costs.",
+      "interviewAnswer": "For rare events I separate ranking, probability, threshold, and operations. I report precision-recall curves or average precision, recall at the actual top-k review capacity, and threshold-specific counts and cost; accuracy is usually uninformative and ROC AUC can conceal false-positive burden. Precision and AP depend on prevalence, so the evaluation population and sampling weights must match deployment. If scores are probabilities I also test calibration and proper losses. I choose the threshold on validation data from costs, capacity, or a recall constraint, then evaluate once on a later untouched window at the incident level. Because labels are delayed and only alerts may be reviewed, I track unknowns, random-audit nonalerts, and report uncertainty.",
       "keyPoints": [
-        "Base rate determines achievable precision.",
-        "Threshold should reflect cost/capacity.",
-        "Time leakage is common in fraud/anomaly evaluation."
+        "Ranking, calibration, threshold performance, and queue operations are different layers.",
+        "Precision and the PR baseline change with event prevalence.",
+        "Recall at k directly represents a fixed review budget.",
+        "Thresholds must be chosen outside the final evaluation window.",
+        "Selective and delayed labels require audits and explicit unknown status."
       ],
       "resources": [
-        "sklearn",
+        "pr-imbalanced-paper",
+        "sklearn-average-precision",
+        "sklearn-calibration",
         "google-rules-ml"
       ],
       "featured": true,
+      "description": "Rare-event evaluation asks whether a score produces useful decisions when positives are scarce, labels are delayed or selective, and false alerts consume real capacity. Accuracy and even ROC AUC can hide failure: predicting every case negative gives high accuracy, while a small false-positive rate can still overwhelm investigators. This chapter derives precision, recall, specificity, false-positive rate, precision-recall curves, non-interpolated average precision, lift, recall at k, calibration, proper scores, expected cost, and threshold selection. It explains why precision and average precision depend on prevalence, why evaluation must use the deployment sampling unit and time window, and why alert deduplication changes the metric denominator. You will handle uncertain labels, review selection, delayed outcomes, incident grouping, confidence intervals, and threshold overfitting. A worked fraud queue example turns a review budget into recall-at-capacity and net value. The lab implements confusion metrics, average precision, top-k recall, and coherent cost selection, then verifies them against scikit-learn. Production guidance versions score and policy separately, monitors queue and incident yield, audits nonalerts, and recalibrates or reselects thresholds when prevalence, cost, capacity, or label processes change.",
+      "prerequisites": [
+        "classification-metrics",
+        "anomaly-types"
+      ],
+      "learningObjectives": [
+        "Compute and interpret rare-event ranking, threshold, probability, and capacity metrics without conflating them.",
+        "Explain how prevalence, sampling, label delay, and incident grouping affect precision-recall evidence.",
+        "Select a threshold from coherent costs or operational constraints on data independent of final evaluation.",
+        "Design production audits and confidence estimates for selective, delayed, and incomplete labels."
+      ],
       "editorial": {
-        "status": "summary"
+        "status": "verified",
+        "verifiedOn": "2026-08-21"
       },
-      "status": "summary",
-      "hasLab": false,
-      "labGoal": "",
-      "visualCount": 1,
+      "status": "verified",
+      "hasLab": true,
+      "labGoal": "Implement rare-event counts, top-k metrics, average precision, and cost-sensitive threshold selection, then verify against scikit-learn and imbalance invariants.",
+      "visualCount": 2,
       "visualSummaries": [
         {
-          "type": "concept-map",
-          "title": "Rare-event Evaluation & Alert Thresholds"
+          "type": "curve",
+          "title": "Precision-recall operating trade-off"
+        },
+        {
+          "type": "flow",
+          "title": "Evidence from score to outcome"
         }
       ],
       "followUpQuestions": [
-        "What assumptions does Rare-event Evaluation & Alert Thresholds make?",
-        "How would you validate or debug Rare-event Evaluation & Alert Thresholds in practice?"
+        "What is the difference between PR AUC and average precision?",
+        "When is recall at k preferable?",
+        "How do you compare precision across populations?"
       ],
-      "estimatedMinutes": 1
+      "estimatedMinutes": 12
     },
     {
       "slug": "censoring-survival",
@@ -11353,31 +11645,55 @@ const ATLAS = {
         "ds",
         "da"
       ],
-      "interviewAnswer": "Survival analysis models time until an event while handling censored observations whose event time is not fully observed. Survival S(t) is probability of surviving past t; hazard describes instantaneous event rate conditional on survival.",
+      "interviewAnswer": "For event time T, survival is S(t)=P(T>t), cumulative incidence without competing risks is F(t)=1-S(t), hazard is the instantaneous event rate among those still event-free, and cumulative hazard H(t)=integral h with S(t)=exp(-H(t)). Right censoring at C observes Y=min(T,C) and delta=I(T<=C), so a censored row contributes evidence of survival through Y, not an event at Y and not no information. Kaplan-Meier and standard likelihoods need censoring independent of event time, often conditional on modeled covariates. I define time origin, event, entry, competing events, and label maturity; use risk sets that respect delayed entry; and inspect censoring and follow-up by segment before modeling.",
       "keyPoints": [
-        "Right censoring is common.",
-        "Do not treat censored durations as completed outcomes.",
-        "Hazard and survival encode related but different views."
+        "Censoring preserves partial ordering information and is not ordinary missingness.",
+        "Hazard is a conditional rate among survivors, not a probability by itself.",
+        "S(t)=exp[-H(t)] in continuous time and F(t)=1-S(t) without competing risks.",
+        "Truncation changes who enters the sample; censoring limits what is observed after entry.",
+        "Time origin, risk set, censoring, and label maturity define the estimand."
       ],
       "resources": [
+        "kaplan-meier-paper",
         "lifelines",
-        "statsmodels-survival",
-        "stanford-stats200"
+        "statsmodels-survival"
       ],
       "featured": false,
-      "editorial": {
-        "status": "summary"
-      },
-      "status": "summary",
-      "hasLab": false,
-      "labGoal": "",
-      "visualCount": 0,
-      "visualSummaries": [],
-      "followUpQuestions": [
-        "What assumptions does Censoring, Survival & Hazard Functions make?",
-        "How would you validate or debug Censoring, Survival & Hazard Functions in practice?"
+      "description": "Survival analysis models the time until an event while preserving partial information from subjects whose event time is not fully observed. Right censoring says only that the event occurs after the last observed time; left censoring, interval censoring, delayed entry, and truncation encode different observation mechanisms and require different risk sets or likelihoods. This chapter develops the event time T, survival S(t), distribution F(t), density f(t), hazard h(t), cumulative hazard H(t), and their relationships. You will distinguish a conditional instantaneous hazard from event probability over an interval, state independent or conditionally independent censoring assumptions, and see why dropping censored rows or treating censoring time as the event creates bias. A worked subscription example traces a cohort through events, censoring, and changing risk sets. The lab computes survival, hazard, and cumulative hazard for a discrete event-time distribution, compares an exponential model with SciPy, and verifies monotonicity and algebraic identities. Production guidance fixes time origin, event, horizon, time zones, censoring, delayed entry, competing events, and label maturity; monitors censoring by segment and calendar time; and blocks evaluation beyond supported follow-up. Survival methods use censored information—they do not make informative loss to follow-up harmless.",
+      "prerequisites": [
+        "distributions",
+        "joint-marginal-conditional"
       ],
-      "estimatedMinutes": 1
+      "learningObjectives": [
+        "Define survival, cumulative distribution, density, hazard, and cumulative hazard and move correctly between them.",
+        "Distinguish right, left, interval censoring, left truncation, and delayed entry in both words and risk-set logic.",
+        "State the censoring and observation assumptions required for common estimators and diagnose likely informative censoring.",
+        "Construct a leakage-safe event-time dataset with explicit origin, event, maturity, entry, and competing-event semantics."
+      ],
+      "editorial": {
+        "status": "verified",
+        "verifiedOn": "2026-08-21"
+      },
+      "status": "verified",
+      "hasLab": true,
+      "labGoal": "Compute discrete survival, hazard, and cumulative hazard and compare a continuous exponential model with SciPy while verifying algebraic and monotonicity invariants.",
+      "visualCount": 2,
+      "visualSummaries": [
+        {
+          "type": "flow",
+          "title": "Observed event-time paths"
+        },
+        {
+          "type": "compare",
+          "title": "Three linked event-time functions"
+        }
+      ],
+      "followUpQuestions": [
+        "What is the relationship between hazard and survival?",
+        "How is left truncation different from left censoring?",
+        "What is restricted mean survival time?"
+      ],
+      "estimatedMinutes": 11
     },
     {
       "slug": "kaplan-meier",
@@ -11388,34 +11704,55 @@ const ATLAS = {
         "ds",
         "da"
       ],
-      "interviewAnswer": "Kaplan–Meier estimates the survival curve nonparametrically by multiplying conditional survival probabilities at event times. The log-rank test compares survival curves across groups under assumptions.",
+      "interviewAnswer": "At each distinct event time t_j, Kaplan-Meier multiplies the previous survival by 1-d_j/n_j, where d_j events occur among n_j subjects at risk just before the time. Censoring does not drop the curve; it removes subjects from later risk sets. The estimate assumes event and censoring times are independent, possibly conditional on group, and tails with few at risk are uncertain. The log-rank test compares observed group events with expected events from pooled risk sets across times and is most sensitive to roughly proportional hazard differences. I show confidence bands and numbers at risk, inspect crossing curves and censoring by group, predeclare the horizon and multiplicity plan, and avoid causal interpretation without an identified treatment comparison.",
       "keyPoints": [
-        "Handles right censoring.",
-        "Median survival comes from S(t)=0.5 when reached.",
-        "Curves can cross, complicating simple comparisons."
+        "KM is a product of conditional survival fractions at event times.",
+        "Censoring removes later risk membership but does not create a survival drop.",
+        "Tail precision depends on numbers at risk, not only the plotted line.",
+        "Log-rank tests equality of survival experience with risk-set weighting.",
+        "Group curves and p-values do not adjust confounding or establish causality."
       ],
       "resources": [
-        "lifelines"
+        "kaplan-meier-paper",
+        "lifelines",
+        "stanford-stats200"
       ],
       "featured": false,
+      "description": "The Kaplan-Meier estimator reconstructs a survival curve from right-censored observations by multiplying conditional survival proportions at distinct event times. Censored subjects contribute to risk sets until censoring and then leave without causing a drop. This chapter derives the product-limit estimator, risk-set and tie conventions, Greenwood-style uncertainty, median and restricted-mean interpretation, group curves, and the log-rank test as an observed-minus-expected event comparison over pooled risk sets. You will understand why late tails become unstable when few subjects remain, why visually crossing curves violate the simple proportional weighting intuition of log-rank, and why a significant group comparison is not automatically a causal treatment effect. A worked cohort calculates every product step and a log-rank contribution. The lab implements Kaplan-Meier and log-rank from first principles, uses SciPy for the chi-square tail, and verifies censoring, symmetry, monotonicity, and identical-group invariants. Production guidance publishes number-at-risk tables and supported horizons, versions entry and tie rules, monitors censoring imbalance and label maturity, and avoids displaying or acting on survival tails supported by only a handful of subjects. KM is a marginal nonparametric estimate under censoring assumptions, not a covariate-adjusted prediction model.",
+      "prerequisites": [
+        "censoring-survival",
+        "hypothesis-testing"
+      ],
+      "learningObjectives": [
+        "Compute a Kaplan-Meier curve from event counts and changing risk sets, including tied events and censoring.",
+        "Interpret survival steps, confidence bands, median survival, number at risk, and restricted mean within supported follow-up.",
+        "Derive the log-rank observed-minus-expected statistic and state its null, weighting, and assumptions.",
+        "Diagnose crossing curves, small tails, differential censoring, delayed entry, multiplicity, and causal overinterpretation."
+      ],
       "editorial": {
-        "status": "summary"
+        "status": "verified",
+        "verifiedOn": "2026-08-21"
       },
-      "status": "summary",
+      "status": "verified",
       "hasLab": true,
-      "labGoal": "Fit and inspect a Kaplan–Meier survival curve.",
-      "visualCount": 1,
+      "labGoal": "Implement Kaplan-Meier and the two-sample log-rank statistic, use SciPy for the chi-square tail, and verify censoring, monotonicity, symmetry, and identical-group behavior.",
+      "visualCount": 2,
       "visualSummaries": [
         {
           "type": "curve",
-          "title": "Kaplan–Meier survival curve"
+          "title": "Kaplan-Meier product-limit steps"
+        },
+        {
+          "type": "compare",
+          "title": "Curve estimate versus group test"
         }
       ],
       "followUpQuestions": [
-        "What assumptions does Kaplan–Meier Estimator & Log-rank Test make?",
-        "How would you validate or debug Kaplan–Meier Estimator & Log-rank Test in practice?"
+        "Why is KM a product instead of one minus cumulative observed event fraction?",
+        "What happens if the median is not reached?",
+        "When is log-rank less powerful?"
       ],
-      "estimatedMinutes": 2
+      "estimatedMinutes": 11
     },
     {
       "slug": "cox-ph",
@@ -11426,35 +11763,55 @@ const ATLAS = {
         "ds",
         "da"
       ],
-      "interviewAnswer": "The Cox model relates covariates multiplicatively to hazard without specifying the baseline hazard shape. Coefficients are interpreted through hazard ratios, under the proportional-hazards assumption.",
+      "interviewAnswer": "Cox regression models h(t|x)=h0(t)exp(x beta). At each event time, partial likelihood compares the event subject's exp(x beta) with the sum over everyone then at risk, so beta can be estimated without parameterizing h0. Exponentiating a coefficient gives a conditional hazard ratio for a one-unit covariate change if hazards are proportional. After fitting beta, a Breslow-type estimator recovers cumulative baseline hazard and S(t|x)=exp[-H0(t)exp(x beta)]. I check Schoenfeld-residual trends and time interactions, model nonlinear continuous effects, specify ties and delayed entry, use robust or clustered inference when needed, and evaluate discrimination plus calibrated survival at supported horizons. Hazard ratios are not risk ratios, and observational coefficients are not causal effects without an identification design.",
       "keyPoints": [
-        "Hazard ratio exp(beta).",
-        "Check proportional hazards.",
-        "Censoring assumptions still matter."
+        "Partial likelihood compares each event with its contemporaneous risk set.",
+        "The baseline hazard cancels for coefficient estimation but is required for absolute survival.",
+        "Hazard ratios are conditional instantaneous-rate ratios, not probability or median ratios.",
+        "Proportional hazards is a testable modeling restriction, not a property guaranteed by the algorithm.",
+        "Time origin, delayed entry, ties, feature timing, and censoring belong in the model contract."
       ],
       "resources": [
+        "cox-1972",
         "lifelines",
-        "stanford-stats200"
+        "statsmodels-survival"
       ],
       "featured": false,
+      "description": "The Cox proportional-hazards model connects covariates to event timing without requiring a parametric baseline hazard. It writes the hazard as h(t|x)=h0(t)exp(x^T beta), so exp(beta_j) is a multiplicative hazard ratio under the proportional-hazards assumption. This chapter derives the partial likelihood from risk-set comparisons, explains why censored observations still contribute information, and separates coefficient estimation from recovery of the baseline hazard and absolute survival. It covers Breslow and Efron tie handling, delayed entry, time-dependent covariates, penalization, clustered dependence, Schoenfeld residuals, nonproportional effects, and the difference between predictive and causal interpretations. A worked example computes one partial-likelihood term. The lab exposes the mechanism with a one-covariate Newton optimizer, compares it with SciPy's general optimizer, and verifies permutation invariance, gradient convergence, and survival monotonicity. Production guidance treats the risk-set construction, time origin, feature availability, baseline-hazard version, and supported horizon as model artifacts. Cox is often a strong interpretable baseline, but a hazard ratio is neither a probability ratio nor a universal summary when effects vary over time.",
+      "prerequisites": [
+        "kaplan-meier",
+        "linear-regression"
+      ],
+      "learningObjectives": [
+        "Derive Cox partial likelihood from event-wise risk sets and interpret coefficients as conditional hazard ratios.",
+        "Recover a baseline cumulative hazard and individual survival curves after estimating regression coefficients.",
+        "Diagnose proportional-hazards violations, tie and entry conventions, nonlinear effects, and dependent observations.",
+        "Design leakage-safe validation and deployment contracts for event-time regression."
+      ],
       "editorial": {
-        "status": "summary"
+        "status": "verified",
+        "verifiedOn": "2026-08-21"
       },
-      "status": "summary",
-      "hasLab": false,
-      "labGoal": "",
-      "visualCount": 1,
+      "status": "verified",
+      "hasLab": true,
+      "labGoal": "Expose Cox partial-likelihood mechanics, fit one coefficient with Newton's method, compare SciPy optimization, and verify risk-set and survival invariants.",
+      "visualCount": 2,
       "visualSummaries": [
         {
           "type": "flow",
-          "title": "Cox proportional hazards"
+          "title": "Cox estimation and prediction"
+        },
+        {
+          "type": "compare",
+          "title": "Relative effect versus absolute prediction"
         }
       ],
       "followUpQuestions": [
-        "What assumptions does Cox Proportional Hazards Model make?",
-        "How would you validate or debug Cox Proportional Hazards Model in practice?"
+        "Why does the baseline hazard cancel from partial likelihood?",
+        "How do you handle a covariate that violates PH?",
+        "What is the distinction between time-varying covariate and coefficient?"
       ],
-      "estimatedMinutes": 1
+      "estimatedMinutes": 12
     },
     {
       "slug": "survival-metrics",
@@ -11465,29 +11822,55 @@ const ATLAS = {
         "ds",
         "da"
       ],
-      "interviewAnswer": "Survival models require metrics that handle censoring, such as concordance index and time-dependent calibration/Brier scores. Ordinary classification metrics at arbitrary cutoffs can discard useful time information.",
+      "interviewAnswer": "I evaluate survival models along four axes. Concordance measures whether higher predicted risk precedes observed events among comparable subjects, but Harrell's C can be optimistic under heavy censoring, so I also use IPCW or Uno-style estimates. At prespecified horizons I report cumulative/dynamic AUC for discrimination, time-dependent Brier score for probability error, and calibration of predicted versus observed survival. IPCW estimates the censoring survival distribution on training data and weights observable cases and controls; people censored before a horizon are not treated as event-free. I integrate only over horizons with adequate follow-up, validate on later cohorts, bootstrap at the subject or cluster level, show subgroup event and censoring counts, and connect scores to threshold-specific decisions. One metric never proves ranking, calibration, and utility simultaneously.",
       "keyPoints": [
-        "C-index assesses ranking.",
-        "Calibration matters at relevant horizons.",
-        "Evaluation must account for censoring."
+        "Censoring determines which pairs and horizon labels are observable.",
+        "Concordance evaluates ordering, not probability calibration or clinical/product utility.",
+        "IPCW corrects observable contributions under a censoring model and a positivity condition.",
+        "Time-dependent AUC, Brier score, and calibration must be indexed by supported horizons.",
+        "Evaluation preprocessing, censoring estimation, horizons, and bootstrap units must avoid leakage."
       ],
       "resources": [
-        "lifelines"
+        "sksurv-evaluation",
+        "uno-cstat",
+        "graf-brier"
       ],
       "featured": false,
-      "editorial": {
-        "status": "summary"
-      },
-      "status": "summary",
-      "hasLab": false,
-      "labGoal": "",
-      "visualCount": 0,
-      "visualSummaries": [],
-      "followUpQuestions": [
-        "What assumptions does Survival Model Evaluation make?",
-        "How would you validate or debug Survival Model Evaluation in practice?"
+      "description": "Survival-model evaluation must respect censoring, time, and the prediction target. Ordinary accuracy and ROC calculations mislabel subjects censored before a horizon, while a single concordance number can reward ranking without calibrated probabilities. This chapter builds an evaluation stack around comparable pairs, Harrell's concordance, inverse-probability-of-censoring weighting, Uno-style concordance, cumulative/dynamic AUC, time-dependent Brier score, integrated Brier score, survival calibration, and decision utility. It explains which subjects define cases and controls at a horizon, why the censoring distribution must be estimated without test leakage, and how heavy censoring or short follow-up limits the estimand. A worked example separates an event case, an event-free control, and an indeterminate early censor. The lab implements comparable-pair concordance and an IPCW Brier score, then uses scikit-learn only on correctly defined horizon labels. Production guidance freezes evaluation horizons, split logic, censoring models, metric orientation, subgroup support, and label-maturity windows. Good evaluation reports discrimination, probability accuracy, calibration, and operational value together rather than declaring a model successful from one censoring-sensitive leaderboard number.",
+      "prerequisites": [
+        "cox-ph",
+        "cross-validation"
       ],
-      "estimatedMinutes": 1
+      "learningObjectives": [
+        "Construct comparable event-time pairs and explain what Harrell and IPCW concordance estimate.",
+        "Define horizon-specific cases, controls, Brier scores, and cumulative/dynamic AUC under censoring.",
+        "Assess survival calibration and decision utility at supported horizons instead of relying on ranking alone.",
+        "Build temporal, leakage-safe, subgroup-aware evaluation pipelines with explicit censoring assumptions."
+      ],
+      "editorial": {
+        "status": "verified",
+        "verifiedOn": "2026-08-21"
+      },
+      "status": "verified",
+      "hasLab": true,
+      "labGoal": "Implement comparable-pair concordance and an IPCW horizon Brier score, use scikit-learn on correctly defined horizon labels, and verify orientation and censoring behavior.",
+      "visualCount": 2,
+      "visualSummaries": [
+        {
+          "type": "layers",
+          "title": "Survival evaluation stack"
+        },
+        {
+          "type": "compare",
+          "title": "Observable status at a horizon"
+        }
+      ],
+      "followUpQuestions": [
+        "Why can Harrell's C be optimistic with heavy censoring?",
+        "What is the difference between Brier score and calibration?",
+        "How should uncertainty be estimated with repeated interval rows?"
+      ],
+      "estimatedMinutes": 12
     },
     {
       "slug": "lagrange-kkt",
@@ -11994,34 +12377,54 @@ const ATLAS = {
       "roles": [
         "ds"
       ],
-      "interviewAnswer": "An inverted index maps terms to documents/postings containing them, making lexical search efficient. Real systems also tokenize, normalize, store term statistics and support field/position information.",
+      "interviewAnswer": "An inverted index maps each normalized term to a sorted postings list of documents that contain it, often including term frequency, positions, field and payload data. Indexing parses documents with a versioned analyzer, emits term-document records, sorts or accumulates them, and writes immutable dictionary and postings segments. AND queries intersect postings, OR queries merge them, and phrase queries require adjacent positions. Sorted doc IDs enable linear or skip-assisted intersection; compression uses doc-ID gaps and compact integer codes. Production engines append segments, expose them on refresh, merge them in the background, and represent deletes with tombstones until merge. I version analyzers and schemas, enforce permissions before final ranking, monitor freshness, segment count, merge debt, cache hit rate and tail latency, and retain an exact snapshot for rollback. Analyzer mismatch between writes and queries is a relevance bug, not cosmetic preprocessing.",
       "keyPoints": [
-        "Index construction vs query-time retrieval.",
-        "Positions enable phrase queries.",
-        "Document/term statistics support ranking."
+        "The dictionary maps terms to sorted postings; postings may contain frequency, positions, fields and payloads.",
+        "Index-time and query-time analyzers must implement a compatible normalization contract.",
+        "Sorted postings make conjunction, phrase checks, skipping and compression efficient.",
+        "Immutable segments simplify concurrency while merges reclaim deletes and improve locality.",
+        "Corpus snapshot, permissions, schema, statistics and analyzer version define search correctness."
       ],
       "resources": [
-        "ir-book"
+        "ir-book",
+        "faiss-getting-started"
       ],
       "featured": false,
+      "description": "An inverted index turns a document collection into a term-to-postings data structure so search touches documents containing query terms instead of scanning every document. This chapter follows the complete retrieval path: document boundaries, decoding, tokenization, normalization, term dictionary, postings with document IDs, frequencies and positions, Boolean intersection, phrase and field queries, segment construction, compression, merges, deletions, and distributed sharding. It explains why analyzer consistency is a correctness contract, how positional indexes trade storage for expressive queries, and why document frequency and length statistics must remain synchronized with the searchable snapshot. A worked example builds postings for three documents and resolves an AND plus phrase query. The lab implements normalization, positional indexing, linear postings intersection and phrase matching from first principles, then compares the term-document counts with scikit-learn. Production guidance covers immutable segments, write-ahead ingestion, refresh versus commit semantics, tombstones, replicas, checksums, schema migration, backpressure, observability and rollback. The index is not merely a cache: it is the executable representation of the corpus, analyzer, fields, permissions and freshness policy.",
+      "prerequisites": [
+        "hash-tables",
+        "tokenization"
+      ],
+      "learningObjectives": [
+        "Construct a term dictionary and sorted positional postings from a document collection.",
+        "Execute Boolean, phrase, field, and top-k candidate operations using postings rather than full scans.",
+        "Reason about segment construction, compression, updates, deletions, sharding, and query latency.",
+        "Specify analyzer, schema, access-control, freshness, integrity, and rollback contracts for production search."
+      ],
       "editorial": {
-        "status": "summary"
+        "status": "verified",
+        "verifiedOn": "2026-08-21"
       },
-      "status": "summary",
-      "hasLab": false,
-      "labGoal": "",
-      "visualCount": 1,
+      "status": "verified",
+      "hasLab": true,
+      "labGoal": "Build a positional inverted index, execute AND and phrase queries, compare with scikit-learn term counts, and verify ordering and analyzer invariants.",
+      "visualCount": 2,
       "visualSummaries": [
         {
+          "type": "flow",
+          "title": "Text-to-search pipeline"
+        },
+        {
           "type": "schema",
-          "title": "Inverted index"
+          "title": "Positional posting anatomy"
         }
       ],
       "followUpQuestions": [
-        "What assumptions does Inverted Index & Text Retrieval Pipeline make?",
-        "How would you validate or debug Inverted Index & Text Retrieval Pipeline in practice?"
+        "Why are postings sorted by document ID?",
+        "When are positions worth their storage cost?",
+        "What is the difference between refresh and commit?"
       ],
-      "estimatedMinutes": 1
+      "estimatedMinutes": 11
     },
     {
       "slug": "tfidf-bm25",
@@ -12031,35 +12434,55 @@ const ATLAS = {
       "roles": [
         "ds"
       ],
-      "interviewAnswer": "TF-IDF weights terms by within-document frequency and corpus rarity. BM25 adds saturation and document-length normalization, making it a strong lexical ranking baseline.",
+      "interviewAnswer": "TF-IDF gives a term more weight when it occurs often in a document but rarely in the collection, then often uses cosine similarity between sparse query and document vectors. BM25 scores each query term with an IDF factor times a saturating TF fraction: tf*(k1+1)/(tf+k1*(1-b+b*dl/avgdl)). k1 controls how quickly repetition saturates and b controls document-length normalization. A common positive IDF is log(1+(N-df+0.5)/(df+0.5)). BM25 usually handles document length and repeated terms better than plain TF-IDF, but both depend critically on the analyzer and corpus snapshot. I tune on representative judged queries, inspect performance by query type, preserve exact identifiers, use BM25F or field boosts deliberately, and never compare raw scores across different queries or index statistics as if they were probabilities.",
       "keyPoints": [
-        "Rare terms carry more discrimination.",
-        "BM25 term-frequency gain saturates.",
-        "Lexical search handles exact names/codes well."
+        "IDF rewards discriminative terms using collection document frequency, not semantic importance in isolation.",
+        "BM25 term frequency saturates, so the tenth repetition adds less evidence than the first few.",
+        "The b parameter corrects length relative to the average indexed document under a field definition.",
+        "Analyzer, field boundaries and corpus statistics are part of the ranking model.",
+        "Lexical scores order candidates for a query; they are not calibrated relevance probabilities."
       ],
       "resources": [
+        "bm25-robertson",
         "ir-book",
         "elastic-bm25"
       ],
       "featured": true,
+      "description": "TF-IDF and BM25 are foundational lexical ranking methods that score exact term evidence while discounting ubiquitous words. TF-IDF represents documents and queries as weighted sparse vectors; cosine similarity normalizes their dot product. BM25 instead sums probabilistic term contributions with saturating term frequency and explicit document-length normalization. This chapter derives term frequency, inverse document frequency, cosine scoring, Robertson-style BM25 IDF, k1 saturation and b length correction. It explains tokenization and field effects, query term frequency, BM25F, stop words, rare-term pathologies, score noncomparability across shards or index snapshots, and why parameter tuning must use judged queries rather than arbitrary score intuition. Worked examples calculate IDF and a BM25 contribution. The lab implements BM25 from first principles, compares sparse TF-IDF with scikit-learn, and verifies rare-term weight, diminishing returns, query order invariance and finite scores. Production guidance freezes analyzers, corpus statistics and parameter versions; evaluates relevance, latency and subgroup behavior; and combines lexical scores with filters, business constraints or semantic retrieval without pretending raw scores are calibrated probabilities. Lexical ranking remains hard to beat for identifiers, names, rare entities and exact constraints.",
+      "prerequisites": [
+        "inverted-index",
+        "norms-distances"
+      ],
+      "learningObjectives": [
+        "Compute TF-IDF vectors, cosine similarity, and BM25 term contributions from collection statistics.",
+        "Explain term-frequency saturation, inverse-document-frequency weighting, and document-length normalization.",
+        "Tune and evaluate k1, b, field boosts, analyzers and query expansion without leaking test judgments.",
+        "Diagnose shard-statistic drift, score-scale misuse, spam, vocabulary mismatch and exact-match failures."
+      ],
       "editorial": {
-        "status": "summary"
+        "status": "verified",
+        "verifiedOn": "2026-08-21"
       },
-      "status": "summary",
+      "status": "verified",
       "hasLab": true,
-      "labGoal": "Implement a tiny BM25 scorer and compare lexical ranking.",
-      "visualCount": 1,
+      "labGoal": "Implement BM25 scoring, compare sparse TF-IDF rankings, and verify IDF rarity, TF saturation, query-order invariance and numerical safety.",
+      "visualCount": 2,
       "visualSummaries": [
         {
-          "type": "flow",
-          "title": "BM25 scoring"
+          "type": "curve",
+          "title": "BM25 term-frequency saturation"
+        },
+        {
+          "type": "compare",
+          "title": "TF-IDF and BM25"
         }
       ],
       "followUpQuestions": [
-        "What assumptions does TF-IDF & BM25 make?",
-        "How would you validate or debug TF-IDF & BM25 in practice?"
+        "What happens when k1 approaches zero?",
+        "Why is IDF based on document frequency rather than total term count?",
+        "When can TF-IDF outperform BM25?"
       ],
-      "estimatedMinutes": 2
+      "estimatedMinutes": 11
     },
     {
       "slug": "retrieval-eval",
@@ -12069,34 +12492,54 @@ const ATLAS = {
       "roles": [
         "ds"
       ],
-      "interviewAnswer": "Retrieval metrics depend on whether you care about finding any relevant result, all relevant results, or graded relevance near the top. MRR emphasizes first relevant rank; NDCG rewards graded relevance with position discount.",
+      "interviewAnswer": "I begin with the retrieval stage and user task. Recall@K is primary for a candidate generator because a reranker cannot recover missing relevant items. MRR emphasizes the first relevant result, MAP averages precision at every relevant hit for binary multi-result tasks, and NDCG discounts rank while supporting graded relevance and normalizing by the ideal ordering. I report per-query metrics then macro averages and distributional slices, not only a traffic-weighted headline. The test collection freezes corpus, queries and judgments; pooled unjudged documents need an explicit policy and can bias new systems. I use paired bootstrap or randomization over queries, report confidence intervals and practical deltas, and include latency, freshness, coverage, safety and online task outcomes. Duplicate results and zero-relevant queries have predefined handling.",
       "keyPoints": [
-        "Define relevance judgments first.",
-        "Recall@K matters for candidate stages.",
-        "NDCG supports graded relevance."
+        "Metric choice encodes how rank position, multiple relevant items and graded relevance create value.",
+        "Compute query-level scores first; aggregation weights determine whose needs dominate the result.",
+        "Unjudged is not automatically nonrelevant, especially for a novel system outside the judgment pool.",
+        "Paired comparisons over the same queries are more informative than independent headline averages.",
+        "Offline relevance must be balanced with latency, coverage, freshness, diversity, safety and online utility."
       ],
       "resources": [
-        "ir-book"
+        "ir-book",
+        "trec-evaluation"
       ],
       "featured": true,
+      "description": "Retrieval evaluation turns ranked lists into evidence about whether a search system serves real information needs. This chapter derives Recall@K, Precision@K, reciprocal rank, average precision, mean average precision, discounted cumulative gain and normalized DCG for binary and graded judgments. It separates first-answer, candidate-generation, broad-discovery and graded-ranking objectives; explains macro versus traffic-weighted aggregation; and treats incomplete judging, pooling, annotator disagreement, query sampling, confidence intervals and significance tests as first-class design issues. It also connects offline relevance to latency, freshness, coverage, diversity, safety and online task success. A worked example computes reciprocal rank, AP and NDCG from one ranked list. The lab implements every core metric from scratch, compares NDCG with scikit-learn, and verifies perfect, empty, duplicate and cutoff behavior. Production guidance versions query sets, corpus snapshots, judgment policies, unjudged handling and metric code; slices results by intent and frequency; and requires paired uncertainty plus practical effect size before rollout. A higher offline average is useful only when the test collection represents deployment and the metric rewards the position and kind of relevance users actually need.",
+      "prerequisites": [
+        "tfidf-bm25",
+        "hypothesis-testing"
+      ],
+      "learningObjectives": [
+        "Compute and interpret Recall@K, reciprocal rank, AP, MAP, DCG and NDCG from ranked judgments.",
+        "Select metrics that match candidate recall, first-answer, exhaustive discovery and graded-ranking tasks.",
+        "Design representative query sets and reliable relevance judgments under pooling and incomplete labels.",
+        "Compare systems with paired uncertainty, meaningful slices, latency and online decision metrics."
+      ],
       "editorial": {
-        "status": "summary"
+        "status": "verified",
+        "verifiedOn": "2026-08-21"
       },
-      "status": "summary",
-      "hasLab": false,
-      "labGoal": "",
-      "visualCount": 1,
+      "status": "verified",
+      "hasLab": true,
+      "labGoal": "Implement Recall@K, reciprocal rank, AP, MAP and NDCG, compare NDCG with scikit-learn, and verify cutoff, duplicate and ideal-ranking behavior.",
+      "visualCount": 2,
       "visualSummaries": [
         {
-          "type": "concept-map",
-          "title": "MRR, MAP, Recall@K & NDCG"
+          "type": "funnel",
+          "title": "Retrieval evaluation evidence"
+        },
+        {
+          "type": "compare",
+          "title": "Choose the metric by user goal"
         }
       ],
       "followUpQuestions": [
-        "What assumptions does MRR, MAP, Recall@K & NDCG make?",
-        "How would you validate or debug MRR, MAP, Recall@K & NDCG in practice?"
+        "When do you prefer MRR over NDCG?",
+        "Why is recall critical before reranking?",
+        "How do you compare two rankers statistically?"
       ],
-      "estimatedMinutes": 1
+      "estimatedMinutes": 11
     },
     {
       "slug": "ann-search",
@@ -12106,35 +12549,55 @@ const ATLAS = {
       "roles": [
         "ds"
       ],
-      "interviewAnswer": "Exact vector search becomes expensive at large scale. ANN indexes trade a small amount of recall for much lower latency/memory cost using structures such as HNSW or IVF.",
+      "interviewAnswer": "ANN search trades exact geometric recall for lower latency or memory. I first define the metric: cosine search usually normalizes both database and query vectors so inner product equals cosine; L2 and maximum inner product are different objectives. I keep flat exhaustive search as the oracle, then measure Recall@K of ANN neighbors across representative queries while sweeping the search budget. IVF probes nearby coarse clusters, HNSW expands a proximity graph, and product quantization compresses vectors at additional distance error. I choose an operating point from the recall-versus-p95/p99-latency and memory frontier, then measure downstream relevance too. Filters, deletes, shard fan-out, batch size and concurrent load are included. Embedding model and index versions are immutable together, and migrations dual-write or rebuild before an atomic switch.",
       "keyPoints": [
-        "Measure recall-latency-memory trade-off.",
-        "Index build/update strategy matters.",
-        "Distance metric must match embedding training/use."
+        "ANN quality is measured against exact neighbors for the same vectors, metric and K.",
+        "Cosine, inner product and L2 are interchangeable only under specific normalization relationships.",
+        "Search-budget knobs produce a recall-latency frontier rather than one universally best configuration.",
+        "Quantization, filters, sharding, updates and hardware can change the frontier dramatically.",
+        "Geometric recall is necessary pipeline evidence but does not prove semantic relevance or task success."
       ],
       "resources": [
-        "faiss",
+        "faiss-index-guide",
+        "faiss-getting-started",
         "hnsw-paper"
       ],
       "featured": true,
+      "description": "Approximate nearest-neighbor search retrieves vectors close to a query without exhaustively comparing every stored vector. It powers semantic search, recommendation, deduplication and retrieval-augmented generation, but approximation introduces a measurable candidate-recall error before any relevance model runs. This chapter defines L2, inner product and cosine objectives; establishes exact flat search as the oracle; and explains tree, locality-sensitive hashing, inverted-file, product-quantization and graph index families. It develops the build-time, memory, update, filter, latency and recall trade-offs behind IVF probe counts, quantization and graph search. It distinguishes geometric nearest-neighbor recall from task relevance, covers embedding normalization, model-version incompatibility, batch effects, hardware measurement, metadata filters, deletes and sharding, and shows how to benchmark on representative queries. The lab builds a small IVF system with Lloyd clustering, compares it to brute-force and scikit-learn exact neighbors, and verifies that probing all lists recovers the oracle. Production guidance versions embeddings and metrics, keeps exact canaries, measures recall-latency frontiers at tail percentiles, overfetches before filters when necessary, and rebuilds safely under distribution drift. ANN is a systems optimization with an explicit quality budget, not a replacement for relevance evaluation.",
+      "prerequisites": [
+        "norms-distances",
+        "retrieval-eval"
+      ],
+      "learningObjectives": [
+        "Define exact nearest-neighbor objectives for L2, inner product and cosine similarity with correct normalization.",
+        "Compare flat, IVF, quantized, hashing and graph indexes across recall, latency, memory, build and update costs.",
+        "Benchmark ANN recall against an exact oracle on representative queries and hardware without confusing it with relevance.",
+        "Design safe filtering, sharding, embedding migration, deletion, monitoring and rollback behavior."
+      ],
       "editorial": {
-        "status": "summary"
+        "status": "verified",
+        "verifiedOn": "2026-08-21"
       },
-      "status": "summary",
+      "status": "verified",
       "hasLab": true,
-      "labGoal": "Build a small vector nearest-neighbor retrieval index.",
-      "visualCount": 1,
+      "labGoal": "Build an IVF-style ANN index, compare it with exact and scikit-learn neighbors, sweep probe counts, and verify full probing recovers the oracle.",
+      "visualCount": 2,
       "visualSummaries": [
         {
-          "type": "flow",
-          "title": "Approximate nearest-neighbor retrieval"
+          "type": "curve",
+          "title": "ANN operating frontier"
+        },
+        {
+          "type": "compare",
+          "title": "Three ANN strategies"
         }
       ],
       "followUpQuestions": [
-        "What assumptions does Approximate Nearest Neighbor Search make?",
-        "How would you validate or debug Approximate Nearest Neighbor Search in practice?"
+        "When should you keep exact flat search?",
+        "What does nprobe control in IVF?",
+        "How do metadata filters affect ANN?"
       ],
-      "estimatedMinutes": 2
+      "estimatedMinutes": 11
     },
     {
       "slug": "hnsw",
@@ -12144,35 +12607,54 @@ const ATLAS = {
       "roles": [
         "ds"
       ],
-      "interviewAnswer": "HNSW builds a multilayer proximity graph: upper sparse layers navigate quickly toward the neighborhood, and lower dense layers refine the search. Parameters trade build cost, memory, recall and latency.",
+      "interviewAnswer": "HNSW is a multilayer proximity graph. Each inserted vector receives a random maximum level, so upper layers are sparse and contain long-range links. A query starts from the top entry point, greedily moves to closer neighbors at each upper layer, then performs a best-first search at layer zero with a candidate set bounded by efSearch. M limits neighborhood degree, efConstruction controls how broadly insertion searches for good neighbors, and efSearch controls query-time exploration; higher values usually improve recall at memory, build or latency cost. I benchmark Recall@K against exact search while sweeping efSearch under realistic load and filters. I also test insertion order, duplicates, deletes, graph connectivity and embedding shifts. Model, metric, normalization and graph snapshot are one versioned artifact.",
       "keyPoints": [
-        "M controls graph connectivity/memory.",
-        "efConstruction affects index quality/build cost.",
-        "efSearch trades query latency for recall."
+        "Random levels create sparse long-range navigation above a dense base proximity graph.",
+        "Upper layers use greedy routing; the base layer retains multiple candidates through efSearch.",
+        "M buys connectivity and recall with edge memory; efConstruction buys graph quality with build cost.",
+        "efSearch is the primary query-time recall-latency knob and must be at least the requested K in practice.",
+        "Filtering, insertion order, tombstones and embedding changes can invalidate a previously tuned operating point."
       ],
       "resources": [
         "hnsw-paper",
-        "faiss"
+        "faiss-index-guide"
       ],
       "featured": false,
+      "description": "Hierarchical Navigable Small World search organizes vectors as a multilayer proximity graph. Sparse upper layers provide long jumps toward the query, while a dense base layer explores a bounded candidate frontier to recover nearby vectors. This chapter derives the skip-list-like random level assignment, greedy descent, best-first efSearch traversal, incremental insertion with efConstruction, neighbor selection and degree parameter M. It explains why higher efSearch usually raises recall and latency, why M and efConstruction affect memory, build time and graph navigability, and why insertion order, duplicates, intrinsic dimension, filters and deletes can reshape performance. A worked example traces upper-layer routing into a base-layer beam. The lab builds an exact-neighbor graph as a transparent stand-in for HNSW construction, implements greedy and bounded best-first traversal, and verifies the full exploration limit against exact search. Production guidance benchmarks recall and p99 latency under concurrency, monitors connectivity and effort, handles tombstones and rebuilds, and couples graph snapshots with embedding versions. HNSW is powerful because it invests memory and construction work in navigable shortcuts; it is not guaranteed exact unless search effectively exhausts the relevant connected graph.",
+      "prerequisites": [
+        "ann-search",
+        "trees-graphs-algorithms"
+      ],
+      "learningObjectives": [
+        "Trace HNSW query routing through sparse upper layers and bounded base-layer best-first search.",
+        "Explain how M, efConstruction, efSearch and randomized levels affect recall, latency, memory and build quality.",
+        "Diagnose insertion-order, filtering, deletion, duplicate, disconnected-region and embedding-drift failures.",
+        "Tune and operate HNSW using exact recall canaries, tail latency, graph statistics and safe rebuilds."
+      ],
       "editorial": {
-        "status": "summary"
+        "status": "verified",
+        "verifiedOn": "2026-08-21"
       },
-      "status": "summary",
-      "hasLab": false,
-      "labGoal": "",
-      "visualCount": 1,
+      "status": "verified",
+      "hasLab": true,
+      "labGoal": "Implement bounded best-first proximity-graph search, compare it with greedy and exact search, and verify that exhaustive exploration recovers exact neighbors on a connected graph.",
+      "visualCount": 2,
       "visualSummaries": [
         {
+          "type": "layers",
+          "title": "HNSW routing hierarchy"
+        },
+        {
           "type": "network",
-          "title": "HNSW search layers"
+          "title": "Diverse neighbor routes"
         }
       ],
       "followUpQuestions": [
-        "What assumptions does HNSW Intuition & Tuning make?",
-        "How would you validate or debug HNSW Intuition & Tuning in practice?"
+        "What is the role of efConstruction?",
+        "Why use a hierarchy instead of one graph?",
+        "Can HNSW guarantee exact neighbors?"
       ],
-      "estimatedMinutes": 1
+      "estimatedMinutes": 12
     },
     {
       "slug": "hybrid-search",
@@ -12182,35 +12664,57 @@ const ATLAS = {
       "roles": [
         "ds"
       ],
-      "interviewAnswer": "Hybrid search combines lexical signals, which excel at exact terms and identifiers, with semantic vector similarity, which captures paraphrases. Scores can be normalized/fused or candidates reranked jointly.",
+      "interviewAnswer": "I run lexical and vector retrieval over the same eligible corpus, union candidates by stable document ID, and fuse ranks or calibrated features. RRF gives document d score sum_b 1/(k0+rank_b(d)); it is robust when BM25 and cosine score scales differ and handles missing documents naturally, but ignores score margins. Weighted score fusion needs per-query or learned normalization, and learned fusion needs unbiased features and judgments. Candidate windows are tuned for union Recall@K before reranking. I evaluate lexical-only, vector-only and hybrid on exact-ID, semantic, mixed, multilingual and filtered slices, with latency and failure guardrails. Filters and permissions apply consistently to both branches. If one branch times out, the system returns the healthy branch with explicit observability rather than an empty or unauthorized result set.",
       "keyPoints": [
-        "Lexical and dense methods fail differently.",
-        "Reciprocal rank fusion is a simple robust fusion.",
-        "Evaluate by query slices."
+        "Hybrid value comes from complementary candidate recall, not from adding two fashionable components.",
+        "Raw lexical and vector scores generally have incompatible query-dependent scales.",
+        "RRF combines rank positions robustly; calibrated or learned fusion can use score margins with more assumptions.",
+        "Branch depths, filters, deduplication and stable IDs determine the union available to final ranking.",
+        "Latency, versioning and branch-degradation behavior are part of relevance correctness."
       ],
       "resources": [
-        "ir-book",
-        "faiss"
+        "rrf-paper",
+        "elastic-hybrid",
+        "bm25-robertson",
+        "faiss-index-guide"
       ],
       "featured": true,
+      "description": "Hybrid search combines lexical retrieval with vector retrieval so exact entities, identifiers and constraints coexist with semantic paraphrase recall. The central engineering problem is not running two retrievers; it is producing a coherent candidate union and ranking from score scales, failure modes and latency profiles that are not naturally comparable. This chapter designs parallel and routed candidate generation, reciprocal rank fusion, normalized weighted score fusion and learned fusion. It explains rank windows, branch quotas, duplicates, metadata filters, missing candidates, query-adaptive weights, cross-encoder reranking, provenance and explanations. It covers why RRF is robust to scale but discards score margins, why raw BM25 plus cosine is usually invalid, and how candidate depth bounds final recall. A worked example fuses two rankings by reciprocal ranks. The lab implements BM25, cosine retrieval and RRF, then verifies scale invariance, candidate union and lexical/semantic coverage. Production guidance budgets branch and merge latency, versions embeddings and lexical statistics, evaluates exact, semantic, mixed and filtered query slices, and degrades gracefully when one branch fails. Hybrid retrieval is most valuable when the branches make complementary errors and the evaluation explicitly measures that complementarity.",
+      "prerequisites": [
+        "tfidf-bm25",
+        "ann-search",
+        "retrieval-eval"
+      ],
+      "learningObjectives": [
+        "Design lexical and vector candidate branches with comparable filters, identifiers and candidate budgets.",
+        "Implement and interpret reciprocal-rank, normalized-score and learned fusion approaches.",
+        "Measure branch complementarity, union recall, final ranking, latency and query-slice behavior.",
+        "Operate branch failures, version migrations, security filters, caches and graceful degradation safely."
+      ],
       "editorial": {
-        "status": "summary"
+        "status": "verified",
+        "verifiedOn": "2026-08-21"
       },
-      "status": "summary",
-      "hasLab": false,
-      "labGoal": "",
-      "visualCount": 1,
+      "status": "verified",
+      "hasLab": true,
+      "labGoal": "Build lexical and vector rankings, fuse them with RRF, and verify scale invariance, candidate union, deduplication and complementary retrieval.",
+      "visualCount": 2,
       "visualSummaries": [
         {
           "type": "flow",
-          "title": "Hybrid retrieval"
+          "title": "Hybrid retrieval pipeline"
+        },
+        {
+          "type": "compare",
+          "title": "Fusion choices"
         }
       ],
       "followUpQuestions": [
-        "What assumptions does Hybrid Lexical + Vector Retrieval make?",
-        "How would you validate or debug Hybrid Lexical + Vector Retrieval in practice?"
+        "Why is RRF robust to heterogeneous score scales?",
+        "What does the RRF constant k0 do?",
+        "How do you prove the vector branch adds value?"
       ],
-      "estimatedMinutes": 1
+      "estimatedMinutes": 12
     },
     {
       "slug": "reranking",
@@ -12220,30 +12724,56 @@ const ATLAS = {
       "roles": [
         "ds"
       ],
-      "interviewAnswer": "A reranker applies a more expensive query-document model to a small candidate set from first-stage retrieval. It improves precision because it jointly represents the query and candidate rather than comparing independent embeddings.",
+      "interviewAnswer": "A bi-encoder embeds query and documents separately for efficient ANN retrieval; a cross-encoder concatenates the query and each candidate and jointly encodes them, producing richer token interactions but requiring one forward pass per pair. I retrieve a high-recall candidate set, rerank only a latency-bounded depth, and train with pointwise relevance labels, pairwise preferences or listwise losses depending judgments and metric. Hard negatives come from the actual candidate generators and must exclude unlabeled positives carefully. I report candidate Recall@K, oracle ceiling, reranked NDCG/MRR and latency as candidate count and text length vary. I handle truncation by field-aware passage selection, batch requests, distill or cascade models when necessary, and retain the base ranker as timeout fallback. Candidate and reranker versions are evaluated and deployed together.",
       "keyPoints": [
-        "Use only on a bounded candidate set.",
-        "Latency/cost grows with candidates.",
-        "Train/evaluate on realistic negatives."
+        "Cross-encoders model query-document token interactions but cannot precompute one reusable document score.",
+        "Candidate recall bounds every possible reranker metric and must be reported separately.",
+        "Training negatives should resemble served confusions while accounting for incomplete judgments and click bias.",
+        "Candidate depth, token length, batch shape and hardware define the latency-quality operating point.",
+        "Reranker, candidate generators, truncation and fallback form one versioned system."
       ],
       "resources": [
-        "hf-llm",
-        "ir-book"
+        "bert-reranker-paper",
+        "ir-book",
+        "hf-llm"
       ],
       "featured": false,
-      "editorial": {
-        "status": "summary"
-      },
-      "status": "summary",
-      "hasLab": false,
-      "labGoal": "",
-      "visualCount": 0,
-      "visualSummaries": [],
-      "followUpQuestions": [
-        "What assumptions does Cross-encoder / Learned Reranking make?",
-        "How would you validate or debug Cross-encoder / Learned Reranking in practice?"
+      "description": "Reranking applies a more expressive relevance model to a bounded candidate set produced by fast retrieval. A cross-encoder jointly attends to query and document tokens, capturing exact alignments, negation, proximity and context that independent embeddings lose, but its cost grows with candidates and text length. This chapter contrasts bi-encoders and cross-encoders; explains pointwise, pairwise and listwise learning objectives; and develops hard-negative mining, candidate-distribution alignment, click-bias correction, truncation, chunk aggregation and score calibration. It shows why candidate recall is an immutable ceiling, why offline gains must be measured at the served depth, and how batching, distillation, quantization, caching and cascades create a latency-quality frontier. A worked example demonstrates a cross-encoder reversing a semantic near-match with the wrong product ID. The lab trains a small pointwise reranker on interpretable joint features, compares it with a hand-built score, and verifies ranking, permutation and missing-candidate invariants. Production guidance versions candidate generation with the reranker, enforces token and latency budgets, protects permissions and sensitive text, monitors feature and score drift, and falls back safely. A reranker improves ordering; it cannot retrieve a document it never receives.",
+      "prerequisites": [
+        "hybrid-search",
+        "logistic-regression",
+        "transformer"
       ],
-      "estimatedMinutes": 1
+      "learningObjectives": [
+        "Explain why joint query-document encoding improves interaction modeling and increases inference cost.",
+        "Choose pointwise, pairwise or listwise objectives and construct representative hard negatives without leakage.",
+        "Evaluate candidate ceiling, reranking gain, calibration, truncation, latency and important query slices.",
+        "Deploy batching, cascades, fallbacks, privacy controls, monitoring and compatible version rollback."
+      ],
+      "editorial": {
+        "status": "verified",
+        "verifiedOn": "2026-08-21"
+      },
+      "status": "verified",
+      "hasLab": true,
+      "labGoal": "Expose pointwise reranking with joint relevance features, train an idiomatic logistic model, and verify candidate-ceiling, ordering and permutation invariants.",
+      "visualCount": 2,
+      "visualSummaries": [
+        {
+          "type": "funnel",
+          "title": "Retrieval-to-reranking cascade"
+        },
+        {
+          "type": "compare",
+          "title": "Bi-encoder and cross-encoder"
+        }
+      ],
+      "followUpQuestions": [
+        "Why not use a cross-encoder for the whole corpus?",
+        "When is a pairwise loss useful?",
+        "How do you choose reranking depth?"
+      ],
+      "estimatedMinutes": 11
     },
     {
       "slug": "text-normalization",
@@ -14231,35 +14761,55 @@ const ATLAS = {
       "roles": [
         "ds"
       ],
-      "interviewAnswer": "Change-point detection looks for structural shifts in a sequence—mean, variance or distribution changes—rather than isolated anomalous points. It is useful for regime changes, deployments and sensor failures.",
+      "interviewAnswer": "A change point is a boundary where a distributional parameter changes persistently; a point anomaly is an isolated deviation. Offline methods segment a complete series by minimizing within-segment cost plus a penalty per change. Exact dynamic programming is quadratic in a basic form, PELT prunes candidates and can be near linear under conditions, and binary segmentation is faster but greedy. Online detectors such as CUSUM trade false-alarm average run length against detection delay. I residualize known seasonality and trend using past information, choose cost, penalty, minimum segment and tolerance on historical incidents or simulation, and evaluate boundary precision/recall plus delay. In production I group duplicate alarms, connect releases and data-pipeline changes, and define confirm, reset, cooldown, and rollback actions.",
       "keyPoints": [
-        "Online vs offline detection differ.",
-        "Control false alarms vs detection delay.",
-        "Seasonality/trend should be modeled first."
+        "A change point marks persistent regime structure, not merely a large residual.",
+        "Cost specifies what changes; penalty controls how many boundaries appear.",
+        "PELT is exact for its objective while pruning candidates under stated conditions.",
+        "Online detection balances false alarms and delay and needs reset semantics.",
+        "Seasonality, dependence, and logging changes must be modeled or contextualized."
       ],
       "resources": [
-        "fpp3",
-        "statsmodels-tsa"
+        "pelt-paper",
+        "ruptures-docs",
+        "fpp3"
       ],
       "featured": false,
+      "description": "Change-point detection locates times where the data-generating regime changes, such as a shift in mean, variance, trend, covariance, or event rate. It is different from point anomaly detection: one extreme observation is transient, while a change point marks a boundary after which many observations follow a new pattern. This chapter develops offline segmentation as penalized cost minimization, cumulative-sum evidence, exact dynamic programming, PELT pruning, binary segmentation, online detection delay, minimum segment length, penalty selection, and tolerance-based evaluation. You will learn how seasonality, trend, autocorrelation, missingness, logging changes, and multiple related series can create false boundaries or hide real ones. A worked latency example distinguishes a release-induced persistent shift from a short spike and connects detection to rollback. The lab implements exact penalized mean-shift segmentation, compares its strongest boundary with a vectorized CUSUM statistic, and verifies localization, translation, constant-series, and penalty behavior. Production guidance fixes event-time ordering, baseline and cost assumptions, confirmation windows, reset and cooldown logic, and change ownership; monitors false-alarm run length, delay, duplicate alarms, and post-change stabilization rather than merely counting detected indices.",
+      "prerequisites": [
+        "anomaly-types",
+        "decomposition-stl"
+      ],
+      "learningObjectives": [
+        "Distinguish transient anomalies from persistent regime changes and define offline versus online objectives.",
+        "Formulate penalized segmentation and implement exact dynamic programming for mean changes.",
+        "Explain PELT, binary segmentation, CUSUM, penalties, minimum segments, and detection-delay trade-offs.",
+        "Evaluate and operate change detectors under seasonality, dependence, tolerance windows, and intervention feedback."
+      ],
       "editorial": {
-        "status": "summary"
+        "status": "verified",
+        "verifiedOn": "2026-08-21"
       },
-      "status": "summary",
-      "hasLab": false,
-      "labGoal": "",
-      "visualCount": 1,
+      "status": "verified",
+      "hasLab": true,
+      "labGoal": "Implement exact penalized mean-shift segmentation, compare its boundary with CUSUM evidence, and verify localization, translation, constant-series, and penalty invariants.",
+      "visualCount": 2,
       "visualSummaries": [
         {
           "type": "curve",
-          "title": "Change-point detection"
+          "title": "Spike versus persistent mean shift"
+        },
+        {
+          "type": "flow",
+          "title": "Change alarm to response"
         }
       ],
       "followUpQuestions": [
-        "What assumptions or limitations does Change-point Detection have?",
-        "How would you validate Change-point Detection on a real dataset?"
+        "What does the penalty do in offline segmentation?",
+        "How is PELT different from binary segmentation?",
+        "How do you evaluate a detection that is five minutes late?"
       ],
-      "estimatedMinutes": 1
+      "estimatedMinutes": 11
     },
     {
       "slug": "supervised-rare-events",
@@ -14269,30 +14819,56 @@ const ATLAS = {
       "roles": [
         "ds"
       ],
-      "interviewAnswer": "When rare-event labels exist, treat the problem as cost-sensitive classification with careful temporal splits, sampling/weighting and precision-recall evaluation rather than unsupervised anomaly detection.",
+      "interviewAnswer": "For rare events, I first protect the label, split, and evaluation design. I can retain all positives and subsample negatives for efficiency, but I store inclusion probabilities and either weight the likelihood or correct and calibrate probabilities on representative data. Class weights and oversampling change the training objective; they may help ranking or optimization but do not automatically produce population probabilities. Duplicating positives adds no new information, and synthetic examples can violate temporal, categorical, or causal constraints. I evaluate PR/AP, recall at review capacity, calibration, and cost on a later untouched population, tune thresholds separately, audit nonalerts, and monitor prevalence, label maturity, hard-negative mix, subgroup support, and queue outcomes.",
       "keyPoints": [
-        "Negative sampling can distort prevalence.",
-        "Calibrate/adjust probabilities if training distribution changes.",
-        "Use event-time split to avoid leakage."
+        "Event diversity and label quality matter more than raw class ratio alone.",
+        "Negative subsampling changes the sample prior and usually the probability intercept.",
+        "Weights, resampling, calibration, and thresholding solve different problems.",
+        "Validation must preserve deployment prevalence, time, groups, and label maturity.",
+        "Selective review and hard-negative mining create feedback that requires audits."
       ],
       "resources": [
-        "sklearn",
-        "google-rules-ml"
+        "rare-events-logistic",
+        "sklearn-calibration",
+        "cost-sensitive-learning",
+        "pr-imbalanced-paper"
       ],
       "featured": false,
-      "editorial": {
-        "status": "summary"
-      },
-      "status": "summary",
-      "hasLab": false,
-      "labGoal": "",
-      "visualCount": 0,
-      "visualSummaries": [],
-      "followUpQuestions": [
-        "What assumptions or limitations does Supervised Rare-event Modeling have?",
-        "How would you validate Supervised Rare-event Modeling on a real dataset?"
+      "description": "Supervised rare-event modeling uses labeled positives and negatives to learn a ranking or event probability when positives are scarce. The central problem is not that algorithms cannot see a minority class; it is that effective information is limited by the number, diversity, and labeling quality of events, while naive sampling and weighting can distort probabilities and validation. This chapter develops rare-event logistic behavior, case-control and negative subsampling, inverse-probability weighting, prior or intercept correction, class weights, hard-negative mining, resampling, calibration, cost-sensitive thresholds, and temporal or grouped evaluation. You will understand why oversampling duplicates does not create new positive information, why synthetic interpolation can be invalid for mixed or temporal data, and why weighting the training loss is different from choosing a decision threshold. A worked fraud example shows how a model trained on all positives and sampled negatives can preserve ranking yet overstate prevalence until corrected or calibrated. The lab reproduces that intercept shift with scikit-learn, applies a log-odds prior correction, and verifies prevalence, ranking, and cost-policy invariants. Production guidance versions inclusion probabilities, label maturity, calibration and policy separately; audits nonalerts; monitors prevalence, hard-negative mix, calibration, queue yield, and subgroup event support.",
+      "prerequisites": [
+        "logistic-regression",
+        "rare-event-evaluation"
       ],
-      "estimatedMinutes": 1
+      "learningObjectives": [
+        "Design case-control, weighted, or resampled training data without corrupting evaluation or probability interpretation.",
+        "Apply and explain prior-log-odds correction after random negative subsampling.",
+        "Separate representation, ranking objective, probability calibration, and cost-sensitive threshold policy.",
+        "Diagnose label delay, leakage, hard-negative feedback, subgroup scarcity, and prevalence drift in production."
+      ],
+      "editorial": {
+        "status": "verified",
+        "verifiedOn": "2026-08-21"
+      },
+      "status": "verified",
+      "hasLab": true,
+      "labGoal": "Demonstrate probability distortion from negative subsampling, apply prior-log-odds correction, and verify ranking, prevalence, and cost-policy invariants.",
+      "visualCount": 2,
+      "visualSummaries": [
+        {
+          "type": "flow",
+          "title": "Rare-event modeling layers"
+        },
+        {
+          "type": "compare",
+          "title": "What imbalance techniques actually change"
+        }
+      ],
+      "followUpQuestions": [
+        "When is negative subsampling safe for logistic slopes?",
+        "Why calibrate on independent predictions?",
+        "What is the biggest limit with ten positives?"
+      ],
+      "estimatedMinutes": 11
     },
     {
       "slug": "aft-models",
@@ -14303,30 +14879,55 @@ const ATLAS = {
         "ds",
         "da"
       ],
-      "interviewAnswer": "AFT models describe how covariates accelerate or decelerate event time directly, offering an alternative interpretation to proportional hazards models.",
+      "interviewAnswer": "An AFT model writes log T=x beta+sigma epsilon, so exp(beta_j) is a time ratio when other covariates are fixed. A positive coefficient stretches every modeled time quantile; for example exp(0.2)=1.22 means about 22 percent longer time under the model. The error distribution determines survival and hazard shape: Weibull, log-normal, and log-logistic are common choices. For an observed event the likelihood contributes the density f(t|x); for right censoring it contributes S(t|x), because only survival past the censor time is known. I compare distributions with residuals, calibration, likelihood-based criteria and held-out horizon scores, inspect nonlinear and time-varying acceleration, and avoid unsupported tail extrapolation. Time ratios are not automatically causal, and a convenient parametric curve does not replace censoring, entry, or competing-risk design.",
       "keyPoints": [
-        "Models a distribution of log survival time.",
-        "Interpretation is time-ratio oriented.",
-        "Distributional assumption matters."
+        "AFT coefficients multiply the event-time scale rather than the instantaneous hazard.",
+        "Censored rows contribute survival probabilities, not event densities or negative labels.",
+        "The chosen error distribution determines hazard shape and extrapolated tails.",
+        "Weibull is both AFT and PH; log-normal and log-logistic generally are not PH.",
+        "Communicable time ratios remain conditional, model-based, and noncausal without identification."
       ],
       "resources": [
+        "aft-wei",
         "lifelines",
         "statsmodels-survival"
       ],
       "featured": false,
-      "editorial": {
-        "status": "summary"
-      },
-      "status": "summary",
-      "hasLab": false,
-      "labGoal": "",
-      "visualCount": 0,
-      "visualSummaries": [],
-      "followUpQuestions": [
-        "What assumptions or limitations does Accelerated Failure Time Models have?",
-        "How would you validate Accelerated Failure Time Models on a real dataset?"
+      "description": "Accelerated failure-time models place covariate effects directly on event time rather than on instantaneous hazard. In a log-linear AFT model, log T=x^T beta+sigma epsilon, so exp(beta_j) is a time ratio: values above one stretch the event-time distribution and values below one accelerate failure. This chapter derives censored likelihood contributions, compares Weibull, exponential, log-normal, and log-logistic assumptions, and explains when Weibull AFT is simultaneously a proportional-hazards model. It covers quantiles, survival and hazard recovery, residual and distributional diagnostics, nonlinearities, heterogeneity, delayed and interval censoring, extrapolation risk, and causal limits. A worked example translates a coefficient into median-time change. The lab implements a censored Weibull AFT likelihood, fits it with SciPy, verifies parameter recovery and time-unit invariance, and turns fitted parameters into survival predictions. Production guidance versions the time unit, distribution, censoring contribution, feature encoding, optimizer, supported horizon, and tail policy. AFT models provide unusually communicable duration effects, but that clarity depends on an adequate distribution and common acceleration structure.",
+      "prerequisites": [
+        "censoring-survival",
+        "mle-map"
       ],
-      "estimatedMinutes": 1
+      "learningObjectives": [
+        "Interpret AFT coefficients as multiplicative changes in event-time quantiles under a common acceleration model.",
+        "Construct right-censored likelihoods from event densities and censoring survival contributions.",
+        "Compare Weibull, log-normal, and log-logistic tail and hazard assumptions using diagnostics and validation.",
+        "Recognize extrapolation, interval censoring, heterogeneity, time-varying effects, and causal limitations in deployment."
+      ],
+      "editorial": {
+        "status": "verified",
+        "verifiedOn": "2026-08-21"
+      },
+      "status": "verified",
+      "hasLab": true,
+      "labGoal": "Implement a right-censored Weibull AFT likelihood, fit it with SciPy, verify parameter recovery and time-unit invariance, and produce monotone survival curves.",
+      "visualCount": 2,
+      "visualSummaries": [
+        {
+          "type": "flow",
+          "title": "AFT from log time to decisions"
+        },
+        {
+          "type": "compare",
+          "title": "AFT family assumptions"
+        }
+      ],
+      "followUpQuestions": [
+        "Why is Weibull both PH and AFT?",
+        "How do you choose among log-normal and log-logistic?",
+        "What changes for interval-censored outcomes?"
+      ],
+      "estimatedMinutes": 11
     },
     {
       "slug": "competing-risks",
@@ -14337,30 +14938,55 @@ const ATLAS = {
         "ds",
         "da"
       ],
-      "interviewAnswer": "Competing risks occur when multiple mutually exclusive event types can happen and one prevents observation of another. Treating competing events as ordinary censoring can misestimate event probabilities.",
+      "interviewAnswer": "With competing risks, an event of one cause prevents a different cause from being the first event. The cause-specific hazard is the instantaneous rate of cause k among subjects still free of every event. The cumulative incidence F_k(t)=P(T<=t,J=k) is the actual probability of cause k by t. Aalen-Johansen estimates it by adding S(t-)d_k/n at each event time while updating event-free survival by all-cause events. Treating competing events as censored and plotting 1-KM overestimates cause probability because it imagines those subjects could later experience the cause. Cause-specific Cox models the rate among event-free subjects; Fine-Gray models a subdistribution risk set to connect covariates directly to CIF. I select by estimand, report cause-specific calibrated probabilities, account for censoring and cause adjudication, and avoid causal claims without an intervention framework.",
       "keyPoints": [
-        "Cause-specific hazard and cumulative incidence answer different questions.",
-        "Event type matters.",
-        "Use domain-specific estimand."
+        "A competing event removes the possibility of another event being the first outcome; it is not ordinary loss to follow-up.",
+        "CIF accumulates cause-specific events weighted by probability of still being event-free from every cause.",
+        "One minus cause-specific Kaplan-Meier is generally not the real-world cause probability.",
+        "Cause-specific and subdistribution hazard ratios use different risk sets and answer different questions.",
+        "All cause probabilities plus event-free survival must reconcile within one coherent state system."
       ],
       "resources": [
-        "lifelines",
-        "statsmodels-survival"
+        "aalen-johansen-reference",
+        "fine-gray-paper",
+        "lifelines"
       ],
       "featured": false,
-      "editorial": {
-        "status": "summary"
-      },
-      "status": "summary",
-      "hasLab": false,
-      "labGoal": "",
-      "visualCount": 0,
-      "visualSummaries": [],
-      "followUpQuestions": [
-        "What assumptions or limitations does Competing Risks have?",
-        "How would you validate Competing Risks on a real dataset?"
+      "description": "Competing risks arise when one subject can experience several mutually exclusive first events and one event prevents the others from occurring first. Churn, upgrade, and account closure; failure from different components; or death from different causes are not ordinary independent censoring categories. This chapter separates overall survival, cause-specific hazard, cumulative incidence, and subdistribution hazard; derives the Aalen-Johansen cumulative-incidence update; and shows why one minus Kaplan-Meier overestimates a cause's real-world probability when competing events are censored. It compares cause-specific Cox regression with Fine-Gray regression, emphasizing that their coefficients answer different questions and need not agree. It covers censoring assumptions, delayed entry, ties, multi-state extensions, recurrent outcomes, composite endpoints, intervention interpretation, evaluation, and calibration by cause. A worked example follows probability mass from event-free survival into two causes. The lab implements Aalen-Johansen and verifies probability conservation, monotonicity, cause-label symmetry, and the naive Kaplan-Meier bias direction. Production guidance versions cause taxonomy and adjudication, reconciles all cause probabilities, monitors unknown and late-coded outcomes, and reports supported horizons rather than hazard ratios alone.",
+      "prerequisites": [
+        "kaplan-meier",
+        "cox-ph"
       ],
-      "estimatedMinutes": 1
+      "learningObjectives": [
+        "Distinguish cause-specific hazards, cumulative incidence functions, and subdistribution hazards by estimand and risk set.",
+        "Compute Aalen-Johansen cumulative incidence while conserving probability across event-free and cause states.",
+        "Choose cause-specific or Fine-Gray regression according to etiologic, prediction, or policy questions.",
+        "Handle censoring, cause coding, evaluation, interventions, and multi-state extensions without probability contradictions."
+      ],
+      "editorial": {
+        "status": "verified",
+        "verifiedOn": "2026-08-21"
+      },
+      "status": "verified",
+      "hasLab": true,
+      "labGoal": "Implement Aalen-Johansen cumulative incidence, contrast it with naive cause-specific one-minus-KM, and verify probability conservation, monotonicity, and cause-label symmetry.",
+      "visualCount": 2,
+      "visualSummaries": [
+        {
+          "type": "flow",
+          "title": "First-event probability flow"
+        },
+        {
+          "type": "compare",
+          "title": "Two regression targets"
+        }
+      ],
+      "followUpQuestions": [
+        "When is censoring competing events acceptable?",
+        "Which regression should be used for prediction?",
+        "How does competing-risk analysis extend to recovery or later transitions?"
+      ],
+      "estimatedMinutes": 12
     },
     {
       "slug": "multiobjective-optimization",
@@ -14500,29 +15126,56 @@ const ATLAS = {
       "roles": [
         "ds"
       ],
-      "interviewAnswer": "Search quality often improves before retrieval by normalizing queries, correcting spelling, identifying entities/intent and extracting structured filters. Query rewriting must preserve user intent.",
+      "interviewAnswer": "I retain the raw query, then apply a versioned locale-aware analyzer to produce normalized tokens and protected spans such as quotes, SKUs, URLs and names. Spelling correction uses candidates from edit or phonetic indexes and ranks them with frequency plus query context; high-confidence suggestions can be applied, while risky changes are shown as `did you mean` or searched in parallel. Intent classification and entity extraction produce confidence and provenance, not hard truth. Structured constraints become typed filters only after units, dates, ranges and negation are resolved. Synonyms and expansions are field- and intent-specific with budgets. I evaluate rewrite precision and recall, exact-token preservation, intent F1, filter accuracy and downstream retrieval on locale and tail slices. Sensitive logs are minimized, access controlled and retained briefly; ambiguous high-cost queries trigger clarification.",
       "keyPoints": [
-        "Exact identifiers should not be “corrected” like prose.",
-        "Filters can improve precision dramatically.",
-        "Log query reformulations as feedback."
+        "Preserve the raw query and annotate every rewrite so failures are reversible and explainable.",
+        "Spelling candidates need contextual ranking; minimum edit distance alone can corrupt valid rare entities.",
+        "Exact identifiers, quotes, exclusions and structured operators require stronger preservation rules than ordinary words.",
+        "Intent and filter predictions should carry confidence and support clarification or parallel retrieval.",
+        "Query logs are biased, sensitive behavioral data and require privacy, security and evaluation discipline."
       ],
       "resources": [
-        "ir-book"
+        "ir-book",
+        "elastic-hybrid",
+        "bm25-robertson"
       ],
       "featured": false,
-      "editorial": {
-        "status": "summary"
-      },
-      "status": "summary",
-      "hasLab": false,
-      "labGoal": "",
-      "visualCount": 0,
-      "visualSummaries": [],
-      "followUpQuestions": [
-        "What assumptions or limitations does Query Understanding: Spelling, Intent & Filters have?",
-        "How would you validate Query Understanding: Spelling, Intent & Filters on a real dataset?"
+      "description": "Query understanding converts a short, noisy user string plus context into a retrieval plan without silently changing the user's intent. It spans Unicode and locale normalization, tokenization, spelling correction, segmentation, language detection, intent classification, entity and attribute extraction, structured filters, units and dates, synonyms, abbreviations, query expansion, routing and clarification. This chapter develops noisy-channel spelling as candidate generation plus contextual ranking, distinguishes correction from suggestion, and shows how exact identifiers and quoted terms require preservation. It treats intent and filter extraction as uncertain predictions with confidence, provenance and safe fallback, not unquestionable facts. Worked examples parse a misspelled product query and an ambiguous temporal request. The lab implements edit distance, frequency-aware suggestions, quoted/excluded/filter parsing and a small scikit-learn intent classifier, then verifies exact-token protection and deterministic output. Production guidance versions dictionaries and rewrite rules, evaluates changes by error type and locale, protects sensitive query logs, caps expansion, resists operator and injection abuse, and asks for clarification when the cost of a wrong rewrite is high. Good query understanding improves recall while preserving an inspectable route back to the original request.",
+      "prerequisites": [
+        "inverted-index",
+        "classification-metrics",
+        "tokenization"
       ],
-      "estimatedMinutes": 1
+      "learningObjectives": [
+        "Design a query-analysis pipeline that preserves raw text while producing normalized tokens, entities, filters and intent hypotheses.",
+        "Implement and evaluate spelling correction, segmentation, synonyms and expansion with exact-identifier safeguards.",
+        "Represent intent and structured constraints with confidence, provenance, clarification and fallback behavior.",
+        "Monitor rewrite precision, zero results, reformulation, latency, fairness, privacy and security in production."
+      ],
+      "editorial": {
+        "status": "verified",
+        "verifiedOn": "2026-08-21"
+      },
+      "status": "verified",
+      "hasLab": true,
+      "labGoal": "Implement edit-distance suggestions and typed query parsing, train a small intent classifier, and verify exact-token protection, deterministic correction and safe filter extraction.",
+      "visualCount": 2,
+      "visualSummaries": [
+        {
+          "type": "flow",
+          "title": "Query-to-plan analysis"
+        },
+        {
+          "type": "compare",
+          "title": "Rewrite confidence actions"
+        }
+      ],
+      "followUpQuestions": [
+        "When should correction be automatic?",
+        "How do you evaluate query expansion?",
+        "Why preserve provenance for parsed filters?"
+      ],
+      "estimatedMinutes": 11
     },
     {
       "slug": "ner-sequence-labeling",
@@ -15705,36 +16358,55 @@ const ATLAS = {
       "roles": [
         "all"
       ],
-      "interviewAnswer": "Entropy measures average uncertainty in a distribution: concentrated distributions have low entropy; balanced, unpredictable distributions have higher entropy.",
+      "interviewAnswer": "The information content of outcome x is -log p(x), so rare outcomes carry more surprise and independent surprises add. Entropy is its expectation: H(X)=-sum_x p(x)log p(x). With base two the unit is bits; with natural log it is nats. A deterministic variable has entropy zero, and a distribution uniform over m outcomes has the maximum log m. Joint entropy obeys H(X,Y)=H(X)+H(Y|X), and conditioning cannot increase discrete entropy. In source coding, entropy is the asymptotic lower limit on average lossless code length per symbol under the modeled source, up to coding conditions and finite-block overhead. It does not measure the meaning of a message, and differential entropy for continuous variables can be negative and changes under rescaling.",
       "keyPoints": [
-        "Self-information",
-        "Shannon entropy",
-        "Uncertainty",
-        "Compression connection"
+        "Self-information is outcome surprise; entropy is its probability-weighted average.",
+        "Log base sets the unit, and independent information adds because probabilities multiply.",
+        "Uniform distributions maximize discrete entropy for a fixed finite support; deterministic ones minimize it.",
+        "Chain rules decompose joint uncertainty into known and remaining parts.",
+        "Entropy describes a chosen distribution and alphabet, not semantic value or one sample's quality."
       ],
       "resources": [
+        "shannon-1948",
         "mit-info-theory",
         "harvard-stat110"
       ],
       "featured": false,
+      "description": "Entropy quantifies the average uncertainty of outcomes drawn from a known probability distribution, while self-information assigns greater surprise to rarer individual outcomes. This chapter derives I(x)=-log p(x) from additivity and H(X)=E[I(X)], explains bits versus nats, and develops binary entropy, support-size bounds, joint and conditional entropy, the chain rule, independence, entropy rate and differential entropy. It connects source coding to expected code length without claiming that entropy measures semantic importance, data quality or randomness in one observation. Worked examples compute a biased coin and a two-symbol prefix code. The lab implements discrete entropy and self-information, compares SciPy, and verifies uniform maxima, deterministic minima, base conversion and additivity for independent variables. Production guidance covers probability normalization, smoothing, aggregation level, missing categories, drifting vocabularies and reproducible units. Entropy is a property of a distribution and representation: changing the alphabet, conditioning information or measurement precision changes the quantity even when the underlying domain story sounds the same.",
+      "prerequisites": [
+        "distributions",
+        "expectation-variance"
+      ],
+      "learningObjectives": [
+        "Compute self-information and discrete entropy in bits or nats from a valid probability mass function.",
+        "Use support bounds, concavity, chain rules and conditioning to reason about uncertainty.",
+        "Distinguish discrete entropy, entropy rate and differential entropy and avoid semantic overinterpretation.",
+        "Connect entropy to ideal source coding while handling finite blocks, unknown distributions and model mismatch."
+      ],
       "editorial": {
-        "status": "summary"
+        "status": "verified",
+        "verifiedOn": "2026-08-21"
       },
-      "status": "summary",
-      "hasLab": false,
-      "labGoal": "",
-      "visualCount": 1,
+      "status": "verified",
+      "hasLab": true,
+      "labGoal": "Implement discrete entropy and self-information, compare SciPy, and verify support bounds, base conversion, deterministic limits and independent additivity.",
+      "visualCount": 2,
       "visualSummaries": [
         {
-          "type": "bars",
-          "title": "Entropy rises with uncertainty"
+          "type": "curve",
+          "title": "Binary entropy"
+        },
+        {
+          "type": "compare",
+          "title": "Outcome and distribution information"
         }
       ],
       "followUpQuestions": [
-        "Why use a logarithm?",
-        "How is entropy related to compression?"
+        "Why use a logarithm for information?",
+        "Why does a uniform finite distribution maximize entropy?",
+        "What does entropy rate add?"
       ],
-      "estimatedMinutes": 1
+      "estimatedMinutes": 10
     },
     {
       "slug": "cross-entropy-loss",
@@ -15744,12 +16416,13 @@ const ATLAS = {
       "roles": [
         "all"
       ],
-      "interviewAnswer": "Cross-entropy evaluates a predicted probability distribution against the target. In classification it rewards high probability on the true class and heavily penalizes confident wrong predictions.",
+      "interviewAnswer": "Cross-entropy is H(p,q)=-sum_y p(y)log q(y). For a one-hot label y it becomes -log q_y, so minimizing average cross-entropy maximizes conditional likelihood. With softmax logits z, the stable per-example loss is logsumexp(z)-z_y and the gradient is softmax(z)-onehot(y). Cross-entropy equals H(p)+KL(p||q), so for fixed target p it is minimized at q=p and is a proper scoring rule. I compute from logits with log-sum-exp, define class weights and reduction explicitly, mask padded tokens, distinguish label smoothing from calibration, and evaluate probability reliability separately from accuracy. Infinite or NaN loss often means zero predicted probability, overflow, invalid labels or a masking bug. Scores are comparable only under the same label space, sampling and weighting policy.",
       "keyPoints": [
-        "Negative log-likelihood",
-        "Probabilistic classification",
-        "Logits + softmax",
-        "Calibration connection"
+        "One-hot cross-entropy is negative log probability of the observed class and equals conditional NLL.",
+        "Use logits and log-sum-exp; never form unstable exponentials or log clipped probabilities casually.",
+        "The gradient softmax-minus-target directly increases target mass and decreases total non-target mass.",
+        "Weights, smoothing, sampling, masking and reduction change the optimization target and reported scale.",
+        "Low log loss rewards calibrated probability forecasts; accuracy alone ignores confidence."
       ],
       "resources": [
         "mit-info-theory",
@@ -15757,19 +16430,42 @@ const ATLAS = {
         "stanford-cs229"
       ],
       "featured": false,
-      "editorial": {
-        "status": "summary"
-      },
-      "status": "summary",
-      "hasLab": false,
-      "labGoal": "",
-      "visualCount": 0,
-      "visualSummaries": [],
-      "followUpQuestions": [
-        "Cross-entropy vs KL divergence?",
-        "Why train on logits?"
+      "description": "Cross-entropy measures the average code length or logarithmic loss incurred when outcomes follow a target distribution p but predictions use q. In supervised classification, one-hot targets reduce categorical cross-entropy to the negative log probability assigned to the true class, making it both maximum-likelihood training and a strictly proper scoring rule in expectation. This chapter derives softmax cross-entropy, binary log loss, gradients, stable log-sum-exp, class weighting, label smoothing, masking, reductions and sequence-token losses. It separates discrimination from calibration and explains how sampling, imbalance, noisy labels and transformed objectives change score interpretation. Worked examples compare confident correct and confident wrong predictions. The lab implements stable cross-entropy from logits, matches scikit-learn log loss, and verifies shift invariance, the entropy-plus-KL decomposition and zero-sum softmax gradients. Production guidance fixes label maps, padding and ignore rules, weights, sampling and reductions; monitors finite losses, probability calibration and slices; and avoids comparing training losses computed under different tokenizers or label policies. Cross-entropy strongly penalizes misplaced confidence, which is useful only when labels and probabilities correspond to the intended outcome distribution.",
+      "prerequisites": [
+        "entropy-information",
+        "logistic-regression",
+        "numerical-stability"
       ],
-      "estimatedMinutes": 1
+      "learningObjectives": [
+        "Derive binary and multiclass cross-entropy from expected code length and maximum likelihood.",
+        "Compute stable softmax log probabilities and gradients directly from logits.",
+        "Reason about class weights, label smoothing, masking, sampling, calibration and reduction conventions.",
+        "Diagnose numerical, label, imbalance, leakage and distribution-shift failures in training and evaluation."
+      ],
+      "editorial": {
+        "status": "verified",
+        "verifiedOn": "2026-08-21"
+      },
+      "status": "verified",
+      "hasLab": true,
+      "labGoal": "Implement stable cross-entropy from logits, compare scikit-learn log loss, and verify shift invariance, gradients and the entropy-plus-KL identity.",
+      "visualCount": 2,
+      "visualSummaries": [
+        {
+          "type": "curve",
+          "title": "True-class log loss"
+        },
+        {
+          "type": "compare",
+          "title": "Loss and decision views"
+        }
+      ],
+      "followUpQuestions": [
+        "Why is log loss a proper scoring rule?",
+        "Why subtract the maximum logit?",
+        "What does the softmax gradient sum to zero imply?"
+      ],
+      "estimatedMinutes": 10
     },
     {
       "slug": "kl-divergence",
@@ -15779,32 +16475,55 @@ const ATLAS = {
       "roles": [
         "all"
       ],
-      "interviewAnswer": "KL divergence measures how poorly distribution Q approximates P. It is non-negative but asymmetric, so it is not a distance metric.",
+      "interviewAnswer": "KL divergence is D_KL(p||q)=E_p[log p(X)/q(X)]. It is the extra expected code length or log loss from using q for data generated by p, since H(p,q)=H(p)+D_KL(p||q). Gibbs' inequality makes it nonnegative, but it is asymmetric and violates metric properties. If p assigns positive mass where q assigns zero, forward KL is infinite. Maximum likelihood minimizes empirical forward KL from the data distribution to the model. Reverse KL q||p, common in variational inference, weights errors under q and behaves differently around multiple modes. I always state the direction, support, units, smoothing and estimator, and I avoid interpreting a small aggregate KL as proof that every tail category or subgroup is close.",
       "keyPoints": [
-        "Direction matters",
-        "Non-negative",
-        "Asymmetric",
-        "Variational inference / VAEs"
+        "KL averages a log density or probability ratio under the first distribution.",
+        "It is nonnegative but asymmetric, unbounded and not a distance metric.",
+        "Forward KL becomes infinite when q misses any positive-p support.",
+        "Cross-entropy equals target entropy plus KL, linking coding and maximum likelihood.",
+        "Direction, smoothing, alphabet and estimator determine operational meaning."
       ],
       "resources": [
+        "kullback-leibler-1951",
         "mit-info-theory",
-        "probml-book",
-        "d2l"
+        "probml-book"
       ],
       "featured": false,
-      "editorial": {
-        "status": "summary"
-      },
-      "status": "summary",
-      "hasLab": false,
-      "labGoal": "",
-      "visualCount": 0,
-      "visualSummaries": [],
-      "followUpQuestions": [
-        "Why does KL appear in VAEs?",
-        "Forward vs reverse KL?"
+      "description": "Kullback-Leibler divergence measures the expected extra log loss or code length from using distribution q when data follow p. It is nonnegative and zero exactly when the distributions agree almost everywhere under appropriate conditions, but it is asymmetric, can be infinite and is not a metric. This chapter derives KL from likelihood ratios and cross-entropy, explains support requirements, discrete and continuous forms, forward versus reverse orientation, maximum likelihood, Bayesian variational inference, regularization, distillation and the data-processing inequality. It contrasts mode covering and mode seeking without treating those phrases as universal optimization guarantees. Worked examples compute a two-outcome divergence in both directions. The lab implements discrete KL with explicit zero handling, compares SciPy, and verifies nonnegativity, asymmetry, product additivity, cross-entropy decomposition and infinity under missing support. Production guidance records orientation, smoothing and estimator, monitors rare-category domination, and avoids comparing divergences across incompatible alphabets or representation versions. KL is an expectation under its first argument: changing that direction changes which errors receive weight and what question the number answers.",
+      "prerequisites": [
+        "entropy-information",
+        "cross-entropy-loss"
       ],
-      "estimatedMinutes": 1
+      "learningObjectives": [
+        "Compute discrete and continuous KL divergence with correct orientation and support conditions.",
+        "Use cross-entropy decomposition, likelihood and coding interpretations to explain nonnegativity.",
+        "Distinguish forward and reverse KL behavior in estimation, variational inference and approximation.",
+        "Diagnose smoothing, rare-event, sample-estimation, representation and aggregation failures."
+      ],
+      "editorial": {
+        "status": "verified",
+        "verifiedOn": "2026-08-21"
+      },
+      "status": "verified",
+      "hasLab": true,
+      "labGoal": "Implement discrete KL with explicit support handling, compare SciPy, and verify asymmetry, nonnegativity, product additivity and cross-entropy decomposition.",
+      "visualCount": 2,
+      "visualSummaries": [
+        {
+          "type": "flow",
+          "title": "KL as excess code cost"
+        },
+        {
+          "type": "compare",
+          "title": "KL orientation"
+        }
+      ],
+      "followUpQuestions": [
+        "Why is KL nonnegative?",
+        "Why does maximum likelihood minimize forward KL?",
+        "When is KL infinite?"
+      ],
+      "estimatedMinutes": 10
     },
     {
       "slug": "mutual-information",
@@ -15814,31 +16533,56 @@ const ATLAS = {
       "roles": [
         "all"
       ],
-      "interviewAnswer": "Mutual information measures how much knowing one variable reduces uncertainty about another and can capture nonlinear dependence.",
+      "interviewAnswer": "Mutual information is I(X;Y)=sum p(x,y)log[p(x,y)/(p(x)p(y))]. Equivalently it is H(X)-H(X|Y), H(Y)-H(Y|X), or KL between the joint and independent product of marginals. It is symmetric, nonnegative and zero exactly for independence under standard conditions. It detects nonlinear dependence, but has no direction and does not imply causality. If Z is a function or noisy processing of X in a Markov chain Y-X-Z, data processing gives I(Y;Z)<=I(Y;X). For feature selection I estimate MI inside training folds and still check redundancy and interactions; univariate MI misses XOR-style jointly useful features. Continuous MI estimation is difficult, so I state the estimator, scaling, neighbors or bins, sample size and uncertainty rather than comparing opaque values as ground truth.",
       "keyPoints": [
-        "Dependence",
-        "Zero under independence",
-        "Feature selection",
-        "Representation learning"
+        "MI is the KL divergence between joint dependence and the product distribution that represents independence.",
+        "It is symmetric and detects general dependence but gives neither causal direction nor effect sign.",
+        "A deterministic copy has MI equal to source entropy; independent variables have zero MI.",
+        "Data processing says a downstream transformation cannot create information about a target absent new data.",
+        "Estimator, discretization, sample size and dimensionality can dominate empirical MI values."
       ],
       "resources": [
+        "shannon-1948",
         "mit-info-theory",
         "probml-book"
       ],
       "featured": false,
-      "editorial": {
-        "status": "summary"
-      },
-      "status": "summary",
-      "hasLab": false,
-      "labGoal": "",
-      "visualCount": 0,
-      "visualSummaries": [],
-      "followUpQuestions": [
-        "MI vs correlation?",
-        "Conditional mutual information?"
+      "description": "Mutual information measures how much observing one variable reduces uncertainty about another, including nonlinear dependence that correlation can miss. It can be written as an entropy reduction, a KL divergence between the joint distribution and the product of marginals, or an expected pointwise log density ratio. This chapter derives symmetry, nonnegativity, independence, deterministic limits, chain rules, conditional mutual information and the data-processing inequality. It distinguishes discrete MI from continuous estimation, explains normalization choices and develops feature-selection, representation, leakage and fairness use cases without implying causality or direction. Worked examples compute a perfectly copied bit and an XOR relationship with zero linear correlation. The lab implements MI from a joint table, compares scikit-learn, and verifies symmetry, independence, deterministic equality and invariance to relabeling. Production guidance freezes discretization or estimators, performs selection inside training folds, reports uncertainty and sample support, and avoids comparing raw MI across variables with different entropy scales. Mutual information is a population dependence quantity; empirical estimates can be strongly biased in sparse or high-dimensional settings.",
+      "prerequisites": [
+        "entropy-information",
+        "kl-divergence",
+        "joint-marginal-conditional"
       ],
-      "estimatedMinutes": 1
+      "learningObjectives": [
+        "Compute mutual information from joint and marginal probabilities and connect its equivalent definitions.",
+        "Use conditional MI, chain rules and data processing to reason about transformations and shared information.",
+        "Apply MI to feature selection and representation analysis without confusing dependence with causality.",
+        "Choose and validate discrete, binned, k-nearest-neighbor or variational estimators under finite samples."
+      ],
+      "editorial": {
+        "status": "verified",
+        "verifiedOn": "2026-08-21"
+      },
+      "status": "verified",
+      "hasLab": true,
+      "labGoal": "Implement mutual information from a joint table, compare scikit-learn, and verify symmetry, independence, deterministic information and relabeling invariance.",
+      "visualCount": 2,
+      "visualSummaries": [
+        {
+          "type": "compare",
+          "title": "Two views of mutual information"
+        },
+        {
+          "type": "flow",
+          "title": "Feature-information audit"
+        }
+      ],
+      "followUpQuestions": [
+        "Why is MI zero at independence?",
+        "What does data processing mean for a learned representation?",
+        "Why can univariate MI miss useful features?"
+      ],
+      "estimatedMinutes": 11
     },
     {
       "slug": "perplexity",
@@ -15851,12 +16595,13 @@ const ATLAS = {
         "as",
         "ds"
       ],
-      "interviewAnswer": "Perplexity is the exponential of average negative log-likelihood. Lower is better on the same data/tokenization, but perplexity is not directly comparable across different tokenizers.",
+      "interviewAnswer": "Perplexity is exp of average token NLL: PPL=exp[-1/N sum_t log p(x_t|context)]. A uniform model over V tokens has perplexity V; a model assigning probability one to every observed token has perplexity one. It is the geometric inverse probability per token and is monotonic with cross-entropy. I compute it with shifted causal labels, exclude padding and any prompt tokens outside the estimand, and aggregate total NLL divided by total active tokens before exponentiating. I freeze tokenizer, vocabulary, BOS/EOS, context-window and sliding-window policy because those change the unit. Perplexity cannot by itself measure factuality, instruction following, long-form coherence or safety, and comparing values across different tokenizers is usually invalid unless converted to a common unit such as carefully defined bits per byte.",
       "keyPoints": [
-        "Exponentiated NLL",
-        "Language modeling",
-        "Tokenizer dependence",
-        "Intrinsic metric"
+        "Perplexity is exponentiated average log loss, not an independent model-quality objective.",
+        "Corpus perplexity uses token-weighted total NLL, not the arithmetic mean of batch or sequence perplexities.",
+        "Tokenizer, vocabulary, special tokens, context and masking define the prediction unit.",
+        "Lower perplexity means better probability fit on the evaluated text, not necessarily better generation behavior.",
+        "Evaluation contamination can produce excellent perplexity without generalization."
       ],
       "resources": [
         "stanford-cs224n",
@@ -15865,19 +16610,42 @@ const ATLAS = {
         "mit-info-theory"
       ],
       "featured": false,
-      "editorial": {
-        "status": "summary"
-      },
-      "status": "summary",
-      "hasLab": false,
-      "labGoal": "",
-      "visualCount": 0,
-      "visualSummaries": [],
-      "followUpQuestions": [
-        "Bits-per-character?",
-        "Why can lower perplexity fail downstream?"
+      "description": "Perplexity exponentiates average negative log likelihood to express how many equally likely choices a probabilistic sequence model faces per evaluated token. For an autoregressive language model it is exp[-(1/N)sum_t log p(x_t|x_{<t})], so lower values mean higher assigned probability to observed tokens under a fixed evaluation protocol. This chapter derives perplexity from cross-entropy and entropy rate, explains its weighted geometric-mean interpretation, and distinguishes token, character, byte and word units. It covers causal shifting, beginning and end tokens, padding masks, context truncation, sliding windows, batching, numerical stability, vocabulary support, tokenizer dependence and data contamination. It explains why perplexity measures predictive fit rather than factuality, reasoning, diversity or human preference. Worked examples calculate uniform and variable-probability sequences. The lab computes perplexity from probabilities and logits, verifies uniform and deterministic limits, and checks corpus aggregation by token-weighted log loss. Production guidance freezes corpus, tokenizer, context policy and normalization; reports domain and length slices; monitors loss tails and evaluation coverage; and pairs perplexity with task, factuality and safety measures. Values from different tokenizers are generally not directly comparable, even when evaluated on the same visible text.",
+      "prerequisites": [
+        "cross-entropy-loss",
+        "joint-marginal-conditional",
+        "causal-masks"
       ],
-      "estimatedMinutes": 1
+      "learningObjectives": [
+        "Derive token-level perplexity from autoregressive negative log likelihood and interpret its scale.",
+        "Implement causal alignment, masking, context windows and token-weighted corpus aggregation correctly.",
+        "Explain why tokenizer, unit, vocabulary and corpus prevent naive cross-model comparisons.",
+        "Use perplexity with contamination, slice, generation-quality, factuality and deployment diagnostics."
+      ],
+      "editorial": {
+        "status": "verified",
+        "verifiedOn": "2026-08-21"
+      },
+      "status": "verified",
+      "hasLab": true,
+      "labGoal": "Compute perplexity from token probabilities and logits, verify uniform and deterministic limits, and aggregate corpora by token-weighted log loss.",
+      "visualCount": 2,
+      "visualSummaries": [
+        {
+          "type": "flow",
+          "title": "Perplexity evaluation contract"
+        },
+        {
+          "type": "compare",
+          "title": "What perplexity does and does not test"
+        }
+      ],
+      "followUpQuestions": [
+        "Why exponentiate cross-entropy?",
+        "What is the minimum possible perplexity?",
+        "How do you compare models with different tokenizers?"
+      ],
+      "estimatedMinutes": 10
     },
     {
       "slug": "information-bottleneck",
@@ -15890,32 +16658,56 @@ const ATLAS = {
         "aie",
         "ds"
       ],
-      "interviewAnswer": "The information-bottleneck view seeks representations that preserve information useful for a target while discarding irrelevant detail.",
+      "interviewAnswer": "Information bottleneck seeks an encoder p(z|x) that minimizes I(X;Z) while retaining I(Z;Y), often through L=I(X;Z)-beta I(Z;Y). beta sets the value of target information relative to compression. Because Y-X-Z is a Markov chain, data processing guarantees I(Z;Y)<=I(X;Y); a sufficient representation reaches equality while discarding target-irrelevant distinctions. Exact MI is usually intractable for neural continuous models, so variational IB upper-bounds I(X;Z) with a KL to a chosen prior and lower-bounds target information through a decoder likelihood. Those bounds depend on model families and optimization. I sweep beta and report rate, predictive utility, calibration, robustness and sensitive-attribute leakage, rather than treating a narrow layer or low estimated MI as proof of minimality, generalization, privacy or fairness.",
       "keyPoints": [
-        "Compression",
-        "Sufficiency",
-        "Mutual information",
-        "Latent representations"
+        "The bottleneck compresses X only relative to information that must be retained about Y.",
+        "Data processing caps target information in Z at what X originally contains.",
+        "beta traces a rate-relevance frontier; no single value is universally optimal.",
+        "Neural implementations optimize variational bounds whose priors and decoders affect the learned representation.",
+        "Compression does not automatically guarantee generalization, invariance, fairness, robustness or privacy."
       ],
       "resources": [
+        "information-bottleneck-paper",
         "mit-info-theory",
         "probml-book",
         "paper-vqvae"
       ],
       "featured": false,
-      "editorial": {
-        "status": "summary"
-      },
-      "status": "summary",
-      "hasLab": false,
-      "labGoal": "",
-      "visualCount": 0,
-      "visualSummaries": [],
-      "followUpQuestions": [
-        "How does this relate to VAEs/VQ models?",
-        "Compression vs fidelity?"
+      "description": "The information bottleneck formalizes representation learning as a trade-off: compress input X into Z while preserving information about a relevant target Y. The classical objective minimizes I(X;Z)-beta I(Z;Y) under the Markov structure Y-X-Z, linking sufficient statistics, rate-distortion theory and clustering by predictive similarity. This chapter derives the trade-off and data-processing limit, explains deterministic and stochastic encoders, and develops variational upper and lower bounds used in neural models. It distinguishes the original bottleneck from beta-VAEs, generic narrow layers, dropout and claims that neural networks automatically compress. It covers continuous-variable pathologies, nuisance and sensitive information, adversarial objectives, evaluation, Pareto frontiers and causal limitations. A worked example compresses four input states into two target-relevant groups. The lab exhaustively searches deterministic discrete encoders, verifies information preservation and data processing, and compares a selected mapping with scikit-learn. Production guidance treats beta, priors, critics and estimates as tunable model components; reports task utility and subgroup behavior; and refuses privacy or fairness guarantees from low estimated MI alone. The bottleneck is a principled objective for relevance-aware compression, not a universal explanation of generalization.",
+      "prerequisites": [
+        "mutual-information",
+        "vae"
       ],
-      "estimatedMinutes": 1
+      "learningObjectives": [
+        "Derive the information-bottleneck constrained problem and Lagrangian under Y-X-Z.",
+        "Interpret deterministic clusters and stochastic encoders as trading representation rate for target relevance.",
+        "Construct variational bounds and identify prior, decoder, critic and continuous-estimation assumptions.",
+        "Evaluate Pareto frontiers, downstream utility, nuisance leakage, robustness, fairness and privacy without overclaiming."
+      ],
+      "editorial": {
+        "status": "verified",
+        "verifiedOn": "2026-08-21"
+      },
+      "status": "verified",
+      "hasLab": true,
+      "labGoal": "Enumerate deterministic discrete bottlenecks, trace the rate-relevance frontier, and verify sufficiency, compression and data-processing invariants.",
+      "visualCount": 2,
+      "visualSummaries": [
+        {
+          "type": "curve",
+          "title": "Rate-relevance frontier"
+        },
+        {
+          "type": "flow",
+          "title": "Variational bottleneck training"
+        }
+      ],
+      "followUpQuestions": [
+        "What does beta control?",
+        "How is IB related to sufficient statistics?",
+        "Why use a stochastic encoder?"
+      ],
+      "estimatedMinutes": 11
     },
     {
       "slug": "gaussian-processes",
@@ -16270,31 +17062,55 @@ const ATLAS = {
         "mle",
         "as"
       ],
-      "interviewAnswer": "ERM minimizes average training loss; generalization theory asks when low empirical risk also implies low expected risk on unseen data.",
+      "interviewAnswer": "Given hypotheses H and loss ell, population risk is R(h)=E[ell(h(X),Y)] and empirical risk is Rhat(h)=1/n sum_i ell(h(x_i),y_i). ERM chooses hhat minimizing Rhat over H. Generalization requires more than a low training loss because hhat was selected using the data; we control the gap uniformly over H or through stability, compression, margins or other complexity arguments. Excess risk can be separated into approximation error from H, estimation error from finite data, and optimization error from not solving the empirical problem exactly. In practice I choose loss and sample weights to match the deployment estimand, keep preprocessing inside grouped or temporal splits, tune complexity on validation, and evaluate calibration, utility and slices. Regularized ERM adds an inductive bias; it does not repair distribution shift or leakage.",
       "keyPoints": [
-        "Empirical risk",
-        "Population risk",
-        "Hypothesis class",
-        "Generalization gap"
+        "Population risk is the target expectation; empirical risk is its sample estimate.",
+        "ERM over a richer class lowers training error but can increase estimation error.",
+        "Data-dependent selection needs uniform or algorithm-specific generalization reasoning.",
+        "Approximation, estimation and optimization errors are distinct and require different remedies.",
+        "Loss, weights, sampling unit and split encode the real learning objective."
       ],
       "resources": [
         "stanford-cs229",
         "stanford-stats315a"
       ],
       "featured": false,
-      "editorial": {
-        "status": "summary"
-      },
-      "status": "summary",
-      "hasLab": false,
-      "labGoal": "",
-      "visualCount": 0,
-      "visualSummaries": [],
-      "followUpQuestions": [
-        "What controls the generalization gap?",
-        "How does regularization modify ERM?"
+      "description": "Empirical risk minimization selects a predictor with low average loss on observed samples as a tractable proxy for minimizing unknown population risk. This chapter defines hypothesis classes, loss functions, expected risk, empirical risk, approximation error, estimation error and optimization error. It derives the ERM generalization decomposition, explains uniform convergence and why choosing among many hypotheses invalidates a fixed-model concentration argument, and covers surrogate losses, regularized and constrained ERM, stochastic optimization, interpolation and double descent. It separates i.i.d. theory from grouped, temporal and adaptive data collection. A worked example contrasts linear and interpolating polynomial fits. The lab builds polynomial ERM from normal equations, compares scikit-learn, and verifies that minimum training loss can have worse test risk while validation selects a safer degree. Production guidance versions sampling, loss, weights, features, split and optimizer; monitors population slices and drift; and treats training loss as one component of evidence rather than proof of generalization. ERM is the backbone of supervised learning, but it works only through inductive bias and a representative measurement process.",
+      "prerequisites": [
+        "expectation-variance",
+        "cross-validation",
+        "gradient-descent"
       ],
-      "estimatedMinutes": 1
+      "learningObjectives": [
+        "Define population and empirical risk for a hypothesis class and chosen loss.",
+        "Decompose excess risk into approximation, estimation and optimization contributions.",
+        "Explain why uniform convergence or algorithmic stability is needed after data-dependent model selection.",
+        "Design weighted, constrained and leakage-safe ERM pipelines under real sampling and deployment conditions."
+      ],
+      "editorial": {
+        "status": "verified",
+        "verifiedOn": "2026-08-21"
+      },
+      "status": "verified",
+      "hasLab": true,
+      "labGoal": "Fit polynomial ERM solutions, compare scikit-learn, and verify that minimum empirical risk can generalize worse than validation-selected capacity.",
+      "visualCount": 2,
+      "visualSummaries": [
+        {
+          "type": "layers",
+          "title": "Excess-risk decomposition"
+        },
+        {
+          "type": "curve",
+          "title": "Capacity and risk"
+        }
+      ],
+      "followUpQuestions": [
+        "Why is empirical risk a reasonable proxy?",
+        "What is approximation error?",
+        "How does early stopping fit ERM?"
+      ],
+      "estimatedMinutes": 10
     },
     {
       "slug": "pac-learning",
@@ -16306,30 +17122,54 @@ const ATLAS = {
         "mle",
         "ds"
       ],
-      "interviewAnswer": "PAC learning formalizes whether enough samples let a learner find, with high probability, a hypothesis whose true error is approximately small.",
+      "interviewAnswer": "A class is PAC learnable if an algorithm uses a number of samples polynomial in relevant complexity, 1/epsilon and log(1/delta), and with probability at least 1-delta returns a hypothesis whose true error is at most epsilon in the realizable case. Agnostic PAC instead competes with the best hypothesis in H up to epsilon. For finite H, a consistent realizable learner needs on the order of [log|H|+log(1/delta)]/epsilon examples; agnostic uniform convergence scales roughly [log|H|+log(1/delta)]/epsilon squared. The guarantee is over a random sample from the assumed distribution, often uniformly for all distributions. It says nothing automatic about shifted deployment, dependent observations, computational tractability, fairness or calibration. I use the framework to explain capacity and confidence, then test the actual data-generating and selection process.",
       "keyPoints": [
-        "ε accuracy",
-        "δ confidence",
-        "Sample complexity",
-        "Learnability"
+        "Probably refers to sample randomness delta; approximately refers to population error epsilon.",
+        "Realizable PAC assumes a zero-error target in the class; agnostic PAC competes with the class optimum.",
+        "Confidence costs logarithmically, accuracy typically costs 1/epsilon or 1/epsilon squared.",
+        "Information-theoretic learnability does not imply an efficient algorithm.",
+        "Distribution-free guarantees still rely on i.i.d. sampling and a stable target protocol."
       ],
       "resources": [
+        "valiant-pac",
         "stanford-cs229"
       ],
       "featured": false,
-      "editorial": {
-        "status": "summary"
-      },
-      "status": "summary",
-      "hasLab": false,
-      "labGoal": "",
-      "visualCount": 0,
-      "visualSummaries": [],
-      "followUpQuestions": [
-        "Realizable vs agnostic PAC?",
-        "How does VC dimension enter?"
+      "description": "Probably Approximately Correct learning turns generalization into a quantified contract: with probability at least 1-delta over a random training sample, the learned hypothesis has population error at most epsilon, or excess error at most epsilon in agnostic settings. This chapter defines instance space, concept and hypothesis classes, unknown data distribution, learner, realizable and agnostic cases, sample complexity and efficient learnability. It derives finite-class bounds with union and Hoeffding arguments, explains how logarithmic confidence and capacity enter, and distinguishes information-theoretic sample sufficiency from computational feasibility. It covers classification noise, misspecification, improper learning, distribution dependence and modern practical limits. A worked example sizes a finite threshold class. The lab computes a realizable finite-class bound and simulates consistent threshold learning, verifying failure probability and monotonicity in epsilon, delta and class size. Production guidance uses PAC concepts to reason about capacity and confidence but validates real dependencies, shift, adaptive tuning and effect sizes directly. PAC is a family of mathematical learning models, not a certificate automatically attached to any trained model.",
+      "prerequisites": [
+        "empirical-risk-minimization",
+        "clt"
       ],
-      "estimatedMinutes": 1
+      "learningObjectives": [
+        "State PAC guarantees with correct quantifiers over distributions, targets, samples and learner randomness.",
+        "Derive finite-class sample bounds in realizable and agnostic settings.",
+        "Separate sample complexity, representation or approximation and computational efficiency.",
+        "Relate epsilon-delta theory to honest validation while recognizing dependence, shift and adaptive-selection limits."
+      ],
+      "editorial": {
+        "status": "verified",
+        "verifiedOn": "2026-08-21"
+      },
+      "status": "verified",
+      "hasLab": true,
+      "labGoal": "Compute finite-class PAC sample bounds, simulate consistent threshold learning, and verify monotonic dependence on epsilon, delta and class size.",
+      "visualCount": 2,
+      "visualSummaries": [
+        {
+          "type": "flow",
+          "title": "PAC quantifiers"
+        },
+        {
+          "type": "compare",
+          "title": "Two PAC settings"
+        }
+      ],
+      "followUpQuestions": [
+        "What changes from realizable to agnostic PAC?",
+        "Why does finite-class capacity enter as log|H|?",
+        "What is improper learning?"
+      ],
+      "estimatedMinutes": 10
     },
     {
       "slug": "vc-dimension",
@@ -16341,30 +17181,53 @@ const ATLAS = {
         "mle",
         "ds"
       ],
-      "interviewAnswer": "VC dimension measures the richness of a binary hypothesis class via the largest set of points it can shatter; greater capacity usually requires more data for uniform generalization guarantees.",
+      "interviewAnswer": "A class H shatters points x1,...,xm if for every one of the 2^m binary labelings there is some h in H matching it. VC(H) is the largest m for which some set can be shattered. One-sided thresholds on the line have VC dimension one; intervals have two; affine halfspaces in R^d have d+1. The growth function counts the maximum number of labelings H can realize on m points. Sauer-Shelah says that for VC dimension d and m>d, growth is at most sum_{i=0}^d C(m,i), which turns an infinite class into a finite effective labeling count and yields uniform-convergence bounds scaling roughly with d/n. VC is worst-case and class-level; it does not equal parameter count universally or predict a particular deep network's test error precisely.",
       "keyPoints": [
-        "Shattering",
-        "Capacity",
-        "Sample complexity",
-        "Not parameter count"
+        "Shattering means realizing all labelings on one chosen point configuration.",
+        "VC dimension is the largest shatterable size, or infinity if no finite maximum exists.",
+        "The growth function counts maximum distinct dichotomies and is controlled polynomially beyond finite VC dimension.",
+        "Finite VC dimension characterizes distribution-free binary classification learnability under standard settings.",
+        "Worst-case class capacity differs from trained-solution margins, norms, stability and data geometry."
       ],
       "resources": [
+        "vapnik-chervonenkis-1971",
         "stanford-cs229"
       ],
       "featured": false,
-      "editorial": {
-        "status": "summary"
-      },
-      "status": "summary",
-      "hasLab": false,
-      "labGoal": "",
-      "visualCount": 0,
-      "visualSummaries": [],
-      "followUpQuestions": [
-        "What does shatter mean?",
-        "How does VC dimension affect sample complexity?"
+      "description": "VC dimension measures the binary classification capacity of a hypothesis class by the largest finite point set it can shatter, meaning realize every possible labeling. This chapter builds growth functions, shattering coefficients, VC dimension, Sauer-Shelah bounds and their role in uniform convergence and sample complexity. It proves intuitive examples for one-dimensional thresholds and intervals, explains why linear separators in d dimensions have VC dimension d+1 under standard affine settings, and distinguishes parameter count from functional capacity. It covers infinite VC dimension, dual and multiclass extensions, data-dependent complexities and why worst-case capacity bounds can be loose for a trained algorithm. A worked example enumerates interval labelings on three ordered points. The lab brute-forces threshold and interval growth functions, uses SciPy's combinatorial bound, and verifies VC dimensions and Sauer equality patterns. Production guidance uses VC as a conceptual capacity audit while relying on nested validation, stability, margins and real shifts for a particular model. VC dimension is a property of the whole hypothesis class on some possible configurations, not a score computed from one dataset or one fitted classifier.",
+      "prerequisites": [
+        "pac-learning"
       ],
-      "estimatedMinutes": 1
+      "learningObjectives": [
+        "Define shattering, growth function and VC dimension with the correct existential and universal quantifiers.",
+        "Compute VC dimension for thresholds, intervals and affine linear separators through constructions and impossibility arguments.",
+        "Use Sauer-Shelah growth control to connect capacity with uniform generalization bounds.",
+        "Distinguish worst-case class capacity from parameter count, effective algorithmic bias and observed model performance."
+      ],
+      "editorial": {
+        "status": "verified",
+        "verifiedOn": "2026-08-21"
+      },
+      "status": "verified",
+      "hasLab": true,
+      "labGoal": "Enumerate threshold and interval dichotomies, verify their VC dimensions, and compare growth counts with the Sauer-Shelah combinatorial bound.",
+      "visualCount": 2,
+      "visualSummaries": [
+        {
+          "type": "compare",
+          "title": "VC proof obligations"
+        },
+        {
+          "type": "bars",
+          "title": "Interval growth on ordered points"
+        }
+      ],
+      "followUpQuestions": [
+        "What are the two parts of a VC proof?",
+        "Why is Sauer-Shelah important?",
+        "What replaces VC for real-valued regression classes?"
+      ],
+      "estimatedMinutes": 10
     },
     {
       "slug": "margin-generalization",
@@ -16376,30 +17239,55 @@ const ATLAS = {
         "mle",
         "ds"
       ],
-      "interviewAnswer": "A classification margin measures separation from the decision boundary; large-margin methods such as SVMs prefer a wider buffer while allowing controlled violations in the soft-margin case.",
+      "interviewAnswer": "For labels y in {-1,+1} and score f=w^T x+b, functional margin is y f, but it can be inflated by rescaling parameters. Geometric margin is y f/||w||. Hard-margin SVM fixes y_i f_i>=1 and minimizes ||w|| squared, equivalently maximizing the minimum geometric margin. Soft margin minimizes 0.5||w|| squared+C sum hinge(1-y_i f_i), allowing violations. Only points on or inside the margin affect the solution as support vectors. Generalization bounds can depend on radius squared times norm squared or inverse margin squared rather than raw feature dimension, which explains kernel use. I standardize features inside folds, tune C and kernels on grouped or temporal validation, inspect margin distributions and slices, and separately calibrate scores if probabilities are needed.",
       "keyPoints": [
-        "Geometric margin",
-        "Support vectors",
-        "Soft margin",
-        "Robustness intuition"
+        "Geometric margin divides by ||w|| and is invariant to positive score rescaling.",
+        "Hard-margin SVM maximizes separation; soft margin trades norm against hinge violations through C.",
+        "Support vectors determine the boundary because non-support points have inactive constraints.",
+        "Norm-margin bounds can control effective capacity even in very high-dimensional feature spaces.",
+        "Margin is not probability and can degrade under scaling, outliers, shift or adversarial perturbations."
       ],
       "resources": [
+        "svm-paper",
         "stanford-cs229"
       ],
       "featured": false,
-      "editorial": {
-        "status": "summary"
-      },
-      "status": "summary",
-      "hasLab": false,
-      "labGoal": "",
-      "visualCount": 0,
-      "visualSummaries": [],
-      "followUpQuestions": [
-        "Hard vs soft margin?",
-        "How do kernels change geometry?"
+      "description": "Margins measure how confidently a decision boundary separates labeled examples relative to the classifier's scale. For a linear score f(x)=w^T x+b, the functional margin y f(x) changes if w and b are rescaled, while the geometric margin y f(x)/||w|| is invariant and equals signed distance to the hyperplane. This chapter derives hard- and soft-margin support vector machines, hinge loss, support vectors, primal and dual views, kernels, norm-radius generalization bounds and multiclass margins. It explains why maximizing training margin can control effective capacity even in high-dimensional spaces, while feature scaling, outliers, nonseparability, distribution shift and adversarial directions limit the story. A worked example computes geometric distance. The lab solves a hard-margin primal with SciPy, compares scikit-learn SVC, and verifies constraints, support points and scale invariance. Production guidance versions feature scaling, kernel and C, evaluates margin distributions and calibration on later cohorts, and treats low margin as an uncertainty signal rather than a probability. Margins connect fitted geometry to generalization more tightly than dimension alone, but only under bounded norms and representative samples.",
+      "prerequisites": [
+        "vc-dimension",
+        "norms-distances",
+        "convexity"
       ],
-      "estimatedMinutes": 1
+      "learningObjectives": [
+        "Distinguish functional and geometric margins and compute distance to a linear decision boundary.",
+        "Derive hard- and soft-margin SVM objectives, hinge loss and support-vector behavior.",
+        "Connect radius, norm and margin to capacity bounds in linear and kernel feature spaces.",
+        "Diagnose scaling, outlier, calibration, robustness, nonseparability and shift failures in practice."
+      ],
+      "editorial": {
+        "status": "verified",
+        "verifiedOn": "2026-08-21"
+      },
+      "status": "verified",
+      "hasLab": true,
+      "labGoal": "Solve a hard-margin linear SVM primal, compare scikit-learn, and verify constraints, support points, decision agreement and geometric scale invariance.",
+      "visualCount": 2,
+      "visualSummaries": [
+        {
+          "type": "layers",
+          "title": "Maximum-margin geometry"
+        },
+        {
+          "type": "curve",
+          "title": "Hinge loss"
+        }
+      ],
+      "followUpQuestions": [
+        "Why are only support vectors important?",
+        "What does C control?",
+        "How does the kernel trick work?"
+      ],
+      "estimatedMinutes": 10
     },
     {
       "slug": "regularization-capacity",
@@ -16409,12 +17297,13 @@ const ATLAS = {
       "roles": [
         "all"
       ],
-      "interviewAnswer": "Regularization penalizes or constrains effective model complexity, often trading a little training fit for better generalization when variance is high.",
+      "interviewAnswer": "Regularized ERM minimizes training loss plus lambda times a complexity penalty, or equivalently constrains complexity for a corresponding solution under convex conditions. Ridge adds lambda||w||_2^2, shrinking unstable directions and reducing effective degrees of freedom; lasso adds lambda||w||_1, producing coordinate sparsity through its constraint geometry. lambda is selected on training-contained validation, not the test set. Feature scaling is part of the penalty definition. Early stopping, augmentation and dropout are also capacity controls, while optimizers can have implicit bias among interpolating solutions. I inspect train-validation curves, coefficient or representation norms, stability and later-cohort utility. Regularization cannot fix leakage, incorrect labels or deployment shift, and sparse coefficients are not automatically causal or stable under correlated features.",
       "keyPoints": [
-        "L1/L2",
-        "Implicit regularization",
-        "Early stopping",
-        "Bias-variance"
+        "Penalties select among empirical fits by encoding a preference or constrained capacity.",
+        "Ridge stabilizes correlated and weak directions; lasso can set coefficients exactly to zero.",
+        "Scaling determines how coefficients are penalized and must be fitted inside each training fold.",
+        "Early stopping, augmentation and optimization can regularize without an explicit norm term.",
+        "Hyperparameter selection is part of the learner and consumes validation evidence."
       ],
       "resources": [
         "stanford-cs229",
@@ -16422,19 +17311,42 @@ const ATLAS = {
         "d2l"
       ],
       "featured": false,
-      "editorial": {
-        "status": "summary"
-      },
-      "status": "summary",
-      "hasLab": false,
-      "labGoal": "",
-      "visualCount": 0,
-      "visualSummaries": [],
-      "followUpQuestions": [
-        "Explicit vs implicit regularization?",
-        "How does λ change bias/variance?"
+      "description": "Regularization controls which low-training-loss solution a learner prefers by penalizing, constraining, perturbing or stopping the learning process. This chapter connects penalized ERM and constrained hypothesis classes, derives ridge and lasso geometry, and develops effective degrees of freedom, Bayesian priors, early stopping, data augmentation, dropout, norm control and implicit optimization bias. It explains how lambda trades fit against stability, why L1 promotes sparse coordinates but not stable causal selection, and how scaling and correlated features change both penalties. It covers hyperparameter validation, one-standard-error selection, double descent, post-selection inference and interactions with calibration and distribution shift. A worked example solves ridge shrinkage along singular directions. The lab implements closed-form ridge, compares scikit-learn, and verifies coefficient-norm, training-risk and effective-degree paths. Production guidance versions every regularizing mechanism with preprocessing, measures learning curves and later-cohort utility, and avoids treating one penalty as protection against leakage or shift. Regularization is capacity control relative to a representation and algorithm, not a universal instruction to make parameter values small.",
+      "prerequisites": [
+        "empirical-risk-minimization",
+        "ridge-lasso-elasticnet",
+        "eigen-svd"
       ],
-      "estimatedMinutes": 1
+      "learningObjectives": [
+        "Relate penalized ERM to constrained classes and describe the bias-stability trade-off.",
+        "Derive L2 shrinkage, L1 sparsity geometry and effective degrees of freedom.",
+        "Compare explicit penalties with early stopping, augmentation, dropout and implicit optimizer bias.",
+        "Tune capacity without validation leakage and diagnose scaling, correlation, shift and post-selection failures."
+      ],
+      "editorial": {
+        "status": "verified",
+        "verifiedOn": "2026-08-21"
+      },
+      "status": "verified",
+      "hasLab": true,
+      "labGoal": "Implement ridge regression, compare scikit-learn, and verify monotone coefficient norm, training risk and effective degrees of freedom along a regularization path.",
+      "visualCount": 2,
+      "visualSummaries": [
+        {
+          "type": "curve",
+          "title": "Regularization path"
+        },
+        {
+          "type": "compare",
+          "title": "Explicit and implicit capacity"
+        }
+      ],
+      "followUpQuestions": [
+        "Why does ridge help multicollinearity?",
+        "What is effective degrees of freedom?",
+        "How is early stopping regularization?"
+      ],
+      "estimatedMinutes": 10
     },
     {
       "slug": "distribution-shift-generalization",
@@ -16444,12 +17356,13 @@ const ATLAS = {
       "roles": [
         "all"
       ],
-      "interviewAnswer": "IID test performance can fail under covariate, label or concept shift. Use time/geography/group-aware validation, shift diagnostics and post-deployment monitoring when future data differs from training.",
+      "interviewAnswer": "I write the joint as p(x,y)=p(y|x)p(x) or p(x|y)p(y) and state what is assumed stable. Under covariate shift p_s(x)!=p_t(x) but p(y|x) is stable, target risk equals E_s[w(X)loss] with w=p_t(x)/p_s(x), provided target support lies within source support. Large weights create high variance, so I report effective sample size and clipping sensitivity. Label shift changes p(y) with stable p(x|y); concept shift changes p(y|x) and cannot be repaired by covariate weights alone. I detect drift with domain classifiers and feature, score and prediction summaries, but validate harm using mature labels and decision metrics. Responses include recalibration, threshold or policy changes, reweighting, robust training, retraining or abstention, each shadow-tested for feedback and subgroup effects.",
       "keyPoints": [
-        "IID assumption",
-        "Covariate shift",
-        "Label shift",
-        "Concept shift"
+        "Shift type is an assumption about which factor of the data-generating process changed.",
+        "Importance weighting identifies target risk only with conditional stability and support overlap.",
+        "Input drift is neither necessary nor sufficient for performance degradation.",
+        "Unlabeled detection locates change; labels and task outcomes establish model harm.",
+        "Deployment actions change future data, so monitoring and adaptation must account for feedback."
       ],
       "resources": [
         "stanford-cs229",
@@ -16457,19 +17370,41 @@ const ATLAS = {
         "stanford-cs329s"
       ],
       "featured": false,
-      "editorial": {
-        "status": "summary"
-      },
-      "status": "summary",
-      "hasLab": false,
-      "labGoal": "",
-      "visualCount": 0,
-      "visualSummaries": [],
-      "followUpQuestions": [
-        "How do you detect shift?",
-        "When does importance weighting help?"
+      "description": "Generalization under distribution shift asks whether a model trained under source distribution P_s will retain acceptable risk under a different target P_t. This chapter distinguishes covariate shift, label or prior shift, concept or conditional shift, domain and subpopulation shift, temporal drift and policy-induced feedback. It derives importance-weighted target risk under invariant conditionals, explains overlap and effective sample size, and compares reweighting, recalibration, robust optimization, invariant representation, domain adaptation and retraining. It covers detection limits, unlabeled monitoring, selective labels, causal mechanisms, out-of-distribution uncertainty and no-free-lunch constraints. A worked example transports a fixed loss with density ratios. The lab simulates covariate shift, verifies weighted risk against target risk, and trains a domain classifier as a two-sample diagnostic. Production guidance versions source and target windows, monitors inputs, predictions and mature outcomes, defines abstention and rollback, and tests interventions before adaptation. A model cannot be proven robust to arbitrary unseen shifts; useful guarantees require specifying which mechanisms may change and where target support overlaps training evidence.",
+      "prerequisites": [
+        "empirical-risk-minimization",
+        "monte-carlo"
       ],
-      "estimatedMinutes": 1
+      "learningObjectives": [
+        "Distinguish covariate, label, conditional, subpopulation, temporal and policy-induced shifts by factorization.",
+        "Estimate target risk with importance weights when invariant mechanisms and support conditions justify it.",
+        "Compare recalibration, reweighting, adaptation, robust optimization, invariance and retraining strategies.",
+        "Design shift detection, mature-label evaluation, safe fallback, governance and feedback-aware monitoring."
+      ],
+      "editorial": {
+        "status": "verified",
+        "verifiedOn": "2026-08-21"
+      },
+      "status": "verified",
+      "hasLab": true,
+      "labGoal": "Estimate target risk under simulated covariate shift, compare density-ratio weighting, and use a domain classifier as an unlabeled drift diagnostic.",
+      "visualCount": 2,
+      "visualSummaries": [
+        {
+          "type": "compare",
+          "title": "Shift mechanisms"
+        },
+        {
+          "type": "flow",
+          "title": "Shift response loop"
+        }
+      ],
+      "followUpQuestions": [
+        "How do covariate and concept shift differ?",
+        "Why report effective sample size?",
+        "Can unlabeled target data prove performance is stable?"
+      ],
+      "estimatedMinutes": 10
     },
     {
       "slug": "association-rules",
@@ -19162,6 +20097,342 @@ const ATLAS = {
       "level": "Advanced",
       "url": "https://doi.org/10.1287/mnsc.2020.01157",
       "why": "Marketplace meta-experiment evidence and cluster-randomization methods for interference bias."
+    },
+    "sklearn-linear-models": {
+      "title": "Linear Models User Guide",
+      "provider": "scikit-learn",
+      "kind": "Official documentation",
+      "level": "Foundation -> Advanced",
+      "url": "https://scikit-learn.org/stable/modules/linear_model.html",
+      "why": "Current objectives, solver behavior, regularization, robust estimators, count regression, and quantile regression in one authoritative implementation guide."
+    },
+    "statsmodels-regression-diagnostics": {
+      "title": "Linear Regression Diagnostics",
+      "provider": "statsmodels",
+      "kind": "Official documentation",
+      "level": "Intermediate",
+      "url": "https://www.statsmodels.org/stable/examples/notebooks/generated/linear_regression_diagnostics_plots.html",
+      "why": "Current diagnostic workflow for residual shape, leverage, influence, and specification checks."
+    },
+    "nist-regression-diagnostics": {
+      "title": "Regression Diagnostics",
+      "provider": "NIST/SEMATECH Engineering Statistics Handbook",
+      "kind": "Government technical handbook",
+      "level": "Intermediate",
+      "url": "https://itl.nist.gov/div898/software/dataplot/refman1/auxillar/regrdiag.htm",
+      "why": "Rigorous definitions and practical interpretation of residual, leverage, studentized-residual, Cook-distance, and influence diagnostics."
+    },
+    "sklearn-spline-transformer": {
+      "title": "SplineTransformer API",
+      "provider": "scikit-learn",
+      "kind": "Official documentation",
+      "level": "Intermediate",
+      "url": "https://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.SplineTransformer.html",
+      "why": "Authoritative basis construction, knot placement, degree, extrapolation, and pipeline behavior for B-splines."
+    },
+    "statsmodels-gam": {
+      "title": "Generalized Additive Models",
+      "provider": "statsmodels",
+      "kind": "Official documentation",
+      "level": "Intermediate -> Advanced",
+      "url": "https://www.statsmodels.org/stable/gam.html",
+      "why": "Current penalized B-spline GAM formulation and Gaussian and Poisson implementation examples."
+    },
+    "nelder-wedderburn-glm": {
+      "title": "Generalized Linear Models",
+      "provider": "Journal of the Royal Statistical Society",
+      "kind": "Primary paper",
+      "level": "Advanced",
+      "url": "https://doi.org/10.2307/2344614",
+      "why": "The original GLM formulation connecting exponential-family outcomes, link functions, and iterative weighted least squares."
+    },
+    "statsmodels-poisson-postestimation": {
+      "title": "Post-estimation Overview for Poisson Regression",
+      "provider": "statsmodels",
+      "kind": "Official documentation",
+      "level": "Intermediate",
+      "url": "https://www.statsmodels.org/stable/examples/notebooks/generated/postestimation_poisson.html",
+      "why": "Current count-model prediction, inference, and diagnostic examples after fitting a Poisson model."
+    },
+    "huber-1964": {
+      "title": "Robust Estimation of a Location Parameter",
+      "provider": "Annals of Mathematical Statistics",
+      "kind": "Primary paper",
+      "level": "Advanced",
+      "url": "https://doi.org/10.1214/aoms/1177703732",
+      "why": "Foundational contamination-model and M-estimation theory behind the Huber loss and bounded influence."
+    },
+    "koenker-bassett-1978": {
+      "title": "Regression Quantiles",
+      "provider": "Econometrica",
+      "kind": "Primary paper",
+      "level": "Advanced",
+      "url": "https://doi.org/10.2307/1913643",
+      "why": "The original conditional-quantile regression formulation and asymmetric absolute-loss estimator."
+    },
+    "glmnet-coordinate-descent": {
+      "title": "Regularization Paths for Generalized Linear Models via Coordinate Descent",
+      "provider": "Journal of Statistical Software",
+      "kind": "Primary methods paper",
+      "level": "Advanced",
+      "url": "https://doi.org/10.18637/jss.v033.i01",
+      "why": "Canonical coordinate-descent algorithms for lasso, ridge, and elastic-net paths across linear and generalized linear models."
+    },
+    "anomaly-survey": {
+      "title": "Anomaly Detection: A Survey",
+      "provider": "ACM Computing Surveys",
+      "kind": "Primary survey",
+      "level": "Intermediate -> Advanced",
+      "url": "https://doi.org/10.1145/1541880.1541882",
+      "why": "Canonical taxonomy of point, contextual, and collective anomalies plus assumptions, techniques, and application constraints."
+    },
+    "isolation-forest-paper": {
+      "title": "Isolation Forest",
+      "provider": "IEEE ICDM",
+      "kind": "Primary paper",
+      "level": "Intermediate",
+      "url": "https://doi.org/10.1109/ICDM.2008.17",
+      "why": "Original random partitioning algorithm, path-length normalization, subsampling argument, and anomaly score."
+    },
+    "lof-paper": {
+      "title": "LOF: Identifying Density-Based Local Outliers",
+      "provider": "ACM SIGMOD",
+      "kind": "Primary paper",
+      "level": "Advanced",
+      "url": "https://doi.org/10.1145/342009.335388",
+      "why": "Original reachability-distance, local-reachability-density, and local-outlier-factor definitions."
+    },
+    "one-class-svm-paper": {
+      "title": "Estimating the Support of a High-Dimensional Distribution",
+      "provider": "Neural Computation",
+      "kind": "Primary paper",
+      "level": "Advanced",
+      "url": "https://doi.org/10.1162/089976601750264965",
+      "why": "Foundational one-class support-estimation objective, kernel decision function, and nu interpretation."
+    },
+    "pr-imbalanced-paper": {
+      "title": "The Precision-Recall Plot Is More Informative than the ROC Plot When Evaluating Binary Classifiers on Imbalanced Datasets",
+      "provider": "PLOS ONE",
+      "kind": "Primary evaluation paper",
+      "level": "Intermediate",
+      "url": "https://doi.org/10.1371/journal.pone.0118432",
+      "why": "Demonstrates why ROC views can obscure false-positive burden under severe imbalance and motivates precision-recall analysis."
+    },
+    "sklearn-average-precision": {
+      "title": "Average Precision Score",
+      "provider": "scikit-learn",
+      "kind": "Official documentation",
+      "level": "Intermediate",
+      "url": "https://scikit-learn.org/stable/modules/generated/sklearn.metrics.average_precision_score.html",
+      "why": "Current non-interpolated average-precision definition and exact threshold-weighted computation."
+    },
+    "pelt-paper": {
+      "title": "Optimal Detection of Changepoints With a Linear Computational Cost",
+      "provider": "Journal of the American Statistical Association",
+      "kind": "Primary paper",
+      "level": "Advanced",
+      "url": "https://doi.org/10.1080/01621459.2012.737745",
+      "why": "Original PELT pruning result for exact penalized multiple-change segmentation under stated conditions."
+    },
+    "ruptures-docs": {
+      "title": "ruptures: Offline Change Point Detection",
+      "provider": "Centre Borelli",
+      "kind": "Official documentation",
+      "level": "Intermediate",
+      "url": "https://centre-borelli.github.io/ruptures-docs/",
+      "why": "Current cost-model, search-method, and evaluation workflow for offline change-point detection."
+    },
+    "rare-events-logistic": {
+      "title": "Logistic Regression in Rare Events Data",
+      "provider": "Political Analysis",
+      "kind": "Primary methods paper",
+      "level": "Advanced",
+      "url": "https://doi.org/10.1093/oxfordjournals.pan.a004868",
+      "why": "Foundational treatment of small-sample and case-control bias corrections for rare-event logistic probability estimation."
+    },
+    "sklearn-calibration": {
+      "title": "Probability Calibration",
+      "provider": "scikit-learn",
+      "kind": "Official documentation",
+      "level": "Intermediate",
+      "url": "https://scikit-learn.org/stable/modules/calibration.html",
+      "why": "Current reliability-diagram, proper-score, and held-out or cross-validated calibration guidance."
+    },
+    "cost-sensitive-learning": {
+      "title": "The Foundations of Cost-Sensitive Learning",
+      "provider": "IJCAI",
+      "kind": "Primary paper",
+      "level": "Advanced",
+      "url": "https://cseweb.ucsd.edu/~elkan/rescale.pdf",
+      "why": "Formal separation of probability estimation, coherent costs, sampling, and optimal cost-sensitive decision thresholds."
+    },
+    "kaplan-meier-paper": {
+      "title": "Nonparametric Estimation from Incomplete Observations",
+      "provider": "Journal of the American Statistical Association",
+      "kind": "Primary paper",
+      "level": "Advanced",
+      "url": "https://doi.org/10.1080/01621459.1958.10501452",
+      "why": "Original product-limit survival estimator and explicit discussion of the censoring-independence assumption."
+    },
+    "cox-1972": {
+      "title": "Regression Models and Life-Tables",
+      "provider": "Journal of the Royal Statistical Society Series B",
+      "kind": "Primary paper",
+      "level": "Advanced",
+      "url": "https://doi.org/10.1111/j.2517-6161.1972.tb00899.x",
+      "why": "Original proportional-hazards model, partial-likelihood reasoning, and censored risk-set construction."
+    },
+    "sksurv-evaluation": {
+      "title": "Evaluating Survival Models",
+      "provider": "scikit-survival",
+      "kind": "Official documentation",
+      "level": "Intermediate -> Advanced",
+      "url": "https://scikit-survival.readthedocs.io/en/stable/user_guide/evaluating-survival-models.html",
+      "why": "Current definitions and implementation guidance for censored concordance, IPCW concordance, cumulative dynamic AUC, and Brier scores."
+    },
+    "uno-cstat": {
+      "title": "On the C-statistics for Evaluating Overall Adequacy of Risk Prediction Procedures with Censored Survival Data",
+      "provider": "Statistics in Medicine",
+      "kind": "Primary methods paper",
+      "level": "Advanced",
+      "url": "https://doi.org/10.1002/sim.4154",
+      "why": "Develops an inverse-probability-of-censoring weighted concordance estimator that addresses censoring dependence of Harrell's estimator."
+    },
+    "graf-brier": {
+      "title": "Assessment and Comparison of Prognostic Classification Schemes for Survival Data",
+      "provider": "Statistics in Medicine",
+      "kind": "Primary methods paper",
+      "level": "Advanced",
+      "url": "https://doi.org/10.1002/(SICI)1097-0258(19990915/30)18:17/18%3C2529::AID-SIM274%3E3.0.CO;2-5",
+      "why": "Canonical inverse-censoring weighted prediction-error and Brier-score framework for censored outcomes."
+    },
+    "aft-wei": {
+      "title": "The Accelerated Failure Time Model: A Useful Alternative to the Cox Regression Model",
+      "provider": "Statistics in Medicine",
+      "kind": "Primary review",
+      "level": "Advanced",
+      "url": "https://doi.org/10.1002/sim.4780111409",
+      "why": "Foundational interpretation and regression perspective for AFT models as direct models of log event time."
+    },
+    "fine-gray-paper": {
+      "title": "A Proportional Hazards Model for the Subdistribution of a Competing Risk",
+      "provider": "Journal of the American Statistical Association",
+      "kind": "Primary paper",
+      "level": "Advanced",
+      "url": "https://doi.org/10.1080/01621459.1999.10474144",
+      "why": "Original proportional subdistribution-hazard model linked to cumulative incidence under competing risks."
+    },
+    "aalen-johansen-reference": {
+      "title": "Aalen-Johansen Estimator",
+      "provider": "Wiley StatsRef",
+      "kind": "Technical reference",
+      "level": "Advanced",
+      "url": "https://doi.org/10.1002/9781118445112.stat06001.pub2",
+      "why": "Authoritative product-integral and transition-probability treatment for competing-risk and multi-state cumulative incidence."
+    },
+    "bm25-robertson": {
+      "title": "The Probabilistic Relevance Framework: BM25 and Beyond",
+      "provider": "Foundations and Trends in Information Retrieval",
+      "kind": "Primary monograph",
+      "level": "Advanced",
+      "url": "https://doi.org/10.1561/1500000019",
+      "why": "Authoritative derivation, interpretation, variants, and limitations of BM25 and the probabilistic relevance framework."
+    },
+    "faiss-index-guide": {
+      "title": "Guidelines to Choose a Faiss Index",
+      "provider": "Faiss",
+      "kind": "Official documentation",
+      "level": "Intermediate -> Advanced",
+      "url": "https://github.com/facebookresearch/faiss/wiki/Guidelines-to-choose-an-index",
+      "why": "Current official guidance on exact baselines, HNSW, IVF, quantization, memory, training, and recall-latency trade-offs."
+    },
+    "faiss-getting-started": {
+      "title": "Faiss Getting Started",
+      "provider": "Faiss",
+      "kind": "Official documentation",
+      "level": "Intermediate",
+      "url": "https://github.com/facebookresearch/faiss/wiki/Getting-started",
+      "why": "Official index, add, search, ID, distance, and exact-flat baseline conventions."
+    },
+    "bert-reranker-paper": {
+      "title": "Passage Re-ranking with BERT",
+      "provider": "arXiv",
+      "kind": "Primary paper",
+      "level": "Advanced",
+      "url": "https://arxiv.org/abs/1901.04085",
+      "why": "Foundational cross-encoder passage reranking formulation and benchmark evidence."
+    },
+    "rrf-paper": {
+      "title": "Reciprocal Rank Fusion Outperforms Condorcet and Individual Rank Learning Methods",
+      "provider": "SIGIR",
+      "kind": "Primary paper",
+      "level": "Advanced",
+      "url": "https://cormack.uwaterloo.ca/cormacksigir09-rrf.pdf",
+      "why": "Original reciprocal-rank-fusion method for combining heterogeneous ranked lists without score calibration."
+    },
+    "elastic-hybrid": {
+      "title": "Hybrid Search",
+      "provider": "Elastic",
+      "kind": "Official documentation",
+      "level": "Intermediate",
+      "url": "https://www.elastic.co/docs/solutions/search/hybrid-search",
+      "why": "Current production guidance for combining lexical and vector retrieval, including reciprocal rank fusion."
+    },
+    "trec-evaluation": {
+      "title": "TREC: Text REtrieval Conference",
+      "provider": "NIST",
+      "kind": "Official benchmark resource",
+      "level": "Intermediate -> Advanced",
+      "url": "https://trec.nist.gov/",
+      "why": "Authoritative test-collection, pooling, relevance-judgment, and retrieval-evaluation context."
+    },
+    "shannon-1948": {
+      "title": "A Mathematical Theory of Communication",
+      "provider": "Bell System Technical Journal",
+      "kind": "Foundational paper",
+      "level": "Advanced",
+      "url": "https://doi.org/10.1002/j.1538-7305.1948.tb00917.x",
+      "why": "Foundational source for entropy, coding, channels, mutual information and communication limits."
+    },
+    "kullback-leibler-1951": {
+      "title": "On Information and Sufficiency",
+      "provider": "The Annals of Mathematical Statistics",
+      "kind": "Foundational paper",
+      "level": "Advanced",
+      "url": "https://doi.org/10.1214/aoms/1177729694",
+      "why": "Original divergence framework connecting statistical information, likelihood ratios and sufficiency."
+    },
+    "information-bottleneck-paper": {
+      "title": "The Information Bottleneck Method",
+      "provider": "arXiv",
+      "kind": "Primary paper",
+      "level": "Advanced",
+      "url": "https://arxiv.org/abs/physics/0004057",
+      "why": "Original formulation of compression that preserves information relevant to a target variable."
+    },
+    "valiant-pac": {
+      "title": "A Theory of the Learnable",
+      "provider": "Communications of the ACM",
+      "kind": "Foundational paper",
+      "level": "Advanced",
+      "url": "https://doi.org/10.1145/1968.1972",
+      "why": "Foundational computational learning framework motivating probably approximately correct learnability."
+    },
+    "vapnik-chervonenkis-1971": {
+      "title": "On the Uniform Convergence of Relative Frequencies of Events to Their Probabilities",
+      "provider": "Theory of Probability and Its Applications",
+      "kind": "Foundational paper",
+      "level": "Advanced",
+      "url": "https://doi.org/10.1137/1116025",
+      "why": "Original uniform-convergence and capacity work underlying VC dimension and generalization bounds."
+    },
+    "svm-paper": {
+      "title": "Support-Vector Networks",
+      "provider": "Machine Learning",
+      "kind": "Primary paper",
+      "level": "Advanced",
+      "url": "https://doi.org/10.1007/BF00994018",
+      "why": "Foundational soft-margin support-vector formulation connecting margins, kernels and generalization."
     }
   }
 };

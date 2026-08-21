@@ -1,6 +1,6 @@
 # TF-IDF & BM25 — Code Lab
 
-Implement a tiny BM25 scorer and compare lexical ranking.
+Implement BM25 scoring, compare sparse TF-IDF rankings, and verify IDF rarity, TF saturation, query-order invariance and numerical safety.
 
 ## 1. Build it
 

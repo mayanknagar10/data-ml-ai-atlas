@@ -7,31 +7,178 @@
     "ds",
     "as"
   ],
-  "interviewAnswer": "GAMs add flexible smooth functions of individual predictors while retaining an additive, interpretable structure. They are useful when relationships are nonlinear but black-box complexity is unnecessary.",
+  "interviewAnswer": "A GAM models a transformed conditional mean as g(E[Y|X])=beta0+sum_j f_j(X_j), where each f_j is a smooth function represented by a basis and controlled by a roughness penalty. It captures nonlinear marginal effects while preserving an additive structure that is easy to plot and audit. Smooths need centering constraints so the intercept and components are identifiable, and their effective degrees of freedom are selected by cross-validation, REML-like criteria, or related methods. I inspect residuals, boundaries, concurvity, and missing interactions; add tensor-product terms only when justified. Component curves are conditional associations under the fitted model, not causal effects, and deployment must freeze bases, penalties, and extrapolation behavior.",
   "keyPoints": [
-    "Additivity is interpretable but limits interactions unless added explicitly.",
-    "Smoothness must be controlled.",
-    "Works with generalized response families."
+    "GAMs are additive in learned functions rather than necessarily linear in raw predictors.",
+    "Centering smooth components separates them from the intercept.",
+    "Penalties control wiggliness and effective degrees of freedom.",
+    "Concurvity makes component attribution unstable even when prediction is adequate.",
+    "Interactions and boundaries must be modeled and monitored deliberately."
   ],
   "resources": [
     "isl",
-    "stanford-stats202"
+    "statsmodels-gam",
+    "sklearn-spline-transformer"
   ],
   "featured": false,
-  "why": "Generalized Additive Models (GAMs) appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
-  "intuition": "Additivity is interpretable but limits interactions unless added explicitly.",
-  "deepDive": "GAMs add flexible smooth functions of individual predictors while retaining an additive, interpretable structure. They are useful when relationships are nonlinear but black-box complexity is unnecessary. Smoothness must be controlled. Works with generalized response families. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
-  "workedExample": "Model conversion probability as smooth functions of price and tenure plus categorical device effects.",
+  "why": "Many tabular problems have strong univariate nonlinearities but only a few meaningful interactions. Tree ensembles can fit them, but a GAM often gives competitive accuracy with clearer shape, smoother behavior, and easier constraints. Domain experts can inspect a temperature curve, a tenure curve, or a time-of-day cycle and challenge implausible regions. The model can share the likelihood and link machinery of generalized linear models while replacing rigid slopes with smooth functions. That transparency is useful only if its conditions are understood. An additive model cannot represent every interaction; sparse support can make a smooth look confident where it is not; and correlated predictors can divide one pattern into unstable components. GAMs are therefore best viewed as a disciplined structural compromise: more flexible than a linear model, more constrained and inspectable than an unrestricted surface, and still dependent on honest data design and validation.",
+  "intuition": "Imagine fitting one smooth curve for temperature while temporarily subtracting the current contributions of hour, humidity, and weekday. Then fit the hour curve to what remains, and cycle until the components stop changing. This is the intuition behind backfitting. In practice, each smooth is represented by basis columns and all coefficients can be estimated together with penalties. Because adding a constant to one smooth and subtracting it from the intercept changes nothing, each component is centered, often to have zero average over the training data. The intercept then represents the overall linked mean and f_j(x) represents a deviation at x holding other component inputs fixed. A roughness penalty discourages rapid bending rather than simply small function values. Strong penalty makes a component almost linear or flat; weak penalty permits more shape. The effective degrees of freedom describe how much flexibility survives the penalty and need not be an integer.",
+  "deepDive": "A GAM is a likelihood model over an additive set of function spaces. Bases make the problem finite-dimensional, penalties control curvature, and centering makes component decomposition identifiable. Its interpretability comes from structural restriction, not from immunity to confounding or correlation. Effective use requires evidence about smoothing, support, interactions, component stability, and out-of-sample decision performance.",
+  "workedExample": "An electricity-demand GAM uses demand=beta0+f_temp(temperature)+f_hour(hour)+beta_weekday weekday. The temperature effect rises at cold values due to heating, falls in a mild band, and rises again during heat. Hour uses a cyclic smooth so 23:59 joins 00:00. Each smooth is centered, so beta0 describes the average linked demand under the training distribution. A temperature-by-hour tensor term is added only if later-week validation shows material residual structure and stable improvement.",
   "commonMistakes": [
-    "Applying the method without checking its assumptions or data-generating process.",
-    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+    {
+      "misconception": "A GAM automatically learns arbitrary interactions.",
+      "correction": "The default additive structure excludes interactions. Add tensor or varying-coefficient terms deliberately and validate their support and complexity."
+    },
+    {
+      "misconception": "A plotted smooth is the causal effect of that feature.",
+      "correction": "It is a conditional component of the fitted association under included terms and data support. Confounding, selection, and measurement still require causal reasoning."
+    },
+    {
+      "misconception": "More basis functions necessarily mean a wigglier final curve.",
+      "correction": "Basis dimension sets a ceiling. Smoothness penalties determine effective flexibility, so a rich basis can still yield an almost linear component."
+    },
+    {
+      "misconception": "Component shapes are stable whenever total predictions are stable.",
+      "correction": "Concurvity lets correlated smooths exchange contribution. Assess component stability across resamples and related specifications."
+    }
   ],
   "followUps": [
-    "What assumptions does Generalized Additive Models (GAMs) make?",
-    "How would you validate or debug Generalized Additive Models (GAMs) in practice?"
+    {
+      "question": "What is effective degrees of freedom in a GAM?",
+      "answer": "It summarizes the flexibility retained after penalization, often as the trace of a smoother or influence matrix. It can be fractional and is lower than the raw basis dimension under shrinkage."
+    },
+    {
+      "question": "How is a GAM different from polynomial regression?",
+      "answer": "A GAM adds separate smooth functions, typically represented by locally supported penalized splines, for multiple predictors. A raw polynomial is a global basis and does not by itself impose additive component-specific smoothing."
+    },
+    {
+      "question": "What is concurvity?",
+      "answer": "It is nonlinear redundancy: one predictor's smooth contribution can be approximated by smooth functions of other predictors, making component attribution unstable even if predictions remain good."
+    }
   ],
-  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "production": "Serialize link and family, feature transformations, each basis type and knot vector, boundary and cyclic constraints, centering vectors, penalty matrices and strengths, interaction terms, coefficients, and component order. Golden tests should prove that component contributions sum to the model score and that inverse-link predictions match the training implementation. Track range and density for every smooth, requests in sparse or extrapolated regions, component contribution distributions, residuals by feature and time, calibration or deviance, and tensor-cell support. Concurvity or drift may produce compensating component movements, so monitor decomposition as well as total score. Apply access and fairness review to component plots; a smooth proxy can encode sensitive structure. Canary new basis or smoothing choices on later data and retain the prior complete pipeline for rollback. If an input or interaction is unavailable, use an explicitly evaluated fallback rather than silently substituting a centered contribution.",
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "A generalized additive model (GAM) replaces a single linear predictor with a sum of learned smooth component functions while retaining an additive, inspectable structure. In a Gaussian GAM, E[Y|X]=beta0+f1(X1)+...+fp(Xp); with a link function, the additive predictor can model binary, count, and other exponential-family outcomes. This chapter explains identifiability constraints, spline bases, roughness penalties, backfitting, penalized likelihood, effective degrees of freedom, smoothness selection, uncertainty, and the limits of additive interpretation. You will see how concurvity generalizes collinearity when one feature's smooth function can mimic another's, and how tensor-product or varying-coefficient terms add only the interactions the problem needs. A worked energy-demand example separates nonlinear temperature and hour effects while treating weekday as a linear factor. The lab constructs centered spline blocks, fits a ridge-penalized additive model, compares with a scikit-learn pipeline, and verifies additivity, column permutation, and held-out improvement. Production guidance versions each basis and penalty, monitors feature support and component contributions, and routes unsupported combinations. GAM plots are conditional model components, not automatically causal effects or raw-data averages.",
+  "prerequisites": [
+    "polynomial-splines"
+  ],
+  "learningObjectives": [
+    "Formulate Gaussian and generalized additive models and explain component identifiability constraints.",
+    "Relate spline bases, roughness penalties, backfitting, and penalized likelihood to fitted smooth functions.",
+    "Diagnose overfitting, concurvity, missing interactions, boundary weakness, and misleading component plots.",
+    "Build and deploy an additive spline pipeline with reproducible component and support monitoring."
+  ],
+  "deepSections": [
+    {
+      "id": "model-and-identifiability",
+      "title": "Additive structure and identifiable components",
+      "body": "A Gaussian additive model writes E[Y|X]=beta0+sum_j f_j(X_j). A generalized additive model applies a link g(mu)=beta0+sum_j f_j(X_j), choosing a response family appropriate to outcome support and mean-variance behavior. Each f_j may use a spline basis B_j(x)^T theta_j. Without constraints, components are not unique: f_j+c and beta0-c produce identical predictions. Centering each smooth over training observations, sum_i f_j(x_ij)=0, makes the decomposition interpretable relative to the training distribution. Categorical and linear terms can appear alongside smooths. A component plot shows the estimated contribution on the link scale with other modeled terms held in the additive predictor; it is not the marginal raw-data relationship when predictors correlate. Transform through the inverse link for probability or count contrasts, remembering that additive link-scale changes become nonadditive on the response scale. Feature scaling, cyclic domains, monotonicity, and boundary constraints should reflect subject knowledge. For hour of day, a cyclic spline makes midnight join the prior evening; an ordinary spline can create an artificial boundary."
+    },
+    {
+      "id": "basis-penalty-and-fitting",
+      "title": "Basis representation, penalties, and fitting",
+      "body": "Represent each smooth with enough basis functions to capture plausible shape, then penalize roughness. A common objective is negative log-likelihood plus sum_j lambda_j theta_j^T S_j theta_j, where S_j penalizes curvature or coefficient differences. The null space of a second-derivative penalty contains constant and linear functions, so special identifiability and shrinkage choices determine whether a term can become exactly flat. Penalized iteratively reweighted least squares extends GLM fitting: update working responses and weights, then solve a penalized weighted least-squares problem. Backfitting gives an alternative view by repeatedly smoothing partial residuals. Smoothness parameters lambda_j may be selected by cross-validation, generalized cross-validation, marginal likelihood, or restricted maximum likelihood depending on framework and assumptions. Basis dimension is an upper limit, not the fitted effective degrees of freedom. A component pressed against its maximum basis dimension with residual structure may need a richer basis; a wildly wiggly term may reflect weak penalty, leakage, duplicates, or sparse regions. Check optimizer and smoothing convergence, not only a plotted line."
+    },
+    {
+      "id": "concurvity-interactions-uncertainty",
+      "title": "Concurvity, interactions, and uncertainty",
+      "body": "Collinearity occurs when linear predictor columns approximate one another. Concurvity is its smooth analogue: a smooth function of one predictor can be approximated by smooth functions of others. Temperature and season, age and tenure, or latitude and climate can trade contributions. Overall predictions may be stable while individual component shapes and intervals are not. Diagnose correlation, concurvity measures, resampled component stability, and changes after removing related terms. Additivity also assumes the shape of f_j does not depend on another predictor. Residual surfaces, domain knowledge, and held-out improvement can justify interactions. Tensor-product smooths combine bases from predictors and use penalties appropriate to different units; they are safer than naively treating two axes as commensurate. Varying-coefficient terms let one effect change smoothly with another variable. Complexity grows quickly, so predeclare a small interaction set and validate it. Pointwise intervals condition on estimated smoothing choices and do not provide simultaneous coverage of an entire curve. Bootstrap the full fitting and tuning process when component uncertainty drives decisions, respecting time and cluster structure."
+    },
+    {
+      "id": "evaluation-and-interpretation",
+      "title": "Evaluate shape, prediction, and support",
+      "body": "Compare the GAM with a linear model and a suitable high-capacity challenger on the same honest folds. Use metrics aligned with outcome family and decision: squared or absolute error for continuous outcomes, deviance and calibration for probabilities or counts, plus business loss. Inspect residuals on time, feature, and two-dimensional axes to find missing interactions or variance structure. Overlay training density and uncertainty on every component plot; a smooth over a nearly empty interval is largely penalty-driven. Test boundary and extrapolation behavior explicitly. For interpretation, report response-scale contrasts at realistic profiles and component stability across resamples, not only whether a smooth's omnibus test is significant. Multiple searched terms and shapes can produce optimistic discoveries. A fitted association can reflect confounding or feature selection and does not become causal because it is smooth. In production, component contributions provide useful drift diagnostics: the total score may remain stable while one component shifts and another compensates. Monitor both the prediction and its decomposition with the stored centering convention."
+    }
+  ],
+  "math": "Let eta_i=g(mu_i)=beta0+sum_j B_j(x_ij)^T theta_j. A penalized fit minimizes -ell(beta0,theta;y)+1/2 sum_j lambda_j theta_j^T S_j theta_j. For Gaussian identity-link data this is penalized least squares. Centering constraints such as 1^T B_j theta_j=0 identify each component relative to the intercept. The fitted-value smoother matrix A_lambda gives effective degrees of freedom trace(A_lambda), which decreases as penalties strengthen. Tensor interactions use basis products B_a(x_a) tensor B_b(x_b) with structured penalties rather than a single raw polynomial surface.",
+  "workedExamples": [
+    {
+      "title": "Why component centering is necessary",
+      "body": "Suppose predictions equal 10+f_temp(x)+f_hour(t). Replacing f_temp by f_temp+3 and the intercept by 7 leaves every prediction unchanged. Requiring the average training contribution of each smooth to be zero fixes this arbitrary shift. New-data component averages need not be zero; that change can itself diagnose drift."
+    },
+    {
+      "title": "Detect a missing interaction",
+      "body": "A temperature smooth fits average demand well, but residuals are positive on hot afternoons and negative on hot nights. The temperature effect depends on hour. Compare a predeclared tensor-product interaction with the additive model on later weeks, inspect support across temperature-hour cells, and retain it only if the gain and shape are stable."
+    }
+  ],
+  "lab": {
+    "language": "python",
+    "goal": "Build a centered additive spline design, fit penalized components, compare with an idiomatic scikit-learn pipeline, and verify additivity, permutation, and nonlinear generalization.",
+    "buildIt": "import numpy as np\ndef cubic_block(x,knots):\n    x=np.asarray(x,float).reshape(-1)\n    B=np.column_stack([x,x**2,x**3]+[np.maximum(x-k,0)**3 for k in knots])\n    return B\ndef additive_design(X,knots_by_feature,means=None):\n    blocks=[cubic_block(X[:,j],knots_by_feature[j]) for j in range(X.shape[1])]\n    raw=np.column_stack(blocks)\n    if means is None: means=raw.mean(0)\n    return np.column_stack([np.ones(len(X)),raw-means]),means\ndef fit_additive(X,y,knots,alpha=.02):\n    D,means=additive_design(X,knots); P=np.eye(D.shape[1]); P[0,0]=0\n    coef=np.linalg.solve(D.T@D+alpha*P,D.T@y)\n    return coef,means\nrng=np.random.default_rng(12)\nX=rng.uniform(-1,1,size=(240,2)); y=np.sin(2.6*X[:,0])+1.4*(X[:,1]**2-.33)+rng.normal(0,.12,240)\ntrain=np.arange(240)%4!=0; test=~train; knots=[[-.5,0,.5],[-.5,0,.5]]\ncoef,means=fit_additive(X[train],y[train],knots)\nDtest,_=additive_design(X[test],knots,means); pred=Dtest@coef",
+    "useIt": "from sklearn.pipeline import make_pipeline\nfrom sklearn.preprocessing import SplineTransformer\nfrom sklearn.linear_model import Ridge,LinearRegression\nsk=make_pipeline(SplineTransformer(n_knots=5,degree=3,include_bias=False),Ridge(alpha=.02)).fit(X[train],y[train])\nsk_pred=sk.predict(X[test])\nlinear=LinearRegression().fit(X[train],y[train])",
+    "verifyIt": "assert np.mean((pred-y[test])**2)<0.08\nassert np.mean((sk_pred-y[test])**2)<np.mean((linear.predict(X[test])-y[test])**2)\n# Additivity: changing feature 0 has the same contribution at two feature-1 values.\nbase=np.array([[0.1,-.8],[.7,-.8],[0.1,.8],[.7,.8]])\nDb,_=additive_design(base,knots,means); bp=Db@coef\nassert abs((bp[1]-bp[0])-(bp[3]-bp[2]))<1e-10\nperm=np.random.default_rng(2).permutation(train.sum())\ncoef2,means2=fit_additive(X[train][perm],y[train][perm],knots)\nassert np.allclose(means2,means)\nassert np.allclose(coef2,coef,atol=1e-8)\nassert np.isfinite(pred).all()",
+    "shipIt": "Persist per-component bases, centering vectors, penalties, link, interaction set, support, and component order; test component sums against total predictions, monitor contribution and support drift, and canary or roll back the complete GAM pipeline."
+  },
+  "exercises": [
+    {
+      "prompt": "Why impose sum_i f_j(x_ij)=0 for each smooth?",
+      "solution": "Without centering, arbitrary constants can move between a smooth and the intercept while predictions stay unchanged. The constraint identifies a unique component decomposition over training data."
+    },
+    {
+      "prompt": "A smooth has effective degrees of freedom near one. What does that suggest?",
+      "solution": "After penalization the component behaves approximately like a linear effect, though the exact null-space convention matters. Compare whether a simple linear term is adequate."
+    },
+    {
+      "prompt": "Residuals show a checkerboard over two predictors. What next?",
+      "solution": "This suggests an interaction missing from an additive model. Verify data support, predefine a tensor-product or varying-coefficient term, and evaluate it on honest grouped or temporal folds."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "layers",
+      "title": "Additive predictor decomposition",
+      "items": [
+        "Intercept",
+        "f1(temperature)",
+        "f2(hour)",
+        "Linear / categorical terms",
+        "Optional justified interaction",
+        "Inverse link to response"
+      ],
+      "caption": "A GAM builds one linked prediction from centered smooth component contributions and selected structured terms.",
+      "afterSection": "model-and-identifiability"
+    },
+    {
+      "type": "compare",
+      "title": "Stable prediction can hide unstable attribution",
+      "left": {
+        "title": "Low concurvity",
+        "items": [
+          "Components have distinct support",
+          "Shapes stable across resamples",
+          "Attribution is more defensible",
+          "Prediction and components agree"
+        ]
+      },
+      "right": {
+        "title": "High concurvity",
+        "items": [
+          "Smooths can mimic each other",
+          "Contributions trade off",
+          "Total prediction may stay stable",
+          "Report sensitivity, not certainty"
+        ]
+      },
+      "caption": "Concurvity is nonlinear redundancy and must be assessed separately from predictive performance.",
+      "afterSection": "concurvity-interactions-uncertainty"
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "statsmodels-gam",
+      "contribution": "Verifies the current penalized B-spline GAM formulation and supported Gaussian and Poisson workflows."
+    },
+    {
+      "resource": "isl",
+      "contribution": "Provides the additive-model, smooth-component, and statistical-learning interpretation used throughout the chapter."
+    },
+    {
+      "resource": "sklearn-spline-transformer",
+      "contribution": "Grounds the reusable B-spline basis and pipeline mechanics used in the runnable lab."
+    }
+  ]
 }

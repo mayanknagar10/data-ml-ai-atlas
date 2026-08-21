@@ -1,15 +1,39 @@
 import numpy as np
-from sklearn.datasets import make_regression
-X,y=make_regression(n_samples=250,n_features=12,n_informative=4,noise=15,random_state=0)
+def soft(t,a): return np.sign(t)*max(abs(t)-a,0.0)
+def ridge_fit(X,y,alpha):
+    X=np.asarray(X,float); y=np.asarray(y,float)
+    return np.linalg.solve(X.T@X+alpha*np.eye(X.shape[1]),X.T@y)
+def lasso_cd(X,y,alpha,steps=5000,tol=1e-12):
+    X=np.asarray(X,float); y=np.asarray(y,float); n,p=X.shape; b=np.zeros(p)
+    old=np.inf
+    for _ in range(steps):
+        for j in range(p):
+            r=y-X@b+X[:,j]*b[j]
+            b[j]=soft((X[:,j]@r)/n,alpha)/((X[:,j]@X[:,j])/n)
+        obj=np.mean((y-X@b)**2)/2+alpha*np.abs(b).sum()
+        if abs(old-obj)<tol: break
+        old=obj
+    return b,obj
+rng=np.random.default_rng(7)
+X=rng.normal(size=(120,4)); X=(X-X.mean(0))/X.std(0)
+y=2.5*X[:,0]-1.2*X[:,2]+rng.normal(scale=.25,size=120); y-=y.mean()
+ridge_b=ridge_fit(X,y,alpha=12.0)
+lasso_b,lasso_obj=lasso_cd(X,y,alpha=0.08)
 
 # ---- Use it ----
-from sklearn.pipeline import make_pipeline
-from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import Ridge,Lasso
-ridge=make_pipeline(StandardScaler(),Ridge(alpha=10)).fit(X,y)
-lasso=make_pipeline(StandardScaler(),Lasso(alpha=3,max_iter=10000)).fit(X,y)
-print(ridge[-1].coef_)
-print(lasso[-1].coef_)
+sk_ridge=Ridge(alpha=12.0,fit_intercept=False).fit(X,y)
+sk_lasso=Lasso(alpha=0.08,fit_intercept=False,max_iter=100000,tol=1e-12).fit(X,y)
 
 # ---- Verify it ----
-assert (abs(lasso[-1].coef_)<1e-8).sum() >= 1
+ols=np.linalg.lstsq(X,y,rcond=None)[0]
+assert np.linalg.norm(ridge_b)<np.linalg.norm(ols)
+assert np.allclose(ridge_b,sk_ridge.coef_,atol=1e-10)
+assert np.allclose(lasso_b,sk_lasso.coef_,atol=2e-7)
+assert np.count_nonzero(np.abs(lasso_b)<1e-8)>=2
+perm=np.array([2,0,3,1])
+perm_b,_=lasso_cd(X[:,perm],y,alpha=0.08)
+unperm=np.empty_like(perm_b); unperm[perm]=perm_b
+assert np.allclose(unperm,lasso_b,atol=2e-7)
+zero_obj=np.mean(y**2)/2
+assert lasso_obj<zero_obj

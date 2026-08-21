@@ -7,31 +7,178 @@
     "ds",
     "da"
   ],
-  "interviewAnswer": "AFT models describe how covariates accelerate or decelerate event time directly, offering an alternative interpretation to proportional hazards models.",
+  "interviewAnswer": "An AFT model writes log T=x beta+sigma epsilon, so exp(beta_j) is a time ratio when other covariates are fixed. A positive coefficient stretches every modeled time quantile; for example exp(0.2)=1.22 means about 22 percent longer time under the model. The error distribution determines survival and hazard shape: Weibull, log-normal, and log-logistic are common choices. For an observed event the likelihood contributes the density f(t|x); for right censoring it contributes S(t|x), because only survival past the censor time is known. I compare distributions with residuals, calibration, likelihood-based criteria and held-out horizon scores, inspect nonlinear and time-varying acceleration, and avoid unsupported tail extrapolation. Time ratios are not automatically causal, and a convenient parametric curve does not replace censoring, entry, or competing-risk design.",
   "keyPoints": [
-    "Models a distribution of log survival time.",
-    "Interpretation is time-ratio oriented.",
-    "Distributional assumption matters."
+    "AFT coefficients multiply the event-time scale rather than the instantaneous hazard.",
+    "Censored rows contribute survival probabilities, not event densities or negative labels.",
+    "The chosen error distribution determines hazard shape and extrapolated tails.",
+    "Weibull is both AFT and PH; log-normal and log-logistic generally are not PH.",
+    "Communicable time ratios remain conditional, model-based, and noncausal without identification."
   ],
   "resources": [
+    "aft-wei",
     "lifelines",
     "statsmodels-survival"
   ],
   "featured": false,
-  "why": "Accelerated Failure Time Models is a recurring foundation across data science and machine learning because it affects both theoretical correctness and practical system behavior.",
-  "intuition": "Models a distribution of log survival time.",
-  "deepDive": "AFT models describe how covariates accelerate or decelerate event time directly, offering an alternative interpretation to proportional hazards models. Interpretation is time-ratio oriented. Distributional assumption matters. The interview-level skill is not merely recalling the definition: explain the assumptions, what diagnostic evidence you would inspect, and what alternative you would choose when those assumptions fail.",
-  "workedExample": "A time ratio above 1 indicates a covariate is associated with longer survival under the chosen parameterization.",
+  "why": "Stakeholders often ask how long an intervention, device state, or customer characteristic delays an event. AFT models answer on that duration scale: covariates expand or contract the time axis. They can estimate medians and other quantiles even when proportional hazards is awkward, and a parametric distribution supports smooth survival curves and carefully bounded extrapolation. The cost is stronger structure. A log-normal model permits hazards that rise and then fall; a Weibull hazard is monotone; a log-logistic distribution can have a heavy tail. Choosing by convenience can create persuasive but false late-horizon predictions. Censoring also changes the likelihood, and delayed or interval observation needs additional terms. A rigorous AFT workflow uses substantive hazard expectations, graphical and residual checks, temporal validation, and sensitivity across plausible families before translating coefficients into operational claims.",
+  "intuition": "Imagine every subject follows the same underlying event-time movie, but a covariate changes playback speed. A time ratio of two makes landmarks such as the median and 90th percentile occur twice as late. Taking logs turns multiplicative time changes into an additive regression. Random variation around that regression follows a chosen error distribution, which induces a distribution for positive T. When an event is observed at t, the model must place density near t. When observation stops at c without an event, the model only needs to assign probability to T>c, so the contribution is survival S(c). Subjects censored late can be more informative about long duration than subjects censored early. The fitted distribution fills gaps and extends beyond observations, which is helpful inside support and dangerous in an unsupported tail.",
+  "deepDive": "AFT modeling is positive-duration regression with censoring-aware likelihood. Its distinctive payoff is the time ratio, a direct statement about how modeled quantiles stretch or contract. That interpretation is stronger than a generic risk score and therefore demands stronger checks: common acceleration, distribution and tail shape, correct censoring and entry contributions, covariate timing, and validation where follow-up exists. Parametric smoothness can improve estimation and enable carefully bounded forecasts, but it cannot create evidence beyond the observed population and time range.",
+  "workedExample": "A binary maintenance feature has fitted beta=0.30 in an AFT model. exp(0.30)=1.35, so conditional event-time quantiles are estimated to be 35 percent longer for maintained units under the common-acceleration model. If the reference median is 100 days with the same other covariates, the fitted maintained median is about 135 days. This is not a 35-point survival-probability increase, and it is not causal unless maintenance assignment and censoring are identified appropriately.",
   "commonMistakes": [
-    "Using the concept mechanically without checking assumptions or data semantics.",
-    "Reporting one metric/result without examining uncertainty, slices or failure modes."
+    {
+      "misconception": "exp(beta) is a hazard ratio in every AFT model.",
+      "correction": "It is a time ratio under the AFT parameterization. Only special families such as Weibull also admit a PH representation with transformed coefficients."
+    },
+    {
+      "misconception": "Censored observations contribute zero to the likelihood.",
+      "correction": "They contribute the probability of surviving beyond their censor time, which can strongly constrain the tail."
+    },
+    {
+      "misconception": "The best in-sample distribution criterion guarantees reliable long-range forecasts.",
+      "correction": "Tail extrapolation is assumption driven and needs domain checks, temporal validation, and sensitivity across plausible families."
+    },
+    {
+      "misconception": "A treatment time ratio from observational data is automatically causal.",
+      "correction": "Assignment, timing, confounding, censoring, competing events, and the target estimand require an explicit causal design."
+    }
   ],
   "followUps": [
-    "What assumptions or limitations does Accelerated Failure Time Models have?",
-    "How would you validate Accelerated Failure Time Models on a real dataset?"
+    {
+      "question": "Why is Weibull both PH and AFT?",
+      "answer": "Its scale transformation and power-form cumulative hazard allow covariates to be expressed either as constant time acceleration or as a constant hazard multiplier, with related coefficients."
+    },
+    {
+      "question": "How do you choose among log-normal and log-logistic?",
+      "answer": "Use plausible hazard and tail behavior, residual and nonparametric comparisons, held-out calibration and Brier scores, and sensitivity rather than one fit statistic alone."
+    },
+    {
+      "question": "What changes for interval-censored outcomes?",
+      "answer": "If the event is known only between L and R, its likelihood contribution is F(R)-F(L), or equivalently S(L)-S(R), computed stably."
+    }
   ],
-  "production": "In production, make assumptions explicit, validate on representative slices, compare with a simple baseline and monitor the signals that can drift.",
+  "production": "Publish a model card with time origin and unit, event and censor definitions, entry and interval rules, target population, distribution parameterization, link, feature transformations, optimizer tolerances, uncertainty method, maximum supported horizon, and tail fallback. Persist parameters and preprocessing as one versioned artifact. Validate convergence from multiple starts, gradient size, plausible parameter bounds, KM overlays, residuals, temporal Brier and calibration curves, quantile coverage, and operational utility. Monitor event and censoring latency, time distributions, covariate support, fitted shape, tail mass, calibration, subgroup errors, and numerical failures. Never silently extrapolate beyond the declared horizon; return an abstention or conservative policy. Shadow distribution or extraction changes and compare subject-level likelihood and predictions. Roll back event logic, preprocessing, parameters, and serving code together.",
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "Accelerated failure-time models place covariate effects directly on event time rather than on instantaneous hazard. In a log-linear AFT model, log T=x^T beta+sigma epsilon, so exp(beta_j) is a time ratio: values above one stretch the event-time distribution and values below one accelerate failure. This chapter derives censored likelihood contributions, compares Weibull, exponential, log-normal, and log-logistic assumptions, and explains when Weibull AFT is simultaneously a proportional-hazards model. It covers quantiles, survival and hazard recovery, residual and distributional diagnostics, nonlinearities, heterogeneity, delayed and interval censoring, extrapolation risk, and causal limits. A worked example translates a coefficient into median-time change. The lab implements a censored Weibull AFT likelihood, fits it with SciPy, verifies parameter recovery and time-unit invariance, and turns fitted parameters into survival predictions. Production guidance versions the time unit, distribution, censoring contribution, feature encoding, optimizer, supported horizon, and tail policy. AFT models provide unusually communicable duration effects, but that clarity depends on an adequate distribution and common acceleration structure.",
+  "prerequisites": [
+    "censoring-survival",
+    "mle-map"
+  ],
+  "learningObjectives": [
+    "Interpret AFT coefficients as multiplicative changes in event-time quantiles under a common acceleration model.",
+    "Construct right-censored likelihoods from event densities and censoring survival contributions.",
+    "Compare Weibull, log-normal, and log-logistic tail and hazard assumptions using diagnostics and validation.",
+    "Recognize extrapolation, interval censoring, heterogeneity, time-varying effects, and causal limitations in deployment."
+  ],
+  "deepSections": [
+    {
+      "id": "aft-formulation",
+      "title": "Log-time regression creates a common acceleration factor",
+      "body": "The generic AFT form is log T=x^T beta+sigma epsilon, with sigma>0 and a specified standardized error distribution. Increasing x_j by one shifts log time by beta_j and multiplies every conditional quantile by exp(beta_j), assuming no interaction changes the scale or shape. An intercept sets baseline duration in the chosen time unit. The error distribution supplies a standard survival function, from which conditional survival, density, hazard, mean where finite, and quantiles follow. For Weibull AFT it is convenient to write scale lambda(x)=exp(x beta) and shape rho; S(t|x)=exp[-(t/lambda)^rho]. The pth event-time quantile is lambda[-log(1-p)]^(1/rho). Covariate effects may be modeled with splines and interactions, but the basic model still imposes common acceleration across quantiles. Quantile ratios that vary strongly by p indicate this restriction or distribution may be inadequate. Centering and scaling aid optimization but must be reversed consistently for interpretation."
+    },
+    {
+      "id": "censored-likelihood",
+      "title": "Likelihood contributions encode exactly what observation reveals",
+      "body": "Let y_i=min(T_i,C_i) and delta_i indicate an observed event. Under independent right censoring conditional on modeled information, the event-time likelihood contribution is f(y_i|x_i)^delta_i S(y_i|x_i)^(1-delta_i), ignoring censoring-distribution factors that do not involve event parameters. On the log scale, sum delta_i log f plus (1-delta_i)log S. For Weibull, log f=log rho-rho log lambda+(rho-1)log y-(y/lambda)^rho, while log S=-(y/lambda)^rho. Left truncation conditions the contribution on surviving past entry and divides by S(entry). Interval censoring contributes S(L)-S(R), requiring stable log-difference calculations. Left censoring contributes F(R). Treating all non-events as ordinary negatives discards their follow-up time and biases estimates. Extreme times, overflow in exp(x beta), and nearly zero interval probabilities require transformed parameters, scaling, bounds, stable logarithms, gradients, and convergence checks. Standard errors can come from the observed information or robust sandwich methods when appropriate."
+    },
+    {
+      "id": "distribution-diagnostics",
+      "title": "Distribution choice controls hazard shape and tail claims",
+      "body": "An exponential AFT model fixes constant hazard and is often too rigid. Weibull allows monotonically increasing hazard when rho>1 and decreasing hazard when rho<1; it is special because it also satisfies proportional hazards, with a sign-and-scale relationship between AFT and PH coefficients. Log-normal hazards typically rise and then decline, while log-logistic hazards can be nonmonotone and have heavier tails; their moments may not all exist. Compare plausible families using domain knowledge, nonparametric KM overlays, transformed survival plots, Cox-Snell or randomized quantile residuals, held-out Brier scores, calibration, and likelihood criteria used on the same observations. A lower AIC is not proof of reliable extrapolation. Examine event-time quantile residuals by covariate and calendar cohort. Flexible spline-based parametric survival can reduce shape bias but increases tuning and extrapolation sensitivity. Mixtures, frailty, cure fractions, and competing causes can mimic heavy tails or nonmonotone hazards, so distributional failure may point to omitted structure rather than a different named family alone."
+    },
+    {
+      "id": "interpretation-and-deployment",
+      "title": "Time ratios support decisions only inside an identified, supported target",
+      "body": "A time ratio is conditional on covariates and the assumed common acceleration structure. It does not mean every individual's event is literally delayed by that factor, and an observational treatment coefficient is not causal without exchangeability, positivity, consistency, timing, and censoring assumptions. Time-dependent treatment can create immortal-time bias if encoded as a baseline exposure. Competing events alter the estimand: modeling cause-specific time while censoring competing causes does not estimate the real-world probability of the cause in isolation. For prediction, choose horizons within mature follow-up, validate probabilities and quantiles on later cohorts, and compare against KM and Cox baselines. For operations, translate distributions into quantities such as probability of failure before warranty, expected workload by week, or a supported quantile. Define behavior for out-of-range covariates and tails, including truncation, abstention, or conservative fallback. Re-estimate or recalibrate when the time origin, event process, population, or intervention policy changes."
+    }
+  ],
+  "math": "log T=x^T beta+sigma epsilon. In Weibull parameterization lambda_i=exp(x_i^T beta), rho>0, S_i(t)=exp[-(t/lambda_i)^rho], and f_i(t)=(rho/lambda_i)(t/lambda_i)^(rho-1)exp[-(t/lambda_i)^rho]. The right-censored log likelihood is sum_i delta_i log f_i(y_i)+(1-delta_i)log S_i(y_i). A one-unit covariate change multiplies every modeled quantile by exp(beta_j). Weibull median is lambda(log 2)^(1/rho). With delayed entry a_i, subtract log S_i(a_i) from the contribution.",
+  "workedExamples": [
+    {
+      "title": "Event and censor contributions",
+      "body": "Two otherwise identical subjects are observed to day 10. One fails at day 10 and contributes f(10); the other is censored at day 10 and contributes S(10). The second tells us only that its latent event time exceeds 10."
+    },
+    {
+      "title": "Weibull median",
+      "body": "With scale lambda=12 and shape rho=2, median time is 12*sqrt(log 2), about 9.99. Doubling lambda doubles that and every other quantile while leaving rho unchanged."
+    }
+  ],
+  "lab": {
+    "language": "python",
+    "goal": "Implement a right-censored Weibull AFT likelihood, fit it with SciPy, verify parameter recovery and time-unit invariance, and produce monotone survival curves.",
+    "buildIt": "import numpy as np\nrng=np.random.default_rng(17); n=900; x=rng.uniform(-1,1,n); X=np.c_[np.ones(n),x]\nbeta_true=np.array([2.0,0.55]); rho_true=1.7; scale=np.exp(X@beta_true)\nlatent=scale*(-np.log(rng.uniform(size=n)))**(1/rho_true); censor=rng.exponential(12.0,n)\ntime=np.minimum(latent,censor); event=(latent<=censor).astype(int)\ndef weibull_aft_nll(params,X,time,event):\n    beta=np.asarray(params[:-1]); rho=np.exp(params[-1]); logt=np.log(np.asarray(time)); logscale=X@beta; z=np.exp(rho*(logt-logscale))\n    logf=np.log(rho)-rho*logscale+(rho-1)*logt-z; logs=-z\n    return -np.sum(event*logf+(1-event)*logs)\ndef survival_curve(params,row,grid):\n    rho=np.exp(params[-1]); lam=np.exp(np.asarray(row)@params[:-1]); return np.exp(-(np.asarray(grid)/lam)**rho)",
+    "useIt": "from scipy.optimize import minimize\nstart=np.array([np.log(np.median(time)),0.0,0.0])\nfit=minimize(weibull_aft_nll,start,args=(X,time,event),method='L-BFGS-B',bounds=[(None,None),(None,None),(-3,3)])\nparams=fit.x; beta_hat=params[:-1]; rho_hat=np.exp(params[-1])\nfit_days2=minimize(weibull_aft_nll,start+np.array([np.log(2),0,0]),args=(X,2*time,event),method='L-BFGS-B',bounds=[(None,None),(None,None),(-3,3)])\ngrid=np.linspace(.1,20,100); s_low=survival_curve(params,[1,-1],grid); s_high=survival_curve(params,[1,1],grid)",
+    "verifyIt": "assert fit.success and fit_days2.success\nassert .2<event.mean()<.9\nassert np.allclose(beta_hat,beta_true,atol=.13)\nassert abs(rho_hat-rho_true)<.18\n# Changing days to two-day units shifts only the log-time intercept by log(2).\nassert abs((fit_days2.x[0]-params[0])-np.log(2))<2e-4\nassert abs(fit_days2.x[1]-params[1])<2e-4 and abs(fit_days2.x[2]-params[2])<2e-4\nassert np.all(np.diff(s_low)<=0) and np.all(np.diff(s_high)<=0)\nassert np.all(s_high>=s_low)\nassert np.isfinite(weibull_aft_nll(params,X,time,event))",
+    "shipIt": "Version time unit, distribution, event, censoring and entry likelihood, preprocessing, optimizer and tail policy; validate temporal calibration and quantiles, monitor support and convergence, and roll back the full compatible artifact."
+  },
+  "exercises": [
+    {
+      "prompt": "An AFT coefficient is log(0.8). What does it mean?",
+      "solution": "A one-unit increase multiplies modeled event-time quantiles by 0.8, representing about 20 percent shorter times under the model."
+    },
+    {
+      "prompt": "Write the likelihood contribution for a subject censored at c.",
+      "solution": "S(c|x), the probability their latent event time exceeds c; on the log scale it contributes log S(c|x)."
+    },
+    {
+      "prompt": "Why might a log-normal model fit where Weibull fails?",
+      "solution": "Log-normal permits a hazard that rises and then falls, whereas Weibull hazard is monotone. The choice still needs tail and validation checks."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "flow",
+      "title": "AFT from log time to decisions",
+      "items": [
+        "Choose time origin and family",
+        "Model log T",
+        "Add density or survival likelihood terms",
+        "Validate shape and calibration",
+        "Translate to supported time quantiles"
+      ],
+      "caption": "The distribution connects regression coefficients to positive event times and tail behavior.",
+      "afterSection": "censored-likelihood"
+    },
+    {
+      "type": "compare",
+      "title": "AFT family assumptions",
+      "left": {
+        "title": "Weibull",
+        "items": [
+          "Monotone hazard",
+          "PH and AFT",
+          "Power-law cumulative hazard",
+          "Moderate tail flexibility"
+        ]
+      },
+      "right": {
+        "title": "Log-normal / log-logistic",
+        "items": [
+          "Nonmonotone hazard possible",
+          "Generally not PH",
+          "Different tail weights",
+          "Require tail sensitivity"
+        ]
+      },
+      "caption": "Named families encode substantively different hazard and extrapolation shapes.",
+      "afterSection": "distribution-diagnostics"
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "aft-wei",
+      "contribution": "Grounds AFT modeling, interpretation, and censored-regression methodology in a foundational review."
+    },
+    {
+      "resource": "lifelines",
+      "contribution": "Verifies current Weibull, log-normal, log-logistic, penalization, and prediction conventions."
+    },
+    {
+      "resource": "statsmodels-survival",
+      "contribution": "Provides an independent official survival-analysis reference and implementation context."
+    }
+  ]
 }

@@ -6,41 +6,206 @@
   "roles": [
     "ds"
   ],
-  "interviewAnswer": "For rare events, accuracy is usually misleading. Evaluate precision/recall, PR-AUC, recall at alert budget, expected cost and time-to-detection; choose thresholds based on operational capacity and error costs.",
+  "interviewAnswer": "For rare events I separate ranking, probability, threshold, and operations. I report precision-recall curves or average precision, recall at the actual top-k review capacity, and threshold-specific counts and cost; accuracy is usually uninformative and ROC AUC can conceal false-positive burden. Precision and AP depend on prevalence, so the evaluation population and sampling weights must match deployment. If scores are probabilities I also test calibration and proper losses. I choose the threshold on validation data from costs, capacity, or a recall constraint, then evaluate once on a later untouched window at the incident level. Because labels are delayed and only alerts may be reviewed, I track unknowns, random-audit nonalerts, and report uncertainty.",
   "keyPoints": [
-    "Base rate determines achievable precision.",
-    "Threshold should reflect cost/capacity.",
-    "Time leakage is common in fraud/anomaly evaluation."
+    "Ranking, calibration, threshold performance, and queue operations are different layers.",
+    "Precision and the PR baseline change with event prevalence.",
+    "Recall at k directly represents a fixed review budget.",
+    "Thresholds must be chosen outside the final evaluation window.",
+    "Selective and delayed labels require audits and explicit unknown status."
   ],
   "resources": [
-    "sklearn",
+    "pr-imbalanced-paper",
+    "sklearn-average-precision",
+    "sklearn-calibration",
     "google-rules-ml"
   ],
   "featured": true,
-  "why": "Rare-event Evaluation & Alert Thresholds appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
-  "intuition": "Base rate determines achievable precision.",
-  "deepDive": "For rare events, accuracy is usually misleading. Evaluate precision/recall, PR-AUC, recall at alert budget, expected cost and time-to-detection; choose thresholds based on operational capacity and error costs. Threshold should reflect cost/capacity. Time leakage is common in fraud/anomaly evaluation. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
-  "workedExample": "If analysts can review 500 alerts/day, optimize recall among the top 500 rather than generic 0.5-threshold accuracy.",
+  "why": "A model can have ROC AUC 0.98 and still generate thousands of false alerts for each true event if deployment prevalence is one in a million. Conversely, a modest precision can be economically valuable when an event is catastrophic and review is cheap. Rare-event systems are constrained queues and decision policies, not leaderboard classifiers. Evaluation must therefore show denominators and absolute counts, connect score thresholds to capacity and cost, and respect how cases become labeled. Investigators often review only high scores, creating a feedback loop where nonalerts appear negative by default. One underlying incident can create many positive rows and inflate recall while exhausting the queue. A rigorous evaluation aligns the observation and action unit, uses later representative data, reports uncertainty driven by the small number of events, and makes clear which conclusions depend on assumed costs or prevalence.",
+  "intuition": "Imagine sorting one million cases by score and reviewing the top one thousand. The most useful question is how many true incidents appear in that queue and how many reviews are wasted—not how many of the 999,000 unreviewed negatives were ranked below a random positive. Precision is the fraction of reviewed alerts that are true; recall is the fraction of all true events found. As the threshold falls, recall tends to rise while the queue expands and precision often falls. The precision-recall curve traces this trade-off. Its no-skill precision baseline is the event prevalence, so a score with 10 percent precision is extraordinary when prevalence is 0.01 percent but poor when prevalence is 20 percent. Threshold selection places a price or constraint on one operating point. Calibration adds a different claim: among cases assigned probability p, roughly p should occur.",
+  "deepDive": "Rare-event evaluation is a measurement and queue-design problem. Ranking metrics describe score order, probability metrics describe beliefs, threshold counts describe one rule, and incident operations describe the actual action. Prevalence, sampling, label maturity, review selection, and grouping alter the evidence. A credible claim therefore includes raw counts, capacity, uncertainty, and a locked later-window policy.",
+  "workedExample": "A fraud stream has 100,000 transactions and 100 confirmed fraud incidents. Investigators can review 500. The top 500 scores contain 60 incidents: precision@500=12 percent, recall@500=60 percent, and lift is 0.12/0.001=120. The remaining 40 incidents define missed-event loss. If alerts cluster into 300 accounts, report both transaction and account-incident counts and evaluate queue capacity after grouping.",
   "commonMistakes": [
-    "Applying the method without checking its assumptions or data-generating process.",
-    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+    {
+      "misconception": "High accuracy means a rare-event model works.",
+      "correction": "An all-negative classifier can have near-perfect accuracy while recall is zero. Show positive support, counts, precision, recall, and capacity metrics."
+    },
+    {
+      "misconception": "ROC AUC fully captures false-alert burden.",
+      "correction": "FPR divides by a huge negative population. Inspect PR, absolute FP, precision, and the actual operating point or top-k queue."
+    },
+    {
+      "misconception": "Average precision is independent of prevalence.",
+      "correction": "Its precision terms and random baseline depend on the event rate. Evaluate under representative prevalence or correct known sampling."
+    },
+    {
+      "misconception": "Cases without a positive label are negatives.",
+      "correction": "Labels may be delayed, selectively reviewed, or unknown. Track maturity and audit nonalerts instead of silently assigning zero."
+    }
   ],
   "followUps": [
-    "What assumptions does Rare-event Evaluation & Alert Thresholds make?",
-    "How would you validate or debug Rare-event Evaluation & Alert Thresholds in practice?"
+    {
+      "question": "What is the difference between PR AUC and average precision?",
+      "answer": "Average precision weights precision by recall increments without linear interpolation; trapezoidal PR area interpolates between operating points and can differ, sometimes optimistically."
+    },
+    {
+      "question": "When is recall at k preferable?",
+      "answer": "When the system reviews a fixed number of cases per period. It directly measures the event fraction captured within that capacity."
+    },
+    {
+      "question": "How do you compare precision across populations?",
+      "answer": "Account for prevalence and sampling. Report each population's event rate, counts, and threshold; use reweighting only when selection probabilities and transport assumptions are credible."
+    }
   ],
-  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
-  "visual": {
-    "type": "concept-map",
-    "title": "Rare-event Evaluation & Alert Thresholds",
-    "items": [
-      "Base rate determines achievable precision.",
-      "Threshold should reflect cost/capacity.",
-      "Time leakage is common in fraud/anomaly evaluation."
-    ],
-    "caption": "A compact concept map for the most important ideas in this lesson."
-  },
+  "production": "Version the label definition and maturity, observation and incident grouping, model score, calibration, capacity, costs, threshold or top-k policy, cooldown, and reviewer workflow. Dashboards should show TP, FP, FN estimates, unknowns, precision, recall or audited recall, top-k yield, backlog, time to review, time to detect, prevalence, label maturity, and subgroup counts with uncertainty. Sample nonalerts for audit and exploration to break selective-label feedback. Reconcile alert rows to unique incidents and downstream outcomes. Secure sensitive alert explanations and investigator notes. Define degradation behavior when volume exceeds capacity, labels stop arriving, or score service fails. Shadow and replay new score-policy pairs on identical cohorts, freeze final later-window evaluation, and roll back calibration, grouping, and threshold with the model when cost, yield, backlog, or fairness limits fail.",
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "Rare-event evaluation asks whether a score produces useful decisions when positives are scarce, labels are delayed or selective, and false alerts consume real capacity. Accuracy and even ROC AUC can hide failure: predicting every case negative gives high accuracy, while a small false-positive rate can still overwhelm investigators. This chapter derives precision, recall, specificity, false-positive rate, precision-recall curves, non-interpolated average precision, lift, recall at k, calibration, proper scores, expected cost, and threshold selection. It explains why precision and average precision depend on prevalence, why evaluation must use the deployment sampling unit and time window, and why alert deduplication changes the metric denominator. You will handle uncertain labels, review selection, delayed outcomes, incident grouping, confidence intervals, and threshold overfitting. A worked fraud queue example turns a review budget into recall-at-capacity and net value. The lab implements confusion metrics, average precision, top-k recall, and coherent cost selection, then verifies them against scikit-learn. Production guidance versions score and policy separately, monitors queue and incident yield, audits nonalerts, and recalibrates or reselects thresholds when prevalence, cost, capacity, or label processes change.",
+  "prerequisites": [
+    "classification-metrics",
+    "anomaly-types"
+  ],
+  "learningObjectives": [
+    "Compute and interpret rare-event ranking, threshold, probability, and capacity metrics without conflating them.",
+    "Explain how prevalence, sampling, label delay, and incident grouping affect precision-recall evidence.",
+    "Select a threshold from coherent costs or operational constraints on data independent of final evaluation.",
+    "Design production audits and confidence estimates for selective, delayed, and incomplete labels."
+  ],
+  "deepSections": [
+    {
+      "id": "metrics-and-denominators",
+      "title": "Start with counts, denominators, and units",
+      "body": "At threshold h, true positives TP are alerted events that are positive, false positives FP alerted negatives, false negatives FN missed positives, and true negatives TN unalerted negatives. Precision=TP/(TP+FP), recall=TP/(TP+FN), specificity=TN/(TN+FP), and false-positive rate=FP/(FP+TN). Always report the four counts and undefined cases, since a ratio can hide tiny support. Accuracy=(TP+TN)/N is dominated by TN under extreme imbalance. Balanced accuracy averages recall and specificity but still does not show queue burden. Decide whether a positive is a row, account-day, episode, or unique incident. If one outage creates 10,000 anomalous metrics, row recall can be perfect while incident detection is one and alert volume is disastrous. Apply grouping and cooldown before calculating operational precision. For time-to-detection tasks, include latency and whether the event was detected before an action deadline. Stratify by source and subgroup, but show confidence intervals because rare slices may contain only a handful of positives."
+    },
+    {
+      "id": "ranking-and-prevalence",
+      "title": "Evaluate ranking under the deployment prevalence",
+      "body": "ROC curves plot recall against false-positive rate, and ROC AUC is the probability a random positive outranks a random negative under standard assumptions. It is prevalence-invariant as a ranking statistic, but an apparently tiny FPR multiplied by a huge negative population creates a large queue. Precision-recall curves plot precision against recall and expose that burden. Average precision in scikit-learn is sum_n (R_n-R_{n-1})P_n over score thresholds; it is not trapezoidal interpolation and can differ from PR AUC. A random ranking's expected precision is prevalence. Precision, PR curves, and AP change when prevalence changes even if class-conditional score distributions are stable. Evaluate on a representative prevalence or use known sampling weights. Case-control or deliberately balanced test sets cannot produce deployment precision without correction. Recall at k asks what fraction of positives are found in the top k scores; precision at k gives queue yield. Lift at k divides precision at k by prevalence. Report variation across time because event clusters can make one period look much better than another."
+    },
+    {
+      "id": "threshold-cost-and-calibration",
+      "title": "Choose one operating policy without contaminating the test",
+      "body": "Select a threshold on validation data after defining costs or constraints. With calibrated probability p, false-positive cost C_FP and false-negative cost C_FN under zero cost for correct decisions, alert when p>=C_FP/(C_FP+C_FN), assuming costs are coherent and constant. Real systems add investigation cost, intervention side effects, event severity, customer friction, and capacity; solve expected value or a constrained policy instead of forcing a universal F1 score. F_beta encodes a precision-recall trade-off but not explicit economic units. A top-k policy naturally handles fixed capacity and score-distribution drift, though its threshold and risk change with volume. Calibration is separate from ranking. Reliability diagrams, log loss, and Brier score help when probabilities drive decisions, but rare bins need uncertainty and representative sampling. Fit a calibrator on predictions from data independent of base-model fitting. Once threshold, grouping, and cooldown are selected, lock them and evaluate on an untouched later window. Repeatedly tuning to the test queue overstates performance."
+    },
+    {
+      "id": "labels-audits-and-uncertainty",
+      "title": "Account for selective labels, delay, and uncertainty",
+      "body": "Many event labels arrive after chargeback, failure analysis, or investigation. Exclude immature outcomes from final denominators or use survival and censoring methods; treating them as negatives creates temporal bias. Review labels are selectively observed because the score decides what investigators see. An unreviewed case is unknown, not a confirmed negative. Randomly audit a statistically useful sample of nonalerts and explore some score ranges to estimate missed-event rate and support future learning. Adjudication can be noisy or policy-dependent; record label source, timestamp, confidence, and definition version. Deduplicate correlated rows and use cluster or block bootstrap intervals when events share incidents, entities, or time. With ten positives, recall can change ten percentage points from one case; report intervals and raw counts. Compare policies using paired replay on identical cases. In production, monitor alert backlog, disposition delay, audit yield, label maturity, prevalence estimates, score and threshold drift, and incident outcomes. A queue that exceeds capacity changes which alerts receive labels and invalidates naive trend comparisons."
+    }
+  ],
+  "math": "Precision=TP/(TP+FP), recall=TP/(TP+FN), FPR=FP/(FP+TN). Average precision AP=sum_n(R_n-R_{n-1})P_n at successive score thresholds. Precision at top k=TP_k/k and recall at k=TP_k/P, where P is total positives. Lift@k=precision@k/prevalence. With calibrated p and constant costs, alert if C_FP(1-p)<=C_FN p, equivalently p>=C_FP/(C_FP+C_FN). Costs, capacities, and sampling weights must correspond to the deployment unit.",
+  "workedExamples": [
+    {
+      "title": "Low FPR can still overload a queue",
+      "body": "At prevalence 0.01 percent in ten million daily cases, there are about 1,000 positives and 9,999,000 negatives. Recall 90 percent with FPR 0.1 percent yields 900 TP and about 9,999 FP: precision is only about 8.3 percent and the queue is nearly 10,900, despite an impressive-looking FPR."
+    },
+    {
+      "title": "Delayed labels distort last week's precision",
+      "body": "Chargebacks mature over 60 days. Calculating precision after seven days labels most recent alerts negative and makes a new policy appear worse. Freeze evaluation cohorts until maturity or use an explicit censoring model, and compare policies at equal label age."
+    }
+  ],
+  "lab": {
+    "language": "python",
+    "goal": "Implement rare-event counts, top-k metrics, average precision, and cost-sensitive threshold selection, then verify against scikit-learn and imbalance invariants.",
+    "buildIt": "import numpy as np\ndef counts(y,score,threshold):\n    y=np.asarray(y,int); pred=np.asarray(score)>=threshold\n    tp=int(np.sum(pred&(y==1))); fp=int(np.sum(pred&(y==0)))\n    fn=int(np.sum((~pred)&(y==1))); tn=int(np.sum((~pred)&(y==0)))\n    return tp,fp,fn,tn\ndef average_precision(y,score):\n    order=np.argsort(-np.asarray(score),kind='stable'); yy=np.asarray(y)[order]\n    precision=np.cumsum(yy)/(np.arange(len(yy))+1)\n    return float(np.sum(precision*yy)/np.sum(yy))\ndef top_k(y,score,k):\n    order=np.argsort(-np.asarray(score),kind='stable')[:k]; tp=np.asarray(y)[order].sum()\n    return float(tp/k),float(tp/np.sum(y))\ndef best_cost_threshold(y,score,c_fp=1,c_fn=8):\n    candidates=np.r_[np.inf,np.sort(np.unique(score))[::-1],-np.inf]\n    rows=[]\n    for h in candidates:\n        tp,fp,fn,tn=counts(y,score,h); rows.append((c_fp*fp+c_fn*fn,h))\n    return min(rows,key=lambda z:z[0])\ny=np.array([0,0,1,0,0,0,1,0,0,0,0,0,1,0,0,0,0,0,0,0])\nscore=np.array([.05,.2,.91,.8,.08,.1,.7,.6,.03,.25,.15,.35,.65,.12,.55,.18,.02,.3,.45,.5])\nap=average_precision(y,score); p3,r3=top_k(y,score,3); best=best_cost_threshold(y,score)",
+    "useIt": "from sklearn.metrics import average_precision_score,confusion_matrix\nsk_ap=average_precision_score(y,score)\nthreshold=best[1]\nsk_tn,sk_fp,sk_fn,sk_tp=confusion_matrix(y,score>=threshold,labels=[0,1]).ravel()",
+    "verifyIt": "assert abs(ap-sk_ap)<1e-12\nassert (p3,r3)==(2/3,2/3)\ntp,fp,fn,tn=counts(y,score,threshold)\nassert (tp,fp,fn,tn)==(sk_tp,sk_fp,sk_fn,sk_tn)\nall_negative_accuracy=np.mean(y==0)\nassert all_negative_accuracy==0.85\nassert top_k(y,np.zeros_like(score),len(y))[1]==1.0\nassert best[0]<=8*np.sum(y)\nassert abs(np.mean(y)-0.15)<1e-12",
+    "shipIt": "Version label and incident definitions, maturity window, score, grouping, costs, capacity and threshold; report raw counts and uncertainty, audit nonalerts, monitor backlog and prevalence, and roll back score-plus-policy together."
+  },
+  "exercises": [
+    {
+      "prompt": "An all-negative classifier is 99.9 percent accurate. What is its recall?",
+      "solution": "Zero if any positives exist. Accuracy is dominated by negatives and is not sufficient for rare-event evaluation."
+    },
+    {
+      "prompt": "Why can AP fall after deployment even if ranking distributions within classes are unchanged?",
+      "solution": "A lower deployment prevalence reduces precision at operating points and therefore AP. Compare representative populations and prevalence."
+    },
+    {
+      "prompt": "You tuned the threshold on the final test window. What must change?",
+      "solution": "Treat that window as validation, lock the policy, and evaluate once on a new untouched later window. Otherwise the reported operating performance is optimistically selected."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "curve",
+      "title": "Precision-recall operating trade-off",
+      "series": [
+        {
+          "label": "Model",
+          "points": [
+            [
+              0.08,
+              0.92
+            ],
+            [
+              0.25,
+              0.8
+            ],
+            [
+              0.45,
+              0.63
+            ],
+            [
+              0.65,
+              0.46
+            ],
+            [
+              0.82,
+              0.3
+            ],
+            [
+              0.96,
+              0.18
+            ]
+          ]
+        },
+        {
+          "label": "Prevalence baseline",
+          "points": [
+            [
+              0.05,
+              0.12
+            ],
+            [
+              0.97,
+              0.12
+            ]
+          ]
+        }
+      ],
+      "caption": "Conceptual PR curve: the baseline equals prevalence, and each threshold maps to a different queue size and yield.",
+      "afterSection": "ranking-and-prevalence"
+    },
+    {
+      "type": "flow",
+      "title": "Evidence from score to outcome",
+      "items": [
+        "Representative later cohort",
+        "Score ranking",
+        "Grouping + threshold/top-k",
+        "Review queue",
+        "Mature labels + audits",
+        "Incident value and uncertainty"
+      ],
+      "caption": "Rare-event evaluation must include the operational policy and selectively observed label process.",
+      "afterSection": "labels-audits-and-uncertainty"
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "pr-imbalanced-paper",
+      "contribution": "Provides empirical and analytical motivation for PR evaluation when imbalance makes ROC interpretation misleading."
+    },
+    {
+      "resource": "sklearn-average-precision",
+      "contribution": "Verifies the current non-interpolated AP formula and exact implementation semantics."
+    },
+    {
+      "resource": "sklearn-calibration",
+      "contribution": "Grounds the separate probability-calibration workflow and need for independent calibration predictions."
+    }
+  ]
 }

@@ -6,46 +6,185 @@
   "roles": [
     "ds"
   ],
-  "interviewAnswer": "Hybrid search combines lexical signals, which excel at exact terms and identifiers, with semantic vector similarity, which captures paraphrases. Scores can be normalized/fused or candidates reranked jointly.",
+  "interviewAnswer": "I run lexical and vector retrieval over the same eligible corpus, union candidates by stable document ID, and fuse ranks or calibrated features. RRF gives document d score sum_b 1/(k0+rank_b(d)); it is robust when BM25 and cosine score scales differ and handles missing documents naturally, but ignores score margins. Weighted score fusion needs per-query or learned normalization, and learned fusion needs unbiased features and judgments. Candidate windows are tuned for union Recall@K before reranking. I evaluate lexical-only, vector-only and hybrid on exact-ID, semantic, mixed, multilingual and filtered slices, with latency and failure guardrails. Filters and permissions apply consistently to both branches. If one branch times out, the system returns the healthy branch with explicit observability rather than an empty or unauthorized result set.",
   "keyPoints": [
-    "Lexical and dense methods fail differently.",
-    "Reciprocal rank fusion is a simple robust fusion.",
-    "Evaluate by query slices."
+    "Hybrid value comes from complementary candidate recall, not from adding two fashionable components.",
+    "Raw lexical and vector scores generally have incompatible query-dependent scales.",
+    "RRF combines rank positions robustly; calibrated or learned fusion can use score margins with more assumptions.",
+    "Branch depths, filters, deduplication and stable IDs determine the union available to final ranking.",
+    "Latency, versioning and branch-degradation behavior are part of relevance correctness."
   ],
   "resources": [
-    "ir-book",
-    "faiss"
+    "rrf-paper",
+    "elastic-hybrid",
+    "bm25-robertson",
+    "faiss-index-guide"
   ],
   "featured": true,
-  "why": "Hybrid Lexical + Vector Retrieval appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
-  "intuition": "Lexical and dense methods fail differently.",
-  "deepDive": "Hybrid search combines lexical signals, which excel at exact terms and identifiers, with semantic vector similarity, which captures paraphrases. Scores can be normalized/fused or candidates reranked jointly. Reciprocal rank fusion is a simple robust fusion. Evaluate by query slices. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
-  "workedExample": "Technical documentation search should match both an exact API symbol and semantically similar explanations.",
+  "why": "Lexical retrieval is precise for quoted phrases, identifiers, rare names and explicit terms. Dense retrieval handles paraphrases and vocabulary mismatch. Either can fail catastrophically on the other's strength: an embedding may blur two product codes, while BM25 misses `reset credentials` for a document titled `change password`. A hybrid candidate set can cover both, often giving a reranker a better ceiling. Yet careless fusion may bury exact matches, double-count duplicates, leak filtered content or turn a branch timeout into a tail-latency regression. The design must expose what each branch contributed and demonstrate that union recall gains survive fusion and final ranking under the same operational budget.",
+  "intuition": "Ask two librarians with different skills. One scans the exact words and catalog numbers; the other recognizes concepts and paraphrases. Each returns an ordered list. Their confidence numbers are not comparable, but ranks are: first from either librarian is strong evidence. RRF awards a reciprocal rank contribution from each list, so a document appearing highly in both accumulates support and a document unique to one branch can still enter. The constant k0 makes the difference between rank one and two less extreme. A reranker can then read the query and candidate together more deeply, but only after the union has preserved the relevant documents.",
+  "deepDive": "Hybrid retrieval is a staged recall and ranking system. Lexical and vector branches contribute different evidence under one eligibility and identity contract; the union creates an upper bound for downstream quality. RRF offers scale-robust rank fusion, while normalized or learned fusion can exploit score margins with more data and failure modes. Evaluating unique branch contribution, fusion loss, latency and degraded behavior makes the architecture accountable rather than an opaque sum of scores.",
+  "workedExample": "Lexical ranks are [A,B,C] and vector ranks [C,D,A]. With k0=60 and equal weights, A receives 1/61+1/63, C receives 1/63+1/61, B receives 1/62 and D receives 1/62. A and C tie because each is first in one branch and third in the other; B and D tie from one second-place appearance. A deterministic secondary key or reranker breaks ties. Raw BM25 and cosine were never added.",
   "commonMistakes": [
-    "Applying the method without checking its assumptions or data-generating process.",
-    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+    {
+      "misconception": "Add BM25 and cosine scores directly because both increase with relevance.",
+      "correction": "Their scales are query- and system-dependent. Use rank fusion, defensible normalization or a trained fusion model."
+    },
+    {
+      "misconception": "Hybrid always improves quality.",
+      "correction": "It helps when branch errors are complementary and fusion preserves useful candidates; measure unique contribution and regressions."
+    },
+    {
+      "misconception": "Apply permissions after fusing top results.",
+      "correction": "Shallow post-filtering loses recall and can leak evidence; both branches need a consistent nonleaking eligibility boundary."
+    },
+    {
+      "misconception": "A branch timeout should fail the whole request.",
+      "correction": "Where policy permits, return the healthy branch under a documented degraded mode and measure it separately."
+    }
   ],
   "followUps": [
-    "What assumptions does Hybrid Lexical + Vector Retrieval make?",
-    "How would you validate or debug Hybrid Lexical + Vector Retrieval in practice?"
+    {
+      "question": "Why is RRF robust to heterogeneous score scales?",
+      "answer": "It uses only within-branch rank positions, so monotone rescaling of BM25 or vector scores does not change fusion."
+    },
+    {
+      "question": "What does the RRF constant k0 do?",
+      "answer": "It controls how steeply contribution falls with rank; a larger constant reduces the difference between adjacent high ranks."
+    },
+    {
+      "question": "How do you prove the vector branch adds value?",
+      "answer": "Measure relevant documents uniquely recovered by vector candidates, union recall gains, and final metric gains on semantic slices under matched latency."
+    }
   ],
-  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
-  "visual": {
-    "type": "flow",
-    "title": "Hybrid retrieval",
-    "items": [
-      "Query",
-      "BM25 lexical branch",
-      "Vector semantic branch",
-      "Score fusion",
-      "Reranker",
-      "Results"
-    ],
-    "caption": "Hybrid search combines exact lexical signals with semantic similarity before final ranking.",
-    "accent": 3,
-    "orientation": "horizontal"
-  },
+  "production": "Publish a hybrid manifest containing lexical and vector corpus generations, stable ID and chunk-parent mapping, analyzer and synonym versions, embedding and normalization, metric and ANN settings, branch K, filters and permissions, RRF k0 and weights or fusion model, reranker, timeouts, cache keys and degraded-mode policy. Log branch ranks, scores, candidate overlap, provenance, filtering and timing for sampled queries with privacy controls. Maintain judgments and slices for exact identifiers, semantic paraphrases, mixed intent, multilingual input, typos and restrictive filters. Monitor branch availability, freshness skew, unique relevant contribution, union and final recall, fusion loss, empty or short results, p95/p99 latency, cache behavior and degraded-response rate. Migrate indexes in parallel and never mix incompatible embeddings or analyzers accidentally. Fail closed on authorization uncertainty; otherwise fall back to the healthy branch. Rollback all fusion and index pointers as one tested generation.",
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "Hybrid search combines lexical retrieval with vector retrieval so exact entities, identifiers and constraints coexist with semantic paraphrase recall. The central engineering problem is not running two retrievers; it is producing a coherent candidate union and ranking from score scales, failure modes and latency profiles that are not naturally comparable. This chapter designs parallel and routed candidate generation, reciprocal rank fusion, normalized weighted score fusion and learned fusion. It explains rank windows, branch quotas, duplicates, metadata filters, missing candidates, query-adaptive weights, cross-encoder reranking, provenance and explanations. It covers why RRF is robust to scale but discards score margins, why raw BM25 plus cosine is usually invalid, and how candidate depth bounds final recall. A worked example fuses two rankings by reciprocal ranks. The lab implements BM25, cosine retrieval and RRF, then verifies scale invariance, candidate union and lexical/semantic coverage. Production guidance budgets branch and merge latency, versions embeddings and lexical statistics, evaluates exact, semantic, mixed and filtered query slices, and degrades gracefully when one branch fails. Hybrid retrieval is most valuable when the branches make complementary errors and the evaluation explicitly measures that complementarity.",
+  "prerequisites": [
+    "tfidf-bm25",
+    "ann-search",
+    "retrieval-eval"
+  ],
+  "learningObjectives": [
+    "Design lexical and vector candidate branches with comparable filters, identifiers and candidate budgets.",
+    "Implement and interpret reciprocal-rank, normalized-score and learned fusion approaches.",
+    "Measure branch complementarity, union recall, final ranking, latency and query-slice behavior.",
+    "Operate branch failures, version migrations, security filters, caches and graceful degradation safely."
+  ],
+  "deepSections": [
+    {
+      "id": "candidate-architecture",
+      "title": "Candidate branches need one eligibility and identity contract",
+      "body": "A common architecture analyzes the query, derives structured filters, then runs BM25 and ANN in parallel. Both branches must search the same corpus version or define tolerated skew, use the same tenant and permission boundary, and return stable external IDs plus provenance. If vector indexing lags lexical indexing, fusion may show or suppress fresh documents unpredictably. Decide branch depths K_l and K_v from union recall and latency, not equal numbers by habit. Deduplicate document or chunk IDs before final ranking, while preserving all branch ranks and scores as features. Chunk-level vector results may need parent-document aggregation; lexical results may already be document-level. Apply filters before or during retrieval where possible. Post-filtering shallow candidates can destroy recall. A query router may skip a branch for exact identifiers or empty semantic text, but routing errors create recall loss and need their own evaluation. Parallel execution latency is approximately the slower branch plus merge overhead, with tail correlation and timeouts considered."
+    },
+    {
+      "id": "fusion-methods",
+      "title": "Fusion ranges from robust rank arithmetic to learned ranking",
+      "body": "Reciprocal rank fusion scores d by sum_b w_b/(k0+r_b(d)), treating absent documents as zero. It is invariant to any monotone transformation of branch scores and requires no cross-branch calibration. k0 controls rank steepness; branch weights and rank windows still need tuning. RRF ignores whether rank one barely beats rank two or dominates it. Weighted score fusion retains margins but raw BM25, cosine and dot product have different ranges that vary by query and index. Min-max normalization is outlier-sensitive, z-scores assume meaningful within-query distributions, and softmax introduces temperature. Calibration or a learning-to-rank model can combine raw score, rank, overlap, query features and document priors, trained on judged or carefully debiased data. A cross-encoder reranker is a later fusion stage with richer query-document interaction. Every method should preserve exact-match guardrails when business or safety semantics demand them rather than hoping learned weights rediscover hard constraints."
+    },
+    {
+      "id": "evaluation-and-routing",
+      "title": "Measure complementarity before and after the fusion bottleneck",
+      "body": "For each query, calculate relevant documents found by lexical candidates L, vector candidates V and union L union V. Report unique relevant gain from V over L and from L over V, overlap, oracle-best branch, and union Recall@K at the downstream candidate budget. Then evaluate fused and reranked NDCG, MRR or task metric. Slice queries into exact entity or SKU, lexical phrase, semantic paraphrase, mixed, broad, multilingual, misspelled, filtered and zero-result groups. A global gain can hide exact-match regressions. Tune branch depths, RRF k0 and weights on development queries, reserve a temporal test, and include ANN geometric recall as a separate diagnostic. Query routing is a classifier or policy: evaluate its confusion costs and keep a both-branch fallback for uncertain inputs. Online experiments measure reformulation, task success and latency, while click labels require position and exposure correction. Track candidate provenance so a regression can be attributed to analysis, branch retrieval, fusion or reranking."
+    },
+    {
+      "id": "reliability-and-governance",
+      "title": "Branch independence requires explicit timeout and consistency behavior",
+      "body": "Set branch deadlines within an end-to-end budget and define partial-result semantics. If ANN times out, lexical-only results may be preferable to total failure; if permission-filter state is unavailable, fail closed rather than serve an unsafe branch. Record degraded responses so online metrics are not misattributed to the full hybrid system. Cache query analysis and branch results only with tenant, permissions, corpus generation, analyzer, embedding and filter keys. A new embedding model requires a new vector index; a new analyzer may require lexical reindexing. During migration, dual-read or shadow compatible versions and prevent fusion across mismatched document identities. Monitor branch availability, p95/p99 latency, candidate counts, overlap, unique contribution, score and rank distributions, empty union, filtered shortfall, freshness skew and downstream metrics. Limit adversarial query length, expansion and candidate fan-out. Explanations should say which evidence contributed without exposing restricted text, hidden business rules or sensitive embedding details."
+    }
+  ],
+  "math": "For branches b with ranks r_b(d), RRF(d)=sum_b w_b/(k0+r_b(d)); absent d contributes zero. A weighted score alternative is s(d)=alpha z_l(d)+(1-alpha)z_v(d), where z values must have a defined within-query calibration. Candidate union recall is |(L union V) intersection R|/|R|. Unique vector gain is |(V minus L) intersection R|, and fusion loss at cutoff K compares relevant candidates in the union with relevant documents retained in fused top K. End-to-end latency under parallel calls is approximately max(T_l,T_v)+T_merge, but timeouts and correlated tails require direct measurement.",
+  "workedExamples": [
+    {
+      "title": "Complementary recall",
+      "body": "For `ZX-4817 reset procedure`, BM25 finds the exact product manual while vector search finds generic reset guides. Their union preserves both exact identity and semantic instructions; a reranker can prefer the manual."
+    },
+    {
+      "title": "Fusion bottleneck",
+      "body": "Lexical and vector candidates together contain nine of ten relevant documents, but fused top 20 retains only six. The problem is fusion or candidate budget, not either retriever's raw recall."
+    }
+  ],
+  "lab": {
+    "language": "python",
+    "goal": "Build lexical and vector rankings, fuse them with RRF, and verify scale invariance, candidate union, deduplication and complementary retrieval.",
+    "buildIt": "import math,re\nimport numpy as np\nfrom collections import Counter\ndef tokenize(s): return re.findall(r'(?u)\\b\\w+\\b',s.lower())\ndef bm25(query,docs,k1=1.2,b=.75):\n    tok=[tokenize(d) for d in docs]; terms=set(tokenize(query)); N=len(docs); avg=sum(map(len,tok))/N; out=[]\n    for doc in tok:\n        c=Counter(doc); score=0.0\n        for t in terms:\n            df=sum(t in row for row in tok); idf=math.log(1+(N-df+.5)/(df+.5)); tf=c[t]; norm=k1*(1-b+b*len(doc)/avg); score+=idf*tf*(k1+1)/(tf+norm) if tf else 0\n        out.append(score)\n    return np.asarray(out)\ndef ranks(scores): return np.argsort(-np.asarray(scores),kind='stable').tolist()\ndef rrf(rankings,k0=60,weights=None):\n    weights=weights or [1.0]*len(rankings); score={}\n    for ranking,w in zip(rankings,weights):\n        for r,d in enumerate(dict.fromkeys(ranking),1): score[d]=score.get(d,0)+w/(k0+r)\n    return sorted(score,key=lambda d:(-score[d],d)),score\ndocs=['ZX 4817 reset procedure','change your password credentials','troubleshoot wireless router','account recovery guide']\nquery='ZX 4817 change credentials'; lexical=bm25(query,docs)\nemb=np.array([[1,0,0],[.2,.95,0],[0,0,1],[.1,.8,.2]],float); emb/=np.linalg.norm(emb,axis=1,keepdims=True); q=np.array([.55,.8,0]); q/=np.linalg.norm(q)\nsemantic=emb@q; lex_rank=ranks(lexical); vec_rank=ranks(semantic); fused,fused_scores=rrf([lex_rank[:3],vec_rank[:3]])",
+    "useIt": "from sklearn.metrics.pairwise import cosine_similarity\nsk_cos=cosine_similarity(q.reshape(1,-1),emb).ravel(); scaled_fused,_=rrf([ranks(1000*lexical+7)[:3],ranks(semantic*0.01-4)[:3]])",
+    "verifyIt": "assert np.allclose(sk_cos,semantic)\nassert lex_rank[0]==0 and vec_rank[0]==1\nassert set(fused)==set(lex_rank[:3])|set(vec_rank[:3])\nassert fused==scaled_fused\nassert len(fused)==len(set(fused))\nassert all(v>0 and np.isfinite(v) for v in fused_scores.values())\n# Each specialist's top result survives the candidate fusion.\nassert 0 in fused and 1 in fused\nassert rrf([[1,1,2]])[0]==[1,2]",
+    "shipIt": "Version both indexes, analyzers, embeddings, IDs, filters, branch depths, timeouts and fusion; evaluate branch and union recall plus final ranking and latency, shadow compatible generations, and preserve single-branch safe fallbacks and atomic rollback."
+  },
+  "exercises": [
+    {
+      "prompt": "A document is rank 2 lexical and rank 5 vector with k0=60. What is its equal-weight RRF score?",
+      "solution": "1/62+1/65, approximately 0.0315."
+    },
+    {
+      "prompt": "Why can union Recall@100 rise while final NDCG@10 falls?",
+      "solution": "The fusion or reranker may misorder candidates, burying highly relevant lexical results despite better candidate coverage."
+    },
+    {
+      "prompt": "When might routing to lexical-only be appropriate?",
+      "solution": "For confidently detected exact identifiers or quoted phrases where semantic retrieval adds cost or false matches, provided routing errors are measured and fallback exists."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "flow",
+      "title": "Hybrid retrieval pipeline",
+      "items": [
+        "Query analysis and shared filters",
+        "Lexical and vector branches",
+        "Stable-ID candidate union",
+        "Rank or learned fusion",
+        "Cross-encoder or business reranking",
+        "Authorized explained results"
+      ],
+      "caption": "Candidate provenance remains visible so recall and ranking failures can be localized.",
+      "afterSection": "candidate-architecture"
+    },
+    {
+      "type": "compare",
+      "title": "Fusion choices",
+      "left": {
+        "title": "Reciprocal rank fusion",
+        "items": [
+          "No score calibration",
+          "Robust monotone invariance",
+          "Simple missing-candidate handling",
+          "Discards score margins"
+        ]
+      },
+      "right": {
+        "title": "Score or learned fusion",
+        "items": [
+          "Uses margins and features",
+          "Can adapt by query",
+          "Needs normalization or labels",
+          "More drift and leakage risk"
+        ]
+      },
+      "caption": "Use the simplest fusion that meets measured quality and operational requirements.",
+      "afterSection": "fusion-methods"
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "rrf-paper",
+      "contribution": "Grounds reciprocal rank fusion and its evidence as a simple heterogeneous rank-combination method."
+    },
+    {
+      "resource": "elastic-hybrid",
+      "contribution": "Verifies current production hybrid-search and RRF orchestration guidance."
+    },
+    {
+      "resource": "bm25-robertson",
+      "contribution": "Grounds the lexical branch and explains why its score scale arises from corpus-specific term evidence."
+    },
+    {
+      "resource": "faiss-index-guide",
+      "contribution": "Grounds vector branch quality, candidate and latency trade-offs."
+    }
+  ]
 }

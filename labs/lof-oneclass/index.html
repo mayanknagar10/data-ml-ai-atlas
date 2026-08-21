@@ -1,0 +1,32 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Local Outlier Factor &amp; One-Class SVM — Code Lab</title><script>(()=>{const s=localStorage.getItem('atlas-theme');const t=s||((matchMedia('(prefers-color-scheme: dark)').matches)?'dark':'light');document.documentElement.dataset.theme=t})()</script><style>:root{--bg:#fff;--text:#121417;--muted:#5d6470;--line:#dfe3e8;--soft:#f6f7f8;--blue:#155eef;--code:#0d1117;color-scheme:light}html[data-theme=dark]{--bg:#0d1117;--text:#eef2f6;--muted:#a8b0ba;--line:#2b333d;--soft:#171d24;--blue:#8fb4ff;--code:#070a0e;color-scheme:dark}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.6 Inter,system-ui,sans-serif}main{max-width:980px;margin:auto;padding:44px 22px 80px}a{color:var(--blue)}h1{font-size:42px;line-height:1.05;margin:8px 0 12px}.k{font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--blue);font-weight:800}.lead{color:var(--muted);font-size:17px}.top{display:flex;justify-content:space-between;gap:16px}button{border:1px solid var(--line);background:var(--soft);color:var(--text);border-radius:8px;padding:7px 9px;cursor:pointer}section{border-top:1px solid var(--line);padding-top:22px;margin-top:26px}pre{background:var(--code);color:#e6edf3;padding:18px;border-radius:12px;overflow:auto;font:13px/1.55 ui-monospace,monospace}.links{display:flex;gap:12px;flex-wrap:wrap;margin:18px 0}.links a{border:1px solid var(--line);border-radius:8px;padding:7px 9px;text-decoration:none;font-size:12px}@media(max-width:600px){h1{font-size:34px}.top{display:block}}</style></head><body><main><div class="top"><div><div class="k">Data, ML & AI Atlas · Runnable Lab</div><h1>Local Outlier Factor &amp; One-Class SVM</h1></div><button id="t">◐ Theme</button></div><p class="lead">Implement Local Outlier Factor exactly, compare it with scikit-learn, and verify local-density, permutation, and One-Class SVM novelty behavior.</p><div class="links"><a href="../../index.html#/lesson/lof-oneclass">← Full lesson</a><a href="lab.py">Combined Python file</a><a href="README.md">README</a></div><section><h2>1 · Build it</h2><p>Minimal implementation with as little framework abstraction as practical.</p><pre>import numpy as np
+def lof_scores(X,k=10):
+    X=np.asarray(X,float); dist=np.sqrt(((X[:,None,:]-X[None,:,:])**2).sum(2))
+    np.fill_diagonal(dist,np.inf)
+    neighbors=np.argsort(dist,axis=1)[:,:k]
+    kdist=np.take_along_axis(dist,neighbors[:,-1:],axis=1).ravel()
+    reach=np.empty((len(X),k))
+    for i in range(len(X)):
+        js=neighbors[i]; reach[i]=np.maximum(kdist[js],dist[i,js])
+    lrd=1/np.maximum(reach.mean(1),1e-12)
+    lof=np.array([lrd[neighbors[i]].mean()/lrd[i] for i in range(len(X))])
+    return lof
+rng=np.random.default_rng(8)
+dense=rng.normal([0,0],[.18,.18],size=(60,2))
+sparse=rng.normal([4,4],[.55,.55],size=(35,2))
+X=np.vstack([dense,sparse,[[4,7]]])
+lof=lof_scores(X,k=12)</pre></section><section><h2>2 · Use it</h2><p>The same idea through a common library or practical API.</p><pre>from sklearn.neighbors import LocalOutlierFactor
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import StandardScaler
+from sklearn.svm import OneClassSVM
+sk_lof=LocalOutlierFactor(n_neighbors=12,contamination=&#x27;auto&#x27;).fit_predict(X)
+sk_score=-LocalOutlierFactor(n_neighbors=12,contamination=&#x27;auto&#x27;).fit(X).negative_outlier_factor_
+oc=make_pipeline(StandardScaler(),OneClassSVM(nu=.05,gamma=&#x27;scale&#x27;)).fit(X[:-1])
+oc_score=-oc.decision_function(X)</pre></section><section><h2>3 · Ship it</h2><p>Persist scaler, metric, reference, k or kernel/gamma/nu, score direction and threshold; version neighbor indexes or support vectors, test novelty semantics, monitor distance and support drift, and roll back model plus reference together.</p></section><section><h2>4 · Verify it</h2><p>Assertions and sanity checks that catch conceptual or implementation mistakes.</p><pre>assert np.allclose(lof,sk_score,atol=1e-10)
+assert lof[-1]==lof.max() and lof[-1]&gt;1.5
+assert oc_score[-1]&gt;np.median(oc_score[:-1])
+perm=np.random.default_rng(4).permutation(len(X))
+permuted=lof_scores(X[perm],k=12)
+restored=np.empty_like(permuted); restored[perm]=permuted
+assert np.allclose(restored,lof,atol=1e-10)
+assert 0.8&lt;np.median(lof[:-1])&lt;1.2
+assert np.isfinite(lof).all()</pre></section></main><script>const b=document.getElementById('t');function u(){b.textContent=document.documentElement.dataset.theme==='dark'?'☀ Light':'☾ Dark'}u();b.onclick=()=>{const n=document.documentElement.dataset.theme==='dark'?'light':'dark';document.documentElement.dataset.theme=n;localStorage.setItem('atlas-theme',n);u()}</script></body></html>

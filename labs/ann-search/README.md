@@ -1,6 +1,6 @@
 # Approximate Nearest Neighbor Search — Code Lab
 
-Build a small vector nearest-neighbor retrieval index.
+Build an IVF-style ANN index, compare it with exact and scikit-learn neighbors, sweep probe counts, and verify full probing recovers the oracle.
 
 ## 1. Build it
 

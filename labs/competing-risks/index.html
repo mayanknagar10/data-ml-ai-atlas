@@ -1,0 +1,26 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Competing Risks — Code Lab</title><script>(()=>{const s=localStorage.getItem('atlas-theme');const t=s||((matchMedia('(prefers-color-scheme: dark)').matches)?'dark':'light');document.documentElement.dataset.theme=t})()</script><style>:root{--bg:#fff;--text:#121417;--muted:#5d6470;--line:#dfe3e8;--soft:#f6f7f8;--blue:#155eef;--code:#0d1117;color-scheme:light}html[data-theme=dark]{--bg:#0d1117;--text:#eef2f6;--muted:#a8b0ba;--line:#2b333d;--soft:#171d24;--blue:#8fb4ff;--code:#070a0e;color-scheme:dark}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.6 Inter,system-ui,sans-serif}main{max-width:980px;margin:auto;padding:44px 22px 80px}a{color:var(--blue)}h1{font-size:42px;line-height:1.05;margin:8px 0 12px}.k{font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--blue);font-weight:800}.lead{color:var(--muted);font-size:17px}.top{display:flex;justify-content:space-between;gap:16px}button{border:1px solid var(--line);background:var(--soft);color:var(--text);border-radius:8px;padding:7px 9px;cursor:pointer}section{border-top:1px solid var(--line);padding-top:22px;margin-top:26px}pre{background:var(--code);color:#e6edf3;padding:18px;border-radius:12px;overflow:auto;font:13px/1.55 ui-monospace,monospace}.links{display:flex;gap:12px;flex-wrap:wrap;margin:18px 0}.links a{border:1px solid var(--line);border-radius:8px;padding:7px 9px;text-decoration:none;font-size:12px}@media(max-width:600px){h1{font-size:34px}.top{display:block}}</style></head><body><main><div class="top"><div><div class="k">Data, ML & AI Atlas · Runnable Lab</div><h1>Competing Risks</h1></div><button id="t">◐ Theme</button></div><p class="lead">Implement Aalen-Johansen cumulative incidence, contrast it with naive cause-specific one-minus-KM, and verify probability conservation, monotonicity, and cause-label symmetry.</p><div class="links"><a href="../../index.html#/lesson/competing-risks">← Full lesson</a><a href="lab.py">Combined Python file</a><a href="README.md">README</a></div><section><h2>1 · Build it</h2><p>Minimal implementation with as little framework abstraction as practical.</p><pre>import numpy as np
+def aalen_johansen(time,status,causes=(1,2)):
+    time=np.asarray(time,float); status=np.asarray(status,int); causes=tuple(causes)
+    ts=np.unique(time[status&gt;0]); s=1.0; cif=np.zeros(len(causes)); surv=[]; cifs=[]
+    for t in ts:
+        n=np.sum(time&gt;=t); d_all=np.sum((time==t)&amp;(status&gt;0)); prev=s
+        for k,cause in enumerate(causes): cif[k]+=prev*np.sum((time==t)&amp;(status==cause))/n
+        s*=1-d_all/n; surv.append(s); cifs.append(cif.copy())
+    return ts,np.asarray(surv),np.asarray(cifs)
+def naive_one_minus_km(time,status,cause):
+    time=np.asarray(time,float); status=np.asarray(status,int); s=1.0; vals=[]; ts=np.unique(time[status==cause])
+    for t in ts:
+        n=np.sum(time&gt;=t); d=np.sum((time==t)&amp;(status==cause)); s*=1-d/n; vals.append(1-s)
+    return ts,np.asarray(vals)
+time=np.arange(1,9,dtype=float); status=np.array([1,2,0,1,2,1,0,2])
+ts,s,cif=aalen_johansen(time,status); naive_t,naive1=naive_one_minus_km(time,status,1)</pre></section><section><h2>2 · Use it</h2><p>The same idea through a common library or practical API.</p><pre># NumPy indexing produces a coherent fixed-horizon report from the step functions.
+horizon=6.0
+row=np.searchsorted(ts,horizon,side=&#x27;right&#x27;)-1
+report={&#x27;event_free&#x27;:float(s[row]),&#x27;cause_1&#x27;:float(cif[row,0]),&#x27;cause_2&#x27;:float(cif[row,1])}</pre></section><section><h2>3 · Ship it</h2><p>Version cause taxonomy, adjudication, entry, censoring, tie and horizon rules; reconcile survival plus all CIFs, monitor unknown and late-coded causes, validate by cause and cohort, and roll back extraction and model artifacts together.</p></section><section><h2>4 · Verify it</h2><p>Assertions and sanity checks that catch conceptual or implementation mistakes.</p><pre>assert np.allclose(s+cif.sum(axis=1),1.0)
+assert np.all(np.diff(s)&lt;=1e-12) and np.all(np.diff(cif,axis=0)&gt;=-1e-12)
+assert naive1[-1]&gt;=cif[-1,0] and naive1[-1]&gt;cif[-1,0]
+ts2,s2,swapped=aalen_johansen(time,np.where(status==1,2,np.where(status==2,1,0)))
+assert np.array_equal(ts,ts2) and np.allclose(s,s2)
+assert np.allclose(cif[:,0],swapped[:,1]) and np.allclose(cif[:,1],swapped[:,0])
+assert abs(sum(report.values())-1)&lt;1e-12
+assert all(0&lt;=v&lt;=1 for v in report.values())</pre></section></main><script>const b=document.getElementById('t');function u(){b.textContent=document.documentElement.dataset.theme==='dark'?'☀ Light':'☾ Dark'}u();b.onclick=()=>{const n=document.documentElement.dataset.theme==='dark'?'light':'dark';document.documentElement.dataset.theme=n;localStorage.setItem('atlas-theme',n);u()}</script></body></html>

@@ -1,3 +1,3 @@
 # Ship it
 
-Treat anomaly scores as triage, not truth; tune alert thresholds to review capacity and monitor alert-rate/base-rate drift.
+Persist feature and reference versions, trees, psi, tree count, seed, score direction and threshold; test golden scores, shadow new references, monitor path and incident distributions, and roll back forest plus threshold together.

@@ -9,35 +9,197 @@
     "aie",
     "ds"
   ],
-  "interviewAnswer": "The information-bottleneck view seeks representations that preserve information useful for a target while discarding irrelevant detail.",
+  "interviewAnswer": "Information bottleneck seeks an encoder p(z|x) that minimizes I(X;Z) while retaining I(Z;Y), often through L=I(X;Z)-beta I(Z;Y). beta sets the value of target information relative to compression. Because Y-X-Z is a Markov chain, data processing guarantees I(Z;Y)<=I(X;Y); a sufficient representation reaches equality while discarding target-irrelevant distinctions. Exact MI is usually intractable for neural continuous models, so variational IB upper-bounds I(X;Z) with a KL to a chosen prior and lower-bounds target information through a decoder likelihood. Those bounds depend on model families and optimization. I sweep beta and report rate, predictive utility, calibration, robustness and sensitive-attribute leakage, rather than treating a narrow layer or low estimated MI as proof of minimality, generalization, privacy or fairness.",
   "keyPoints": [
-    "Compression",
-    "Sufficiency",
-    "Mutual information",
-    "Latent representations"
+    "The bottleneck compresses X only relative to information that must be retained about Y.",
+    "Data processing caps target information in Z at what X originally contains.",
+    "beta traces a rate-relevance frontier; no single value is universally optimal.",
+    "Neural implementations optimize variational bounds whose priors and decoders affect the learned representation.",
+    "Compression does not automatically guarantee generalization, invariance, fairness, robustness or privacy."
   ],
   "resources": [
+    "information-bottleneck-paper",
     "mit-info-theory",
     "probml-book",
     "paper-vqvae"
   ],
   "featured": false,
-  "why": "It provides a useful conceptual lens for learned compression and representation learning.",
-  "intuition": "A good representation should keep structure needed by the downstream task without memorizing every nuisance detail.",
-  "deepDive": "The classical objective trades information retained about input against information retained about the target. Estimating these quantities in deep networks is nontrivial, so it is often a guiding principle rather than a literal measured objective.",
-  "math": "",
-  "code": "",
+  "why": "Representations should discard irrelevant detail while keeping what a downstream task needs. This intuition appears in dimensionality reduction, clustering, sufficiency and neural encoders, but `smaller vector` is not a mathematical definition of useful compression. Information bottleneck states the objective in distributional terms and reveals the trade-off: a constant Z is maximally compressed but useless, while Z=X preserves everything including nuisance. It also exposes what is missing from vague claims. The relevance variable Y, data distribution, encoder randomness, MI estimator and cost parameter define the solution. In real systems those choices carry label bias and may preserve shortcuts rather than robust causes. The framework is valuable precisely when its assumptions and bounds are made explicit.",
+  "intuition": "Imagine X contains four detailed customer states, but Y only records whether intervention A or B is appropriate. If states 0 and 1 imply nearly the same Y distribution, and states 2 and 3 imply another, a useful Z maps each pair to one code. Z forgets within-pair identity yet keeps most decision information. Mapping every X to one code compresses more but loses Y; keeping four codes preserves unnecessary detail. beta decides how much extra representation complexity is worth one more unit of target information. With noisy labels or shortcuts, the bottleneck preserves whatever predicts the supplied Y, not necessarily what humans regard as meaningful.",
+  "deepDive": "Information bottleneck gives relevance-aware compression a precise constrained optimization form. The ideal representation preserves as much Y information as needed while minimizing retained X information, with a data-processing ceiling and a rate-relevance frontier. Neural versions replace exact quantities with variational bounds and stochastic encoders, introducing prior and decoder assumptions. The framework guides design only when relevance labels, estimation, operating point and nonfunctional claims are scrutinized.",
+  "math": "Choose p(z|x) under Y-X-Z to minimize I(X;Z)-beta I(Z;Y), or minimize I(X;Z) subject to I(Z;Y)>=I0. Data processing gives I(Z;Y)<=I(X;Y). A variational rate satisfies I(X;Z)<=E_{p(x)} KL[q_phi(z|x)||r(z)]. A decoder gives I(Z;Y)=H(Y)-H(Y|Z)>=H(Y)+E log q_theta(y|z). Dropping fixed H(Y), a common trainable loss is E[-log q_theta(y|z)]+beta E KL[q_phi(z|x)||r(z)]. Bounds become equal only when variational distributions match the true induced marginals or conditionals.",
   "commonMistakes": [
-    "Assuming smaller latent means more semantic.",
-    "Claiming the theory is directly measurable in every deep model."
+    {
+      "misconception": "Any narrow neural layer is an information bottleneck solution.",
+      "correction": "Dimension alone does not define or minimize mutual information, especially for deterministic continuous mappings."
+    },
+    {
+      "misconception": "Compression guarantees generalization and robustness.",
+      "correction": "It can preserve training shortcuts and biased labels; validate on shifts and compare task and nuisance behavior."
+    },
+    {
+      "misconception": "The variational KL-to-prior term equals I(X;Z).",
+      "correction": "It is generally an upper bound containing aggregate-posterior mismatch unless the prior matches the induced marginal."
+    },
+    {
+      "misconception": "Low information in Z guarantees privacy or fairness.",
+      "correction": "Sensitive information can remain, estimators can miss it, and differential privacy requires a formal mechanism and accounting."
+    }
   ],
   "followUps": [
-    "How does this relate to VAEs/VQ models?",
-    "Compression vs fidelity?"
+    {
+      "question": "What does beta control?",
+      "answer": "It controls the relative value of preserving target information versus reducing representation rate, selecting a point on the achievable frontier."
+    },
+    {
+      "question": "How is IB related to sufficient statistics?",
+      "answer": "A sufficient Z preserves all X information relevant to Y; IB seeks such relevance with minimal retained input information when possible."
+    },
+    {
+      "question": "Why use a stochastic encoder?",
+      "answer": "It defines a finite information channel, enables smooth rate control and variational optimization, and avoids some deterministic continuous degeneracies."
+    }
   ],
-  "production": "Choose bottlenecks by downstream quality, storage and latency trade-offs.",
-  "workedExample": "A compressed image code may discard sensor noise while retaining boundaries needed for prediction.",
+  "production": "Create a representation manifest with data and label definitions, encoder and head architecture, stochastic channel and noise, latent dimension, beta schedule, prior family, decoder or critic, sampling count, bound implementation, feature preprocessing and downstream thresholds. Plot rate-bound versus relevance, calibration, task utility, robustness and cost across beta instead of choosing one run by training loss. Evaluate on temporal and environment shifts, with explicit nuisance and sensitive-attribute probes, subgroup performance and memorization or privacy tests. Monitor rate KL distribution, decoder loss, representation norms, posterior collapse, active dimensions, task drift and probe leakage. Secure representations as potentially sensitive data. A new prior or MI estimator starts a new measurement definition. Deploy encoder and downstream head together, shadow changes, and roll back the compatible pair; an old head on a new latent geometry is unsafe.",
+  "workedExample": "X has four equally likely states. States 0 and 1 make Y=0 with high probability; states 2 and 3 make Y=1 with high probability. Identity Z=X retains H(X)=2 bits. Mapping {0,1}->A and {2,3}->B uses at most one bit and preserves nearly all Y information because within each group p(Y|X) is similar. Constant Z uses zero bits but makes Y prediction revert to its marginal. The selected mapping depends on beta and the exact noise probabilities.",
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "The information bottleneck formalizes representation learning as a trade-off: compress input X into Z while preserving information about a relevant target Y. The classical objective minimizes I(X;Z)-beta I(Z;Y) under the Markov structure Y-X-Z, linking sufficient statistics, rate-distortion theory and clustering by predictive similarity. This chapter derives the trade-off and data-processing limit, explains deterministic and stochastic encoders, and develops variational upper and lower bounds used in neural models. It distinguishes the original bottleneck from beta-VAEs, generic narrow layers, dropout and claims that neural networks automatically compress. It covers continuous-variable pathologies, nuisance and sensitive information, adversarial objectives, evaluation, Pareto frontiers and causal limitations. A worked example compresses four input states into two target-relevant groups. The lab exhaustively searches deterministic discrete encoders, verifies information preservation and data processing, and compares a selected mapping with scikit-learn. Production guidance treats beta, priors, critics and estimates as tunable model components; reports task utility and subgroup behavior; and refuses privacy or fairness guarantees from low estimated MI alone. The bottleneck is a principled objective for relevance-aware compression, not a universal explanation of generalization.",
+  "prerequisites": [
+    "mutual-information",
+    "vae"
+  ],
+  "learningObjectives": [
+    "Derive the information-bottleneck constrained problem and Lagrangian under Y-X-Z.",
+    "Interpret deterministic clusters and stochastic encoders as trading representation rate for target relevance.",
+    "Construct variational bounds and identify prior, decoder, critic and continuous-estimation assumptions.",
+    "Evaluate Pareto frontiers, downstream utility, nuisance leakage, robustness, fairness and privacy without overclaiming."
+  ],
+  "deepSections": [
+    {
+      "id": "objective-and-sufficiency",
+      "title": "The bottleneck trades representation rate against predictive relevance",
+      "body": "Given joint p(x,y), choose stochastic encoder p(z|x), inducing Y-X-Z. One constrained form minimizes I(X;Z) subject to I(Z;Y)>=I0; the Lagrangian minimizes I(X;Z)-beta I(Z;Y). I(X;Z) is representation rate or retained input information, while I(Z;Y) is relevance. beta>=0 controls the slope of a supporting line on the achievable rate-relevance region. At beta zero, a constant representation minimizes rate. As beta rises, solutions preserve more target structure. Data processing gives I(Z;Y)<=I(X;Y). A sufficient statistic Z satisfies Y independent of X given Z and reaches I(Z;Y)=I(X;Y); a minimal sufficient representation preserves that relevance with minimal rate under definitions and existence conditions. Deterministic encoders cluster input states. The original self-consistent equations group x values whose conditional distributions p(y|x) are close in KL, connecting the method to rate-distortion with an emergent relevance distortion."
+    },
+    {
+      "id": "variational-bounds",
+      "title": "Variational IB replaces intractable information with optimized bounds",
+      "body": "For high-dimensional continuous data, p(z) and p(y|z) are unknown. Variational IB commonly parameterizes q_phi(z|x), a decoder q_theta(y|z), and a simple prior r(z). The expected KL E_x KL[q_phi(z|x)||r(z)] upper-bounds I(X;Z) because it equals I(X;Z)+KL[q(z)||r(z)]. Expected log decoder likelihood lower-bounds information about Y up to the fixed H(Y), since a restricted decoder adds conditional-model error. A practical loss combines prediction NLL with beta times the KL rate. Reparameterization supports stochastic gradients for Gaussian encoders. The optimized quantity is a bound, not exact IB: a poor prior can penalize aggregate mismatch, and a weak decoder underestimates retained relevance. Flexible priors tighten rate bounds but change regularization. Classification cross-entropy, reconstruction likelihood and contrastive bounds define different relevance variables and assumptions. Report both bound terms and task metrics rather than labeling the KL term `the mutual information` automatically."
+    },
+    {
+      "id": "neural-caveats",
+      "title": "Continuous deterministic networks make naive compression stories unreliable",
+      "body": "For deterministic Z=f(X) with continuous variables and negligible noise, I(X;Z) can be infinite or sensitive to measurement precision; empirical binning can create arbitrary compression curves. Finite datasets and deterministic labels introduce further degeneracies. Adding stochastic noise, quantization or an explicit channel makes rate meaningful but changes the model. A lower-dimensional layer does not necessarily have low MI, and dropout is not automatically an optimized bottleneck. beta-VAE uses a KL-to-prior term to shape latent rate while reconstructing X, whereas supervised IB preserves Y; the objectives overlap only under specified relevance and generative assumptions. Claims that ordinary deep networks universally undergo a distinct compression phase depend on estimator and activation details and are not required for successful generalization. Treat IB as an objective or analytical lens, not settled universal training dynamics."
+    },
+    {
+      "id": "design-and-governance",
+      "title": "The chosen target determines which information is relevant and which shortcuts survive",
+      "body": "If Y reflects biased labels, site artifacts or future leakage, an optimal bottleneck preserves those signals. Compression may improve robustness to nuisance variation only when nuisance is irrelevant across the training and deployment distribution and the objective can identify it. To remove sensitive attribute S, add explicit leakage evaluation or adversarial and conditional objectives; low I(X;Z) alone does not imply low I(S;Z). Mutual-information estimates do not provide differential-privacy guarantees, and stochastic encoders can still memorize individuals. Sweep beta and plot prediction, rate bound, calibration, robustness, subgroup error and sensitive leakage. Validate on environments where nuisance-target correlations change. Select an operating point from decision requirements rather than one scalar objective. Monitor representation norm, rate KL, decoder loss and downstream drift, but remember bound changes may reflect prior or critic failure."
+    }
+  ],
+  "workedExamples": [
+    {
+      "title": "Sufficient but not minimal",
+      "body": "Z=X is always sufficient for predicting Y from X but retains every nuisance. A coarser statistic can be equally predictive with less I(X;Z), making it closer to minimal sufficiency."
+    },
+    {
+      "title": "Prior-bound looseness",
+      "body": "An encoder's aggregate q(z) is bimodal while r(z) is standard normal. E KL[q(z|x)||r] penalizes both input information and aggregate prior mismatch, so calling the whole value exact I(X;Z) overstates rate."
+    }
+  ],
+  "lab": {
+    "language": "python",
+    "goal": "Enumerate deterministic discrete bottlenecks, trace the rate-relevance frontier, and verify sufficiency, compression and data-processing invariants.",
+    "buildIt": "import itertools\nimport numpy as np\ndef entropy(p):\n    p=np.asarray(p,float); p=p/p.sum(); nz=p>0; return float(-np.sum(p[nz]*np.log2(p[nz])))\ndef mi(table):\n    p=np.asarray(table,float); p=p/p.sum(); px=p.sum(1,keepdims=True); py=p.sum(0,keepdims=True); prod=px@py; nz=p>0\n    return float(np.sum(p[nz]*np.log2(p[nz]/prod[nz])))\ndef encoded_joint(pxy,mapping):\n    mapping=np.asarray(mapping,int); out=np.zeros((mapping.max()+1,pxy.shape[1]))\n    for x,z in enumerate(mapping): out[z]+=pxy[x]\n    return out\npxy=.25*np.array([[.9,.1],[.8,.2],[.2,.8],[.1,.9]]); ix_y=mi(pxy)\nresults=[]\nfor mapping in itertools.product(range(2),repeat=4):\n    pz_y=encoded_joint(pxy,mapping); rate=entropy(pz_y.sum(1)); relevance=mi(pz_y); results.append((mapping,rate,relevance))\nbeta=3.0; best=min(results,key=lambda row:row[1]-beta*row[2]); grouped=(0,0,1,1); grouped_joint=encoded_joint(pxy,grouped); identity_joint=encoded_joint(pxy,(0,1,2,3))",
+    "useIt": "from sklearn.metrics import mutual_info_score\nsamples=np.repeat(np.arange(4),1000); rng=np.random.default_rng(5); ys=np.concatenate([rng.choice(2,1000,p=row/row.sum()) for row in pxy]); zs=np.asarray(grouped)[samples]\nsklearn_izy=float(mutual_info_score(zs,ys)/np.log(2))",
+    "verifyIt": "assert mi(identity_joint)==ix_y\nassert mi(grouped_joint)<=ix_y+1e-12\nassert entropy(grouped_joint.sum(1))==1.0\nassert mi(encoded_joint(pxy,(0,0,0,0)))==0.0\nassert best[2]>0 and best[1]>0\nassert best[0] in (grouped,(1,1,0,0))\nassert abs(sklearn_izy-mi(grouped_joint))<.04\nassert all(relevance<=ix_y+1e-12 for _,_,relevance in results)\nassert ix_y<=entropy(pxy.sum(1))+1e-12",
+    "shipIt": "Version relevance target, encoder noise, beta, priors, decoder and estimators; sweep the full utility-rate frontier on later environments, test nuisance and sensitive leakage explicitly, and roll back the complete representation-plus-head artifact."
+  },
+  "exercises": [
+    {
+      "prompt": "What happens near beta=0 in the IB Lagrangian I(X;Z)-beta I(Z;Y)?",
+      "solution": "Compression dominates, and a constant or nearly uninformative Z can minimize the objective."
+    },
+    {
+      "prompt": "Can I(Z;Y) exceed I(X;Y) when Z is generated only from X?",
+      "solution": "No. The data-processing inequality for Y-X-Z bounds it by I(X;Y)."
+    },
+    {
+      "prompt": "Why is beta-VAE not automatically the supervised information bottleneck?",
+      "solution": "Its relevance term is usually reconstruction of X and its KL regularizer has a generative prior interpretation; supervised IB preserves a specified Y."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "curve",
+      "title": "Rate-relevance frontier",
+      "series": [
+        {
+          "label": "Achievable relevance",
+          "points": [
+            [
+              0.03,
+              0.05
+            ],
+            [
+              0.18,
+              0.34
+            ],
+            [
+              0.36,
+              0.58
+            ],
+            [
+              0.58,
+              0.76
+            ],
+            [
+              0.78,
+              0.86
+            ],
+            [
+              0.95,
+              0.9
+            ]
+          ]
+        }
+      ],
+      "caption": "Conceptual frontier: retaining more input information can preserve more target information, with diminishing returns and a data-processing ceiling.",
+      "afterSection": "objective-and-sufficiency"
+    },
+    {
+      "type": "flow",
+      "title": "Variational bottleneck training",
+      "items": [
+        "Input X",
+        "Stochastic encoder q(z|x)",
+        "Rate KL to prior",
+        "Representation Z",
+        "Decoder predicts Y",
+        "Sweep beta and validate frontier"
+      ],
+      "caption": "Practical training balances a variational rate upper bound with target-prediction loss.",
+      "afterSection": "variational-bounds"
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "information-bottleneck-paper",
+      "contribution": "Grounds the original rate-relevance objective, self-consistent solution and rate-distortion connection."
+    },
+    {
+      "resource": "mit-info-theory",
+      "contribution": "Provides mutual information, sufficiency, rate-distortion and data-processing foundations."
+    },
+    {
+      "resource": "probml-book",
+      "contribution": "Connects information objectives to probabilistic representation learning and variational methods."
+    },
+    {
+      "resource": "paper-vqvae",
+      "contribution": "Provides a discrete representation-learning contrast for discussing codebooks, compression and task objectives."
+    }
+  ]
 }

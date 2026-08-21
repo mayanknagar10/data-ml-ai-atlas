@@ -6,97 +6,225 @@
   "roles": [
     "ds"
   ],
-  "interviewAnswer": "HNSW builds a multilayer proximity graph: upper sparse layers navigate quickly toward the neighborhood, and lower dense layers refine the search. Parameters trade build cost, memory, recall and latency.",
+  "interviewAnswer": "HNSW is a multilayer proximity graph. Each inserted vector receives a random maximum level, so upper layers are sparse and contain long-range links. A query starts from the top entry point, greedily moves to closer neighbors at each upper layer, then performs a best-first search at layer zero with a candidate set bounded by efSearch. M limits neighborhood degree, efConstruction controls how broadly insertion searches for good neighbors, and efSearch controls query-time exploration; higher values usually improve recall at memory, build or latency cost. I benchmark Recall@K against exact search while sweeping efSearch under realistic load and filters. I also test insertion order, duplicates, deletes, graph connectivity and embedding shifts. Model, metric, normalization and graph snapshot are one versioned artifact.",
   "keyPoints": [
-    "M controls graph connectivity/memory.",
-    "efConstruction affects index quality/build cost.",
-    "efSearch trades query latency for recall."
+    "Random levels create sparse long-range navigation above a dense base proximity graph.",
+    "Upper layers use greedy routing; the base layer retains multiple candidates through efSearch.",
+    "M buys connectivity and recall with edge memory; efConstruction buys graph quality with build cost.",
+    "efSearch is the primary query-time recall-latency knob and must be at least the requested K in practice.",
+    "Filtering, insertion order, tombstones and embedding changes can invalidate a previously tuned operating point."
   ],
   "resources": [
     "hnsw-paper",
-    "faiss"
+    "faiss-index-guide"
   ],
   "featured": false,
-  "why": "HNSW Intuition & Tuning appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
-  "intuition": "M controls graph connectivity/memory.",
-  "deepDive": "HNSW builds a multilayer proximity graph: upper sparse layers navigate quickly toward the neighborhood, and lower dense layers refine the search. Parameters trade build cost, memory, recall and latency. efConstruction affects index quality/build cost. efSearch trades query latency for recall. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
-  "workedExample": "Increase efSearch when retrieval recall is insufficient and latency budget allows it.",
+  "why": "High-dimensional neighborhoods are difficult to partition cleanly. HNSW avoids fixed cells by building a navigable graph whose local edges follow data geometry and whose hierarchy enables logarithmic-like routing in favorable cases. It often reaches high recall at low latency without training codebooks, making it a common in-memory ANN choice. The cost is substantial edge memory, nontrivial construction, imperfect deletions and sensitivity to workload and data. Default parameters copied from a benchmark can underperform on a filtered, clustered or high-intrinsic-dimensional corpus. Understanding the search frontier and graph lifecycle lets engineers choose parameters from evidence and know when a rebuild, partitioning strategy or different index family is better.",
+  "intuition": "Think of roads at three scales. A top layer has a few highways linking distant regions, a middle layer has regional roads, and the base layer has local streets connecting nearby homes. Starting from a known interchange, drive greedily along highways whenever a neighbor is closer to the destination. Descend after no upper-layer improvement. At street level, do not follow just one road: maintain a small priority queue of promising places and expand them until unexplored candidates are worse than the retained neighborhood. efSearch is how many plausible places you keep around. A larger queue is less likely to miss a route around a local obstacle, but requires more distance calculations.",
+  "deepDive": "HNSW combines probabilistic hierarchy with navigable local geometry. Random upper-layer membership provides long jumps, while a bounded best-first frontier at the base recovers neighbors missed by pure greedy descent. M shapes connectivity and memory, efConstruction shapes edge quality, and efSearch shapes online exploration. Since the graph is an incremental mutable artifact, its performance depends on insertion, deletion, filtering and embedding history as well as the algorithm. Exact canaries and operational graph diagnostics keep the approximation budget visible.",
+  "workedExample": "A query starts at top node A. Its upper-layer neighbors B and C have distances 9 and 5 versus A's 12, so greedy routing moves to C. No upper neighbor improves on 5, so search descends from C. At the base layer efSearch=4 keeps C plus three promising neighbors. Expanding one of them discovers a distance-1 node that pure greedy routing from C would have missed. Raising efSearch retains more alternative routes but performs more distance checks.",
   "commonMistakes": [
-    "Applying the method without checking its assumptions or data-generating process.",
-    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+    {
+      "misconception": "efSearch changes graph quality permanently.",
+      "correction": "It controls query-time exploration; M and efConstruction primarily shape the built graph."
+    },
+    {
+      "misconception": "Higher efSearch always has negligible cost.",
+      "correction": "It retains and expands more candidates, increasing distance work and often tail latency."
+    },
+    {
+      "misconception": "Deleting vectors leaves graph performance unchanged.",
+      "correction": "Tombstones consume paths and memory; accumulated deletion can require repair or rebuild."
+    },
+    {
+      "misconception": "Filtering after HNSW top K preserves filtered recall.",
+      "correction": "It can remove most results. Filter-aware traversal, partitioning or overfetch must be evaluated."
+    }
   ],
   "followUps": [
-    "What assumptions does HNSW Intuition & Tuning make?",
-    "How would you validate or debug HNSW Intuition & Tuning in practice?"
+    {
+      "question": "What is the role of efConstruction?",
+      "answer": "It controls candidate breadth while inserting nodes; larger values usually create better connections at higher build cost."
+    },
+    {
+      "question": "Why use a hierarchy instead of one graph?",
+      "answer": "Sparse upper layers supply long-range navigation so the base search begins near the query rather than exploring from an arbitrary distant entry."
+    },
+    {
+      "question": "Can HNSW guarantee exact neighbors?",
+      "answer": "Ordinary bounded search is approximate. Exhaustive exploration of a connected base graph can recover exactness but sacrifices the speed advantage."
+    }
   ],
-  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
-  "visual": {
-    "type": "network",
-    "title": "HNSW search layers",
-    "nodes": [
-      {
-        "id": "q",
-        "label": "query",
-        "x": 0.1,
-        "y": 0.5
-      },
-      {
-        "id": "a",
-        "label": "entry",
-        "x": 0.32,
-        "y": 0.18
-      },
-      {
-        "id": "b",
-        "label": "coarse hop",
-        "x": 0.55,
-        "y": 0.25
-      },
-      {
-        "id": "c",
-        "label": "fine hop",
-        "x": 0.7,
-        "y": 0.52
-      },
-      {
-        "id": "d",
-        "label": "nearest",
-        "x": 0.88,
-        "y": 0.58
-      },
-      {
-        "id": "e",
-        "label": "neighbor",
-        "x": 0.55,
-        "y": 0.76
-      }
-    ],
-    "edges": [
-      [
-        "q",
-        "a"
-      ],
-      [
-        "a",
-        "b"
-      ],
-      [
-        "b",
-        "c"
-      ],
-      [
-        "c",
-        "d"
-      ],
-      [
-        "c",
-        "e"
-      ]
-    ],
-    "caption": "HNSW navigates a hierarchical proximity graph: coarse upper layers move quickly, lower layers refine the neighborhood.",
-    "directed": true
-  },
+  "production": "Persist dimension, dtype, metric, normalization, embedding hash, external-ID mapping, graph format, insertion order or seed, M, base-degree convention, efConstruction, default and per-query efSearch, filter semantics, shard routing and tombstone policy. Build exact canary neighbors and replay them after restart, compaction and deployment. Benchmark per-query Recall@K and p50/p95/p99 latency at target concurrency, plus distance evaluations, memory per vector, build throughput and snapshot time. Monitor level and degree distributions, connected-component samples, entry reachability, search expansions, filter shortfall, duplicate IDs, tombstones, update lag and resource saturation. Trigger parallel rebuilds for embedding changes or deletion debt, reconcile IDs and permissions, shadow candidate overlap and task metrics, then switch an alias atomically. Rollback restores the prior graph, embeddings and query parameters together.",
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "Hierarchical Navigable Small World search organizes vectors as a multilayer proximity graph. Sparse upper layers provide long jumps toward the query, while a dense base layer explores a bounded candidate frontier to recover nearby vectors. This chapter derives the skip-list-like random level assignment, greedy descent, best-first efSearch traversal, incremental insertion with efConstruction, neighbor selection and degree parameter M. It explains why higher efSearch usually raises recall and latency, why M and efConstruction affect memory, build time and graph navigability, and why insertion order, duplicates, intrinsic dimension, filters and deletes can reshape performance. A worked example traces upper-layer routing into a base-layer beam. The lab builds an exact-neighbor graph as a transparent stand-in for HNSW construction, implements greedy and bounded best-first traversal, and verifies the full exploration limit against exact search. Production guidance benchmarks recall and p99 latency under concurrency, monitors connectivity and effort, handles tombstones and rebuilds, and couples graph snapshots with embedding versions. HNSW is powerful because it invests memory and construction work in navigable shortcuts; it is not guaranteed exact unless search effectively exhausts the relevant connected graph.",
+  "prerequisites": [
+    "ann-search",
+    "trees-graphs-algorithms"
+  ],
+  "learningObjectives": [
+    "Trace HNSW query routing through sparse upper layers and bounded base-layer best-first search.",
+    "Explain how M, efConstruction, efSearch and randomized levels affect recall, latency, memory and build quality.",
+    "Diagnose insertion-order, filtering, deletion, duplicate, disconnected-region and embedding-drift failures.",
+    "Tune and operate HNSW using exact recall canaries, tail latency, graph statistics and safe rebuilds."
+  ],
+  "deepSections": [
+    {
+      "id": "hierarchy-and-search",
+      "title": "The hierarchy turns long-range routing into local graph expansion",
+      "body": "Each node is assigned levels from zero through a random maximum, commonly with exponentially decreasing probability of appearing at higher levels. Almost all nodes live at layer zero; few become long-range landmarks. The current highest-level node is an entry point. At an upper layer, evaluate its neighbors and move to any closer node until reaching a local minimum, then reuse that node as entry to the next layer. At layer zero, searchLayer maintains a min-priority queue of candidates to expand and a bounded max-oriented set of best discovered points. Pop the closest unvisited candidate, evaluate its neighbors, and admit promising nodes. When the closest unexpanded candidate is farther than the worst retained result and the retained set is full, stop. efSearch determines retained breadth; final top K are selected from it. This is approximate because the graph and bounded frontier may omit a path to the exact neighbor. Distance caching, visited sets and compact adjacency layouts dominate implementation efficiency."
+    },
+    {
+      "id": "construction",
+      "title": "Insertion searches the existing graph and chooses diverse neighbors",
+      "body": "To insert a vector, sample its maximum level, route from the current entry point through layers above that level, then at each participating layer search with a construction breadth efConstruction. Select up to M neighbors from candidates, add reciprocal connections, and prune overfull adjacency lists. Simply choosing the M closest points can create redundant edges into one dense direction and poor global navigation. HNSW's heuristic neighbor selection favors candidates not already well covered by a nearer selected neighbor, encouraging angular or regional diversity. The base layer may allow a larger degree multiplier than upper layers. A larger M increases edge bytes, distance checks and connectivity; larger efConstruction finds better candidate edges but costs build time. Insertion is incremental, so early nodes and order can affect structure. Randomizing order, using sufficient construction breadth and evaluating multiple seeds reduce accidental degradation. Concurrent insertion requires implementation-specific synchronization, and deterministic reproducibility may be limited unless build conditions are controlled."
+    },
+    {
+      "id": "tuning-and-measurement",
+      "title": "Tune three knobs on a recall-latency-memory surface",
+      "body": "Start with exact top-K neighbors on representative queries. Choose plausible M from memory and geometry, build graphs across efConstruction values, then sweep efSearch from at least K upward. Plot Recall@K against p50, p95 and p99 latency under target concurrency and cache state. Larger efConstruction cannot rescue an M too small for connectivity, and very large M can slow each expansion enough to hurt latency. High intrinsic dimensionality or dense duplicate clusters may require broader search. Report distance computations as a hardware-independent effort signal alongside wall time. Test query slices for sparse regions, norm extremes, languages, tenants and filter selectivity. Construction benchmarks include insertion throughput, peak memory, graph bytes per vector and restart or snapshot time. Avoid tuning efSearch on the same exact-query set used for final reporting. If a reranker consumes candidates, evaluate downstream recall and NDCG at the candidate budget rather than only geometric nearest-one recall."
+    },
+    {
+      "id": "mutation-and-filtering",
+      "title": "Real-world mutation and filtering can damage navigability",
+      "body": "Deletion is often represented by a tombstone because removing a node and repairing all routes is expensive. Too many tombstones waste memory and create dead-end traversal, so rebuild at a declared threshold. Updating an embedding is usually delete plus insert, which can leave duplicates if external-ID versioning fails. Identical or near-identical vectors crowd neighbor lists and should be deduplicated or handled by document grouping. Metadata filters complicate traversal: skipping disallowed nodes entirely can disconnect allowed regions, while traversing through them but not returning them may violate policy or waste work. Options include filtered graph search, partitioning by coarse filter, per-tenant graphs or overfetching; benchmark each. Sharding creates independent graphs and requires enough local candidates for global merge. A new embedding model changes neighborhoods and demands a parallel rebuild. Monitor reachable fraction from entry samples, degree distributions, components, tombstone ratio, search expansions, recall canaries, filter shortfall and insertion latency."
+    }
+  ],
+  "math": "A common level distribution has P(level>=l)=exp(-l/m_L), producing exponentially fewer nodes at higher l. Query search minimizes distance d(q,x). At layer zero, keep up to efSearch best discovered candidates; return the best K. Graph storage is roughly O(NM) edges, with implementation constants and an often larger base degree. Construction search uses efConstruction>=M to find neighbor candidates. HNSW has empirical sublinear behavior on many datasets, but worst-case guarantees and exactness are not implied by the name. Recall@K remains |HNSW_K intersection Exact_K|/K.",
+  "workedExamples": [
+    {
+      "title": "M and memory",
+      "body": "Doubling M roughly doubles adjacency storage and increases neighbor checks per expansion. Recall may improve through more routes, but p99 latency can worsen even if fewer expansion steps are required. Measure the complete frontier."
+    },
+    {
+      "title": "Filtered dead end",
+      "body": "A query restricted to tenant A enters a region whose connecting bridge nodes belong to tenant B. If traversal cannot cross B nodes, eligible A nodes may be unreachable. Partitioning or filter-aware construction may be needed."
+    }
+  ],
+  "lab": {
+    "language": "python",
+    "goal": "Implement bounded best-first proximity-graph search, compare it with greedy and exact search, and verify that exhaustive exploration recovers exact neighbors on a connected graph.",
+    "buildIt": "import heapq\nimport numpy as np\nrng=np.random.default_rng(31); angles=np.linspace(0,4*np.pi,180); radii=np.linspace(.2,3,180)\ndata=np.c_[radii*np.cos(angles),radii*np.sin(angles)]+rng.normal(scale=.015,size=(180,2))\nqueries=data[rng.choice(len(data),20,replace=False)]+rng.normal(scale=.04,size=(20,2))\ndef knn_graph(data,M=8):\n    dist=((data[:,None,:]-data[None,:,:])**2).sum(2); np.fill_diagonal(dist,np.inf); graph=[set(np.argsort(row)[:M]) for row in dist]\n    for i,neighbors in enumerate(list(graph)):\n        for j in neighbors: graph[j].add(i)\n    return [sorted(v) for v in graph]\ndef graph_search(data,graph,q,k,ef,entry=0):\n    distance=lambda i:float(np.sum((data[i]-q)**2)); candidates=[(distance(entry),entry)]; best=[(-distance(entry),entry)]; visited={entry}\n    while candidates:\n        d,i=heapq.heappop(candidates)\n        if len(best)>=ef and d>-best[0][0]: break\n        for j in graph[i]:\n            if j in visited: continue\n            visited.add(j); dj=distance(j)\n            if len(best)<ef or dj<-best[0][0]:\n                heapq.heappush(candidates,(dj,j)); heapq.heappush(best,(-dj,j))\n                if len(best)>ef: heapq.heappop(best)\n    return [i for _,i in sorted([(-neg,i) for neg,i in best])[:k]],len(visited)\ndef exact(data,q,k): return np.argsort(((data-q)**2).sum(1))[:k].tolist()\ngraph=knn_graph(data); K=5\nsmall=[graph_search(data,graph,q,K,10)[0] for q in queries]; broad=[graph_search(data,graph,q,K,len(data))[0] for q in queries]; truth=[exact(data,q,K) for q in queries]\ndef recall(rows,truth): return np.mean([len(set(a)&set(e))/len(e) for a,e in zip(rows,truth)])",
+    "useIt": "small_recall=recall(small,truth); broad_recall=recall(broad,truth)\nvisited_small=np.mean([graph_search(data,graph,q,K,10)[1] for q in queries]); visited_broad=np.mean([graph_search(data,graph,q,K,len(data))[1] for q in queries])",
+    "verifyIt": "assert 0<=small_recall<=broad_recall<=1\nassert broad_recall==1.0 and broad==truth\nassert visited_small<visited_broad<=len(data)\nassert all(len(set(row))==K for row in broad)\n# Undirected connections and a connected spiral make exhaustive graph traversal a valid oracle check.\nassert all(i in graph[j] for i,neighbors in enumerate(graph) for j in neighbors)\nseen={0}; frontier=[0]\nwhile frontier:\n    i=frontier.pop()\n    for j in graph[i]:\n        if j not in seen: seen.add(j); frontier.append(j)\nassert len(seen)==len(data)",
+    "shipIt": "Version metric, embeddings, graph build seed and order, M, efConstruction and efSearch; benchmark exact recall with load and filters, monitor graph health and tombstones, rebuild in parallel, and retain the prior immutable graph for rollback."
+  },
+  "exercises": [
+    {
+      "prompt": "Which parameter is usually changed online to trade latency for recall?",
+      "solution": "efSearch, the breadth of the base-layer candidate exploration; it should be tuned with exact recall and tail latency."
+    },
+    {
+      "prompt": "What does increasing M buy and cost?",
+      "solution": "More graph connections can improve navigability and recall but consume edge memory and increase work per expansion and construction."
+    },
+    {
+      "prompt": "Why can insertion order matter?",
+      "solution": "Each node connects to the graph that exists at insertion time, so early structure and available candidates influence later routes."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "layers",
+      "title": "HNSW routing hierarchy",
+      "items": [
+        "Sparse long-range entry layer",
+        "Regional navigation layers",
+        "Dense base proximity graph",
+        "efSearch candidate frontier",
+        "Top-K exact-distance results among explored nodes"
+      ],
+      "caption": "Greedy upper-layer descent supplies a strong entry point; bounded base exploration supplies robustness.",
+      "afterSection": "hierarchy-and-search"
+    },
+    {
+      "type": "network",
+      "title": "Diverse neighbor routes",
+      "nodes": [
+        {
+          "id": "e",
+          "label": "Entry",
+          "x": 0.08,
+          "y": 0.48,
+          "kind": "a"
+        },
+        {
+          "id": "u",
+          "label": "Upper shortcut",
+          "x": 0.27,
+          "y": 0.18,
+          "kind": "a"
+        },
+        {
+          "id": "a",
+          "label": "Local basin A",
+          "x": 0.42,
+          "y": 0.52,
+          "kind": "b"
+        },
+        {
+          "id": "b",
+          "label": "Bridge",
+          "x": 0.58,
+          "y": 0.28,
+          "kind": "c"
+        },
+        {
+          "id": "c",
+          "label": "Local basin B",
+          "x": 0.74,
+          "y": 0.56,
+          "kind": "b"
+        },
+        {
+          "id": "q",
+          "label": "Query area",
+          "x": 0.91,
+          "y": 0.34,
+          "kind": "c"
+        }
+      ],
+      "edges": [
+        [
+          "e",
+          "u"
+        ],
+        [
+          "u",
+          "a"
+        ],
+        [
+          "a",
+          "b"
+        ],
+        [
+          "b",
+          "c"
+        ],
+        [
+          "c",
+          "q"
+        ],
+        [
+          "a",
+          "q"
+        ]
+      ],
+      "caption": "Conceptual graph: diverse links give bounded search alternate routes around local minima.",
+      "afterSection": "construction"
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "hnsw-paper",
+      "contribution": "Grounds hierarchical graph construction, search, neighbor selection and controllable approximation."
+    },
+    {
+      "resource": "faiss-index-guide",
+      "contribution": "Verifies current HNSW parameter, memory, exact-baseline and operational index-selection guidance."
+    }
+  ]
 }

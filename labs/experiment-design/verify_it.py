@@ -10,7 +10,7 @@ def blocked_assign(rows,namespace):
         ordered=sorted(members,key=lambda r:score(namespace,r['id']))
         for i,row in enumerate(ordered):assignment[row['id']]=i%2
     return assignment
-rows=[{'id':i,'block':'high' if i%3==0 else 'low','baseline':10+(i%3)*4} for i in range(120)]
+rows=[{'id':i,'block':f'baseline-{i%3}','baseline':10+(i%3)*4} for i in range(120)]
 assignment=blocked_assign(rows,'exp-v1')
 
 # ---- Use it ----

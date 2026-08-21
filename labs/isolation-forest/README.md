@@ -1,6 +1,6 @@
 # Isolation Forest — Code Lab
 
-Detect unusual points without labels using Isolation Forest.
+Build reusable isolation trees and normalized forest scores, compare with scikit-learn, and verify injected-outlier, determinism, range, and translation invariants.
 
 ## 1. Build it
 

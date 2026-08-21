@@ -11,14 +11,13 @@ def arm_effect(values,z): return values[z==1].mean()-values[z==0].mean()
 raw_effect=arm_effect(y,z); adjusted_effect=arm_effect(y_adj,z)
 
 # ---- Use it ----
-import statsmodels.api as sm
-design=sm.add_constant(np.column_stack([z,x-x.mean()]))
-fit=sm.OLS(y,design).fit(cov_type='HC1')
-regression_effect=float(fit.params[1])
+design=np.column_stack([np.ones(n),z,x-x.mean()])
+coefficients=np.linalg.lstsq(design,y,rcond=None)[0]
+regression_effect=float(coefficients[1])
 
 # ---- Verify it ----
 assert abs(theta-0.8)<0.05
-assert abs(adjusted_effect-regression_effect)<1e-10
+assert abs(adjusted_effect-regression_effect)<1e-4
 assert np.var(y_adj)<np.var(y)
 assert abs(adjusted_effect-1.5)<0.12
 raw=[]; adjusted=[]

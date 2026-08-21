@@ -6,12 +6,13 @@
   "roles": [
     "all"
   ],
-  "interviewAnswer": "IID test performance can fail under covariate, label or concept shift. Use time/geography/group-aware validation, shift diagnostics and post-deployment monitoring when future data differs from training.",
+  "interviewAnswer": "I write the joint as p(x,y)=p(y|x)p(x) or p(x|y)p(y) and state what is assumed stable. Under covariate shift p_s(x)!=p_t(x) but p(y|x) is stable, target risk equals E_s[w(X)loss] with w=p_t(x)/p_s(x), provided target support lies within source support. Large weights create high variance, so I report effective sample size and clipping sensitivity. Label shift changes p(y) with stable p(x|y); concept shift changes p(y|x) and cannot be repaired by covariate weights alone. I detect drift with domain classifiers and feature, score and prediction summaries, but validate harm using mature labels and decision metrics. Responses include recalibration, threshold or policy changes, reweighting, robust training, retraining or abstention, each shadow-tested for feedback and subgroup effects.",
   "keyPoints": [
-    "IID assumption",
-    "Covariate shift",
-    "Label shift",
-    "Concept shift"
+    "Shift type is an assumption about which factor of the data-generating process changed.",
+    "Importance weighting identifies target risk only with conditional stability and support overlap.",
+    "Input drift is neither necessary nor sufficient for performance degradation.",
+    "Unlabeled detection locates change; labels and task outcomes establish model harm.",
+    "Deployment actions change future data, so monitoring and adaptation must account for feedback."
   ],
   "resources": [
     "stanford-cs229",
@@ -19,22 +20,165 @@
     "stanford-cs329s"
   ],
   "featured": false,
-  "why": "Distribution shift is one of the most common reasons production performance differs from offline evaluation.",
-  "intuition": "A model trained on one year, hospital or country may see systematically different deployment inputs.",
-  "deepDive": "Different shifts change p(x), p(y) or p(y|x). Some shifts can be reweighted; concept shift usually requires adaptation/retraining.",
-  "math": "",
-  "code": "",
+  "why": "Classical generalization evaluates future examples from the same distribution as training. Real systems face new seasons, devices, markets, policies, competitors and user behavior. Some shifts preserve the prediction mechanism and can be transported; others change the target relationship and require new labels or design. Treating all drift as one score leads to harmful automation: retraining on biased selective labels, weighting without overlap or adapting to an attack. A taxonomy tied to probability factorization clarifies what evidence each remedy needs. Operationally, the challenge is not merely detecting any statistical difference but deciding whether risk, calibration or action utility changed enough to require a safe response.",
+  "intuition": "A model learned from weekday traffic and is deployed on weekends. If the mix of roads changes but the relationship between road conditions and travel time stays stable, covariate weighting can estimate weekend risk from weekday examples that resemble weekends. If a new construction policy changes that relationship, old labels cannot identify the new mapping. If weekend road types never appeared on weekdays, no weight can invent their outcomes. A drift alarm tells you the inputs look different; only outcome evidence or a valid structural assumption tells you how prediction quality changed.",
+  "deepDive": "Distribution-shift generalization is not one robustness property. Covariate, label and conditional shifts correspond to different stable mechanisms and identify different corrections. Importance weighting is exact only under conditional invariance and overlap, with variance exposed by effective sample size. Monitoring detects that the world changed, while mature outcomes establish harm. Safe systems tie adaptation to explicit assumptions, feedback-aware experiments and fallback behavior.",
+  "math": "Source risk R_s(h)=E_{p_s(x,y)}ell and target risk R_t(h)=E_{p_t(x,y)}ell. Under p_t(y|x)=p_s(y|x) and overlap, R_t(h)=E_s[w(X)ell] where w(x)=p_t(x)/p_s(x). Effective sample size ESS=(sum_i w_i)^2/sum_i w_i^2. If a domain classifier estimates eta(x)=P(T=1|x) from target sampling prior pi_t and source pi_s, then w(x)=[eta/(1-eta)]*[pi_s/pi_t]. Weight clipping trades variance for bias. Label-shift correction instead uses target priors with stable p(x|y); it is not the same ratio.",
   "commonMistakes": [
-    "Calling every change concept drift.",
-    "Randomly splitting temporal data and claiming future generalization."
+    {
+      "misconception": "Any feature drift means model accuracy fell.",
+      "correction": "Drift may be irrelevant; connect it to model inputs, predictions and mature outcome risk."
+    },
+    {
+      "misconception": "Importance weights fix all distribution shifts.",
+      "correction": "They identify covariate-shift risk only with stable p(y|x), correct ratios and support overlap."
+    },
+    {
+      "misconception": "Low uncertainty on OOD input means the prediction is safe.",
+      "correction": "Standard models can be confidently wrong outside support; uncertainty methods also need OOD validation and fallback."
+    },
+    {
+      "misconception": "Retraining on recent labels automatically adapts safely.",
+      "correction": "Labels may be selective and policy-influenced, causing feedback and hidden bias without exploration or correction."
+    }
   ],
   "followUps": [
-    "How do you detect shift?",
-    "When does importance weighting help?"
+    {
+      "question": "How do covariate and concept shift differ?",
+      "answer": "Covariate shift changes p(x) with stable p(y|x); concept shift changes the outcome relationship itself."
+    },
+    {
+      "question": "Why report effective sample size?",
+      "answer": "Extreme importance weights mean only a small fraction of source examples effectively represents the target, increasing variance and fragility."
+    },
+    {
+      "question": "Can unlabeled target data prove performance is stable?",
+      "answer": "Usually not. It can detect input and prediction changes; outcome stability requires labels or valid structural assumptions."
+    }
   ],
-  "production": "Design validation to mimic deployment and monitor performance by important slices.",
-  "workedExample": "Fraud strategies evolve after a detector is deployed, changing p(y|x).",
+  "production": "Maintain a data-generating-process map with source and target populations, time windows, sensors, policy and model versions, prediction time, labels and maturity. Define which factors are assumed invariant before using reweighting or adaptation. Log ratio-model training, priors, cross-fitting, clipping and ESS by subgroup. Monitor schema and missingness, marginals and multivariate domain AUC, model scores and decisions, overlap, rejection and resource health. When labels mature, compute risk, calibration and utility on common cohorts with uncertainty. Preserve randomized controls or exploration where feedback makes outcomes selective and ethical. Trigger graduated responses: investigate, tighten thresholds, abstain, shadow a recalibration or retrain, then canary. Roll back model, features, threshold and policy together; policy changes can be the source of the shift.",
+  "workedExample": "Source examples come mostly from x near -0.5 and target examples near +0.5, while y|x remains unchanged. A fixed model's unweighted source MSE estimates the wrong mix of x. Weighting each source loss by the target-to-source normal density ratio reproduces the target mixture in expectation. If target x=5 has essentially no source support, weights become extreme and the estimate is not practically reliable despite the formal expression.",
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "Generalization under distribution shift asks whether a model trained under source distribution P_s will retain acceptable risk under a different target P_t. This chapter distinguishes covariate shift, label or prior shift, concept or conditional shift, domain and subpopulation shift, temporal drift and policy-induced feedback. It derives importance-weighted target risk under invariant conditionals, explains overlap and effective sample size, and compares reweighting, recalibration, robust optimization, invariant representation, domain adaptation and retraining. It covers detection limits, unlabeled monitoring, selective labels, causal mechanisms, out-of-distribution uncertainty and no-free-lunch constraints. A worked example transports a fixed loss with density ratios. The lab simulates covariate shift, verifies weighted risk against target risk, and trains a domain classifier as a two-sample diagnostic. Production guidance versions source and target windows, monitors inputs, predictions and mature outcomes, defines abstention and rollback, and tests interventions before adaptation. A model cannot be proven robust to arbitrary unseen shifts; useful guarantees require specifying which mechanisms may change and where target support overlaps training evidence.",
+  "prerequisites": [
+    "empirical-risk-minimization",
+    "monte-carlo"
+  ],
+  "learningObjectives": [
+    "Distinguish covariate, label, conditional, subpopulation, temporal and policy-induced shifts by factorization.",
+    "Estimate target risk with importance weights when invariant mechanisms and support conditions justify it.",
+    "Compare recalibration, reweighting, adaptation, robust optimization, invariance and retraining strategies.",
+    "Design shift detection, mature-label evaluation, safe fallback, governance and feedback-aware monitoring."
+  ],
+  "deepSections": [
+    {
+      "id": "shift-taxonomy",
+      "title": "Joint-distribution factorizations define different shift assumptions",
+      "body": "Covariate shift assumes p_s(x)!=p_t(x) while p_s(y|x)=p_t(y|x). Label shift assumes p_s(y)!=p_t(y) while p_s(x|y)=p_t(x|y), permitting class-prior correction when classifier confusion is identifiable. Concept or conditional shift changes p(y|x), often the most damaging and least identifiable without target labels. Subpopulation shift changes mixture weights across latent or observed groups; domain shift can combine all factors. Temporal shift adds ordering, seasonality and label latency. Measurement shift changes sensors or coding rather than the latent phenomenon. Policy shift occurs because deployed decisions alter who receives treatment, what is observed and later behavior. The categories can overlap and are assumptions, not diagnoses from one histogram. Define prediction time, population and causal data flow before choosing a correction. A stable p(y|x) can fail when X omits a changing confounder or mechanism."
+    },
+    {
+      "id": "importance-overlap",
+      "title": "Covariate weighting transports risk only across supported regions",
+      "body": "Under covariate shift, R_t(h)=integral loss(h(x),y)p_t(x)p(y|x)dxdy=E_s[w(X)loss] with w=p_t(x)/p_s(x). This requires p_s(x)>0 wherever p_t(x)>0, called overlap or positivity. Estimate ratios from known densities, probabilistic domain classification or direct ratio methods. If a classifier estimates eta(x)=P(domain=target|x) under sample priors pi, the odds can be converted to a density ratio. Extreme weights make variance high; effective sample size (sum w)^2/sum w^2 reveals lost information. Clipping stabilizes estimates but introduces bias, so show a sensitivity curve. Cross-fitting prevents density-ratio overfit. Weighted training and weighted evaluation answer different questions. Conditional shift invalidates the identity, and hidden selection may make observed target covariates unrepresentative. No reweighting solves new target support with no source labels."
+    },
+    {
+      "id": "responses",
+      "title": "Adaptation strategy follows the changed mechanism and available labels",
+      "body": "If ranking remains but prevalence changes, recalibrate probabilities or thresholds on representative target labels. Under credible covariate shift, importance-weight ERM or evaluation. Label-shift methods estimate target priors through predicted-label mixtures when class-conditionals remain stable and confusion matrices are well conditioned. Fine-tuning and domain adaptation use target labeled or unlabeled data but can forget source performance and exploit spurious alignment. Distributionally robust optimization minimizes worst-case risk over a chosen uncertainty set; robustness is only to that set and can be conservative. Invariant-risk methods seek features with stable predictive mechanisms across environments, requiring diverse environments and strong assumptions. Data augmentation encodes known transformations. Ensembles and conformal methods quantify some uncertainty but do not make arbitrary OOD predictions valid. When overlap or mechanism evidence is weak, abstention, human review, restricted rollout or fresh data collection is safer than automatic adaptation."
+    },
+    {
+      "id": "monitor-feedback",
+      "title": "Monitoring must join unlabeled drift with delayed outcome and policy evidence",
+      "body": "Track schema, missingness, categories, feature and embedding distributions, prediction mix, confidence, rejection, latency and domain-classifier separability. Multivariate tests detect changes missed by marginals, but high sample sizes make trivial drift significant. Predeclare practical thresholds and slices. Input stability does not guarantee p(y|x) stability, and large benign input drift may leave decisions unchanged. As labels mature, measure discrimination, calibration, loss and action utility by cohort, group and time with confidence intervals. Selective labels arise when only acted-on cases reveal outcomes; inverse propensity methods need logged, positive action probabilities and no hidden confounding. Retraining on model-influenced data can reinforce feedback. Maintain control groups or randomized exploration where ethical, log policy versions, and evaluate shadow models on common cohorts. Incidents need safe thresholds, abstention and rollback independent of retraining availability."
+    }
+  ],
+  "workedExamples": [
+    {
+      "title": "Benign input drift",
+      "body": "A logging-format feature changes distribution but is unused by the model and unrelated to outcomes. A drift test fires while risk remains stable; schema repair matters, but model retraining may not."
+    },
+    {
+      "title": "Silent concept shift",
+      "body": "A policy changes eligibility rules while recorded feature distributions remain stable. p(y|x) changes, calibration deteriorates, and feature-only monitoring misses the harm until labels mature."
+    }
+  ],
+  "lab": {
+    "language": "python",
+    "goal": "Estimate target risk under simulated covariate shift, compare density-ratio weighting, and use a domain classifier as an unlabeled drift diagnostic.",
+    "buildIt": "import numpy as np\nrng=np.random.default_rng(29); n=150000; xs=rng.normal(-.25,1,n); xt=rng.normal(.25,1,n)\ndef outcome(x): return x*x+.3*x\ndef predict(x): return .4*x+.2\nls=(predict(xs)-outcome(xs))**2; lt=(predict(xt)-outcome(xt))**2\ndef normal_pdf(x,mu): return np.exp(-.5*(x-mu)**2)/np.sqrt(2*np.pi)\nw=normal_pdf(xs,.25)/normal_pdf(xs,-.25); source_risk=ls.mean(); target_risk=lt.mean(); weighted_risk=np.sum(w*ls)/np.sum(w); ess=w.sum()**2/np.sum(w*w)",
+    "useIt": "from sklearn.linear_model import LogisticRegression\nfrom sklearn.metrics import roc_auc_score\nX=np.r_[xs[:5000],xt[:5000]][:,None]; domain=np.r_[np.zeros(5000),np.ones(5000)]; clf=LogisticRegression().fit(X,domain); domain_auc=roc_auc_score(domain,clf.predict_proba(X)[:,1])",
+    "verifyIt": "assert abs(weighted_risk-target_risk)<.04\nassert abs(weighted_risk-target_risk)<abs(source_risk-target_risk)\nassert abs(w.mean()-1)<.02\nassert 0<ess<n and ess/n<.8\nassert domain_auc>.6\n# No shift gives unit weights and unchanged risk.\nw_same=normal_pdf(xs,-.25)/normal_pdf(xs,-.25); assert np.allclose(w_same,1)\nassert np.isfinite([source_risk,target_risk,weighted_risk,ess]).all()",
+    "shipIt": "Version source and target cohorts, shift assumption, ratio model and clipping, label maturity and policy; monitor overlap, ESS, risk and calibration by slice, shadow adaptations, and retain abstention and rollback when support or outcomes fail."
+  },
+  "exercises": [
+    {
+      "prompt": "What support condition does importance weighting need?",
+      "solution": "Every target region with positive probability must have positive source probability; otherwise source labels cannot represent it."
+    },
+    {
+      "prompt": "What does a very small ESS indicate?",
+      "solution": "A few large weights dominate, so target-risk estimates and weighted training have high variance and poor practical overlap."
+    },
+    {
+      "prompt": "Why can retraining create feedback?",
+      "solution": "The deployed model influences actions and observed labels, so new training data depend on prior predictions and policies."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "compare",
+      "title": "Shift mechanisms",
+      "left": {
+        "title": "Potentially transportable",
+        "items": [
+          "Covariate p(x) shift",
+          "Stable p(y|x)",
+          "Overlap required",
+          "Importance weighting"
+        ]
+      },
+      "right": {
+        "title": "New relationship",
+        "items": [
+          "Concept p(y|x) shift",
+          "New labels required",
+          "Mechanism investigation",
+          "Retrain, redesign or abstain"
+        ]
+      },
+      "caption": "The same drift statistic cannot distinguish these mechanisms without additional evidence.",
+      "afterSection": "shift-taxonomy"
+    },
+    {
+      "type": "flow",
+      "title": "Shift response loop",
+      "items": [
+        "Detect data or prediction change",
+        "Check support and data quality",
+        "Wait for or collect target outcomes",
+        "Identify plausible mechanism",
+        "Shadow weighted, calibrated or retrained response",
+        "Canary, monitor and retain rollback"
+      ],
+      "caption": "Detection starts investigation; it does not automatically authorize adaptation.",
+      "afterSection": "monitor-feedback"
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "stanford-cs229",
+      "contribution": "Grounds generalization, importance weighting and statistical learning assumptions."
+    },
+    {
+      "resource": "google-rules-ml",
+      "contribution": "Provides practical production guidance on training-serving skew, monitoring and feedback."
+    },
+    {
+      "resource": "stanford-cs329s",
+      "contribution": "Supports ML systems treatment of distribution shift, deployment evaluation and operational response."
+    }
+  ]
 }

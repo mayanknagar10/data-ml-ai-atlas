@@ -10,8 +10,10 @@ def ab_proportions(x_t,n_t,x_c,n_c,zcrit=1.95996398454):
 def mean_sample_per_arm(sigma,mde,alpha_z=1.96,power_z=0.841621):
     return int(2*sigma*sigma*(alpha_z+power_z)**2/(mde*mde)+0.999999)
 report=ab_proportions(1045,10000,1010,10000)
-planned_n=mean_sample_per_arm(sqrt(0.1*0.9),0.005)</pre></section><section><h2>2 · Use it</h2><p>The same idea through a common library or practical API.</p><pre>from statsmodels.stats.proportion import proportions_ztest
-stat,pvalue=proportions_ztest([1045,1010],[10000,10000])</pre></section><section><h2>3 · Ship it</h2><p>Bind calculations to immutable assignment and metric snapshots, validate SRM and analysis-unit independence first, version alpha/MDE/stopping rules, monitor guardrails, and publish effects with intervals and denominators rather than significance labels alone.</p></section><section><h2>4 · Verify it</h2><p>Assertions and sanity checks that catch conceptual or implementation mistakes.</p><pre>effect,interval,z,p=report
+planned_n=mean_sample_per_arm(sqrt(0.1*0.9),0.005)</pre></section><section><h2>2 · Use it</h2><p>The same idea through a common library or practical API.</p><pre>from scipy.stats import norm
+pooled=(1045+1010)/(10000+10000)
+stat=(1045/10000-1010/10000)/(pooled*(1-pooled)*(1/10000+1/10000))**0.5
+pvalue=2*norm.sf(abs(stat))</pre></section><section><h2>3 · Ship it</h2><p>Bind calculations to immutable assignment and metric snapshots, validate SRM and analysis-unit independence first, version alpha/MDE/stopping rules, monitor guardrails, and publish effects with intervals and denominators rather than significance labels alone.</p></section><section><h2>4 · Verify it</h2><p>Assertions and sanity checks that catch conceptual or implementation mistakes.</p><pre>effect,interval,z,p=report
 assert abs(effect-0.0035)&lt;1e-12
 assert interval[0]&lt;effect&lt;interval[1]
 assert abs(z-stat)&lt;1e-10 and abs(p-pvalue)&lt;1e-10

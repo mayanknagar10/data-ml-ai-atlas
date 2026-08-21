@@ -7,44 +7,178 @@
     "ds",
     "da"
   ],
-  "interviewAnswer": "The Cox model relates covariates multiplicatively to hazard without specifying the baseline hazard shape. Coefficients are interpreted through hazard ratios, under the proportional-hazards assumption.",
+  "interviewAnswer": "Cox regression models h(t|x)=h0(t)exp(x beta). At each event time, partial likelihood compares the event subject's exp(x beta) with the sum over everyone then at risk, so beta can be estimated without parameterizing h0. Exponentiating a coefficient gives a conditional hazard ratio for a one-unit covariate change if hazards are proportional. After fitting beta, a Breslow-type estimator recovers cumulative baseline hazard and S(t|x)=exp[-H0(t)exp(x beta)]. I check Schoenfeld-residual trends and time interactions, model nonlinear continuous effects, specify ties and delayed entry, use robust or clustered inference when needed, and evaluate discrimination plus calibrated survival at supported horizons. Hazard ratios are not risk ratios, and observational coefficients are not causal effects without an identification design.",
   "keyPoints": [
-    "Hazard ratio exp(beta).",
-    "Check proportional hazards.",
-    "Censoring assumptions still matter."
+    "Partial likelihood compares each event with its contemporaneous risk set.",
+    "The baseline hazard cancels for coefficient estimation but is required for absolute survival.",
+    "Hazard ratios are conditional instantaneous-rate ratios, not probability or median ratios.",
+    "Proportional hazards is a testable modeling restriction, not a property guaranteed by the algorithm.",
+    "Time origin, delayed entry, ties, feature timing, and censoring belong in the model contract."
   ],
   "resources": [
+    "cox-1972",
     "lifelines",
-    "stanford-stats200"
+    "statsmodels-survival"
   ],
   "featured": false,
-  "why": "Cox Proportional Hazards Model appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
-  "intuition": "Hazard ratio exp(beta).",
-  "deepDive": "The Cox model relates covariates multiplicatively to hazard without specifying the baseline hazard shape. Coefficients are interpreted through hazard ratios, under the proportional-hazards assumption. Check proportional hazards. Censoring assumptions still matter. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
-  "workedExample": "A hazard ratio of 1.5 for a feature means 50% higher instantaneous event hazard at a given time, holding other covariates fixed.",
+  "why": "Event-time prediction usually needs covariate adjustment: two customers may have the same follow-up length but very different histories, devices, treatments, or usage. Cox regression provides a semiparametric compromise. It estimates relative effects while leaving the common time pattern flexible, making it more robust to baseline-shape misspecification than a fully parametric hazard. The model also uses censored subjects while they remain at risk. Yet its apparent simplicity hides important choices. Risk sets can be wrong when entry is delayed, ties are frequent, or features include post-origin information. A constant hazard ratio can conceal early benefit and late harm. Absolute predictions require an estimated baseline and population-specific calibration. The useful workflow therefore begins with the estimand and data timeline, exposes partial-likelihood mechanics, checks assumptions graphically and quantitatively, and judges whether the model is intended for explanation, ranking, or calibrated decisions.",
+  "intuition": "At a time when one event occurs, imagine a lottery among all subjects still at risk. Cox assigns each subject a ticket weight exp(x beta). Partial likelihood rewards coefficients that give the observed event subject a large share of that risk-set weight. Repeat across event times and multiply the shares. A censored person never supplies an event numerator, but appears in denominators until censoring, so their event-free follow-up is informative. The unspecified baseline hazard is common to every member of one risk set and cancels from the probability of who fails at that time. This cancellation estimates relative risk, not absolute event probability. To predict survival, accumulate observed events relative to fitted risk totals to estimate baseline cumulative hazard, then scale it by each subject's relative risk. Proportional hazards means the ratio between two fitted hazards stays constant even though both hazards may change arbitrarily with time.",
+  "deepDive": "Cox regression factorizes event timing into a shared baseline and exponential relative risk. Conditioning within risk sets removes the nuisance baseline from coefficient estimation, while a second step reconstructs absolute survival. This elegant separation is only valid for correctly constructed risk sets and a defensible proportional-effect structure. Ties, entry, time-varying features, dependence, censoring, and supported horizons are therefore core model inputs, not implementation details. The result can serve inference, prediction, or decision support, but those purposes demand different diagnostics and interpretations.",
+  "workedExample": "At an event time, three subjects remain with x values 0, 1, and 2. If beta=log(2), their relative-risk weights are 1, 2, and 4. If the x=2 subject experiences the event, that partial-likelihood factor is 4/(1+2+4)=4/7. If x=0 fails instead, the factor is 1/7. Across all event times, optimization chooses beta that makes observed event subjects plausible relative to the exact people who could have failed then.",
   "commonMistakes": [
-    "Applying the method without checking its assumptions or data-generating process.",
-    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+    {
+      "misconception": "A hazard ratio of 2 means twice the event probability by every horizon.",
+      "correction": "It compares conditional instantaneous hazards. Cumulative risk depends on baseline hazard, horizon, and competing processes."
+    },
+    {
+      "misconception": "Cox makes no assumptions because the baseline is unspecified.",
+      "correction": "It still assumes proportional covariate effects, correct functional form, risk-set construction, and appropriate censoring and dependence conditions."
+    },
+    {
+      "misconception": "Censored subjects are discarded.",
+      "correction": "They contribute to every risk set until censoring and therefore affect the partial likelihood."
+    },
+    {
+      "misconception": "A good concordance score proves calibrated survival probabilities.",
+      "correction": "Ranking and calibration are distinct; evaluate time-specific probabilities and Brier scores as well."
+    }
   ],
   "followUps": [
-    "What assumptions does Cox Proportional Hazards Model make?",
-    "How would you validate or debug Cox Proportional Hazards Model in practice?"
+    {
+      "question": "Why does the baseline hazard cancel from partial likelihood?",
+      "answer": "Within one event time it multiplies every at-risk subject's hazard equally, so conditioning on one event leaves only relative-risk weights."
+    },
+    {
+      "question": "How do you handle a covariate that violates PH?",
+      "answer": "Verify timing and form, then consider a prespecified interaction with time, stratification, piecewise effects, or an alternative estimand and model."
+    },
+    {
+      "question": "What is the distinction between time-varying covariate and coefficient?",
+      "answer": "A time-varying covariate changes its observed value over follow-up; a time-varying coefficient changes how a covariate value relates to hazard over time."
+    }
   ],
-  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
-  "visual": {
-    "type": "flow",
-    "title": "Cox proportional hazards",
-    "items": [
-      "Covariates x",
-      "Linear predictor βᵀx",
-      "Relative hazard exp(βᵀx)",
-      "Event-time risk"
-    ],
-    "caption": "Cox models covariate effects on relative hazard while leaving the baseline hazard unspecified.",
-    "accent": 1,
-    "orientation": "horizontal"
-  },
+  "production": "Define a versioned counting-process table with subject ID, origin, interval start and stop, event, entry, and feature availability timestamps. Assert that intervals do not overlap, events occur once where appropriate, and features precede their risk interval. Persist encoders, spline bases, penalties, tie method, coefficients, baseline cumulative hazard, and prediction horizon. Validate on chronologically later and important subgroup cohorts with concordance, dynamic Brier or AUC, calibration, event counts, censoring support, and decision utility. Monitor feature drift, risk-set composition, event latency, censoring, baseline incidence, PH diagnostics, coefficient stability, horizon support, and calibration. Shadow changes to event extraction and interval expansion. Use bounded outputs and abstain outside covariate or follow-up support. Protect sensitive event labels and small risk sets. Roll back model, preprocessing, event definition, and baseline hazard as one compatible bundle.",
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "The Cox proportional-hazards model connects covariates to event timing without requiring a parametric baseline hazard. It writes the hazard as h(t|x)=h0(t)exp(x^T beta), so exp(beta_j) is a multiplicative hazard ratio under the proportional-hazards assumption. This chapter derives the partial likelihood from risk-set comparisons, explains why censored observations still contribute information, and separates coefficient estimation from recovery of the baseline hazard and absolute survival. It covers Breslow and Efron tie handling, delayed entry, time-dependent covariates, penalization, clustered dependence, Schoenfeld residuals, nonproportional effects, and the difference between predictive and causal interpretations. A worked example computes one partial-likelihood term. The lab exposes the mechanism with a one-covariate Newton optimizer, compares it with SciPy's general optimizer, and verifies permutation invariance, gradient convergence, and survival monotonicity. Production guidance treats the risk-set construction, time origin, feature availability, baseline-hazard version, and supported horizon as model artifacts. Cox is often a strong interpretable baseline, but a hazard ratio is neither a probability ratio nor a universal summary when effects vary over time.",
+  "prerequisites": [
+    "kaplan-meier",
+    "linear-regression"
+  ],
+  "learningObjectives": [
+    "Derive Cox partial likelihood from event-wise risk sets and interpret coefficients as conditional hazard ratios.",
+    "Recover a baseline cumulative hazard and individual survival curves after estimating regression coefficients.",
+    "Diagnose proportional-hazards violations, tie and entry conventions, nonlinear effects, and dependent observations.",
+    "Design leakage-safe validation and deployment contracts for event-time regression."
+  ],
+  "deepSections": [
+    {
+      "id": "partial-likelihood",
+      "title": "Partial likelihood learns relative risk inside each risk set",
+      "body": "For subject i with covariates x_i, Cox specifies h_i(t)=h0(t)exp(x_i^T beta). At a distinct event time t_i, condition on exactly one event occurring among risk set R_i. The conditional probability that i is the event is exp(x_i beta)/sum_{k in R_i}exp(x_k beta). Multiplying these terms gives the partial likelihood. Its score sums observed covariates minus risk-weighted means; its negative Hessian sums weighted covariance matrices. Concavity makes Newton or quasi-Newton optimization reliable when the design is identified. Censored subjects enter denominators until their censor time. With left truncation, R_i includes only subjects whose entry precedes t_i. Rows for time-varying covariates must represent start-stop intervals and use values known immediately before each event. Exact, Breslow, and Efron methods handle tied event times differently; Efron is often a practical default when ties are moderate, while coarse timestamps deserve sensitivity checks. Separation, sparse categories, and collinearity can send estimates or standard errors upward, motivating penalization and design review."
+    },
+    {
+      "id": "absolute-survival",
+      "title": "Absolute survival requires a fitted baseline hazard",
+      "body": "Partial likelihood estimates beta but not h0(t). After fitting, the Breslow cumulative-baseline increment at event time t_j is d_j divided by sum_{k in R_j}exp(x_k beta), with tie conventions aligned to the coefficient fit. Accumulating increments gives H0hat(t), and Shat(t|x)=exp[-H0hat(t)exp(x beta)]. Absolute predictions therefore depend on the training population's event and censoring process, baseline covariate coding, and data cutoff. Re-centering covariates changes the numerical baseline but not individual fitted hazards if done consistently. Confidence intervals must reflect coefficient and baseline uncertainty. Extrapolation beyond the last supported event is not licensed by the semiparametric model: the estimated cumulative hazard simply stops receiving information. Report fixed-horizon risk only where follow-up is adequate. If deployment prevalence, interventions, or observation practices shift, ranking may remain useful while absolute survival becomes miscalibrated. Recalibration or baseline updating requires a defined target population and fresh mature outcomes."
+    },
+    {
+      "id": "ph-diagnostics",
+      "title": "Proportional hazards and functional form need active diagnostics",
+      "body": "For two fixed covariate vectors, Cox assumes their hazard ratio exp[(x_a-x_b)beta] is constant in time. Scaled Schoenfeld residuals compare an event subject's covariates with their risk-set expectation; systematic residual trends against transformed time suggest nonproportionality. Complementary log-log survival plots can reveal gross violations but are not a substitute for modeling. Remedies include prespecified covariate-by-time interactions, stratification when a variable needs its own baseline hazard, piecewise coefficients, or a different estimand such as restricted mean survival. Continuous covariates also need functional-form checks using splines, transformations, or residual plots; proportionality does not imply linear log hazard. Global tests can miss localized departures and become overly sensitive in huge samples, so combine effect plots, subject-matter timing, and predictive consequences. Time-varying exposure must be distinguished from time-varying effect. Updating an exposure after origin addresses the former; interacting a baseline exposure with time addresses the latter."
+    },
+    {
+      "id": "inference-and-use",
+      "title": "Dependence, causality, and decisions define what coefficients mean",
+      "body": "Naive standard errors assume independent subjects and a correct working model. Repeated episodes, centers, households, or matched sets can require cluster-robust variance, frailty models, or explicit multilevel structure. Penalized Cox models stabilize high-dimensional prediction but alter inferential interpretation and require leakage-safe tuning. A hazard ratio conditions on remaining event-free, a population whose composition changes over time; it is noncollapsible and can be difficult to compare across covariate sets. An observational treatment coefficient does not identify a causal effect merely because many confounders are included. Treatment timing, immortal-time bias, time-dependent confounding, censoring, competing events, and target estimand need a causal design. For prediction, evaluate concordance, time-dependent Brier score, calibration, and utility on temporal or external data. For explanation, report effect scale, reference values, uncertainty, functional form, and assumption diagnostics. For decisions, translate survival curves into horizon-specific consequences and thresholds rather than ranking on a hazard ratio alone."
+    }
+  ],
+  "math": "h(t|x)=h0(t)exp(x^T beta), H(t|x)=H0(t)exp(x^T beta), and S(t|x)=exp[-H0(t)exp(x^T beta)]. With one event i at time t_i, L_p(beta)=product_i exp(x_i^T beta)/sum_{k in R_i}exp(x_k^T beta). The score is sum_i[x_i-E_beta(X|R_i)] and Hessian is minus the sum of risk-weighted covariance matrices. Breslow increments are Delta H0hat(t_j)=d_j/sum_{k in R_j}exp(x_k^T betahat). exp(beta_j) is the conditional hazard ratio per one-unit change when the functional form and PH restriction hold.",
+  "workedExamples": [
+    {
+      "title": "From coefficient to conditional hazard ratio",
+      "body": "A fitted coefficient 0.405 for a binary exposure gives exp(0.405)=1.50. At any time where PH holds, exposed subjects have 50 percent higher instantaneous hazard conditional on covariates and remaining event-free. It does not say their cumulative event probability is 50 percent higher."
+    },
+    {
+      "title": "Breslow survival prediction",
+      "body": "Suppose H0hat(12)=0.20 and x beta=log(1.5). The subject cumulative hazard is 0.20*1.5=0.30 and predicted survival through month 12 is exp(-0.30)=0.741. A different baseline estimate changes this probability even when beta is unchanged."
+    }
+  ],
+  "lab": {
+    "language": "python",
+    "goal": "Expose Cox partial-likelihood mechanics, fit one coefficient with Newton's method, compare SciPy optimization, and verify risk-set and survival invariants.",
+    "buildIt": "import numpy as np\ndef cox_components(beta,x,time,event):\n    x=np.asarray(x,float); time=np.asarray(time,float); event=np.asarray(event,int); b=float(np.asarray(beta).reshape(-1)[0])\n    ll=grad=hess=0.0\n    for i in np.flatnonzero(event==1):\n        xr=x[time>=time[i]]; z=b*xr; m=z.max(); w=np.exp(z-m); sw=w.sum()\n        mean=np.sum(w*xr)/sw; var=np.sum(w*(xr-mean)**2)/sw\n        ll+=b*x[i]-(m+np.log(sw)); grad+=x[i]-mean; hess-=var\n    return ll,grad,hess\ndef fit_newton(x,time,event,start=0.0):\n    b=float(start)\n    for _ in range(60):\n        _,g,h=cox_components(b,x,time,event)\n        step=g/h; b-=step\n        if abs(step)<1e-10: break\n    return b\ndef breslow(beta,x,time,event):\n    x=np.asarray(x,float); time=np.asarray(time,float); event=np.asarray(event,int)\n    ts=np.unique(time[event==1]); inc=np.array([np.sum((time==t)&(event==1))/np.exp(beta*x[time>=t]).sum() for t in ts])\n    return ts,np.cumsum(inc)\nx=np.array([-1.2,-0.8,-0.3,0.0,0.4,0.7,1.1,1.5]); time=np.array([10,8,7,9,5,6,2,4],float); event=np.array([1,1,0,1,1,0,1,1])\nbeta_hat=fit_newton(x,time,event)\nevent_t,H0=breslow(beta_hat,x,time,event)",
+    "useIt": "from scipy.optimize import minimize\nobjective=lambda b:-cox_components(b,x,time,event)[0]\njacobian=lambda b:np.array([-cox_components(b,x,time,event)[1]])\nfit=minimize(objective,x0=np.array([0.0]),jac=jacobian,method='BFGS')\nbeta_scipy=float(fit.x[0])",
+    "verifyIt": "assert np.isfinite(beta_hat) and beta_hat>0\nassert fit.success and abs(beta_hat-beta_scipy)<1e-6\nassert abs(cox_components(beta_hat,x,time,event)[1])<1e-8\nperm=np.array([5,2,7,0,3,1,6,4])\nassert abs(fit_newton(x[perm],time[perm],event[perm])-beta_hat)<1e-10\nassert np.all(np.diff(H0)>=0)\ns_high=np.exp(-H0*np.exp(beta_hat*x.max())); s_low=np.exp(-H0*np.exp(beta_hat*x.min()))\nassert np.all(s_high<=s_low) and np.all(np.diff(s_high)<=1e-12)",
+    "shipIt": "Version origin, event, censoring, entry, tie method, interval construction, preprocessing, coefficient and baseline hazard; validate on later cohorts, monitor proportionality and calibration, and retain rollback artifacts for both feature pipeline and baseline."
+  },
+  "exercises": [
+    {
+      "prompt": "At one event time, risk weights are 1, 2, and 5 and the third subject fails. What is the partial-likelihood factor?",
+      "solution": "5/(1+2+5)=5/8. The common baseline hazard cancels from this conditional comparison."
+    },
+    {
+      "prompt": "A coefficient is -0.693 for a binary covariate. Interpret it.",
+      "solution": "exp(-0.693) is about 0.5, so the fitted conditional hazard is half as large while PH and other model conditions hold."
+    },
+    {
+      "prompt": "Why can a high-risk deployment cohort invalidate absolute Cox predictions even if ranking remains stable?",
+      "solution": "Absolute survival uses a baseline hazard estimated in the training population. A shifted event process can change calibration without reversing relative ordering."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "flow",
+      "title": "Cox estimation and prediction",
+      "items": [
+        "Construct event risk sets",
+        "Estimate beta by partial likelihood",
+        "Check form and proportionality",
+        "Estimate baseline cumulative hazard",
+        "Produce supported survival curves"
+      ],
+      "caption": "Relative-risk estimation and absolute-survival recovery are separate, jointly versioned stages.",
+      "afterSection": "absolute-survival"
+    },
+    {
+      "type": "compare",
+      "title": "Relative effect versus absolute prediction",
+      "left": {
+        "title": "Partial likelihood",
+        "items": [
+          "Uses within-risk-set ordering",
+          "Estimates beta",
+          "Baseline cancels",
+          "Outputs hazard ratios"
+        ]
+      },
+      "right": {
+        "title": "Baseline recovery",
+        "items": [
+          "Uses event increments",
+          "Estimates H0(t)",
+          "Population dependent",
+          "Outputs S(t|x)"
+        ]
+      },
+      "caption": "A coefficient alone cannot produce a horizon-specific event probability.",
+      "afterSection": "partial-likelihood"
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "cox-1972",
+      "contribution": "Grounds the proportional-hazards formulation and partial-likelihood derivation in the original paper."
+    },
+    {
+      "resource": "lifelines",
+      "contribution": "Verifies contemporary tie, residual, time-varying covariate, and prediction conventions."
+    },
+    {
+      "resource": "statsmodels-survival",
+      "contribution": "Provides an independent official implementation reference for PH regression and baseline estimation."
+    }
+  ]
 }

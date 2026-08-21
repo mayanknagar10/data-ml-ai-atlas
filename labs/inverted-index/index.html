@@ -1,0 +1,37 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Inverted Index &amp; Text Retrieval Pipeline — Code Lab</title><script>(()=>{const s=localStorage.getItem('atlas-theme');const t=s||((matchMedia('(prefers-color-scheme: dark)').matches)?'dark':'light');document.documentElement.dataset.theme=t})()</script><style>:root{--bg:#fff;--text:#121417;--muted:#5d6470;--line:#dfe3e8;--soft:#f6f7f8;--blue:#155eef;--code:#0d1117;color-scheme:light}html[data-theme=dark]{--bg:#0d1117;--text:#eef2f6;--muted:#a8b0ba;--line:#2b333d;--soft:#171d24;--blue:#8fb4ff;--code:#070a0e;color-scheme:dark}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.6 Inter,system-ui,sans-serif}main{max-width:980px;margin:auto;padding:44px 22px 80px}a{color:var(--blue)}h1{font-size:42px;line-height:1.05;margin:8px 0 12px}.k{font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--blue);font-weight:800}.lead{color:var(--muted);font-size:17px}.top{display:flex;justify-content:space-between;gap:16px}button{border:1px solid var(--line);background:var(--soft);color:var(--text);border-radius:8px;padding:7px 9px;cursor:pointer}section{border-top:1px solid var(--line);padding-top:22px;margin-top:26px}pre{background:var(--code);color:#e6edf3;padding:18px;border-radius:12px;overflow:auto;font:13px/1.55 ui-monospace,monospace}.links{display:flex;gap:12px;flex-wrap:wrap;margin:18px 0}.links a{border:1px solid var(--line);border-radius:8px;padding:7px 9px;text-decoration:none;font-size:12px}@media(max-width:600px){h1{font-size:34px}.top{display:block}}</style></head><body><main><div class="top"><div><div class="k">Data, ML & AI Atlas · Runnable Lab</div><h1>Inverted Index &amp; Text Retrieval Pipeline</h1></div><button id="t">◐ Theme</button></div><p class="lead">Build a positional inverted index, execute AND and phrase queries, compare with scikit-learn term counts, and verify ordering and analyzer invariants.</p><div class="links"><a href="../../index.html#/lesson/inverted-index">← Full lesson</a><a href="lab.py">Combined Python file</a><a href="README.md">README</a></div><section><h2>1 · Build it</h2><p>Minimal implementation with as little framework abstraction as practical.</p><pre>import re
+from collections import defaultdict
+def tokenize(text): return re.findall(r&quot;(?u)\b\w+\b&quot;,text.lower())
+def build_index(documents):
+    raw=defaultdict(lambda:defaultdict(list))
+    for doc_id,text in enumerate(documents):
+        for pos,term in enumerate(tokenize(text)): raw[term][doc_id].append(pos)
+    return {term:[{&#x27;doc_id&#x27;:d,&#x27;tf&#x27;:len(pos),&#x27;positions&#x27;:pos} for d,pos in sorted(by_doc.items())] for term,by_doc in raw.items()}
+def intersect(a,b):
+    out=[]; i=j=0
+    while i&lt;len(a) and j&lt;len(b):
+        if a[i]==b[j]: out.append(a[i]); i+=1; j+=1
+        elif a[i]&lt;b[j]: i+=1
+        else: j+=1
+    return out
+def and_query(index,terms):
+    lists=[[p[&#x27;doc_id&#x27;] for p in index.get(t,[])] for t in map(str.lower,terms)]
+    if not lists: return []
+    result=lists[0]
+    for posting in lists[1:]: result=intersect(result,posting)
+    return result
+def phrase_query(index,phrase):
+    terms=tokenize(phrase); candidates=and_query(index,terms); hits=[]
+    lookup={t:{p[&#x27;doc_id&#x27;]:set(p[&#x27;positions&#x27;]) for p in index.get(t,[])} for t in terms}
+    for d in candidates:
+        if any(all((p+j) in lookup[t][d] for j,t in enumerate(terms)) for p in lookup[terms[0]][d]): hits.append(d)
+    return hits
+docs=[&#x27;Fast vector search&#x27;,&#x27;Fast lexical search&#x27;,&#x27;Vector search index&#x27;]; index=build_index(docs)</pre></section><section><h2>2 · Use it</h2><p>The same idea through a common library or practical API.</p><pre>from sklearn.feature_extraction.text import CountVectorizer
+cv=CountVectorizer(lowercase=True,token_pattern=r&#x27;(?u)\b\w+\b&#x27;); matrix=cv.fit_transform(docs)
+term_counts=matrix.toarray(); vocab=cv.vocabulary_</pre></section><section><h2>3 · Ship it</h2><p>Version source IDs, schema and analyzer; build immutable segments, reconcile counts and sampled postings, enforce permissions before exposure, monitor refresh and merge health, and switch aliases only after replay validation with a rollback snapshot.</p></section><section><h2>4 · Verify it</h2><p>Assertions and sanity checks that catch conceptual or implementation mistakes.</p><pre>assert and_query(index,[&#x27;fast&#x27;,&#x27;vector&#x27;])==[0]
+assert phrase_query(index,&#x27;vector search&#x27;)==[0,2]
+assert phrase_query(index,&#x27;search vector&#x27;)==[]
+assert [p[&#x27;doc_id&#x27;] for p in index[&#x27;search&#x27;]]==[0,1,2]
+assert all(p[&#x27;tf&#x27;]==len(p[&#x27;positions&#x27;]) for ps in index.values() for p in ps)
+assert term_counts[:,vocab[&#x27;search&#x27;]].tolist()==[1,1,1]
+assert tokenize(&#x27;CAFÉ café&#x27;)==[&#x27;café&#x27;,&#x27;café&#x27;]
+assert and_query(index,[&#x27;missing&#x27;])==[]</pre></section></main><script>const b=document.getElementById('t');function u(){b.textContent=document.documentElement.dataset.theme==='dark'?'☀ Light':'☾ Dark'}u();b.onclick=()=>{const n=document.documentElement.dataset.theme==='dark'?'light':'dark';document.documentElement.dataset.theme=n;localStorage.setItem('atlas-theme',n);u()}</script></body></html>

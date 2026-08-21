@@ -7,31 +7,239 @@
     "ds",
     "as"
   ],
-  "interviewAnswer": "Robust regression reduces the influence of extreme residuals compared with squared-error OLS, using losses such as Huber or alternative estimators.",
+  "interviewAnswer": "Robust regression limits how much atypical observations can dominate a fit. Huber regression uses squared loss for small standardized residuals and linear loss for large ones, often fit by iteratively reweighted least squares; least absolute deviations targets the conditional median, Theil-Sen uses robust slope aggregation, and RANSAC fits consensus subsets. These methods have different estimands and assumptions. A residual-robust loss does not necessarily protect against a high-leverage x point that pulls the line toward itself, so I inspect design support and influence too. I tune the robustness threshold on honest data, compare ordinary and robust fits, investigate provenance, and monitor the fraction and identity of downweighted cases rather than deleting them silently.",
   "keyPoints": [
-    "Differentiate data errors from valid heavy tails.",
-    "Robust loss changes influence, not the data itself.",
-    "Compare with quantile regression when conditional tails matter."
+    "Squared loss gives unbounded residual influence; robust losses limit tail contribution.",
+    "Huber combines efficient quadratic behavior near zero with linear tails.",
+    "Residual robustness and leverage robustness are different problems.",
+    "Robust estimators may target means, medians, or consensus relationships differently.",
+    "Downweighted observations remain operational signals and require provenance review."
   ],
   "resources": [
-    "sklearn",
+    "huber-1964",
+    "sklearn-linear-models",
+    "nist-regression-diagnostics",
     "isl"
   ],
   "featured": false,
-  "why": "Robust Regression appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
-  "intuition": "Differentiate data errors from valid heavy tails.",
-  "deepDive": "Robust regression reduces the influence of extreme residuals compared with squared-error OLS, using losses such as Huber or alternative estimators. Robust loss changes influence, not the data itself. Compare with quantile regression when conditional tails matter. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
-  "workedExample": "Fit delivery-time relationships without allowing a few outage days to dominate coefficients.",
+  "why": "Sensors fail, labels are mistyped, transactions are duplicated, and real systems produce legitimate rare events. A least-squares line can rotate dramatically toward a handful of large residuals, degrading the typical prediction and making coefficients unstable. Removing rows by a fixed z-score can be worse: the first distorted fit determines what looks anomalous, and rare but important cases vanish. Robust regression provides estimators whose behavior changes gradually under contamination and makes sensitivity explicit. It is useful as a primary model when heavy-tailed noise is expected, as a challenger to reveal least-squares fragility, and as a diagnostic that identifies cases deserving investigation. Robustness is not permission to ignore the tail. If a downweighted case is a safety incident or a new customer segment, the right action may be a separate model, data repair, or escalation rather than reduced influence.",
+  "intuition": "Least squares charges a residual of ten one hundred times and a residual of one only once. Its gradient grows linearly with residual magnitude, so an arbitrarily large outcome can exert arbitrarily large pull. Absolute loss charges ten times as much, giving constant-magnitude tail gradient but a nondifferentiable point at zero. Huber loss behaves like a square inside a threshold and transitions to a line outside it. Iteratively reweighted least squares gives small-residual observations weight near one and large-residual observations weight roughly proportional to one over residual magnitude, then refits and repeats. This bounds response-direction pull. But a point far away in x can move the fitted line close to itself, leaving a small residual and receiving full Huber weight. Robustness must therefore consider both the response and the predictor geometry, plus what population the model is supposed to cover.",
+  "deepDive": "Robust regression is a sensitivity design, not an outlier eraser. Its loss defines how residuals contribute and often changes the target functional. Huber bounds response-residual pull while retaining quadratic efficiency near the model; other estimators use medians or consensus. Predictor leverage, dependence, selection, and legitimate population tails remain separate risks that require geometry, provenance, and operational evaluation.",
+  "workedExample": "Ten calibration points approximately follow y=2x+1. One recorded outcome contains an extra zero, producing y=100 where about 10 was expected. OLS tilts upward to reduce the squared error of that one row. Huber starts near OLS, estimates scale, downweights the large standardized residual, and returns a slope near two. The row remains in the audit output with a small weight. If its x value were also far beyond all others, leverage checks and deletion sensitivity would still be required.",
   "commonMistakes": [
-    "Applying the method without checking its assumptions or data-generating process.",
-    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+    {
+      "misconception": "Robust regression identifies and removes bad data.",
+      "correction": "It limits sensitivity under a loss or contamination model. Low weight is evidence for investigation, not proof that a record is wrong or permission to delete it."
+    },
+    {
+      "misconception": "Huber loss protects against every influential point.",
+      "correction": "It bounds residual score but can remain vulnerable to extreme predictors that pull the fit and reduce their own residual. Inspect leverage and support separately."
+    },
+    {
+      "misconception": "All robust estimators target the same regression mean.",
+      "correction": "Least absolute deviations targets a conditional median; RANSAC targets a consensus relationship; Huber targets an M-functional. Their answers can legitimately differ."
+    },
+    {
+      "misconception": "A robust model is always better on heavy-tailed business loss.",
+      "correction": "Downweighting extremes can improve central fit but harm decisions dominated by rare events. Evaluate the actual tail and decision objective."
+    }
   ],
   "followUps": [
-    "What assumptions does Robust Regression make?",
-    "How would you validate or debug Robust Regression in practice?"
+    {
+      "question": "What controls the Huber robustness-efficiency trade-off?",
+      "answer": "The standardized residual threshold epsilon and scale estimate. Smaller thresholds downweight more cases and approach absolute-loss behavior; larger thresholds approach least squares."
+    },
+    {
+      "question": "How is RANSAC different from Huber regression?",
+      "answer": "RANSAC repeatedly fits subsets and uses a hard inlier consensus rule; Huber continuously downweights residuals through a convex loss. RANSAC can handle large gross-contamination fractions but is stochastic and threshold-sensitive."
+    },
+    {
+      "question": "What is a breakdown point?",
+      "answer": "Informally, it is the smallest contamination fraction that can drive an estimator arbitrarily far. It complements local influence analysis but depends on the estimator and design setting."
+    }
   ],
-  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "production": "Persist preprocessing, feature support, robust loss, scale convention, epsilon or inlier threshold, regularization, random seed for stochastic methods, solver tolerance, and convergence result. Store robust weights or masks with secure provenance links so engineers can investigate source and subgroup concentrations. Test clean-data equivalence, controlled contamination sensitivity, row order, finite outputs, and high-leverage cases. Monitor downweighted fraction, scale, coefficient and prediction drift, tail residuals, feature support, latency, and downstream losses for both typical and rare cases. Do not suppress alerts solely because the model calls an event an outlier. Define escalation paths for data corruption, new populations, and safety-critical extremes. Canary against OLS and a prior robust model on later or grouped data, and roll back the full pipeline if central gains are offset by unacceptable tail, fairness, or incident-detection losses.",
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "Robust regression reduces the sensitivity of a fitted relationship to contaminated outcomes, heavy tails, and atypical observations. Ordinary least squares squares residuals, so one large miss can dominate the objective. Robust methods change the loss, weighting, or sampling mechanism: Huber M-estimation is quadratic near zero and linear in the tails; least absolute deviations targets a conditional median; Theil-Sen aggregates pairwise slopes; and RANSAC searches for a consensus subset under a declared inlier rule. This chapter explains influence functions, breakdown intuition, scale estimation, iteratively reweighted least squares, and why protection against large residuals does not automatically protect against high-leverage predictor contamination. You will distinguish a data error from a valid rare case and a changed population, compare estimands rather than treating every robust method as interchangeable, and evaluate central and tail performance on clean and stress scenarios. The lab implements Huber iteratively reweighted least squares, compares with scikit-learn, and verifies recovery, bounded sensitivity, and permutation invariants. Production guidance preserves raw-event provenance, logs robust weights, monitors contamination and support, and avoids silently hiding incidents that should trigger investigation.",
+  "prerequisites": [
+    "regression-assumptions"
+  ],
+  "learningObjectives": [
+    "Explain how squared, absolute, and Huber losses respond to residual magnitude and which conditional functional they target.",
+    "Implement Huber iteratively reweighted least squares and assess sensitivity to response contamination.",
+    "Distinguish vertical outliers, high leverage, influence, breakdown, and valid rare populations.",
+    "Select and monitor robust methods using provenance, stress tests, and operational loss rather than automatic outlier removal."
+  ],
+  "deepSections": [
+    {
+      "id": "loss-estimand-and-scale",
+      "title": "Loss functions, estimands, and residual scale",
+      "body": "Ordinary least squares minimizes sum r_i^2 and estimates a conditional mean under a correctly specified mean model. Least absolute deviations minimizes sum |r_i| and estimates a conditional median under suitable conditions. Huber M-estimation minimizes sum rho(r_i/s), where rho is quadratic for standardized residual magnitude at most epsilon and linear beyond it; s is a robust residual scale. Its score psi is clipped in the tails, bounding the effect of a large response residual for fixed x. The threshold controls an efficiency-robustness trade-off: too small behaves closer to absolute loss and can lose efficiency under clean Gaussian noise; too large approaches least squares. Scale must be estimated jointly or robustly because a contaminated standard deviation can make every residual look small. Implementations differ in whether scale and regularization are optimized, so epsilon values are not isolated universal settings. The fitted functional under asymmetric or feature-dependent contamination may not equal the clean conditional mean. State whether the goal is central prediction, parameter recovery under a contamination model, or operational loss minimization, and evaluate that target directly."
+    },
+    {
+      "id": "algorithms-and-alternatives",
+      "title": "IRLS, LAD, Theil-Sen, and RANSAC",
+      "body": "Huber regression can be viewed through iteratively reweighted least squares: compute standardized residuals, set weight one in the quadratic region and epsilon/|u_i| in the tail, solve weighted least squares, update scale, and repeat. Convergence needs a stable solver and documented tolerance. Least absolute deviations is a quantile-regression problem at tau=0.5 and can be solved by linear programming; it is robust to response tails but has a distinct median estimand. Theil-Sen in simple regression takes a robust median of pairwise slopes and has strong breakdown properties, but computational cost rises quickly and multivariate generalizations are more complex. RANSAC repeatedly samples minimal subsets, declares inliers under a residual threshold, and refits a consensus set. It is useful when a large clean geometric consensus exists, yet results depend on threshold, sample count, random seed, and the assumption that the largest consensus represents the target. Randomly removing difficult but valid cases can create unacceptable blind spots. Robust covariance and bootstrap inference must match the estimator, clustering, tuning, and contamination assumptions; ordinary OLS standard errors are not automatically valid."
+    },
+    {
+      "id": "leverage-and-contamination",
+      "title": "Response contamination is not leverage protection",
+      "body": "A vertical outlier has unusual y conditional on ordinary x and creates a large residual under the prevailing fit. A high-leverage point has x far from the design center. A bad leverage point can pull the fit toward itself until its residual is small, escaping residual-based downweighting. The influence of an M-estimator still includes x, so bounded residual score alone does not bound influence when predictors are unbounded. Inspect leverage, robust distance in predictor space, deletion sensitivity, and data provenance. High-dimensional robust covariance is difficult, and a point outside support may be a legitimate new segment rather than contamination. Define a target population and route unsupported cases instead of forcing one robust line to cover all. Cellwise contamination, where different features are corrupted in different rows, is especially challenging because most rows may contain some bad value. Pipeline-level validation, constraints, and redundancy checks can prevent more failures than a final robust loss. Keep original records and repair data through traceable rules; never overwrite values solely because a model assigns small weight."
+    },
+    {
+      "id": "evaluation-and-operational-meaning",
+      "title": "Evaluate clean performance, stress sensitivity, and tail consequences",
+      "body": "Compare ordinary and robust models on an untouched representative set using metrics aligned with the product: mean absolute error, squared error, quantile loss, central calibration, and high-cost tail loss may tell different stories. Create traceable stress tests by injecting plausible label corruption, duplicate bursts, and extreme but valid predictor cases; measure coefficient and prediction change rather than only average accuracy. Evaluate across time and entities so contamination from one source cannot appear in both train and validation. Inspect robust weights or inlier masks by source, subgroup, and time. A concentration of downweighting can reveal a failing sensor or an underserved population. Tune epsilon, residual threshold, or consensus settings inside training folds, then lock them before final evaluation. Robustness should be paired with a response plan: investigate data-quality incidents, build a specialized tail model, expand support, or escalate decisions. If the downstream cost is dominated by rare extremes, optimizing a robust central fit may actually reduce the attention those events receive; model the tail or decision explicitly."
+    }
+  ],
+  "math": "Huber loss for standardized residual u=r/s can be written rho_epsilon(u)=u^2/2 when |u|<=epsilon and epsilon|u|-epsilon^2/2 otherwise. Its score psi(u)=u inside and epsilon sign(u) outside. IRLS uses weight w(u)=psi(u)/u, equal to 1 inside and epsilon/|u| outside. The estimating equation is sum_i x_i psi((y_i-x_i^T beta)/s)=0. Bounded psi limits response-residual influence for bounded x, but unbounded predictor leverage can still yield unbounded overall influence.",
+  "workedExamples": [
+    {
+      "title": "Huber weight for a tail residual",
+      "body": "With robust scale s=2, threshold epsilon=1.5, and residual r=12, standardized u=6. The IRLS weight is epsilon/|u|=0.25. The case contributes, but one quarter as strongly in the weighted least-squares step. A residual with |r|<=3 receives weight one."
+    },
+    {
+      "title": "A valid rare segment should not vanish",
+      "body": "A small enterprise segment has systematically larger outcomes and is repeatedly downweighted by a single-population robust model. Provenance is correct. This is not random contamination; it is missing segmentation or interaction. Add a supported segment effect or a specialized model and evaluate its service, rather than suppressing the group through robust weights."
+    }
+  ],
+  "lab": {
+    "language": "python",
+    "goal": "Implement Huber iteratively reweighted least squares, compare with scikit-learn, and verify recovery, bounded response sensitivity, and row-order invariance.",
+    "buildIt": "import numpy as np\ndef huber_irls(X,y,epsilon=1.35,steps=100,tol=1e-10):\n    D=np.column_stack([np.ones(len(X)),np.asarray(X,float)])\n    y=np.asarray(y,float); b=np.linalg.lstsq(D,y,rcond=None)[0]\n    for _ in range(steps):\n        r=y-D@b; center=np.median(r)\n        scale=max(1.4826*np.median(np.abs(r-center)),1e-8)\n        u=np.abs(r)/scale; w=np.ones_like(u)\n        mask=u>epsilon; w[mask]=epsilon/u[mask]\n        new=np.linalg.lstsq(D*np.sqrt(w[:,None]),y*np.sqrt(w),rcond=None)[0]\n        if np.max(np.abs(new-b))<tol: b=new; break\n        b=new\n    return b,w,scale\nx=np.linspace(0,10,31); y=1+2*x+0.15*np.sin(x)\ny_bad=y.copy(); y_bad[27]+=60\nb,w,scale=huber_irls(x[:,None],y_bad)\nD=np.column_stack([np.ones(len(x)),x])\nols=np.linalg.lstsq(D,y_bad,rcond=None)[0]",
+    "useIt": "from sklearn.linear_model import HuberRegressor\nsk=HuberRegressor(epsilon=1.35,alpha=0,max_iter=1000,tol=1e-10).fit(x[:,None],y_bad)\nsk_b=np.r_[sk.intercept_,sk.coef_]",
+    "verifyIt": "assert abs(b[1]-2)<abs(ols[1]-2)\nassert abs(sk_b[1]-2)<abs(ols[1]-2)\nassert w[27]==w.min() and w[27]<0.1\n# Bounded response sensitivity compared with OLS.\ny_worse=y_bad.copy(); y_worse[27]+=600\nb2,_,_=huber_irls(x[:,None],y_worse)\nols2=np.linalg.lstsq(D,y_worse,rcond=None)[0]\nassert abs(b2[1]-b[1])<0.05*abs(ols2[1]-ols[1])\nperm=np.random.default_rng(3).permutation(len(x))\nbp,_,_=huber_irls(x[perm,None],y_bad[perm])\nassert np.allclose(bp,b,atol=1e-7)\nassert np.isfinite(scale)",
+    "shipIt": "Version scaling, robust scale rule, epsilon, penalty and convergence; retain case-level weights and provenance, monitor downweighting by source and subgroup, route high-leverage requests, and roll back if central or tail decision loss worsens."
+  },
+  "exercises": [
+    {
+      "prompt": "Compute the Huber IRLS weight for standardized residual u=5 and epsilon=1.5.",
+      "solution": "Because |u| exceeds epsilon, weight=epsilon/|u|=1.5/5=0.3."
+    },
+    {
+      "prompt": "Why can a high-leverage point receive full Huber weight?",
+      "solution": "It can pull the fitted line close to itself, producing a small residual. Huber weights residual size, while predictor extremeness enters through leverage and must be diagnosed separately."
+    },
+    {
+      "prompt": "A subgroup is consistently downweighted but records are valid. What is the likely modeling issue?",
+      "solution": "The conditional model may omit subgroup structure or interactions, or the target population is heterogeneous. Investigate and model the group rather than treating it as contamination."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "curve",
+      "title": "Squared and Huber loss",
+      "series": [
+        {
+          "label": "Squared loss",
+          "points": [
+            [
+              0.05,
+              0.95
+            ],
+            [
+              0.2,
+              0.7
+            ],
+            [
+              0.35,
+              0.55
+            ],
+            [
+              0.5,
+              0.5
+            ],
+            [
+              0.65,
+              0.55
+            ],
+            [
+              0.8,
+              0.7
+            ],
+            [
+              0.95,
+              0.95
+            ]
+          ]
+        },
+        {
+          "label": "Huber loss",
+          "points": [
+            [
+              0.05,
+              0.78
+            ],
+            [
+              0.2,
+              0.64
+            ],
+            [
+              0.35,
+              0.53
+            ],
+            [
+              0.5,
+              0.5
+            ],
+            [
+              0.65,
+              0.53
+            ],
+            [
+              0.8,
+              0.64
+            ],
+            [
+              0.95,
+              0.78
+            ]
+          ]
+        }
+      ],
+      "caption": "Conceptual losses: Huber is quadratic near zero but grows linearly in the tails, limiting large-residual pull.",
+      "afterSection": "loss-estimand-and-scale"
+    },
+    {
+      "type": "compare",
+      "title": "Two different robustness problems",
+      "left": {
+        "title": "Vertical contamination",
+        "items": [
+          "Ordinary predictor value",
+          "Large response residual",
+          "Huber can downweight",
+          "Inspect label provenance"
+        ]
+      },
+      "right": {
+        "title": "Bad leverage",
+        "items": [
+          "Extreme predictor value",
+          "Can pull fit toward itself",
+          "Residual may look small",
+          "Inspect support and deletion sensitivity"
+        ]
+      },
+      "caption": "A bounded residual loss does not automatically protect against extreme predictor geometry.",
+      "afterSection": "leverage-and-contamination"
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "huber-1964",
+      "contribution": "Provides the foundational contamination, bounded-influence, and robust M-estimation theory behind Huber loss."
+    },
+    {
+      "resource": "sklearn-linear-models",
+      "contribution": "Verifies current Huber, Theil-Sen, and RANSAC estimator objectives, parameters, and implementation distinctions."
+    },
+    {
+      "resource": "nist-regression-diagnostics",
+      "contribution": "Grounds the separate leverage and influence diagnostics needed beyond residual-robust fitting."
+    }
+  ]
 }

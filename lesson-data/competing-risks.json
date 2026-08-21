@@ -7,31 +7,178 @@
     "ds",
     "da"
   ],
-  "interviewAnswer": "Competing risks occur when multiple mutually exclusive event types can happen and one prevents observation of another. Treating competing events as ordinary censoring can misestimate event probabilities.",
+  "interviewAnswer": "With competing risks, an event of one cause prevents a different cause from being the first event. The cause-specific hazard is the instantaneous rate of cause k among subjects still free of every event. The cumulative incidence F_k(t)=P(T<=t,J=k) is the actual probability of cause k by t. Aalen-Johansen estimates it by adding S(t-)d_k/n at each event time while updating event-free survival by all-cause events. Treating competing events as censored and plotting 1-KM overestimates cause probability because it imagines those subjects could later experience the cause. Cause-specific Cox models the rate among event-free subjects; Fine-Gray models a subdistribution risk set to connect covariates directly to CIF. I select by estimand, report cause-specific calibrated probabilities, account for censoring and cause adjudication, and avoid causal claims without an intervention framework.",
   "keyPoints": [
-    "Cause-specific hazard and cumulative incidence answer different questions.",
-    "Event type matters.",
-    "Use domain-specific estimand."
+    "A competing event removes the possibility of another event being the first outcome; it is not ordinary loss to follow-up.",
+    "CIF accumulates cause-specific events weighted by probability of still being event-free from every cause.",
+    "One minus cause-specific Kaplan-Meier is generally not the real-world cause probability.",
+    "Cause-specific and subdistribution hazard ratios use different risk sets and answer different questions.",
+    "All cause probabilities plus event-free survival must reconcile within one coherent state system."
   ],
   "resources": [
-    "lifelines",
-    "statsmodels-survival"
+    "aalen-johansen-reference",
+    "fine-gray-paper",
+    "lifelines"
   ],
   "featured": false,
-  "why": "Competing Risks is a recurring foundation across data science and machine learning because it affects both theoretical correctness and practical system behavior.",
-  "intuition": "Cause-specific hazard and cumulative incidence answer different questions.",
-  "deepDive": "Competing risks occur when multiple mutually exclusive event types can happen and one prevents observation of another. Treating competing events as ordinary censoring can misestimate event probabilities. Event type matters. Use domain-specific estimand. The interview-level skill is not merely recalling the definition: explain the assumptions, what diagnostic evidence you would inspect, and what alternative you would choose when those assumptions fail.",
-  "workedExample": "For customer accounts, cancellation and upgrade are competing terminal outcomes for time-to-churn analysis.",
+  "why": "A platform may want the probability a customer churns before upgrading, a reliability team may distinguish electrical from mechanical first failure, and a clinician may predict relapse before death. If the alternative event is simply censored, ordinary Kaplan-Meier acts as if that person remains exchangeably capable of the target event later. The resulting hypothetical net risk can exceed the probability actually observable in a world with competing causes. Correct analysis distinguishes rate questions from probability questions. Cause-specific hazards help study mechanisms and build transition models, while cumulative incidence directly supports forecasting and resource allocation. Fine-Gray regression can target covariate associations with cumulative incidence but has a less intuitive risk set. These quantities can move in different directions because a covariate may change the competing cause. Explicit estimands and probability accounting prevent attractive but contradictory dashboards.",
+  "intuition": "Picture probability mass beginning in an event-free state. At each time, some mass flows to cause A and some to cause B. Once mass enters either absorbing state, it cannot later enter the other as its first event. The cause-A cumulative incidence is every flow into A added over time. The amount available to flow is the probability still event-free from all causes just before that time. Aalen-Johansen mirrors this accounting in observed risk sets: add S_prev times the fraction d_A/n to cause A, add S_prev*d_B/n to cause B, then reduce S by all events. Censoring removes observation but does not receive event probability. A cause-specific hazard asks about the current flow rate among mass still in the origin. Fine-Gray constructs a different comparison set to model the accumulated probability for one cause.",
+  "deepDive": "Competing-risk analysis is probability flow over mutually exclusive first-event states. Cause-specific hazards govern instantaneous exits from the event-free state; cumulative incidence integrates each exit while accounting for depletion by every other cause. Aalen-Johansen provides nonparametric probability accounting, cause-specific regression models transition rates, and Fine-Gray models a quantity tied to a chosen CIF. None is universally best because the estimands differ. Correct cause taxonomy, censoring, entry, intervention logic, horizon support, and joint calibration are essential to useful interpretation.",
+  "workedExample": "One hundred devices are initially event-free. At month one, 10 fail mechanically and 5 fail electrically. Aalen-Johansen adds 0.10 to mechanical CIF and 0.05 to electrical CIF, leaving survival 0.85. If 10 of the 85 still at risk fail mechanically at month two, add 0.85*(10/85)=0.10, so mechanical CIF becomes 0.20 and survival falls to 0.75. The month-two increment uses only probability mass that survived every cause through month one.",
   "commonMistakes": [
-    "Using the concept mechanically without checking assumptions or data semantics.",
-    "Reporting one metric/result without examining uncertainty, slices or failure modes."
+    {
+      "misconception": "A competing event is just another independent censoring time.",
+      "correction": "It makes the alternative first event impossible and must receive probability mass in the competing-risk system."
+    },
+    {
+      "misconception": "One minus cause-specific KM estimates the observed probability of that cause.",
+      "correction": "It estimates a hypothetical net risk after treating competing events as removable censoring and generally overstates real-world CIF."
+    },
+    {
+      "misconception": "Fine-Gray and cause-specific hazard ratios should match.",
+      "correction": "They use different risk sets and estimands; competing-cause effects can make their coefficients differ legitimately."
+    },
+    {
+      "misconception": "Reducing a competing event must reduce every other cause's incidence.",
+      "correction": "Keeping subjects event-free longer can increase opportunities for another cause even when its instantaneous rate is unchanged."
+    }
   ],
   "followUps": [
-    "What assumptions or limitations does Competing Risks have?",
-    "How would you validate Competing Risks on a real dataset?"
+    {
+      "question": "When is censoring competing events acceptable?",
+      "answer": "It is part of estimating a cause-specific hazard. It is not acceptable to interpret one minus that cause-specific KM as the actual cumulative incidence."
+    },
+    {
+      "question": "Which regression should be used for prediction?",
+      "answer": "Either can contribute, but validate the final cause-specific CIFs. Combining models for all cause-specific hazards is coherent and flexible; Fine-Gray directly targets one CIF."
+    },
+    {
+      "question": "How does competing-risk analysis extend to recovery or later transitions?",
+      "answer": "Use a multi-state model with transition-specific hazards and Aalen-Johansen transition probabilities rather than stopping at the first absorbing event."
+    }
   ],
-  "production": "In production, make assumptions explicit, validate on representative slices, compare with a simple baseline and monitor the signals that can drift.",
+  "production": "Define an immutable event ontology with mutually exclusive first-event codes, hierarchy, source systems, precedence for simultaneous records, adjudication states, unknown-cause handling, backfill policy, origin, entry, and cutoff. Reconcile counts from raw events to risk sets and require event-free survival plus every CIF to sum to one within tolerance. Version cause-specific models, baselines, Fine-Gray components if used, preprocessing, and horizon grid. Validate temporal discrimination, Brier score, calibration, and decision utility separately for every cause, with event and censoring support. Monitor cause mix, unknown and pending rates, adjudication delay, taxonomy drift, all-cause incidence, probability-sum errors, tail support, subgroup calibration, and action outcomes. Protect sensitive causes and small cells. Shadow ontology or model changes on identical cutoffs, compare subject-level state paths, and roll back taxonomy, extraction, models, and serving schema as one bundle.",
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "Competing risks arise when one subject can experience several mutually exclusive first events and one event prevents the others from occurring first. Churn, upgrade, and account closure; failure from different components; or death from different causes are not ordinary independent censoring categories. This chapter separates overall survival, cause-specific hazard, cumulative incidence, and subdistribution hazard; derives the Aalen-Johansen cumulative-incidence update; and shows why one minus Kaplan-Meier overestimates a cause's real-world probability when competing events are censored. It compares cause-specific Cox regression with Fine-Gray regression, emphasizing that their coefficients answer different questions and need not agree. It covers censoring assumptions, delayed entry, ties, multi-state extensions, recurrent outcomes, composite endpoints, intervention interpretation, evaluation, and calibration by cause. A worked example follows probability mass from event-free survival into two causes. The lab implements Aalen-Johansen and verifies probability conservation, monotonicity, cause-label symmetry, and the naive Kaplan-Meier bias direction. Production guidance versions cause taxonomy and adjudication, reconciles all cause probabilities, monitors unknown and late-coded outcomes, and reports supported horizons rather than hazard ratios alone.",
+  "prerequisites": [
+    "kaplan-meier",
+    "cox-ph"
+  ],
+  "learningObjectives": [
+    "Distinguish cause-specific hazards, cumulative incidence functions, and subdistribution hazards by estimand and risk set.",
+    "Compute Aalen-Johansen cumulative incidence while conserving probability across event-free and cause states.",
+    "Choose cause-specific or Fine-Gray regression according to etiologic, prediction, or policy questions.",
+    "Handle censoring, cause coding, evaluation, interventions, and multi-state extensions without probability contradictions."
+  ],
+  "deepSections": [
+    {
+      "id": "estimands",
+      "title": "Hazards and cumulative incidence describe different parts of the process",
+      "body": "Let J identify the first-event cause. The cause-specific hazard h_k(t) is the limiting instantaneous rate of cause k conditional on remaining free of every event just before t. Overall survival is S(t)=P(T>t), governed by the sum of cause-specific hazards: S(t)=exp[-sum_k H_k(t)] under continuous time. The cumulative incidence F_k(t)=P(T<=t,J=k)=integral_0^t S(u-)dH_k(u). Therefore F_k depends on both the target cause hazard and all competing hazards through S. A covariate can lower h_k yet raise F_k if it strongly suppresses a competing event and leaves more subjects available for cause k; the reverse can also occur. A subdistribution hazard is a mathematical transformation linked directly to F_k and keeps subjects with competing events in a modified risk set. It is not the instantaneous biological or operational rate among currently event-free subjects. State the target before fitting: mechanism, real-world first-event probability, intervention policy, or multi-state transition."
+    },
+    {
+      "id": "aalen-johansen",
+      "title": "Aalen-Johansen moves probability mass without double counting",
+      "body": "At distinct event time t_j, let n_j be subjects at risk of any first event, d_kj events of cause k, and d_j=sum_k d_kj. Starting with Shat(0)=1 and Fhat_k(0)=0, update Fhat_k(t_j)=Fhat_k(t_j-)+Shat(t_j-)d_kj/n_j for every cause, then Shat(t_j)=Shat(t_j-)(1-d_j/n_j). Thus Shat+sum_k Fhat_k remains one at each event time in a complete first-event state system. Censoring changes later n_j without receiving probability mass. Delayed entry changes risk membership. With no competing causes, the target CIF reduces to one minus Kaplan-Meier. When competing events exist, censoring them and computing one minus a cause-specific KM treats their removed risk as if it represented people still susceptible, producing a hypothetical net-risk curve that generally exceeds the observed-world CIF. Confidence intervals and simultaneous comparisons require appropriate variance or resampling; clustered subjects require cluster-level methods."
+    },
+    {
+      "id": "regression-choices",
+      "title": "Cause-specific Cox and Fine-Gray regression answer different questions",
+      "body": "For cause-specific Cox regression, events from other causes end the subject's cause-k risk interval and are treated as censored for estimating beta_k. This is valid for the cause-specific hazard estimand under its assumptions, even though one minus the resulting KM-style curve is not a CIF. To predict CIFs, combine estimated hazards for every cause with overall survival. Cause-specific models are natural for etiologic rate questions and multi-state simulation. Fine-Gray regression models a proportional subdistribution hazard associated with F_k; its modified risk sets retain or reweight subjects after competing events. It can summarize covariate association with cumulative incidence and support direct CIF prediction, but its hazard ratio is not a cause-specific rate ratio and proportionality may fail. A covariate's coefficients can differ in sign or magnitude across the two approaches without contradiction. Evaluate predictions on CIF calibration and cause-specific Brier or discrimination metrics, not on coefficient significance alone."
+    },
+    {
+      "id": "design-and-extensions",
+      "title": "Cause definitions, interventions, and richer state paths determine validity",
+      "body": "Competing causes must be mutually exclusive as first-event labels, collectively adequate for the target, and adjudicated consistently. Unknown or pending cause is not harmless censoring when its probability depends on the true cause; use adjudication, multiple imputation, sensitivity analysis, or an explicit category as appropriate. Composite endpoints answer whether any component occurs but can hide opposing cause effects. Recurrent events and transitions after the first event require multi-state or recurrent-event models rather than a first-event competing-risk shortcut. Interpreting treatment effects is especially delicate: eliminating a competing cause can increase observed incidence of the target simply by keeping people at risk longer. Separable, controlled direct, and total effects require distinct counterfactual assumptions. Prediction validation should use temporal splits, mature cause labels, common horizons, and cause-specific calibration. For deployment, output a coherent vector of CIFs and event-free probability, enforce nonnegativity and sum constraints, and define actions when the most likely cause is uncertain."
+    }
+  ],
+  "math": "For cause k, h_k(t)=lim_{dt->0}P(t<=T<t+dt,J=k | T>=t)/dt. Overall S(t)=exp[-sum_k H_k(t)] and F_k(t)=integral_0^t S(u-)dH_k(u). Aalen-Johansen updates Delta Fhat_k(t_j)=Shat(t_j-)d_kj/n_j and Shat(t_j)=Shat(t_j-)(1-sum_k d_kj/n_j), giving Shat(t)+sum_k Fhat_k(t)=1. The Fine-Gray subdistribution hazard satisfies alpha_k*(t)=dF_k(t)/[1-F_k(t-)] but uses a modified risk concept distinct from subjects currently free of every event.",
+  "workedExamples": [
+    {
+      "title": "Why naive one-minus-KM is too high",
+      "body": "If half a cohort experiences a competing event early, censoring those subjects in a cause-A KM calculation acts as though comparable cause-A-susceptible subjects remain. The hypothetical net risk can keep climbing toward one even though half the cohort can no longer have A first."
+    },
+    {
+      "title": "Opposite-looking effects without contradiction",
+      "body": "A treatment can leave the target cause-specific hazard unchanged but sharply reduce a competing death. More subjects then survive long enough to experience the target, increasing its CIF. Rate and probability estimands differ."
+    }
+  ],
+  "lab": {
+    "language": "python",
+    "goal": "Implement Aalen-Johansen cumulative incidence, contrast it with naive cause-specific one-minus-KM, and verify probability conservation, monotonicity, and cause-label symmetry.",
+    "buildIt": "import numpy as np\ndef aalen_johansen(time,status,causes=(1,2)):\n    time=np.asarray(time,float); status=np.asarray(status,int); causes=tuple(causes)\n    ts=np.unique(time[status>0]); s=1.0; cif=np.zeros(len(causes)); surv=[]; cifs=[]\n    for t in ts:\n        n=np.sum(time>=t); d_all=np.sum((time==t)&(status>0)); prev=s\n        for k,cause in enumerate(causes): cif[k]+=prev*np.sum((time==t)&(status==cause))/n\n        s*=1-d_all/n; surv.append(s); cifs.append(cif.copy())\n    return ts,np.asarray(surv),np.asarray(cifs)\ndef naive_one_minus_km(time,status,cause):\n    time=np.asarray(time,float); status=np.asarray(status,int); s=1.0; vals=[]; ts=np.unique(time[status==cause])\n    for t in ts:\n        n=np.sum(time>=t); d=np.sum((time==t)&(status==cause)); s*=1-d/n; vals.append(1-s)\n    return ts,np.asarray(vals)\ntime=np.arange(1,9,dtype=float); status=np.array([1,2,0,1,2,1,0,2])\nts,s,cif=aalen_johansen(time,status); naive_t,naive1=naive_one_minus_km(time,status,1)",
+    "useIt": "# NumPy indexing produces a coherent fixed-horizon report from the step functions.\nhorizon=6.0\nrow=np.searchsorted(ts,horizon,side='right')-1\nreport={'event_free':float(s[row]),'cause_1':float(cif[row,0]),'cause_2':float(cif[row,1])}",
+    "verifyIt": "assert np.allclose(s+cif.sum(axis=1),1.0)\nassert np.all(np.diff(s)<=1e-12) and np.all(np.diff(cif,axis=0)>=-1e-12)\nassert naive1[-1]>=cif[-1,0] and naive1[-1]>cif[-1,0]\nts2,s2,swapped=aalen_johansen(time,np.where(status==1,2,np.where(status==2,1,0)))\nassert np.array_equal(ts,ts2) and np.allclose(s,s2)\nassert np.allclose(cif[:,0],swapped[:,1]) and np.allclose(cif[:,1],swapped[:,0])\nassert abs(sum(report.values())-1)<1e-12\nassert all(0<=v<=1 for v in report.values())",
+    "shipIt": "Version cause taxonomy, adjudication, entry, censoring, tie and horizon rules; reconcile survival plus all CIFs, monitor unknown and late-coded causes, validate by cause and cohort, and roll back extraction and model artifacts together."
+  },
+  "exercises": [
+    {
+      "prompt": "At an event time S_prev=0.8, n=40, and three cause-A events occur. What is the CIF increment?",
+      "solution": "0.8*(3/40)=0.06. The increment uses mass still event-free immediately before the time."
+    },
+    {
+      "prompt": "Why can a cause-A CIF fall below one-minus its KM curve?",
+      "solution": "CIF accounts for probability already absorbed by competing causes; cause-specific KM censors that mass and constructs a hypothetical net-risk world."
+    },
+    {
+      "prompt": "A covariate raises the cause-A CIF but lowers its cause-specific hazard. Is that impossible?",
+      "solution": "No. If it lowers competing hazards even more, more subjects remain available to experience A, raising cumulative incidence despite a lower instantaneous A rate."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "flow",
+      "title": "First-event probability flow",
+      "items": [
+        "Event-free state",
+        "Cause A cumulative incidence",
+        "Cause B cumulative incidence",
+        "Censoring ends observation only",
+        "Probabilities reconcile by horizon"
+      ],
+      "caption": "Competing events absorb probability mass; censoring changes observation rather than defining an outcome state.",
+      "afterSection": "aalen-johansen"
+    },
+    {
+      "type": "compare",
+      "title": "Two regression targets",
+      "left": {
+        "title": "Cause-specific Cox",
+        "items": [
+          "Event-free risk set",
+          "Instantaneous cause rate",
+          "Natural transition model",
+          "Combine all causes for CIF"
+        ]
+      },
+      "right": {
+        "title": "Fine-Gray",
+        "items": [
+          "Modified subdistribution risk set",
+          "Direct link to one CIF",
+          "Different coefficient meaning",
+          "Check subdistribution PH"
+        ]
+      },
+      "caption": "Model choice follows the estimand; coefficient disagreement is not automatically model failure.",
+      "afterSection": "regression-choices"
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "aalen-johansen-reference",
+      "contribution": "Grounds nonparametric transition and cumulative-incidence estimation with coherent risk-set probability updates."
+    },
+    {
+      "resource": "fine-gray-paper",
+      "contribution": "Provides the original proportional subdistribution-hazard regression formulation for cumulative incidence."
+    },
+    {
+      "resource": "lifelines",
+      "contribution": "Verifies current cumulative-incidence tooling and practical event-table conventions."
+    }
+  ]
 }

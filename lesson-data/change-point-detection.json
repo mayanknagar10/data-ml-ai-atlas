@@ -6,85 +6,230 @@
   "roles": [
     "ds"
   ],
-  "interviewAnswer": "Change-point detection looks for structural shifts in a sequence—mean, variance or distribution changes—rather than isolated anomalous points. It is useful for regime changes, deployments and sensor failures.",
+  "interviewAnswer": "A change point is a boundary where a distributional parameter changes persistently; a point anomaly is an isolated deviation. Offline methods segment a complete series by minimizing within-segment cost plus a penalty per change. Exact dynamic programming is quadratic in a basic form, PELT prunes candidates and can be near linear under conditions, and binary segmentation is faster but greedy. Online detectors such as CUSUM trade false-alarm average run length against detection delay. I residualize known seasonality and trend using past information, choose cost, penalty, minimum segment and tolerance on historical incidents or simulation, and evaluate boundary precision/recall plus delay. In production I group duplicate alarms, connect releases and data-pipeline changes, and define confirm, reset, cooldown, and rollback actions.",
   "keyPoints": [
-    "Online vs offline detection differ.",
-    "Control false alarms vs detection delay.",
-    "Seasonality/trend should be modeled first."
+    "A change point marks persistent regime structure, not merely a large residual.",
+    "Cost specifies what changes; penalty controls how many boundaries appear.",
+    "PELT is exact for its objective while pruning candidates under stated conditions.",
+    "Online detection balances false alarms and delay and needs reset semantics.",
+    "Seasonality, dependence, and logging changes must be modeled or contextualized."
   ],
   "resources": [
-    "fpp3",
-    "statsmodels-tsa"
+    "pelt-paper",
+    "ruptures-docs",
+    "fpp3"
   ],
   "featured": false,
-  "why": "Change-point Detection is a recurring foundation across data science and machine learning because it affects both theoretical correctness and practical system behavior.",
-  "intuition": "Online vs offline detection differ.",
-  "deepDive": "Change-point detection looks for structural shifts in a sequence—mean, variance or distribution changes—rather than isolated anomalous points. It is useful for regime changes, deployments and sensor failures. Control false alarms vs detection delay. Seasonality/trend should be modeled first. The interview-level skill is not merely recalling the definition: explain the assumptions, what diagnostic evidence you would inspect, and what alternative you would choose when those assumptions fail.",
-  "workedExample": "Detect when a service latency baseline permanently shifts after a deployment.",
+  "why": "Mean dashboards often hide when a system changed. A release can shift latency, a sensor recalibration can alter variance, and a policy can change conversion behavior. Detecting the boundary supports attribution, rollback, and model retraining. Point-anomaly rules may fire repeatedly after a persistent shift, flooding alerts without recognizing that the baseline is obsolete. Conversely, a segmentation method can overreact to seasonality or one bad batch and invent regimes. Change-point methods make the trade-off explicit through a segment cost and complexity penalty. They also provide an operational vocabulary: how long to confirm a shift, how much delay is acceptable, whether to reset after alarm, and which intervention owns a boundary. The best detector is the one whose change definition and delay-cost trade-off match the response process.",
+  "intuition": "Draw a time series with one horizontal level, then a sudden step to a new level. If split at the correct time, each side has small variation around its own mean. If not split, one mean must compromise and within-segment squared error is large. Add a cost for every split so noise does not create a segment at every point. Dynamic programming considers every possible last boundary and reuses the best earlier segmentation. PELT removes earlier candidates that can never become optimal later. In an online setting there is no future right segment yet. CUSUM accumulates small signed deviations from a reference; random noise tends to cancel, while a persistent shift creates steady growth until a threshold is crossed. A lower threshold alarms sooner but more often by chance. Known cycles should be removed first or encoded in the cost, otherwise every daily peak can resemble a regime change.",
+  "deepDive": "Change-point detection is a model of piecewise stability plus a search and penalty. Offline segmentation trades within-segment fit against boundary count; online detection trades false alarms against delay. Neither can distinguish harmful behavior from a legitimate release without context. Ordered evaluation, tolerance matching, reset logic, and action ownership are therefore part of the detector contract.",
+  "workedExample": "API latency is stable near 120 ms, has one 500 ms spike, returns to baseline, then after a release shifts to 170 ms for the next hour. A point detector flags the spike and many post-release rows. Penalized segmentation ignores the one-point spike when minimum segment length is ten and places one boundary near release time. The alarm joins deployment metadata, confirms persistence for five minutes, and triggers a rollback review.",
   "commonMistakes": [
-    "Using the concept mechanically without checking assumptions or data semantics.",
-    "Reporting one metric/result without examining uncertainty, slices or failure modes."
+    {
+      "misconception": "Every point anomaly is a change point.",
+      "correction": "A point anomaly is transient; a change point marks a persistent regime boundary. Minimum segments and persistence evidence separate them."
+    },
+    {
+      "misconception": "PELT is always linear time.",
+      "correction": "PELT is exact for its objective and can have linear expected cost under conditions. Worst-case behavior and constants depend on data, penalty, and cost."
+    },
+    {
+      "misconception": "Removing seasonality with a full-series smoother is harmless.",
+      "correction": "Using future observations can leak and move boundaries. For online claims, estimate expected structure with past-only or frozen training methods."
+    },
+    {
+      "misconception": "More detected boundaries mean higher sensitivity and therefore a better system.",
+      "correction": "Oversegmentation creates false and duplicate alarms. Evaluate precision, delay, localization, and action cost under a declared tolerance."
+    }
   ],
   "followUps": [
-    "What assumptions or limitations does Change-point Detection have?",
-    "How would you validate Change-point Detection on a real dataset?"
+    {
+      "question": "What does the penalty do in offline segmentation?",
+      "answer": "It charges for each additional boundary, balancing within-segment fit against complexity. Its scale depends on the cost and data."
+    },
+    {
+      "question": "How is PELT different from binary segmentation?",
+      "answer": "PELT prunes dynamic-program candidates while preserving the exact penalized optimum under its conditions; binary segmentation greedily chooses splits and recurses, which can miss interacting changes."
+    },
+    {
+      "question": "How do you evaluate a detection that is five minutes late?",
+      "answer": "Use a predeclared tolerance and report detection delay separately. Whether five minutes is acceptable depends on the response deadline and harm accumulation."
+    }
   ],
-  "production": "In production, make assumptions explicit, validate on representative slices, compare with a simple baseline and monitor the signals that can drift.",
-  "visual": {
-    "type": "curve",
-    "title": "Change-point detection",
-    "series": [
-      {
-        "label": "series",
-        "points": [
-          [
-            0,
-            0.3
-          ],
-          [
-            0.12,
-            0.33
-          ],
-          [
-            0.24,
-            0.29
-          ],
-          [
-            0.36,
-            0.35
-          ],
-          [
-            0.48,
-            0.31
-          ],
-          [
-            0.52,
-            0.65
-          ],
-          [
-            0.64,
-            0.69
-          ],
-          [
-            0.76,
-            0.66
-          ],
-          [
-            0.88,
-            0.71
-          ],
-          [
-            1,
-            0.68
-          ]
-        ]
-      }
-    ],
-    "caption": "A change point marks a structural shift in level, trend, variance or another generating-process property.",
-    "xLabel": "time",
-    "yLabel": "value"
-  },
+  "production": "Freeze event-time and late-data policy, aggregation, residual or seasonal baseline, target parameter, cost, penalty, minimum segment, online statistic, confirmation, reset, cooldown, tolerance, and ownership routing. Reconcile ordering and gaps before scoring. Monitor baseline age, residual distribution, alarm and unique-incident rate, duplicate boundaries, false-alarm average run length, detection and confirmation delay, post-change persistence, missingness, and action outcomes. Attach deployment, schema, traffic, and upstream metadata for diagnosis while protecting sensitive series. Use maintenance suppression only with audit logs. Provide a safe manual path when detector state is lost and avoid silently adapting the baseline after an unreviewed alarm. Shadow and replay changes across long normal and incident histories, and roll back detector, baseline, and response rules together when false alarms, delay, missed shifts, or automated-action harm exceed bounds.",
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "Change-point detection locates times where the data-generating regime changes, such as a shift in mean, variance, trend, covariance, or event rate. It is different from point anomaly detection: one extreme observation is transient, while a change point marks a boundary after which many observations follow a new pattern. This chapter develops offline segmentation as penalized cost minimization, cumulative-sum evidence, exact dynamic programming, PELT pruning, binary segmentation, online detection delay, minimum segment length, penalty selection, and tolerance-based evaluation. You will learn how seasonality, trend, autocorrelation, missingness, logging changes, and multiple related series can create false boundaries or hide real ones. A worked latency example distinguishes a release-induced persistent shift from a short spike and connects detection to rollback. The lab implements exact penalized mean-shift segmentation, compares its strongest boundary with a vectorized CUSUM statistic, and verifies localization, translation, constant-series, and penalty behavior. Production guidance fixes event-time ordering, baseline and cost assumptions, confirmation windows, reset and cooldown logic, and change ownership; monitors false-alarm run length, delay, duplicate alarms, and post-change stabilization rather than merely counting detected indices.",
+  "prerequisites": [
+    "anomaly-types",
+    "decomposition-stl"
+  ],
+  "learningObjectives": [
+    "Distinguish transient anomalies from persistent regime changes and define offline versus online objectives.",
+    "Formulate penalized segmentation and implement exact dynamic programming for mean changes.",
+    "Explain PELT, binary segmentation, CUSUM, penalties, minimum segments, and detection-delay trade-offs.",
+    "Evaluate and operate change detectors under seasonality, dependence, tolerance windows, and intervention feedback."
+  ],
+  "deepSections": [
+    {
+      "id": "change-definition-and-cost",
+      "title": "Define the parameter and observation process that may change",
+      "body": "Let y_1,...,y_n be ordered observations and tau_1<...<tau_m unknown boundaries. Within each segment, assume a stable parameter under a chosen cost. Squared deviation from segment mean detects mean changes under a Gaussian-like model; likelihood costs can target variance, count rate, distribution, regression coefficients, covariance, or kernel discrepancy. The cost determines what a change means. A mean cost will misinterpret a smooth trend as many steps unless trend is modeled or removed. Seasonality should be estimated from a training period or with past-only methods, then detection applied to residuals; using future smoothing can leak and shift boundaries. Irregular sampling, missing periods, censoring, and changing aggregation alter the observation process and may require exposure or time weighting. Multivariate detectors can pool weak coordinated shifts but suffer dimensionality and changing covariance. Include metadata for deployments, schema versions, traffic mix, and holidays so detected boundaries can be explained rather than automatically labeled incidents."
+    },
+    {
+      "id": "offline-segmentation",
+      "title": "Offline penalized segmentation and search algorithms",
+      "body": "A common objective minimizes sum_{j=0}^m C(y_{tau_j+1:tau_{j+1}})+beta m, with tau_0=0 and tau_{m+1}=n. Without penalty beta or a fixed m, fit improves by adding boundaries. Minimum segment length encodes resolution and prevents tiny segments. Basic exact dynamic programming computes F(t)=min_{s<t}[F(s)+C(y_{s+1:t})+beta], storing the best previous s; with O(1) segment cost from prefix sums, it is O(n^2). Optimal partitioning is exact for the declared additive objective. PELT adds pruning: when one candidate cannot beat another for any future endpoint under a cost condition, discard it. Its expected computation can be linear in settings where changes increase with n, but worst-case and constants depend on data and penalty. Binary segmentation finds the best single split, then recurses; it is fast and intuitive but greedy, so nearby or weak changes can be missed. Window methods compare adjacent windows and localize at their scale. Search method, cost, penalty, and constraints are separate choices and must be versioned together."
+    },
+    {
+      "id": "online-detection",
+      "title": "Online evidence, false alarms, and delay",
+      "body": "Online detection observes one point at a time and must alarm before seeing a complete future segment. For a known upward mean shift, one-sided CUSUM updates G_t=max(0,G_{t-1}+z_t-k), where z_t is standardized relative to baseline and k is a reference allowance. Alarm when G_t>h. Persistent positive drift accumulates; negative evidence resets to zero. Page-Hinkley, generalized likelihood ratios, Bayesian online change-point methods, and sequential probability ratios encode different unknown-shift and run-length beliefs. Parameters determine in-control average run length, detection delay, and sensitivity to shift size. Evaluate on long normal histories and simulated or labeled shifts, preserving autocorrelation. After an alarm, define whether to reset statistic immediately, wait for confirmation, adapt the baseline, or pause during remediation. Automatic baseline adaptation can absorb a harmful shift; no adaptation causes permanent alarms after a legitimate change. Confirmation windows and hysteresis reduce noise but add delay. Report distribution of delay and false alarms per time, not only whether one boundary was eventually found."
+    },
+    {
+      "id": "evaluation-and-incident-response",
+      "title": "Evaluate boundaries with tolerance and connect them to response",
+      "body": "Exact timestamp matching is often inappropriate because labels and detection have granularity. Match predicted and true boundaries within a declared tolerance using one-to-one assignment, then report precision, recall, localization error, and delay. Multiple alarms around one change should not earn multiple true positives. Segment metrics can measure how well pairs of times are grouped into the same regime. Choose tolerance from operational action, not after seeing results. Evaluate across shift sizes, durations, directions, seasonality, missingness, and dependent noise. A detector that finds large shifts but misses gradual or variance changes should say so. In production, attach release, configuration, data schema, and upstream health metadata to alarms; group correlated metrics into incidents; suppress known maintenance windows carefully; and route to an owner. Monitor alarm rate, duplicate rate, confirmation failures, delay, post-alarm persistence, baseline age, and action outcome. Backtest any automated rollback to avoid reacting to benign traffic mix or instrumentation changes."
+    }
+  ],
+  "math": "For boundaries tau, minimize J=sum_j C(tau_j,tau_{j+1})+beta m. For a mean-shift squared-error cost C(s,t)=sum_{i=s}^{t-1}(y_i-ybar_{s:t})^2, prefix sums give C=sum y_i^2-(sum y_i)^2/(t-s). Dynamic programming F(t)=min_{s<=t-L}[F(s)+C(s,t)+beta] with minimum length L returns an exact optimum after backtracking. A one-sided standardized CUSUM G_t=max(0,G_{t-1}+z_t-k) alarms at G_t>h; k and h tune target shift, run length, and delay.",
+  "workedExamples": [
+    {
+      "title": "Penalty controls segmentation",
+      "body": "Splitting at t=60 reduces squared-error cost by 180. With penalty beta=30, the change is worthwhile; adding a tiny split that reduces cost by five is not. Raising beta yields fewer broader regimes; lowering it yields more sensitivity and false boundaries. Choose beta under later-window or incident replay evidence."
+    },
+    {
+      "title": "CUSUM accumulates a small persistent shift",
+      "body": "Standardized observations move from mean zero to mean 0.5. Individual values rarely exceed a three-sigma point threshold, but with k=0.25 the expected CUSUM increment becomes 0.25 per step. The statistic reaches h=5 after roughly 20 post-change observations on average, illustrating the delay-versus-false-alarm trade-off."
+    }
+  ],
+  "lab": {
+    "language": "python",
+    "goal": "Implement exact penalized mean-shift segmentation, compare its boundary with CUSUM evidence, and verify localization, translation, constant-series, and penalty invariants.",
+    "buildIt": "import numpy as np\ndef segment_mean_shifts(y,penalty,min_size=8):\n    y=np.asarray(y,float); n=len(y); s=np.r_[0,np.cumsum(y)]; q=np.r_[0,np.cumsum(y*y)]\n    def cost(a,b): return q[b]-q[a]-(s[b]-s[a])**2/(b-a)\n    dp=np.full(n+1,np.inf); prev=np.full(n+1,-1,int); dp[0]=-penalty\n    for t in range(min_size,n+1):\n        for a in range(0,t-min_size+1):\n            if a!=0 and a<min_size: continue\n            if a!=0 and t-a<min_size: continue\n            value=dp[a]+cost(a,t)+penalty\n            if value<dp[t]: dp[t]=value; prev[t]=a\n    cuts=[]; t=n\n    while prev[t]>0: cuts.append(int(prev[t])); t=int(prev[t])\n    return list(reversed(cuts)),float(dp[n])\nrng=np.random.default_rng(10)\ny=np.r_[rng.normal(0,.35,60),rng.normal(3,.35,60)]\ncuts,obj=segment_mean_shifts(y,penalty=12,min_size=10)",
+    "useIt": "centered=y-y.mean(); cusum=np.cumsum(centered)\ncusum_cut=int(np.argmax(np.abs(cusum[:-1]))+1)",
+    "verifyIt": "assert cuts==[60]\nassert cusum_cut==60\nshifted,_=segment_mean_shifts(y+123,penalty=12,min_size=10)\nassert shifted==cuts\nconstant,_=segment_mean_shifts(np.ones(120),penalty=12,min_size=10)\nassert constant==[]\nmore,_=segment_mean_shifts(y,penalty=1,min_size=10)\nassert len(more)>=len(cuts)\nnone,_=segment_mean_shifts(y,penalty=1000,min_size=10)\nassert none==[]\nassert all(10<=c<=110 for c in cuts)",
+    "shipIt": "Version event-time ordering, residualization, cost, penalty, minimum segment, confirmation, reset and tolerance; join change metadata, group alarms, monitor run length and delay, and roll back detector plus baseline policy together."
+  },
+  "exercises": [
+    {
+      "prompt": "Why does a minimum segment length reject a one-point spike as a regime?",
+      "solution": "A regime must persist for at least the declared length, so a single point cannot form its own segment even if its residual is large."
+    },
+    {
+      "prompt": "A daily cycle creates two boundaries every day. What is wrong?",
+      "solution": "Known seasonality is not represented in the stable-segment model. Residualize or model the cycle using leakage-safe methods before change detection."
+    },
+    {
+      "prompt": "Why report both boundary recall and delay?",
+      "solution": "A detector can eventually match every change but react too late to prevent harm. Delay quantifies timeliness within the tolerance-matching evidence."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "curve",
+      "title": "Spike versus persistent mean shift",
+      "series": [
+        {
+          "label": "Observed series",
+          "points": [
+            [
+              0.04,
+              0.28
+            ],
+            [
+              0.14,
+              0.3
+            ],
+            [
+              0.24,
+              0.29
+            ],
+            [
+              0.32,
+              0.82
+            ],
+            [
+              0.36,
+              0.3
+            ],
+            [
+              0.48,
+              0.29
+            ],
+            [
+              0.52,
+              0.61
+            ],
+            [
+              0.64,
+              0.62
+            ],
+            [
+              0.76,
+              0.6
+            ],
+            [
+              0.9,
+              0.63
+            ]
+          ]
+        },
+        {
+          "label": "Segment mean",
+          "points": [
+            [
+              0.04,
+              0.3
+            ],
+            [
+              0.5,
+              0.3
+            ],
+            [
+              0.52,
+              0.61
+            ],
+            [
+              0.9,
+              0.61
+            ]
+          ]
+        }
+      ],
+      "caption": "Conceptual series: the isolated spike is not a regime, while the sustained level shift creates a change boundary.",
+      "afterSection": "change-definition-and-cost"
+    },
+    {
+      "type": "flow",
+      "title": "Change alarm to response",
+      "items": [
+        "Ordered residual stream",
+        "Accumulate or segment evidence",
+        "Confirm persistence",
+        "Join release/schema context",
+        "Group incident",
+        "Rollback, adapt, or accept",
+        "Reset detector deliberately"
+      ],
+      "caption": "Reset and adaptation decisions determine whether the system repeats alarms or absorbs a harmful regime.",
+      "afterSection": "evaluation-and-incident-response"
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "pelt-paper",
+      "contribution": "Provides the exact penalized objective, pruning argument, and conditional near-linear computational result for PELT."
+    },
+    {
+      "resource": "ruptures-docs",
+      "contribution": "Verifies current offline cost, search, constraint, and evaluation workflow across detector choices."
+    },
+    {
+      "resource": "fpp3",
+      "contribution": "Supports leakage-safe time-series decomposition, residual diagnostics, and temporal evaluation context."
+    }
+  ]
 }

@@ -1,0 +1,27 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Perplexity — Code Lab</title><script>(()=>{const s=localStorage.getItem('atlas-theme');const t=s||((matchMedia('(prefers-color-scheme: dark)').matches)?'dark':'light');document.documentElement.dataset.theme=t})()</script><style>:root{--bg:#fff;--text:#121417;--muted:#5d6470;--line:#dfe3e8;--soft:#f6f7f8;--blue:#155eef;--code:#0d1117;color-scheme:light}html[data-theme=dark]{--bg:#0d1117;--text:#eef2f6;--muted:#a8b0ba;--line:#2b333d;--soft:#171d24;--blue:#8fb4ff;--code:#070a0e;color-scheme:dark}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.6 Inter,system-ui,sans-serif}main{max-width:980px;margin:auto;padding:44px 22px 80px}a{color:var(--blue)}h1{font-size:42px;line-height:1.05;margin:8px 0 12px}.k{font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--blue);font-weight:800}.lead{color:var(--muted);font-size:17px}.top{display:flex;justify-content:space-between;gap:16px}button{border:1px solid var(--line);background:var(--soft);color:var(--text);border-radius:8px;padding:7px 9px;cursor:pointer}section{border-top:1px solid var(--line);padding-top:22px;margin-top:26px}pre{background:var(--code);color:#e6edf3;padding:18px;border-radius:12px;overflow:auto;font:13px/1.55 ui-monospace,monospace}.links{display:flex;gap:12px;flex-wrap:wrap;margin:18px 0}.links a{border:1px solid var(--line);border-radius:8px;padding:7px 9px;text-decoration:none;font-size:12px}@media(max-width:600px){h1{font-size:34px}.top{display:block}}</style></head><body><main><div class="top"><div><div class="k">Data, ML & AI Atlas · Runnable Lab</div><h1>Perplexity</h1></div><button id="t">◐ Theme</button></div><p class="lead">Compute perplexity from token probabilities and logits, verify uniform and deterministic limits, and aggregate corpora by token-weighted log loss.</p><div class="links"><a href="../../index.html#/lesson/perplexity">← Full lesson</a><a href="lab.py">Combined Python file</a><a href="README.md">README</a></div><section><h2>1 · Build it</h2><p>Minimal implementation with as little framework abstraction as practical.</p><pre>import math
+import numpy as np
+def perplexity_from_probabilities(probabilities):
+    p=np.asarray(probabilities,float)
+    if p.ndim!=1 or len(p)==0 or np.any(p&lt;=0) or np.any(p&gt;1): raise ValueError(&#x27;invalid observed-token probabilities&#x27;)
+    return float(np.exp(-np.mean(np.log(p))))
+def nll_from_logits(logits,labels):
+    z=np.asarray(logits,float); labels=np.asarray(labels,int); m=z.max(axis=1,keepdims=True); logsum=m[:,0]+np.log(np.exp(z-m).sum(axis=1))
+    return logsum-z[np.arange(len(labels)),labels]
+def corpus_perplexity(loss_sums,token_counts):
+    counts=np.asarray(token_counts,float)
+    if counts.sum()&lt;=0: raise ValueError(&#x27;no active tokens&#x27;)
+    return float(np.exp(np.sum(loss_sums)/counts.sum()))
+p=np.array([.5,.25,.125]); pp=perplexity_from_probabilities(p)
+logits=np.array([[2,0,-1],[0,1,2]],float); labels=np.array([0,2]); losses=nll_from_logits(logits,labels)</pre></section><section><h2>2 · Use it</h2><p>The same idea through a common library or practical API.</p><pre>from scipy.special import logsumexp
+trusted=logsumexp(logits,axis=1)-logits[np.arange(len(labels)),labels]</pre></section><section><h2>3 · Ship it</h2><p>Version corpus, tokenizer, vocabulary, special tokens, context and stride, masks and denominator; reduce total NLL and token count reproducibly, audit contamination and slices, and pair perplexity with task, factuality and safety evaluation.</p></section><section><h2>4 · Verify it</h2><p>Assertions and sanity checks that catch conceptual or implementation mistakes.</p><pre>assert abs(pp-4.0)&lt;1e-12
+assert abs(perplexity_from_probabilities(np.ones(5)/5)-5.0)&lt;1e-12
+assert perplexity_from_probabilities([1,1,1])==1.0
+assert np.allclose(losses,trusted)
+combined=corpus_perplexity([10*math.log(2),90*math.log(8)],[10,90]); assert abs(combined-math.exp((10*math.log(2)+90*math.log(8))/100))&lt;1e-12
+assert combined!=5.0
+assert perplexity_from_probabilities([.5,.5])==2.0
+try:
+    perplexity_from_probabilities([.5,0])
+    raise AssertionError(&#x27;expected zero-probability failure&#x27;)
+except ValueError:
+    pass</pre></section></main><script>const b=document.getElementById('t');function u(){b.textContent=document.documentElement.dataset.theme==='dark'?'☀ Light':'☾ Dark'}u();b.onclick=()=>{const n=document.documentElement.dataset.theme==='dark'?'light':'dark';document.documentElement.dataset.theme=n;localStorage.setItem('atlas-theme',n);u()}</script></body></html>

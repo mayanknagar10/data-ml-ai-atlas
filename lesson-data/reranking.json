@@ -6,31 +6,194 @@
   "roles": [
     "ds"
   ],
-  "interviewAnswer": "A reranker applies a more expensive query-document model to a small candidate set from first-stage retrieval. It improves precision because it jointly represents the query and candidate rather than comparing independent embeddings.",
+  "interviewAnswer": "A bi-encoder embeds query and documents separately for efficient ANN retrieval; a cross-encoder concatenates the query and each candidate and jointly encodes them, producing richer token interactions but requiring one forward pass per pair. I retrieve a high-recall candidate set, rerank only a latency-bounded depth, and train with pointwise relevance labels, pairwise preferences or listwise losses depending judgments and metric. Hard negatives come from the actual candidate generators and must exclude unlabeled positives carefully. I report candidate Recall@K, oracle ceiling, reranked NDCG/MRR and latency as candidate count and text length vary. I handle truncation by field-aware passage selection, batch requests, distill or cascade models when necessary, and retain the base ranker as timeout fallback. Candidate and reranker versions are evaluated and deployed together.",
   "keyPoints": [
-    "Use only on a bounded candidate set.",
-    "Latency/cost grows with candidates.",
-    "Train/evaluate on realistic negatives."
+    "Cross-encoders model query-document token interactions but cannot precompute one reusable document score.",
+    "Candidate recall bounds every possible reranker metric and must be reported separately.",
+    "Training negatives should resemble served confusions while accounting for incomplete judgments and click bias.",
+    "Candidate depth, token length, batch shape and hardware define the latency-quality operating point.",
+    "Reranker, candidate generators, truncation and fallback form one versioned system."
   ],
   "resources": [
-    "hf-llm",
-    "ir-book"
+    "bert-reranker-paper",
+    "ir-book",
+    "hf-llm"
   ],
   "featured": false,
-  "why": "Cross-encoder / Learned Reranking appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
-  "intuition": "Use only on a bounded candidate set.",
-  "deepDive": "A reranker applies a more expensive query-document model to a small candidate set from first-stage retrieval. It improves precision because it jointly represents the query and candidate rather than comparing independent embeddings. Latency/cost grows with candidates. Train/evaluate on realistic negatives. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
-  "workedExample": "Retrieve 100 documents with BM25/vector search, then cross-encode and return the best 10.",
+  "why": "First-stage retrieval is optimized for speed and broad recall. BM25 treats term evidence mostly additively, and a bi-encoder compresses each text into one vector before it sees the other side. Both can confuse `supports feature X` with `does not support feature X`, match the wrong version number, or miss which passage answers a specific question. A cross-encoder can jointly examine every query and candidate token and learn such interactions. The trade-off is inference cost: reranking 200 long passages can require 200 transformer evaluations per query. Training labels also inherit candidate and exposure bias. A disciplined reranking stage earns its cost through measured ordering gains at a stable recall ceiling, not through model size alone.",
+  "intuition": "A bi-encoder asks two people to summarize a query and a document independently, then compares their summaries. A cross-encoder lets one careful reader place the query beside the document and inspect word-to-word relationships. That reader can notice negation, exact identifiers and whether evidence appears in the same passage. But the reader cannot inspect a million documents in real time. A fast retriever shortlists perhaps 100, then the careful reader scores those. Increasing the shortlist can improve the chance that the answer is present, while also increasing compute and possibly truncation or timeout. The system is a cascade whose first stage protects recall and second stage spends computation on precision.",
+  "deepDive": "Reranking spends expensive joint query-document modeling only after a high-recall stage has bounded the search space. Its attainable quality is set by candidate presence and chosen text windows; its learned behavior is set by judgments, negatives and loss; and its production value is set by the latency frontier and reliable fallback. Treating the cascade as one system makes it possible to distinguish retrieval misses, truncation misses, model misordering and serving degradation.",
+  "workedExample": "Query `Does ZX-4817 support offline mode?` retrieves d1=`ZX-4817 does not support offline mode` and d2=`ZX-4818 supports offline mode`. A dense bi-encoder may rank d2 first because most semantic content overlaps. A cross-encoder can align the exact model number and negation, ranking d1 as the correct evidence. If d1 was not in the candidate set, that reasoning would never run.",
   "commonMistakes": [
-    "Applying the method without checking its assumptions or data-generating process.",
-    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+    {
+      "misconception": "A stronger reranker fixes low candidate recall.",
+      "correction": "It can only reorder candidates; missing relevant documents require retrieval, depth or filter changes."
+    },
+    {
+      "misconception": "Random negatives are enough for training.",
+      "correction": "They are often too easy. Use carefully judged hard negatives resembling actual lexical and semantic confusions."
+    },
+    {
+      "misconception": "Cross-encoder score is a calibrated probability by default.",
+      "correction": "Sampling, loss and distribution affect its scale; calibrate on held-out served data if thresholds need probability meaning."
+    },
+    {
+      "misconception": "Model latency is one forward-pass benchmark.",
+      "correction": "End-to-end cost depends on candidates, token lengths, padding, batching, queueing, passage splits and concurrency."
+    }
   ],
   "followUps": [
-    "What assumptions does Cross-encoder / Learned Reranking make?",
-    "How would you validate or debug Cross-encoder / Learned Reranking in practice?"
+    {
+      "question": "Why not use a cross-encoder for the whole corpus?",
+      "answer": "Joint encoding prevents reusable document embeddings, so per-query computation over the corpus is prohibitively large; candidate generation bounds it."
+    },
+    {
+      "question": "When is a pairwise loss useful?",
+      "answer": "When supervision expresses preferences and the goal is relative order; it directly encourages a relevant candidate to outscore a negative."
+    },
+    {
+      "question": "How do you choose reranking depth?",
+      "answer": "Plot candidate recall and oracle quality against K, then choose a point meeting relevance and p95/p99 latency and cost constraints."
+    }
   ],
-  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "production": "Create one cascade manifest with corpus and candidate index versions, branch depths and filters, tokenizer, query and field token budgets, passage selection and aggregation, reranker weights, auxiliary features, batching policy, runtime, quantization, timeout and fallback. Validate candidate recall and oracle ceiling before blaming reranking. Store per-query base and final ranks, score deltas, truncation, provenance and timing on privacy-safe samples. Monitor token length, padding efficiency, batch size and wait, GPU or CPU saturation, inference errors, timeout and fallback, score distribution, rank displacement, exact-match preservation, subgroup NDCG/MRR and online task outcomes. Red-team prompt-like document text and adversarial keyword stuffing; the reranker reads untrusted content. Enforce permissions before scoring or display. Shadow complete candidate-plus-model generations and roll back the compatible cascade atomically.",
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "Reranking applies a more expressive relevance model to a bounded candidate set produced by fast retrieval. A cross-encoder jointly attends to query and document tokens, capturing exact alignments, negation, proximity and context that independent embeddings lose, but its cost grows with candidates and text length. This chapter contrasts bi-encoders and cross-encoders; explains pointwise, pairwise and listwise learning objectives; and develops hard-negative mining, candidate-distribution alignment, click-bias correction, truncation, chunk aggregation and score calibration. It shows why candidate recall is an immutable ceiling, why offline gains must be measured at the served depth, and how batching, distillation, quantization, caching and cascades create a latency-quality frontier. A worked example demonstrates a cross-encoder reversing a semantic near-match with the wrong product ID. The lab trains a small pointwise reranker on interpretable joint features, compares it with a hand-built score, and verifies ranking, permutation and missing-candidate invariants. Production guidance versions candidate generation with the reranker, enforces token and latency budgets, protects permissions and sensitive text, monitors feature and score drift, and falls back safely. A reranker improves ordering; it cannot retrieve a document it never receives.",
+  "prerequisites": [
+    "hybrid-search",
+    "logistic-regression",
+    "transformer"
+  ],
+  "learningObjectives": [
+    "Explain why joint query-document encoding improves interaction modeling and increases inference cost.",
+    "Choose pointwise, pairwise or listwise objectives and construct representative hard negatives without leakage.",
+    "Evaluate candidate ceiling, reranking gain, calibration, truncation, latency and important query slices.",
+    "Deploy batching, cascades, fallbacks, privacy controls, monitoring and compatible version rollback."
+  ],
+  "deepSections": [
+    {
+      "id": "model-and-objectives",
+      "title": "Joint encoding supports richer relevance objectives",
+      "body": "A typical cross-encoder input is [CLS] query [SEP] document [SEP], with a classification or regression head over the joint representation. Self-attention permits every query token to interact with document tokens. A pointwise objective predicts a grade or relevance probability independently for each pair, making training simple but not directly optimizing ordering. A pairwise loss encourages score(q,d+) to exceed score(q,d-) using logistic, hinge or related objectives. A listwise loss operates over candidate lists and can approximate softmax likelihood or ranking metrics, but requires list construction and more memory. Grades may be modeled ordinally rather than collapsed to binary. Output scores are not automatically calibrated because negative sampling changes class prevalence. Calibration, if needed for thresholds, uses held-out data from the served distribution. Cross-encoders differ from late-interaction models, which precompute token-level document representations and retain some interaction efficiency. The appropriate architecture follows quality, index and serving budgets."
+    },
+    {
+      "id": "labels-and-negatives",
+      "title": "Negative sampling determines which ranking errors the model learns",
+      "body": "Random corpus negatives are often trivially unrelated and teach little. Hard negatives retrieved by BM25, dense or hybrid branches share terms or semantics and resemble actual confusions. Sample from the candidate distribution the model will rerank, including exact-ID collisions, near-duplicate versions, negation, stale documents and policy exclusions. Incomplete judgments create false negatives: an unjudged retrieved document may be relevant. Use deeper judging, confidence-aware sampling or losses robust to missing labels. Clicked results provide preferences only after exposure; nonclick at rank ten is not equivalent to a judged negative. Position, snippet and trust bias require randomized data, propensity correction or careful counterfactual learning. Split by query family, user or time to prevent templated duplicates across train and test. Mine hard negatives iteratively without evaluating on the same test judgments. Balance query intents so head navigational traffic does not erase rare, high-consequence behavior. Preserve source and label provenance for audit and removal."
+    },
+    {
+      "id": "candidate-and-text-budget",
+      "title": "Candidate depth and text selection define the attainable frontier",
+      "body": "If the only relevant document is absent from top K candidates, even an oracle reranker fails. Plot candidate Recall@K and oracle NDCG as K grows, then measure model quality and latency at each depth. Documents longer than the model context require a strategy: truncate tail, select fields, score passages, slide windows or summarize. Blind head truncation can drop the answer; scoring every passage multiplies cost. Parent aggregation may use maximum passage score, learned pooling or evidence diversity, with duplicate control. Candidate features such as first-stage scores, ranks, recency and authority can augment text, but version and normalize them. Exact filters and permissions should already be satisfied; a neural model must not learn to override hard constraints. Dynamic cascades can rerank more candidates for ambiguous queries and fewer for exact ones, but the gating policy needs independent evaluation. Confidence gaps may support early exit only after calibration under distribution shift."
+    },
+    {
+      "id": "serving-and-evaluation",
+      "title": "Reranking quality is inseparable from serving shape and fallback behavior",
+      "body": "Batch candidate pairs to use accelerators efficiently, but account for padding to the longest sequence and queueing delay. Bucket by length, cap query and document tokens, and measure p95/p99 at realistic concurrent batch arrivals. Distillation trains a smaller model from a stronger teacher; quantization and optimized runtimes reduce cost but need relevance and numerical regression tests. Cache scores only when query, candidate text version, model, truncation and features match; broad caches can leak tenants or stale content. Offline evaluation reports base and reranked metrics, candidate recall, score calibration if used, and slices for negation, exact identifiers, long documents, multilingual text and safety. Online tests add task success and latency. On timeout or model failure, return the base ranking if policy permits and mark degradation. Monitor reranker coverage, truncated fraction, token and batch distributions, score drift, rank displacement, latency, fallback rate and downstream outcomes."
+    }
+  ],
+  "math": "A pointwise binary loss is -[y log sigmoid(s)+(1-y)log(1-s)]. A pairwise logistic loss is log(1+exp(-(s(q,d+)-s(q,d-)))). A listwise softmax can use P(d|q)=exp(s_d/tau)/sum_j exp(s_j/tau) and cross-entropy against a target gain distribution. Candidate recall ceiling at depth K is |C_K intersection R|/|R|; no reranking permutation can exceed the gain of an ideal sorting of C_K. Serving work is roughly O(K*cost_encoder(L_q+L_d)), modified by batching, padding, passage splitting and hardware parallelism.",
+  "workedExamples": [
+    {
+      "title": "Hard-negative value",
+      "body": "For a password-reset query, a random gardening page is uninformative. An account-deletion page containing the same product and credential vocabulary teaches the model the boundary between related but wrong intent and the answer."
+    },
+    {
+      "title": "Truncation regression",
+      "body": "A policy answer appears in paragraph eight, but the serving tokenizer keeps only the first 256 tokens. Offline evaluation on short passages looks strong while long-document queries fail. Passage selection must be part of the benchmark."
+    }
+  ],
+  "lab": {
+    "language": "python",
+    "goal": "Expose pointwise reranking with joint relevance features, train an idiomatic logistic model, and verify candidate-ceiling, ordering and permutation invariants.",
+    "buildIt": "import re\nimport numpy as np\ndef tok(s): return re.findall(r'(?u)\\b\\w+\\b',s.lower())\ndef joint_features(query,document,semantic):\n    q=tok(query); d=tok(document); overlap=len(set(q)&set(d))/max(1,len(set(q))); exact=int(' '.join(q) in ' '.join(d)); neg_mismatch=int(('not' in d)!=('not' in q))\n    return [overlap,exact,float(semantic),neg_mismatch]\ndef hand_score(feature):\n    overlap,exact,semantic,neg=feature; return 1.5*overlap+1.0*exact+semantic-1.2*neg\nX=np.array([[1,.8,.9,0],[.7,0,.8,0],[.8,0,.7,1],[.2,0,.1,0],[.9,1,.8,0],[.6,0,.6,1],[.1,0,.2,0],[.75,0,.85,0],[.85,0,.5,1],[.3,0,.4,0],[.95,1,.9,0],[.5,0,.55,1]],float); y=np.array([1,1,0,0,1,0,0,1,0,0,1,0])\nquery='zx 4817 supports offline'; docs=['zx 4817 supports offline','zx 4818 supports offline','zx 4817 does not support offline','wireless setup']; semantic=[.82,.93,.88,.1]\nfeatures=np.array([joint_features(query,d,s) for d,s in zip(docs,semantic)]); hand=np.array([hand_score(f) for f in features])",
+    "useIt": "from sklearn.linear_model import LogisticRegression\nmodel=LogisticRegression(C=10,random_state=0).fit(X,y); learned=model.predict_proba(features)[:,1]\nhand_rank=np.argsort(-hand,kind='stable').tolist(); learned_rank=np.argsort(-learned,kind='stable').tolist()",
+    "verifyIt": "assert hand_rank[0]==0 and learned_rank[0]==0\nassert features[1,2]>features[0,2]  # dense similarity alone prefers the wrong identifier\nassert learned[0]>learned[2] and hand[0]>hand[2]\nperm=np.array([2,0,3,1]); perm_rank=perm[np.argsort(-model.predict_proba(features[perm])[:,1],kind='stable')].tolist(); assert perm_rank==learned_rank\n# A reranker only permutes supplied candidates.\nassert set(learned_rank)==set(range(len(docs)))\nassert all(0<=p<=1 for p in learned)\nassert model.score(X,y)>=.9",
+    "shipIt": "Version candidate generators, depth, text selection, tokenizer, model and features; evaluate candidate ceiling and reranked metrics with tail latency, shadow the complete cascade, and retain the authorized base ranking as a monitored timeout fallback."
+  },
+  "exercises": [
+    {
+      "prompt": "Candidate Recall@100 is 0.85. Can any reranker achieve relevance Recall@100 of 0.95 on those candidates?",
+      "solution": "No. It cannot introduce missing relevant documents, so its recall ceiling is 0.85 for that set."
+    },
+    {
+      "prompt": "Why mine negatives from both BM25 and vector retrieval?",
+      "solution": "They expose different difficult errors: lexical overlap with wrong intent and semantic similarity with wrong exact details."
+    },
+    {
+      "prompt": "What should happen on reranker timeout?",
+      "solution": "Under a documented safe policy, return the already authorized base ranking, record degraded mode, and monitor its rate and impact."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "funnel",
+      "title": "Retrieval-to-reranking cascade",
+      "items": [
+        {
+          "label": "Corpus",
+          "value": 100
+        },
+        {
+          "label": "Fast candidates",
+          "value": 58
+        },
+        {
+          "label": "Text-budgeted pairs",
+          "value": 42
+        },
+        {
+          "label": "Cross-encoder scoring",
+          "value": 27
+        },
+        {
+          "label": "Final top results",
+          "value": 14
+        }
+      ],
+      "caption": "Conceptual funnel: each upstream stage constrains the evidence and recall available downstream.",
+      "afterSection": "candidate-and-text-budget"
+    },
+    {
+      "type": "compare",
+      "title": "Bi-encoder and cross-encoder",
+      "left": {
+        "title": "Bi-encoder",
+        "items": [
+          "Independent embeddings",
+          "Precompute documents",
+          "Fast ANN retrieval",
+          "Compressed interaction"
+        ]
+      },
+      "right": {
+        "title": "Cross-encoder",
+        "items": [
+          "Joint token attention",
+          "One pass per pair",
+          "Richer alignment",
+          "Bounded candidate stage"
+        ]
+      },
+      "caption": "The common cascade uses the bi-encoder for reach and cross-encoder for precision.",
+      "afterSection": "model-and-objectives"
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "bert-reranker-paper",
+      "contribution": "Grounds BERT cross-encoder passage reranking and the joint query-passage formulation."
+    },
+    {
+      "resource": "ir-book",
+      "contribution": "Grounds multi-stage ranked retrieval, evaluation and candidate-generation constraints."
+    },
+    {
+      "resource": "hf-llm",
+      "contribution": "Verifies current transformer tokenization, batching and inference implementation conventions."
+    }
+  ]
 }

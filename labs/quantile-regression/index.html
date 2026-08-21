@@ -1,0 +1,32 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Quantile Regression — Code Lab</title><script>(()=>{const s=localStorage.getItem('atlas-theme');const t=s||((matchMedia('(prefers-color-scheme: dark)').matches)?'dark':'light');document.documentElement.dataset.theme=t})()</script><style>:root{--bg:#fff;--text:#121417;--muted:#5d6470;--line:#dfe3e8;--soft:#f6f7f8;--blue:#155eef;--code:#0d1117;color-scheme:light}html[data-theme=dark]{--bg:#0d1117;--text:#eef2f6;--muted:#a8b0ba;--line:#2b333d;--soft:#171d24;--blue:#8fb4ff;--code:#070a0e;color-scheme:dark}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.6 Inter,system-ui,sans-serif}main{max-width:980px;margin:auto;padding:44px 22px 80px}a{color:var(--blue)}h1{font-size:42px;line-height:1.05;margin:8px 0 12px}.k{font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--blue);font-weight:800}.lead{color:var(--muted);font-size:17px}.top{display:flex;justify-content:space-between;gap:16px}button{border:1px solid var(--line);background:var(--soft);color:var(--text);border-radius:8px;padding:7px 9px;cursor:pointer}section{border-top:1px solid var(--line);padding-top:22px;margin-top:26px}pre{background:var(--code);color:#e6edf3;padding:18px;border-radius:12px;overflow:auto;font:13px/1.55 ui-monospace,monospace}.links{display:flex;gap:12px;flex-wrap:wrap;margin:18px 0}.links a{border:1px solid var(--line);border-radius:8px;padding:7px 9px;text-decoration:none;font-size:12px}@media(max-width:600px){h1{font-size:34px}.top{display:block}}</style></head><body><main><div class="top"><div><div class="k">Data, ML & AI Atlas · Runnable Lab</div><h1>Quantile Regression</h1></div><button id="t">◐ Theme</button></div><p class="lead">Solve linear quantile regression as a linear program, compare with scikit-learn, and verify pinball optimality, translation equivariance, and empirical quantile behavior.</p><div class="links"><a href="../../index.html#/lesson/quantile-regression">← Full lesson</a><a href="lab.py">Combined Python file</a><a href="README.md">README</a></div><section><h2>1 · Build it</h2><p>Minimal implementation with as little framework abstraction as practical.</p><pre>import numpy as np
+from scipy.optimize import linprog
+def fit_quantile_lp(X,y,tau):
+    D=np.column_stack([np.ones(len(X)),np.asarray(X,float)]); n,d=D.shape
+    c=np.r_[np.zeros(d),np.full(n,tau),np.full(n,1-tau)]
+    A=np.column_stack([D,np.eye(n),-np.eye(n)])
+    bounds=[(None,None)]*d+[(0,None)]*(2*n)
+    result=linprog(c,A_eq=A,b_eq=np.asarray(y,float),bounds=bounds,method=&#x27;highs&#x27;)
+    assert result.success
+    return result.x[:d],result.fun
+def pinball(y,p,tau):
+    r=np.asarray(y)-np.asarray(p)
+    return np.mean(np.where(r&gt;=0,tau*r,(tau-1)*r))
+rng=np.random.default_rng(18)
+X=rng.uniform(0,3,size=(180,1)); noise=rng.normal(size=180)*(0.25+0.35*X[:,0])
+y=1+1.7*X[:,0]+noise; tau=.8
+b,obj=fit_quantile_lp(X,y,tau)
+D=np.column_stack([np.ones(len(X)),X]); pred=D@b</pre></section><section><h2>2 · Use it</h2><p>The same idea through a common library or practical API.</p><pre>from sklearn.linear_model import QuantileRegressor
+sk=QuantileRegressor(quantile=tau,alpha=0,fit_intercept=True,solver=&#x27;highs&#x27;).fit(X,y)
+sk_b=np.r_[sk.intercept_,sk.coef_]
+sk_pred=sk.predict(X)</pre></section><section><h2>3 · Ship it</h2><p>Version tau, feature pipeline, scaling, penalty, solver, crossing and extrapolation policy; monitor conditional exceedance, pinball loss, interval width and tail support, and roll back the complete forecast-to-decision pipeline when service or cost thresholds fail.</p></section><section><h2>4 · Verify it</h2><p>Assertions and sanity checks that catch conceptual or implementation mistakes.</p><pre>assert abs(pinball(y,pred,tau)-obj/len(y))&lt;1e-9
+assert abs(pinball(y,pred,tau)-pinball(y,sk_pred,tau))&lt;1e-8
+assert np.allclose(pred,sk_pred,atol=1e-6)
+# Intercept translation equivariance.
+shift=11.0
+b_shift,_=fit_quantile_lp(X,y+shift,tau)
+assert abs(b_shift[0]-b[0]-shift)&lt;1e-7
+assert np.allclose(b_shift[1:],b[1:],atol=1e-7)
+covered=np.mean(y&lt;=pred)
+assert abs(covered-tau)&lt;0.03
+median_b,_=fit_quantile_lp(X,y,.5)
+assert b[1]&gt;median_b[1]</pre></section></main><script>const b=document.getElementById('t');function u(){b.textContent=document.documentElement.dataset.theme==='dark'?'☀ Light':'☾ Dark'}u();b.onclick=()=>{const n=document.documentElement.dataset.theme==='dark'?'light':'dark';document.documentElement.dataset.theme=n;localStorage.setItem('atlas-theme',n);u()}</script></body></html>

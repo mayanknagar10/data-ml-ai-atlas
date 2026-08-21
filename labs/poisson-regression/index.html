@@ -1,0 +1,30 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Poisson &amp; Count Regression — Code Lab</title><script>(()=>{const s=localStorage.getItem('atlas-theme');const t=s||((matchMedia('(prefers-color-scheme: dark)').matches)?'dark':'light');document.documentElement.dataset.theme=t})()</script><style>:root{--bg:#fff;--text:#121417;--muted:#5d6470;--line:#dfe3e8;--soft:#f6f7f8;--blue:#155eef;--code:#0d1117;color-scheme:light}html[data-theme=dark]{--bg:#0d1117;--text:#eef2f6;--muted:#a8b0ba;--line:#2b333d;--soft:#171d24;--blue:#8fb4ff;--code:#070a0e;color-scheme:dark}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.6 Inter,system-ui,sans-serif}main{max-width:980px;margin:auto;padding:44px 22px 80px}a{color:var(--blue)}h1{font-size:42px;line-height:1.05;margin:8px 0 12px}.k{font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--blue);font-weight:800}.lead{color:var(--muted);font-size:17px}.top{display:flex;justify-content:space-between;gap:16px}button{border:1px solid var(--line);background:var(--soft);color:var(--text);border-radius:8px;padding:7px 9px;cursor:pointer}section{border-top:1px solid var(--line);padding-top:22px;margin-top:26px}pre{background:var(--code);color:#e6edf3;padding:18px;border-radius:12px;overflow:auto;font:13px/1.55 ui-monospace,monospace}.links{display:flex;gap:12px;flex-wrap:wrap;margin:18px 0}.links a{border:1px solid var(--line);border-radius:8px;padding:7px 9px;text-decoration:none;font-size:12px}@media(max-width:600px){h1{font-size:34px}.top{display:block}}</style></head><body><main><div class="top"><div><div class="k">Data, ML & AI Atlas · Runnable Lab</div><h1>Poisson &amp; Count Regression</h1></div><button id="t">◐ Theme</button></div><p class="lead">Fit an exposure-offset Poisson model with Newton updates, compare with scikit-learn&#x27;s weighted-rate formulation, and verify rate, exposure, likelihood, and row-order invariants.</p><div class="links"><a href="../../index.html#/lesson/poisson-regression">← Full lesson</a><a href="lab.py">Combined Python file</a><a href="README.md">README</a></div><section><h2>1 · Build it</h2><p>Minimal implementation with as little framework abstraction as practical.</p><pre>import numpy as np
+def fit_poisson_offset(X,y,exposure,steps=60,l2=1e-9):
+    D=np.column_stack([np.ones(len(X)),np.asarray(X,float)])
+    y=np.asarray(y,float); exposure=np.asarray(exposure,float)
+    assert np.all(exposure&gt;0) and np.all(y&gt;=0)
+    b=np.zeros(D.shape[1]); P=np.eye(D.shape[1]); P[0,0]=0
+    for _ in range(steps):
+        eta=np.clip(D@b+np.log(exposure),-25,25); mu=np.exp(eta)
+        h=D.T@(mu[:,None]*D)+l2*P
+        score=D.T@(y-mu)-l2*P@b
+        step=np.linalg.solve(h,score); b+=step
+        if np.max(np.abs(step))&lt;1e-11: break
+    return b,np.exp(D@b+np.log(exposure))
+X=np.array([[-1],[-.5],[0],[.5],[1],[-1],[-.5],[0],[.5],[1]],float)
+exposure=np.array([10,20,15,12,18,20,10,30,15,25],float)
+y=np.array([1,2,2,3,6,2,1,4,4,8],float)
+b,mu=fit_poisson_offset(X,y,exposure)</pre></section><section><h2>2 · Use it</h2><p>The same idea through a common library or practical API.</p><pre>from sklearn.linear_model import PoissonRegressor
+sk=PoissonRegressor(alpha=0,fit_intercept=True,max_iter=10000,tol=1e-12).fit(X,y/exposure,sample_weight=exposure)
+sk_b=np.r_[sk.intercept_,sk.coef_]
+sk_mu=sk.predict(X)*exposure</pre></section><section><h2>3 · Ship it</h2><p>Version count window, event deduplication, exposure definition and units, offset, features, family and penalty; reconcile exposure totals, monitor zero and tail calibration plus aggregate capacity error, and retain the previous full pipeline for rollback.</p></section><section><h2>4 · Verify it</h2><p>Assertions and sanity checks that catch conceptual or implementation mistakes.</p><pre>assert np.all(mu&gt;0)
+assert np.allclose(b,sk_b,atol=2e-6)
+assert np.allclose(mu,sk_mu,atol=2e-5)
+D=np.column_stack([np.ones(len(X)),X])
+assert np.allclose(D.T@(y-mu),0,atol=1e-7)
+# Doubling exposure at the same covariates doubles expected count.
+_,mu_double=fit_poisson_offset(X,y*2,exposure*2)
+assert np.allclose(mu_double,2*mu,atol=2e-6)
+perm=np.array([9,2,5,1,8,0,7,4,3,6])
+bp,_=fit_poisson_offset(X[perm],y[perm],exposure[perm])
+assert np.allclose(bp,b,atol=1e-8)</pre></section></main><script>const b=document.getElementById('t');function u(){b.textContent=document.documentElement.dataset.theme==='dark'?'☀ Light':'☾ Dark'}u();b.onclick=()=>{const n=document.documentElement.dataset.theme==='dark'?'light':'dark';document.documentElement.dataset.theme=n;localStorage.setItem('atlas-theme',n);u()}</script></body></html>

@@ -1,16 +1,23 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Linear Regression — Code Lab</title><script>(()=>{const s=localStorage.getItem('atlas-theme');const t=s||((matchMedia('(prefers-color-scheme: dark)').matches)?'dark':'light');document.documentElement.dataset.theme=t})()</script><style>:root{--bg:#fff;--text:#121417;--muted:#5d6470;--line:#dfe3e8;--soft:#f6f7f8;--blue:#155eef;--code:#0d1117;color-scheme:light}html[data-theme=dark]{--bg:#0d1117;--text:#eef2f6;--muted:#a8b0ba;--line:#2b333d;--soft:#171d24;--blue:#8fb4ff;--code:#070a0e;color-scheme:dark}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.6 Inter,system-ui,sans-serif}main{max-width:980px;margin:auto;padding:44px 22px 80px}a{color:var(--blue)}h1{font-size:42px;line-height:1.05;margin:8px 0 12px}.k{font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--blue);font-weight:800}.lead{color:var(--muted);font-size:17px}.top{display:flex;justify-content:space-between;gap:16px}button{border:1px solid var(--line);background:var(--soft);color:var(--text);border-radius:8px;padding:7px 9px;cursor:pointer}section{border-top:1px solid var(--line);padding-top:22px;margin-top:26px}pre{background:var(--code);color:#e6edf3;padding:18px;border-radius:12px;overflow:auto;font:13px/1.55 ui-monospace,monospace}.links{display:flex;gap:12px;flex-wrap:wrap;margin:18px 0}.links a{border:1px solid var(--line);border-radius:8px;padding:7px 9px;text-decoration:none;font-size:12px}@media(max-width:600px){h1{font-size:34px}.top{display:block}}</style></head><body><main><div class="top"><div><div class="k">Data, ML & AI Atlas · Runnable Lab</div><h1>Linear Regression</h1></div><button id="t">◐ Theme</button></div><p class="lead">Implement ordinary least squares with gradient descent, then compare it with scikit-learn.</p><div class="links"><a href="../../index.html#/lesson/linear-regression">← Full lesson</a><a href="lab.py">Combined Python file</a><a href="README.md">README</a></div><section><h2>1 · Build it</h2><p>Minimal implementation with as little framework abstraction as practical.</p><pre>import numpy as np
-rng=np.random.default_rng(0)
-X=rng.normal(size=(200,1)); y=3*X[:,0]+2+rng.normal(0,.3,200)
-Xb=np.c_[np.ones(len(X)),X]
-w=np.zeros(2); lr=.05
-for _ in range(1000):
-    pred=Xb@w
-    grad=(2/len(Xb))*Xb.T@(pred-y)
-    w-=lr*grad
-print(&#x27;from scratch:&#x27;,w)
-</pre></section><section><h2>2 · Use it</h2><p>The same idea through a common library or practical API.</p><pre>from sklearn.linear_model import LinearRegression
-m=LinearRegression().fit(X,y)
-print(&#x27;sklearn:&#x27;,m.intercept_,m.coef_)
-</pre></section><section><h2>3 · Ship it</h2><p>Monitor residual distribution, drift, coefficient stability and extrapolation. Linear models can be excellent baselines because they are cheap, interpretable and easy to debug.</p></section><section><h2>4 · Verify it</h2><p>Assertions and sanity checks that catch conceptual or implementation mistakes.</p><pre>assert abs(w[0]-2)&lt;0.2
-assert abs(w[1]-3)&lt;0.2
-</pre></section></main><script>const b=document.getElementById('t');function u(){b.textContent=document.documentElement.dataset.theme==='dark'?'☀ Light':'☾ Dark'}u();b.onclick=()=>{const n=document.documentElement.dataset.theme==='dark'?'light':'dark';document.documentElement.dataset.theme=n;localStorage.setItem('atlas-theme',n);u()}</script></body></html>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Linear Regression — Code Lab</title><script>(()=>{const s=localStorage.getItem('atlas-theme');const t=s||((matchMedia('(prefers-color-scheme: dark)').matches)?'dark':'light');document.documentElement.dataset.theme=t})()</script><style>:root{--bg:#fff;--text:#121417;--muted:#5d6470;--line:#dfe3e8;--soft:#f6f7f8;--blue:#155eef;--code:#0d1117;color-scheme:light}html[data-theme=dark]{--bg:#0d1117;--text:#eef2f6;--muted:#a8b0ba;--line:#2b333d;--soft:#171d24;--blue:#8fb4ff;--code:#070a0e;color-scheme:dark}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.6 Inter,system-ui,sans-serif}main{max-width:980px;margin:auto;padding:44px 22px 80px}a{color:var(--blue)}h1{font-size:42px;line-height:1.05;margin:8px 0 12px}.k{font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--blue);font-weight:800}.lead{color:var(--muted);font-size:17px}.top{display:flex;justify-content:space-between;gap:16px}button{border:1px solid var(--line);background:var(--soft);color:var(--text);border-radius:8px;padding:7px 9px;cursor:pointer}section{border-top:1px solid var(--line);padding-top:22px;margin-top:26px}pre{background:var(--code);color:#e6edf3;padding:18px;border-radius:12px;overflow:auto;font:13px/1.55 ui-monospace,monospace}.links{display:flex;gap:12px;flex-wrap:wrap;margin:18px 0}.links a{border:1px solid var(--line);border-radius:8px;padding:7px 9px;text-decoration:none;font-size:12px}@media(max-width:600px){h1{font-size:34px}.top{display:block}}</style></head><body><main><div class="top"><div><div class="k">Data, ML & AI Atlas · Runnable Lab</div><h1>Linear Regression</h1></div><button id="t">◐ Theme</button></div><p class="lead">Fit ordinary least squares from the design matrix, compare with scikit-learn, and verify projection, translation, and rank-sensitive behavior.</p><div class="links"><a href="../../index.html#/lesson/linear-regression">← Full lesson</a><a href="lab.py">Combined Python file</a><a href="README.md">README</a></div><section><h2>1 · Build it</h2><p>Minimal implementation with as little framework abstraction as practical.</p><pre>import numpy as np
+def ols_fit(X,y):
+    X=np.asarray(X,float); y=np.asarray(y,float)
+    design=np.column_stack([np.ones(len(X)),X])
+    beta,_,rank,singular=np.linalg.lstsq(design,y,rcond=None)
+    fitted=design@beta; residual=y-fitted
+    return beta,fitted,residual,rank,singular
+X=np.array([[18,0],[20,0],[22,1],[24,1],[26,0],[28,1]],float)
+y=np.array([132,123,130,120,91,101],float)
+beta,fitted,residual,rank,singular=ols_fit(X,y)</pre></section><section><h2>2 · Use it</h2><p>The same idea through a common library or practical API.</p><pre>from sklearn.linear_model import LinearRegression
+model=LinearRegression().fit(X,y)
+sk_pred=model.predict(X)
+sk_beta=np.r_[model.intercept_,model.coef_]</pre></section><section><h2>3 · Ship it</h2><p>Persist feature order, transforms, units, training ranges, solver and model version; reject schema violations, monitor range and residual drift, measure delayed interval coverage, and keep the previous model and baseline available for rollback.</p></section><section><h2>4 · Verify it</h2><p>Assertions and sanity checks that catch conceptual or implementation mistakes.</p><pre>design=np.column_stack([np.ones(len(X)),X])
+assert rank==design.shape[1]
+assert np.allclose(design.T@residual,0,atol=1e-10)
+assert np.allclose(beta,sk_beta,atol=1e-10)
+assert np.allclose(fitted,sk_pred,atol=1e-10)
+shift=37.0
+beta_shift,fit_shift,res_shift,_,_=ols_fit(X,y+shift)
+assert np.allclose(fit_shift,fitted+shift)
+assert np.allclose(beta_shift[1:],beta[1:])
+assert abs(beta_shift[0]-beta[0]-shift)&lt;1e-10
+assert singular[-1]&gt;0</pre></section></main><script>const b=document.getElementById('t');function u(){b.textContent=document.documentElement.dataset.theme==='dark'?'☀ Light':'☾ Dark'}u();b.onclick=()=>{const n=document.documentElement.dataset.theme==='dark'?'light':'dark';document.documentElement.dataset.theme=n;localStorage.setItem('atlas-theme',n);u()}</script></body></html>

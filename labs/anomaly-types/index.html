@@ -1,0 +1,30 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Point, Contextual &amp; Collective Anomalies — Code Lab</title><script>(()=>{const s=localStorage.getItem('atlas-theme');const t=s||((matchMedia('(prefers-color-scheme: dark)').matches)?'dark':'light');document.documentElement.dataset.theme=t})()</script><style>:root{--bg:#fff;--text:#121417;--muted:#5d6470;--line:#dfe3e8;--soft:#f6f7f8;--blue:#155eef;--code:#0d1117;color-scheme:light}html[data-theme=dark]{--bg:#0d1117;--text:#eef2f6;--muted:#a8b0ba;--line:#2b333d;--soft:#171d24;--blue:#8fb4ff;--code:#070a0e;color-scheme:dark}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.6 Inter,system-ui,sans-serif}main{max-width:980px;margin:auto;padding:44px 22px 80px}a{color:var(--blue)}h1{font-size:42px;line-height:1.05;margin:8px 0 12px}.k{font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--blue);font-weight:800}.lead{color:var(--muted);font-size:17px}.top{display:flex;justify-content:space-between;gap:16px}button{border:1px solid var(--line);background:var(--soft);color:var(--text);border-radius:8px;padding:7px 9px;cursor:pointer}section{border-top:1px solid var(--line);padding-top:22px;margin-top:26px}pre{background:var(--code);color:#e6edf3;padding:18px;border-radius:12px;overflow:auto;font:13px/1.55 ui-monospace,monospace}.links{display:flex;gap:12px;flex-wrap:wrap;margin:18px 0}.links a{border:1px solid var(--line);border-radius:8px;padding:7px 9px;text-decoration:none;font-size:12px}@media(max-width:600px){h1{font-size:34px}.top{display:block}}</style></head><body><main><div class="top"><div><div class="k">Data, ML & AI Atlas · Runnable Lab</div><h1>Point, Contextual &amp; Collective Anomalies</h1></div><button id="t">◐ Theme</button></div><p class="lead">Build robust contextual and collective anomaly scores, compare with standardized residuals, and verify context, translation, and burst-detection invariants.</p><div class="links"><a href="../../index.html#/lesson/anomaly-types">← Full lesson</a><a href="lab.py">Combined Python file</a><a href="README.md">README</a></div><section><h2>1 · Build it</h2><p>Minimal implementation with as little framework abstraction as practical.</p><pre>import numpy as np
+def fit_context(values,contexts):
+    model={}
+    for c in np.unique(contexts):
+        x=np.asarray(values)[np.asarray(contexts)==c]
+        med=np.median(x); mad=np.median(np.abs(x-med))
+        model[c]=(med,max(1.4826*mad,1e-9))
+    return model
+def contextual_score(values,contexts,model):
+    return np.array([abs(x-model[c][0])/model[c][1] for x,c in zip(values,contexts)])
+def rolling_count(flags,width):
+    flags=np.asarray(flags,int); cs=np.r_[0,np.cumsum(flags)]
+    return np.array([cs[i+1]-cs[max(0,i+1-width)] for i in range(len(flags))])
+ref_values=np.array([18,20,22,19,21,580,600,620,590,610],float)
+ref_context=np.array([&#x27;personal&#x27;]*5+[&#x27;wholesale&#x27;]*5)
+model=fit_context(ref_values,ref_context)
+values=np.array([590,590,20,20,20,20,20],float)
+contexts=np.array([&#x27;personal&#x27;,&#x27;wholesale&#x27;]+[&#x27;personal&#x27;]*5)
+scores=contextual_score(values,contexts,model)
+burst=rolling_count(np.array([0,0,1,1,1,1,1]),width=4)</pre></section><section><h2>2 · Use it</h2><p>The same idea through a common library or practical API.</p><pre>from sklearn.preprocessing import StandardScaler
+scaler=StandardScaler().fit(ref_values[:,None])
+global_scores=np.abs(scaler.transform(values[:,None]).ravel())</pre></section><section><h2>3 · Ship it</h2><p>Version unit, contexts, reference window, robust statistics, aggregation and threshold; enforce past-only features, deduplicate incidents, monitor context coverage and alert budget, quarantine reference updates, and fall back to safe deterministic rules when context is unavailable.</p></section><section><h2>4 · Verify it</h2><p>Assertions and sanity checks that catch conceptual or implementation mistakes.</p><pre>assert scores[0]&gt;20 and scores[1]&lt;2
+assert abs(global_scores[0]-global_scores[1])&lt;1e-12
+assert burst[-1]==4 and burst[:2].max()==0
+shift=123.0
+shifted_model=fit_context(ref_values+shift,ref_context)
+shifted=contextual_score(values+shift,contexts,shifted_model)
+assert np.allclose(shifted,scores)
+assert contextual_score(ref_values,ref_context,model).shape==ref_values.shape
+assert np.isfinite(scores).all()</pre></section></main><script>const b=document.getElementById('t');function u(){b.textContent=document.documentElement.dataset.theme==='dark'?'☀ Light':'☾ Dark'}u();b.onclick=()=>{const n=document.documentElement.dataset.theme==='dark'?'light':'dark';document.documentElement.dataset.theme=n;localStorage.setItem('atlas-theme',n);u()}</script></body></html>

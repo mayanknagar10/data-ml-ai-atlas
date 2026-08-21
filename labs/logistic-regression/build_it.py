@@ -1,9 +1,17 @@
 import numpy as np
-rng=np.random.default_rng(1)
-X=rng.normal(size=(300,2)); y=(X[:,0]+.7*X[:,1]>0).astype(float)
-Xb=np.c_[np.ones(len(X)),X]; w=np.zeros(3)
-def sigmoid(z): return 1/(1+np.exp(-z))
-for _ in range(2000):
-    p=sigmoid(Xb@w)
-    w-=0.1*(Xb.T@(p-y)/len(y))
-print('accuracy',((sigmoid(Xb@w)>=.5)==y).mean())
+def sigmoid(z):
+    z=np.clip(z,-35,35)
+    return 1/(1+np.exp(-z))
+def fit_logistic(X,y,l2=1e-6,steps=40):
+    D=np.column_stack([np.ones(len(X)),np.asarray(X,float)])
+    y=np.asarray(y,float); b=np.zeros(D.shape[1])
+    penalty=np.eye(D.shape[1]); penalty[0,0]=0
+    for _ in range(steps):
+        p=sigmoid(D@b); w=np.maximum(p*(1-p),1e-9)
+        h=D.T@(w[:,None]*D)+l2*penalty
+        score=D.T@(y-p)-l2*penalty@b
+        b+=np.linalg.solve(h,score)
+    return b,sigmoid(D@b)
+X=np.array([[-2,-1],[-1,-1],[-1,1],[0,-1],[0,1],[1,-1],[1,1],[2,1]],float)
+y=np.array([0,0,0,0,1,1,1,1])
+b,p=fit_logistic(X,y,l2=0.2)

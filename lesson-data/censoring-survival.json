@@ -7,32 +7,178 @@
     "ds",
     "da"
   ],
-  "interviewAnswer": "Survival analysis models time until an event while handling censored observations whose event time is not fully observed. Survival S(t) is probability of surviving past t; hazard describes instantaneous event rate conditional on survival.",
+  "interviewAnswer": "For event time T, survival is S(t)=P(T>t), cumulative incidence without competing risks is F(t)=1-S(t), hazard is the instantaneous event rate among those still event-free, and cumulative hazard H(t)=integral h with S(t)=exp(-H(t)). Right censoring at C observes Y=min(T,C) and delta=I(T<=C), so a censored row contributes evidence of survival through Y, not an event at Y and not no information. Kaplan-Meier and standard likelihoods need censoring independent of event time, often conditional on modeled covariates. I define time origin, event, entry, competing events, and label maturity; use risk sets that respect delayed entry; and inspect censoring and follow-up by segment before modeling.",
   "keyPoints": [
-    "Right censoring is common.",
-    "Do not treat censored durations as completed outcomes.",
-    "Hazard and survival encode related but different views."
+    "Censoring preserves partial ordering information and is not ordinary missingness.",
+    "Hazard is a conditional rate among survivors, not a probability by itself.",
+    "S(t)=exp[-H(t)] in continuous time and F(t)=1-S(t) without competing risks.",
+    "Truncation changes who enters the sample; censoring limits what is observed after entry.",
+    "Time origin, risk set, censoring, and label maturity define the estimand."
   ],
   "resources": [
+    "kaplan-meier-paper",
     "lifelines",
-    "statsmodels-survival",
-    "stanford-stats200"
+    "statsmodels-survival"
   ],
   "featured": false,
-  "why": "Censoring, Survival & Hazard Functions appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
-  "intuition": "Right censoring is common.",
-  "deepDive": "Survival analysis models time until an event while handling censored observations whose event time is not fully observed. Survival S(t) is probability of surviving past t; hazard describes instantaneous event rate conditional on survival. Do not treat censored durations as completed outcomes. Hazard and survival encode related but different views. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
-  "workedExample": "Customers still active at dataset cutoff provide partial churn-time information and should not be labeled as “never churn.”",
+  "why": "If half of customers have not churned by the data cutoff, their eventual churn times are unknown but their observed tenure is valuable evidence. Ordinary regression discards them or substitutes the cutoff as if it were churn, biasing time estimates downward and changing the target with every extraction date. Survival analysis uses likelihood or risk-set contributions consistent with partial observation. The same ideas apply to failure, conversion, recovery, default, and time to next purchase. Most serious mistakes occur before the model: inconsistent time origins, future-derived features, invisible delayed entry, outcome definitions that change over calendar time, or censoring tied to severity. A mathematically correct estimator cannot recover a target that the dataset never observed. A full survival contract therefore begins with the observation process and supported horizon.",
+  "intuition": "Picture one subject moving along a time line from an origin. An event marker ends the event-free path. A censor marker says observation stopped while the subject was still event-free; the true event lies somewhere to the right. At time t, the risk set contains subjects who entered and remain event-free and observed just before t. The survival curve is the remaining fraction in a probabilistic population, not simply the raw fraction without recorded events. Hazard asks: among those who made it to t, how rapidly do events occur next? A high hazard over a short interval can still correspond to a moderate probability, and a population with high early hazard changes composition as vulnerable subjects leave. Cumulative hazard adds rate over time, while survival exponentiates its negative. If people with worsening condition leave observation sooner, censoring carries outcome information and naive risk sets become optimistic.",
+  "deepDive": "Survival analysis is built around partial observation of an ordered event time. Survival, hazard, and cumulative hazard are linked but answer different questions; censoring and truncation specify which pieces of each subject's path are observed. Independent censoring and cohort entry are identification assumptions, so the time and observation contract must be as carefully versioned as the model itself.",
+  "workedExample": "Three customers start at signup. A churns at month 2, B is active at the month-4 extraction and is right-censored at 4, and C churns at 5 after entering an observed program at month 1. B tells us T_B>4. C belongs to risk sets only after month 1 if cohort observation truly begins then. Replacing B's time with an event at 4 invents churn; deleting B overrepresents short lifetimes.",
   "commonMistakes": [
-    "Applying the method without checking its assumptions or data-generating process.",
-    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+    {
+      "misconception": "A censored time is the event time with a special flag.",
+      "correction": "It is a lower bound for right censoring: the subject remained event-free through that time. Its likelihood and risk-set contribution differ from an event."
+    },
+    {
+      "misconception": "Hazard 0.3 means a 30 percent chance of immediate event.",
+      "correction": "Continuous hazard is a rate with inverse-time units. Probability over an interval depends on integrated hazard, approximately h dt only for a short interval."
+    },
+    {
+      "misconception": "Independent censoring can be checked conclusively from observed data.",
+      "correction": "It is an identification assumption about unobserved event times. Observed patterns, reasons, sensitivity analyses, and covariates can support but not prove it."
+    },
+    {
+      "misconception": "Dropping censored observations avoids assumptions.",
+      "correction": "It discards long event-free follow-up and usually biases the sample toward early events, adding stronger selection problems."
+    }
   ],
   "followUps": [
-    "What assumptions does Censoring, Survival & Hazard Functions make?",
-    "How would you validate or debug Censoring, Survival & Hazard Functions in practice?"
+    {
+      "question": "What is the relationship between hazard and survival?",
+      "answer": "Cumulative hazard integrates the instantaneous rate and survival is exp(-H) in continuous time. Hazard can vary even when survival is always nonincreasing."
+    },
+    {
+      "question": "How is left truncation different from left censoring?",
+      "answer": "Left truncation means subjects with early events never enter the observed sample; left censoring means a subject is observed but event time is known only to be before a bound."
+    },
+    {
+      "question": "What is restricted mean survival time?",
+      "answer": "It is integral_0^tau S(t)dt, the expected event-free time accumulated through a chosen supported horizon tau, avoiding unsupported tail extrapolation."
+    }
   ],
-  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "production": "Treat the event-time table as a versioned measurement product. Persist entity, origin, delayed entry, event definition and priority, competing event, cutoff, time zone, duration unit, censor reason, feature landmark, label maturity, and supported horizon. Validate timestamp ordering, unique entity episodes, no post-origin leakage, event ascertainment, and follow-up completeness. Monitor censoring fraction and reasons, number at risk by horizon, entry and calendar cohort, event incidence, delayed labels, competing events, and support across important groups. Protect sensitive event and health-like timelines. Refuse or flag predictions beyond training support and define fallback horizons. When upstream observation or intervention changes, shadow and revalidate rather than automatically treating the new censoring process as benign. Roll back extraction, transformations, estimator, and horizon policy together.",
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "Survival analysis models the time until an event while preserving partial information from subjects whose event time is not fully observed. Right censoring says only that the event occurs after the last observed time; left censoring, interval censoring, delayed entry, and truncation encode different observation mechanisms and require different risk sets or likelihoods. This chapter develops the event time T, survival S(t), distribution F(t), density f(t), hazard h(t), cumulative hazard H(t), and their relationships. You will distinguish a conditional instantaneous hazard from event probability over an interval, state independent or conditionally independent censoring assumptions, and see why dropping censored rows or treating censoring time as the event creates bias. A worked subscription example traces a cohort through events, censoring, and changing risk sets. The lab computes survival, hazard, and cumulative hazard for a discrete event-time distribution, compares an exponential model with SciPy, and verifies monotonicity and algebraic identities. Production guidance fixes time origin, event, horizon, time zones, censoring, delayed entry, competing events, and label maturity; monitors censoring by segment and calendar time; and blocks evaluation beyond supported follow-up. Survival methods use censored information—they do not make informative loss to follow-up harmless.",
+  "prerequisites": [
+    "distributions",
+    "joint-marginal-conditional"
+  ],
+  "learningObjectives": [
+    "Define survival, cumulative distribution, density, hazard, and cumulative hazard and move correctly between them.",
+    "Distinguish right, left, interval censoring, left truncation, and delayed entry in both words and risk-set logic.",
+    "State the censoring and observation assumptions required for common estimators and diagnose likely informative censoring.",
+    "Construct a leakage-safe event-time dataset with explicit origin, event, maturity, entry, and competing-event semantics."
+  ],
+  "deepSections": [
+    {
+      "id": "event-time-functions",
+      "title": "Survival, hazard, and cumulative hazard describe different views",
+      "body": "Let nonnegative random variable T be time from a declared origin to an event. The distribution function F(t)=P(T<=t) and survival S(t)=P(T>t)=1-F(t). For continuous T with density f, hazard h(t)=lim_{dt to 0}P(t<=T<t+dt | T>=t)/dt=f(t)/S(t). It has units of inverse time and can exceed one; h(t)dt approximates a short-interval conditional probability. Cumulative hazard H(t)=integral_0^t h(u)du and S(t)=exp[-H(t)]. Thus a constant hazard lambda yields exponential survival exp(-lambda t), while increasing or nonmonotone hazards create different shapes. Discrete-time hazard p_t=P(T=t|T>=t) is a probability and survival is a product of (1-p_u), not a continuous integral. Median survival solves S(t)<=0.5 when identified. Mean survival is integral S(t)dt and may be unidentifiable beyond the last observed event without tail assumptions; restricted mean survival time integrates only to a declared horizon tau. Always state the time scale and whether functions are conditional on covariates."
+    },
+    {
+      "id": "censoring-and-truncation",
+      "title": "Censoring and truncation encode different observation mechanisms",
+      "body": "Under right censoring, observe Y=min(T,C) and event indicator delta=I(T<=C). A censored subject contributes survival through C. Left censoring says T is below a bound, such as an event already present at first inspection. Interval censoring says T lies between two visits. Administrative censoring occurs at a planned study cutoff; loss to follow-up can be informative. Left truncation or delayed entry means subjects are observed only if T exceeds entry time E; those who failed earlier never appear. Risk sets must include a subject only after E. Length-biased sampling can overrepresent long survivors. Right truncation includes only events observed before a boundary and uses a different likelihood. Recurrent events and multi-state transitions are not one terminal time repeated in rows without dependence modeling. Time-varying covariates require start-stop intervals built from information available at each time. Define whether the event at the exact censor time counts as observed, how ties are resolved, and how time zones and batch cutoffs affect ordering."
+    },
+    {
+      "id": "independent-censoring",
+      "title": "Independent censoring is an identification assumption",
+      "body": "Product-limit and standard survival likelihood methods commonly require event time and censoring to be independent, perhaps conditional on included covariates or history. This does not mean censoring times and event times must look marginally unrelated. Administrative cutoff can censor recent entrants earlier while remaining conditionally noninformative given entry calendar time. Informative dropout occurs when latent risk influences observation termination after conditioning. Compare censoring curves, reasons, and follow-up across covariates, sites, treatment, and calendar cohorts. Model censoring with inverse-probability weights when a credible conditional exchangeability and positivity story exists, and use sensitivity analyses for unmeasured dependence. Weights can explode where continued observation probability is near zero, so truncate transparently and report effective sample size. Treating a competing event as independent censoring estimates a hypothetical cause-specific process, not real-world probability of the event of interest. Selection into the cohort and event ascertainment can be more damaging than right censoring itself. State which assumptions identify each reported estimand."
+    },
+    {
+      "id": "dataset-and-serving-contract",
+      "title": "Build one consistent event-time contract",
+      "body": "Choose entity and time origin, such as signup, device installation, diagnosis, or model scoring. Define the event and whether recurrence, competing outcomes, or terminal events stop follow-up. Store entry time, last known event-free time, event time when observed, event type, observation cutoff, censor reason, and data provenance. Compute durations from immutable timestamps in one unit and reject negative or zero durations according to model requirements. Features must be measured at baseline or represented as time-varying intervals; lifetime totals leak future information. For prediction at landmark time l, include only subjects event-free and observable at l and redefine horizon from that landmark. Freeze a label-maturity window so recent cohorts are not compared with mature cohorts. Report number at risk and censoring support at every horizon. In production, predicted survival beyond the training follow-up tail is extrapolation. Limit decisions to supported horizons, monitor changes in enrollment, observation, event capture, and intervention, and version the extraction cutoff with the model."
+    }
+  ],
+  "math": "For continuous T, S(t)=P(T>t), F(t)=1-S(t), f(t)=dF/dt, h(t)=f(t)/S(t), H(t)=integral_0^t h(u)du, and S(t)=exp[-H(t)]. Right-censored observation is (Y,delta)=(min(T,C),I[T<=C]). Under a parametric model with independent censoring, an event contributes f(Y)=h(Y)S(Y) and a censored observation contributes S(Y), yielding likelihood product_i h(Y_i)^{delta_i}S(Y_i). Delayed entry conditions risk membership on E_i<=t<Y_i.",
+  "workedExamples": [
+    {
+      "title": "Hazard is not interval probability",
+      "body": "At time t, a constant hazard of 0.2 per month gives one-month event probability 1-exp(-0.2)=0.181, not exactly 0.2. Over three months conditional survival is exp(-0.6)=0.549 and event probability 0.451."
+    },
+    {
+      "title": "Restricted mean when the tail is unsupported",
+      "body": "If follow-up supports survival through 12 months but the curve never falls below 0.5, median survival is not identified in that window. Report 12-month survival and restricted mean to 12 months rather than extrapolating a median from an unverified tail."
+    }
+  ],
+  "lab": {
+    "language": "python",
+    "goal": "Compute discrete survival, hazard, and cumulative hazard and compare a continuous exponential model with SciPy while verifying algebraic and monotonicity invariants.",
+    "buildIt": "import numpy as np\ndef discrete_survival(pmf):\n    pmf=np.asarray(pmf,float); assert np.all(pmf>=0) and pmf.sum()<=1+1e-12\n    survival_before=1-np.r_[0,np.cumsum(pmf[:-1])]\n    hazard=np.divide(pmf,survival_before,out=np.zeros_like(pmf),where=survival_before>0)\n    survival_after=np.cumprod(1-hazard)\n    return survival_before,hazard,survival_after\npmf=np.array([.10,.18,.144,.1152,.09216])\ns_before,h,s_after=discrete_survival(pmf)\nt=np.array([0.,1.,2.,3.]); rate=.2\nS=np.exp(-rate*t); H=rate*t",
+    "useIt": "from scipy.stats import expon\nscipy_S=expon(scale=1/rate).sf(t)\nscipy_h=np.full_like(t,rate)",
+    "verifyIt": "assert np.allclose(s_after,1-np.cumsum(pmf))\nassert np.all((h>=0)&(h<=1))\nassert np.all(np.diff(s_after)<=0)\nassert np.allclose(S,scipy_S)\nassert np.allclose(S,np.exp(-H))\nassert np.allclose(scipy_h,rate)\nassert abs(s_before[0]-1)<1e-12\nassert abs((1-S[-1])-(1-np.exp(-rate*t[-1])))<1e-12",
+    "shipIt": "Version origin, entry, event, event type, cutoff, censor reason, duration units and supported horizon; test timestamp ordering, monitor censoring and follow-up by cohort, and block unsupported tail predictions or stale label comparisons."
+  },
+  "exercises": [
+    {
+      "prompt": "A user is active at a 90-day data cutoff. What does their row tell you?",
+      "solution": "Their event time exceeds observed follow-up through 90 days, assuming event capture is complete. Encode right censoring rather than churn at 90 or deletion."
+    },
+    {
+      "prompt": "If h(t)=0.1 constantly, compute S(5).",
+      "solution": "H(5)=0.5 and S(5)=exp(-0.5), approximately 0.607."
+    },
+    {
+      "prompt": "A high-risk patient is more likely to leave follow-up. Why is this dangerous?",
+      "solution": "Censoring depends on latent event risk, so observed survivors are selectively healthier. Standard independent-censoring estimators can overstate survival without adjustment or sensitivity analysis."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "flow",
+      "title": "Observed event-time paths",
+      "items": [
+        "Origin / delayed entry",
+        "At risk",
+        "Observed event OR censoring",
+        "Partial follow-up contribution",
+        "Supported prediction horizon"
+      ],
+      "caption": "Censoring ends observation without declaring an event; delayed entry changes when a subject joins the risk set.",
+      "afterSection": "censoring-and-truncation"
+    },
+    {
+      "type": "compare",
+      "title": "Three linked event-time functions",
+      "left": {
+        "title": "Survival and hazard",
+        "items": [
+          "S(t): event-free probability",
+          "h(t): conditional instantaneous rate",
+          "Hazard has inverse-time units",
+          "Survival never increases"
+        ]
+      },
+      "right": {
+        "title": "Cumulative hazard",
+        "items": [
+          "H(t): accumulated rate",
+          "S(t)=exp[-H(t)]",
+          "Adds over time",
+          "Supports likelihood construction"
+        ]
+      },
+      "caption": "The functions are mathematically linked but should not be interpreted as interchangeable probabilities.",
+      "afterSection": "event-time-functions"
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "kaplan-meier-paper",
+      "contribution": "Grounds incomplete-observation reasoning and explicitly motivates scrutiny of censoring independence."
+    },
+    {
+      "resource": "lifelines",
+      "contribution": "Verifies current event, censoring, entry, and survival-function implementation conventions."
+    },
+    {
+      "resource": "statsmodels-survival",
+      "contribution": "Provides an independent official reference for survival functions and proportional-hazard tooling."
+    }
+  ]
 }

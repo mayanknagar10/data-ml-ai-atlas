@@ -1,15 +1,16 @@
 import math,re
-docs=['red bolt m8 stainless','blue bolt m6 steel','m8 stainless anchor bolt']
-q='m8 stainless bolt'.split()
-tok=[re.findall(r'\w+',doc.lower()) for doc in docs]
-N=len(tok); avg=sum(map(len,tok))/N
-def bm25(i,k1=1.5,b=.75):
-    s=0.0
-    for term in q:
-        df=sum(term in x for x in tok)
-        idf=math.log(1+(N-df+.5)/(df+.5))
-        tf=tok[i].count(term)
-        if tf:
-            s+=idf*tf*(k1+1)/(tf+k1*(1-b+b*len(tok[i])/avg))
-    return s
-print([bm25(i) for i in range(N)])
+from collections import Counter
+def tokens(text): return re.findall(r'(?u)\b\w+\b',text.lower())
+def bm25_scores(query,documents,k1=1.2,b=.75):
+    docs=[tokens(d) for d in documents]; N=len(docs); avgdl=sum(map(len,docs))/N; terms=set(tokens(query)); out=[]
+    df={t:sum(t in d for d in docs) for t in terms}
+    for doc in docs:
+        counts=Counter(doc); score=0.0
+        for t in terms:
+            idf=math.log(1+(N-df[t]+.5)/(df[t]+.5)); tf=counts[t]
+            norm=k1*(1-b+b*len(doc)/avgdl); score+=idf*tf*(k1+1)/(tf+norm) if tf else 0.0
+        out.append(score)
+    return out
+def saturation(tf,dl,avgdl,k1=1.2,b=.75): return tf*(k1+1)/(tf+k1*(1-b+b*dl/avgdl))
+docs=['vector search search system','lexical search inverted index','vector database semantic retrieval','search']; query='vector search'
+bm25=bm25_scores(query,docs)

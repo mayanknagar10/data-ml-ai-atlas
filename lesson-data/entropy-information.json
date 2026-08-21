@@ -6,50 +6,206 @@
   "roles": [
     "all"
   ],
-  "interviewAnswer": "Entropy measures average uncertainty in a distribution: concentrated distributions have low entropy; balanced, unpredictable distributions have higher entropy.",
+  "interviewAnswer": "The information content of outcome x is -log p(x), so rare outcomes carry more surprise and independent surprises add. Entropy is its expectation: H(X)=-sum_x p(x)log p(x). With base two the unit is bits; with natural log it is nats. A deterministic variable has entropy zero, and a distribution uniform over m outcomes has the maximum log m. Joint entropy obeys H(X,Y)=H(X)+H(Y|X), and conditioning cannot increase discrete entropy. In source coding, entropy is the asymptotic lower limit on average lossless code length per symbol under the modeled source, up to coding conditions and finite-block overhead. It does not measure the meaning of a message, and differential entropy for continuous variables can be negative and changes under rescaling.",
   "keyPoints": [
-    "Self-information",
-    "Shannon entropy",
-    "Uncertainty",
-    "Compression connection"
+    "Self-information is outcome surprise; entropy is its probability-weighted average.",
+    "Log base sets the unit, and independent information adds because probabilities multiply.",
+    "Uniform distributions maximize discrete entropy for a fixed finite support; deterministic ones minimize it.",
+    "Chain rules decompose joint uncertainty into known and remaining parts.",
+    "Entropy describes a chosen distribution and alphabet, not semantic value or one sample's quality."
   ],
   "resources": [
+    "shannon-1948",
     "mit-info-theory",
     "harvard-stat110"
   ],
   "featured": false,
-  "why": "Entropy is the language behind cross-entropy, decision trees, compression and language-model uncertainty.",
-  "intuition": "A fair coin is harder to predict than a coin that is heads 99% of the time, so it carries more uncertainty per observation.",
-  "deepDive": "For a discrete variable, entropy is expected negative log-probability. The logarithm makes information from independent events additive. Differential entropy for continuous variables has different interpretation and can be negative.",
-  "math": "H(X)=-Σp(x)log p(x)",
-  "code": "",
+  "why": "Entropy provides one vocabulary for uncertainty, compression, classification loss, divergence, feature dependence and language-model evaluation. It says how surprising a source is on average and how many bits an ideal lossless representation requires asymptotically. Those connections make it easy to misuse. Teams sometimes call high entropy `more diverse` without defining categories, compare values computed with different bases, or apply discrete intuition to continuous densities. Starting from self-information and coding gives each formula an operational interpretation and makes later concepts such as cross-entropy, KL divergence, mutual information and perplexity simple extensions rather than isolated equations.",
+  "intuition": "If an event happens with probability one-half, learning it resolves one binary choice and carries one bit. If it happens with probability one-eighth, it is as surprising as resolving three fair binary choices and carries three bits. Entropy averages these surprises before observing the outcome. A fair coin has one bit because either result is equally uncertain; a coin that is almost always heads has little entropy because outcomes are predictable. Knowing another variable can shrink uncertainty: after learning the day is Sunday, the distribution of commute time may change. Conditional entropy measures what remains after that knowledge, and the chain rule accounts for the total without double counting.",
+  "deepDive": "Entropy is the expected logarithmic surprise of a modeled source. Its logarithm gives additivity, its expectation gives coding significance, and its chain rule tracks how context removes uncertainty. Discrete entropy has clear support bounds, while entropy rate handles dependence and differential entropy requires different intuition. Estimation, alphabet design and probability mismatch matter as much as the arithmetic when entropy becomes an empirical metric.",
+  "math": "I(x)=-log_b p(x). H_b(X)=E[I(X)]=-sum_x p(x)log_b p(x). For |support|=m, 0<=H_b(X)<=log_b m, with equality at a point mass and the uniform distribution respectively. H(X,Y)=H(X)+H(Y|X); for discrete variables H(Y|X)<=H(Y). If X and Y are independent, H(X,Y)=H(X)+H(Y). Binary entropy is h_2(p)=-p log2 p-(1-p)log2(1-p). An ideal prefix code satisfies E[L]>=H_2(X), while constructive codes can approach the bound over blocks.",
   "commonMistakes": [
-    "Treating entropy as variance.",
-    "Assuming continuous differential entropy behaves exactly like discrete entropy."
+    {
+      "misconception": "A rare event has high entropy.",
+      "correction": "An outcome has high self-information; entropy is an average over the entire distribution."
+    },
+    {
+      "misconception": "High Shannon entropy means data is meaningful or high quality.",
+      "correction": "It measures modeled uncertainty, not semantic usefulness, truth, diversity fairness or quality."
+    },
+    {
+      "misconception": "Differential entropy behaves like discrete entropy.",
+      "correction": "It can be negative and changes with units; use the correct continuous interpretation and relative quantities."
+    },
+    {
+      "misconception": "Plug-in entropy from a small sample is exact.",
+      "correction": "Frequency estimates miss unseen mass and typically bias entropy downward when support is large."
+    }
   ],
   "followUps": [
-    "Why use a logarithm?",
-    "How is entropy related to compression?"
+    {
+      "question": "Why use a logarithm for information?",
+      "answer": "It is the continuous form that converts multiplication of independent probabilities into addition of information, up to scale."
+    },
+    {
+      "question": "Why does a uniform finite distribution maximize entropy?",
+      "answer": "Any concentration makes some outcomes more predictable; concavity or a KL-divergence argument proves the uniform maximum."
+    },
+    {
+      "question": "What does entropy rate add?",
+      "answer": "It measures uncertainty per symbol after exploiting temporal context, which matters for dependent sequences and compression."
+    }
   ],
-  "production": "Use entropy as an uncertainty summary, but operational decisions still need calibrated probabilities and task costs.",
-  "workedExample": "A fair binary variable has 1 bit of entropy; a 99/1 variable has much less.",
-  "visual": {
-    "type": "bars",
-    "title": "Entropy rises with uncertainty",
-    "labels": [
-      "Predictable",
-      "Mixed",
-      "Balanced"
-    ],
-    "values": [
-      0.12,
-      0.65,
-      1.0
-    ],
-    "caption": "Entropy is highest when outcomes are balanced and falls as one outcome becomes predictable.",
-    "yLabel": "relative entropy"
-  },
+  "production": "Define the random variable and alphabet explicitly: event unit, category mapping, time window, conditioning context, treatment of missing and unknown values, probability estimator, smoothing, support cutoff and logarithm base. Assert probabilities are finite, nonnegative and normalized; expose sample size and unseen-category risk. For sequence sources, preserve order and estimate entropy rate rather than multiplying a marginal entropy by count. Monitor support growth, dominant-mass shifts, missingness, estimator uncertainty and changes in collection or tokenization. Do not compare dashboards with different bins, units or vocabularies. For privacy-sensitive distributions, suppress small cells and protect raw counts. Version code and source snapshot so historical values are reproducible. Rollback a metric definition rather than silently splicing incompatible entropy series.",
+  "workedExample": "A biased coin has P(heads)=0.75 and P(tails)=0.25. The surprises are -log2 0.75=0.415 bits and -log2 0.25=2 bits. Entropy is 0.75*0.415+0.25*2=0.811 bits per toss. The rare tail is more informative when it occurs, but heads contributes more often. The source is more compressible than a fair coin's one bit per toss when long sequences and an appropriate code are used.",
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "Entropy quantifies the average uncertainty of outcomes drawn from a known probability distribution, while self-information assigns greater surprise to rarer individual outcomes. This chapter derives I(x)=-log p(x) from additivity and H(X)=E[I(X)], explains bits versus nats, and develops binary entropy, support-size bounds, joint and conditional entropy, the chain rule, independence, entropy rate and differential entropy. It connects source coding to expected code length without claiming that entropy measures semantic importance, data quality or randomness in one observation. Worked examples compute a biased coin and a two-symbol prefix code. The lab implements discrete entropy and self-information, compares SciPy, and verifies uniform maxima, deterministic minima, base conversion and additivity for independent variables. Production guidance covers probability normalization, smoothing, aggregation level, missing categories, drifting vocabularies and reproducible units. Entropy is a property of a distribution and representation: changing the alphabet, conditioning information or measurement precision changes the quantity even when the underlying domain story sounds the same.",
+  "prerequisites": [
+    "distributions",
+    "expectation-variance"
+  ],
+  "learningObjectives": [
+    "Compute self-information and discrete entropy in bits or nats from a valid probability mass function.",
+    "Use support bounds, concavity, chain rules and conditioning to reason about uncertainty.",
+    "Distinguish discrete entropy, entropy rate and differential entropy and avoid semantic overinterpretation.",
+    "Connect entropy to ideal source coding while handling finite blocks, unknown distributions and model mismatch."
+  ],
+  "deepSections": [
+    {
+      "id": "self-information",
+      "title": "The logarithm turns probability into additive surprise",
+      "body": "A useful information measure should assign zero surprise to a certain event, decrease as probability increases, and add for independent events. If p(x,y)=p(x)p(y), then requiring I(x,y)=I(x)+I(y) leads to a logarithm: I(x)=-log p(x), up to scale. The minus sign makes probabilities below one yield nonnegative information. Base two gives bits, base e nats, and base ten hartleys; change of base multiplies all values by a constant. An impossible outcome has infinite ideal surprise, which explains why assigning zero probability to an observed event makes log loss infinite. Self-information depends on the model's probability, not an intrinsic property of the symbol. The same `rain` observation may be unsurprising in one climate and surprising in another. It also does not represent usefulness or meaning: a random string can carry high Shannon information while being semantically worthless to a reader."
+    },
+    {
+      "id": "entropy-properties",
+      "title": "Entropy averages surprise and obeys strong structural bounds",
+      "body": "For a discrete variable, H(X)=-sum_x p(x)log p(x), with 0 log 0 defined by continuity as zero. H is nonnegative, invariant to relabeling, and concave in the probability vector. On a support of size m it lies between zero and log m. The maximum occurs at the uniform distribution; the minimum occurs when all mass is on one outcome. Binary entropy h(p)=-p log p-(1-p)log(1-p) is symmetric around one-half, rises from zero, peaks at one bit for p=1/2, and falls back to zero. Concavity means mixing distributions can increase uncertainty beyond the average component entropy because uncertainty about the component is added. Empirical plug-in entropy replaces probabilities with frequencies but is biased downward in finite samples, especially with many rare categories. Bayesian, Miller-Madow or coverage-aware methods may be needed when estimating rather than merely calculating entropy from a specified distribution."
+    },
+    {
+      "id": "joint-conditional",
+      "title": "Joint and conditional entropy account for shared context",
+      "body": "Joint entropy H(X,Y) averages -log p(x,y). Conditional entropy H(Y|X)=sum_x p(x)H(Y|X=x) measures remaining uncertainty in Y after X is observed. The chain rule H(X,Y)=H(X)+H(Y|X) extends to sequences. For discrete variables, conditioning cannot increase entropy: H(Y|X)<=H(Y), with equality when X and Y are independent. If Y is a deterministic function of X, H(Y|X)=0. For independent variables, H(X,Y)=H(X)+H(Y). In sequential data, H(X_1,...,X_n)=sum_t H(X_t|X_{<t}); language-model token loss follows this factorization. Entropy rate is the limiting conditional uncertainty per symbol in a stationary process and can be lower than marginal symbol entropy when temporal patterns are predictable. Treating correlated samples as independent overstates the rate and misstates achievable compression."
+    },
+    {
+      "id": "coding-and-continuous",
+      "title": "Coding gives entropy an operational meaning and clarifies its limits",
+      "body": "A binary prefix code assigns code lengths l(x) satisfying the Kraft inequality. Expected length is sum p(x)l(x). Shannon coding with lengths near -log2 p(x) achieves expected length less than H(X)+1 bit per symbol; block and arithmetic coding approach H per symbol for long sequences under suitable source assumptions. No uniquely decodable lossless code can beat entropy on average for the true source. If a code uses the wrong model q, expected length approaches cross-entropy H(p,q), paying KL divergence above H(p). For a continuous variable, differential entropy h(X)=-integral f log f is not a direct number of discrete bits: it can be negative and h(aX)=h(X)+log|a|. Quantized entropy depends on bin width. Relative quantities such as mutual information and KL are invariant under smooth coordinate changes under appropriate conditions and are often safer. State whether the variable is discrete, quantized or continuous and what resolution is meaningful."
+    }
+  ],
+  "workedExamples": [
+    {
+      "title": "Uniform support",
+      "body": "A fair eight-sided outcome has entropy log2 8=3 bits. Any nonuniform distribution on the same eight labels has lower entropy because some outcomes become easier to predict."
+    },
+    {
+      "title": "Context removes uncertainty",
+      "body": "If Y exactly repeats a fair bit X, then H(Y)=1 bit but H(Y|X)=0. Joint entropy H(X,Y)=1+0=1 bit, not two, because the pair contains only one independent choice."
+    }
+  ],
+  "lab": {
+    "language": "python",
+    "goal": "Implement discrete entropy and self-information, compare SciPy, and verify support bounds, base conversion, deterministic limits and independent additivity.",
+    "buildIt": "import math\nimport numpy as np\ndef normalize(weights):\n    p=np.asarray(weights,float);\n    if p.ndim!=1 or np.any(p<0) or p.sum()<=0: raise ValueError('invalid probability weights')\n    return p/p.sum()\ndef entropy(weights,base=2):\n    p=normalize(weights); nz=p>0; return float(-np.sum(p[nz]*np.log(p[nz]))/np.log(base))\ndef information(probability,base=2):\n    if not 0<probability<=1: raise ValueError('probability must be in (0,1]')\n    return -math.log(probability,base)\np=np.array([.75,.25]); h_coin=entropy(p); surprises=np.array([information(v) for v in p])\nuniform=np.ones(8)/8; deterministic=np.array([1,0,0]); joint=np.outer(p,[.6,.4]).ravel()",
+    "useIt": "from scipy.stats import entropy as scipy_entropy\nh_scipy=float(scipy_entropy(p,base=2))",
+    "verifyIt": "assert abs(h_coin-.8112781244591328)<1e-12\nassert np.allclose(h_coin,np.dot(p,surprises)) and abs(h_coin-h_scipy)<1e-12\nassert entropy(uniform)==3.0 and entropy(deterministic)==0.0\nassert entropy([1,1,1,1])==2.0\nassert abs(entropy(joint)-(entropy(p)+entropy([.6,.4])))<1e-12\nassert abs(entropy(p,base=math.e)*math.log2(math.e)-entropy(p,base=2))<1e-12\ntry:\n    entropy([-1,2])\n    raise AssertionError('expected invalid weights')\nexcept ValueError:\n    pass",
+    "shipIt": "Version alphabet, probability estimator, smoothing, conditioning variables and log base; monitor support and distribution drift, keep finite-sample uncertainty visible, and compare only metrics computed under compatible definitions."
+  },
+  "exercises": [
+    {
+      "prompt": "What is the self-information of an event with probability 1/16 in bits?",
+      "solution": "-log2(1/16)=4 bits."
+    },
+    {
+      "prompt": "What are the minimum and maximum entropy of four discrete outcomes?",
+      "solution": "Minimum zero at a point mass; maximum log2 4=2 bits at the uniform distribution."
+    },
+    {
+      "prompt": "If independent X and Y have entropies 2 and 3 bits, what is H(X,Y)?",
+      "solution": "5 bits. Independence makes conditional entropy H(Y|X)=H(Y)."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "curve",
+      "title": "Binary entropy",
+      "series": [
+        {
+          "label": "h2(p)",
+          "points": [
+            [
+              0.01,
+              0.01
+            ],
+            [
+              0.1,
+              0.47
+            ],
+            [
+              0.25,
+              0.81
+            ],
+            [
+              0.5,
+              1.0
+            ],
+            [
+              0.75,
+              0.81
+            ],
+            [
+              0.9,
+              0.47
+            ],
+            [
+              0.99,
+              0.01
+            ]
+          ]
+        }
+      ],
+      "caption": "Conceptual normalized curve: uncertainty is highest for a fair binary outcome and vanishes near certainty.",
+      "afterSection": "entropy-properties"
+    },
+    {
+      "type": "compare",
+      "title": "Outcome and distribution information",
+      "left": {
+        "title": "Self-information",
+        "items": [
+          "One observed outcome",
+          "-log p(x)",
+          "Rare means surprising",
+          "Can be arbitrarily large"
+        ]
+      },
+      "right": {
+        "title": "Entropy",
+        "items": [
+          "Whole distribution",
+          "Expected surprise",
+          "Bounded by log support",
+          "Coding rate interpretation"
+        ]
+      },
+      "caption": "Do not call one rare event's surprise the entropy of the source.",
+      "afterSection": "self-information"
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "shannon-1948",
+      "contribution": "Grounds entropy, source coding, channels and the operational communication interpretation."
+    },
+    {
+      "resource": "mit-info-theory",
+      "contribution": "Provides rigorous graduate-level notation, entropy properties, chain rules and coding development."
+    },
+    {
+      "resource": "harvard-stat110",
+      "contribution": "Supports the probability, expectation and conditioning foundations used throughout the derivations."
+    }
+  ]
 }

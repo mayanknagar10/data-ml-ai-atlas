@@ -1,10 +1,10 @@
 import numpy as np
-rng=np.random.default_rng(0)
-X=rng.normal(size=(200,1)); y=3*X[:,0]+2+rng.normal(0,.3,200)
-Xb=np.c_[np.ones(len(X)),X]
-w=np.zeros(2); lr=.05
-for _ in range(1000):
-    pred=Xb@w
-    grad=(2/len(Xb))*Xb.T@(pred-y)
-    w-=lr*grad
-print('from scratch:',w)
+def ols_fit(X,y):
+    X=np.asarray(X,float); y=np.asarray(y,float)
+    design=np.column_stack([np.ones(len(X)),X])
+    beta,_,rank,singular=np.linalg.lstsq(design,y,rcond=None)
+    fitted=design@beta; residual=y-fitted
+    return beta,fitted,residual,rank,singular
+X=np.array([[18,0],[20,0],[22,1],[24,1],[26,0],[28,1]],float)
+y=np.array([132,123,130,120,91,101],float)
+beta,fitted,residual,rank,singular=ols_fit(X,y)

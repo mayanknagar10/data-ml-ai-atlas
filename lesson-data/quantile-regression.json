@@ -7,31 +7,248 @@
     "ds",
     "as"
   ],
-  "interviewAnswer": "Quantile regression estimates conditional quantiles rather than the conditional mean, making it useful for asymmetric distributions and questions about medians or tails.",
+  "interviewAnswer": "Quantile regression models Q_tau(Y|X=x)=x^T beta_tau by minimizing pinball loss rho_tau(r)=tau r for positive residuals and (tau-1)r for negative residuals. Tau 0.5 gives median regression; a high tau targets the conditional upper tail and can reveal effects hidden by mean regression under heteroskedasticity. I fit several declared quantiles, validate pinball loss and exceedance calibration on temporal or grouped data, inspect feature-conditional calibration and crossing, and regularize or use noncrossing methods when needed. A pair of fitted quantiles is not automatically a guaranteed prediction interval, especially after adaptive tuning or distribution shift, and coefficients remain conditional associations unless causal identification is supplied.",
   "keyPoints": [
-    "Pinball/check loss targets a chosen quantile.",
-    "Different quantiles can have different predictor effects.",
-    "Useful for prediction intervals and tail planning."
+    "Pinball loss asymmetrically prices under- and overprediction for a selected quantile.",
+    "Different tau values describe different parts of the conditional outcome distribution.",
+    "Quantile coefficients can vary under heteroskedasticity or shape change.",
+    "Separately fit quantiles may cross and require joint constraints or post-processing.",
+    "Validate exceedance rates conditionally and operationally, not only in aggregate."
   ],
   "resources": [
-    "statsmodels-tsa",
+    "koenker-bassett-1978",
+    "sklearn-linear-models",
     "stanford-stats200"
   ],
   "featured": false,
-  "why": "Quantile Regression appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
-  "intuition": "Pinball/check loss targets a chosen quantile.",
-  "deepDive": "Quantile regression estimates conditional quantiles rather than the conditional mean, making it useful for asymmetric distributions and questions about medians or tails. Different quantiles can have different predictor effects. Useful for prediction intervals and tail planning. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
-  "workedExample": "Predict the 90th percentile delivery time rather than average delivery time for an SLA.",
+  "why": "A mean is insufficient when spread and tail risk change with predictors. Staffing needs a high demand quantile, service-level agreements care about upper latency, and financial or safety systems care about adverse tails. Assuming Gaussian constant-variance residuals and adding a fixed standard-deviation band can be badly wrong. Quantile regression directly targets the boundary relevant to an asymmetric decision and remains meaningful for skewed or heteroskedastic outcomes. Comparing median and upper-quantile curves can reveal where uncertainty expands. The method is also robust to vertical response outliers in the sense that pinball loss grows linearly, but extreme predictors and sparse tail data can still destabilize it. A quantile model must therefore be evaluated as a conditional forecast and as a decision input. Getting 90 percent of all observations below a supposed 0.9 quantile can hide severe undercoverage in the precise region where capacity matters.",
+  "intuition": "The sample median is the point that balances absolute loss: moving it slightly changes the number of observations on either side. Pinball loss tilts that balance. At tau=0.9, underpredicting an observation costs nine times as much per unit as overpredicting it, so the fitted surface moves upward until roughly 90 percent of appropriately weighted observations lie at or below it. With predictors, the balancing condition applies through design directions rather than as a simple count at every x. The slope describes how the chosen conditional percentile changes. If noise fans out with x, the upper-quantile slope can exceed the median slope even when the conditional mean slope is constant. Fitting tau=0.1 and 0.9 gives two learned surfaces whose distance represents modeled conditional spread, but because they are estimated separately they may cross in sparse regions and their nominal central band may not have exact coverage.",
+  "deepDive": "Quantile regression changes the estimand and loss together. The asymmetric pinball objective targets a declared conditional percentile, revealing distributional changes that a mean model hides. Its evidence must include optimization status, tail support, conditional calibration, crossing, and the operational cost that motivated tau. Robustness to vertical tails does not provide leverage robustness or a universal interval guarantee.",
+  "workedExample": "A delivery model fits median and 0.9 quantile minutes against traffic score. The median slope is 3 minutes per traffic unit, while the 0.9 slope is 8. This means the upper conditional tail spreads much faster than the center; it does not mean every delivery slows by eight minutes. For a traffic score of four, fitted q0.5=35 and q0.9=62. Operations can staff to the upper forecast, then validate whether roughly 90 percent of later comparable deliveries finish within 62 minutes and whether coverage holds by region.",
   "commonMistakes": [
-    "Applying the method without checking its assumptions or data-generating process.",
-    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+    {
+      "misconception": "The 0.9 quantile is the outcome expected for the top 10 percent of fixed individuals.",
+      "correction": "It is a conditional distribution boundary at a feature profile. Quantile ranks need not correspond to persistent individual identities across conditions."
+    },
+    {
+      "misconception": "Two fitted quantiles automatically form a calibrated prediction interval.",
+      "correction": "They are model-based conditional boundaries and may cross or be miscalibrated. Validate coverage and state whether any conformal or distributional guarantee applies."
+    },
+    {
+      "misconception": "Pinball loss makes quantile regression immune to outliers.",
+      "correction": "Linear residual growth reduces vertical-tail sensitivity versus squared loss, but high-leverage predictors, contamination, sparse tails, and selection can still dominate."
+    },
+    {
+      "misconception": "Overall 90 percent coverage proves q0.9 is calibrated.",
+      "correction": "Overcoverage and undercoverage can cancel across feature, time, or subgroup slices. Conditional diagnostics and decision loss are necessary."
+    }
   ],
   "followUps": [
-    "What assumptions does Quantile Regression make?",
-    "How would you validate or debug Quantile Regression in practice?"
+    {
+      "question": "Why do quantile-regression lines cross?",
+      "answer": "Separate optimization problems have sampling error, misspecification, and different regularization, with no constraint enforcing q_tau1<=q_tau2. Joint constraints or rearrangement can restore order."
+    },
+    {
+      "question": "How does median regression differ from robust mean regression?",
+      "answer": "Median regression targets the conditional median via absolute loss. Huber regression targets an M-functional that is quadratic near the center. Neither is simply a robust estimate of the same mean without assumptions."
+    },
+    {
+      "question": "Why are extreme quantiles difficult?",
+      "answer": "Only a small fraction of observations informs the relevant tail, making estimates sensitive to support, dependence, extrapolation, and distribution shift. Uncertainty grows quickly."
+    }
   ],
-  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "production": "Serialize outcome transformation, tau values, feature order, scaling, penalty, solver and convergence, crossing correction, support ranges, and interval construction. Golden tests should check translation equivariance, quantile ordering after policy, and parity between batch and serving. Monitor pinball loss by tau, empirical exceedance overall and by time, predicted value, feature region, and subgroup, interval width, crossing frequency, tail sample count, leverage-like support distance, and downstream shortage or overage cost. Handle censored or delayed labels explicitly; naive backfills bias tail monitoring. Protect extreme outcomes and small slices from disclosure. Define fallback empirical quantiles or conservative rules for unsupported inputs and service failure. Canary the full quantile-to-capacity policy on later periods, and roll back when conditional undercoverage, tail loss, fairness, or operational cost violates predefined limits even if aggregate coverage remains nominal.",
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "Quantile regression estimates a chosen conditional quantile of an outcome rather than its conditional mean. At tau=0.5 it minimizes absolute residual loss and models the conditional median; at tau=0.9 it describes a high conditional outcome boundary. This chapter derives the asymmetric pinball loss, linear-program formulation, coefficient interpretation, sampling uncertainty, and the way multiple quantiles reveal heteroskedasticity and distributional shape. You will distinguish a conditional quantile curve from a marginal percentile, an individual prediction interval, and a conformal coverage guarantee. The chapter treats quantile crossing, tail data scarcity, regularization, censoring, dependence, and calibration over feature and time slices. A worked delivery-time example shows how traffic may have a modest median effect but a much larger upper-tail effect. The lab solves linear quantile regression with SciPy's linear programming interface, compares it with scikit-learn, and verifies pinball optimality, response translation, and empirical calibration. Production guidance versions tau, scaling, penalty, solver, and crossing policy; monitors exceedance rates, interval width, tail loss, subgroup behavior, and operational capacity. Quantile regression is robust to large response residuals relative to squared loss, but not immune to leverage, selection, unsupported tails, or causal confounding.",
+  "prerequisites": [
+    "linear-regression",
+    "linear-programming"
+  ],
+  "learningObjectives": [
+    "Derive the pinball-loss objective and formulate linear quantile regression as a linear program.",
+    "Interpret quantile-specific coefficients and explain what coefficient differences reveal about conditional shape.",
+    "Diagnose quantile crossing, tail scarcity, leverage, censoring, and conditional miscalibration.",
+    "Build and monitor quantile forecasts and intervals without overstating marginal or finite-sample coverage."
+  ],
+  "deepSections": [
+    {
+      "id": "estimand-and-loss",
+      "title": "Conditional quantiles and pinball loss",
+      "body": "A tau quantile q_tau(x) satisfies P(Y<=q_tau(x)|X=x)>=tau and P(Y>=q_tau(x)|X=x)>=1-tau, with care for discrete outcomes and nonunique quantiles. Linear quantile regression specifies q_tau(x)=beta0_tau+x^T beta_tau. It minimizes sum_i rho_tau(y_i-q_tau(x_i)), where rho_tau(r)=r[tau-I(r<0)]. Positive residual means the prediction is below the outcome and receives slope tau; negative residual receives magnitude 1-tau. For tau=0.9, underprediction costs nine times overprediction. A coefficient beta_j,tau is the change in the modeled conditional tau quantile for a one-unit x_j change, holding other included variables fixed. It is not the effect on the same individual's latent rank, and differences across tau do not automatically identify causal distributional effects. Quantiles are equivariant under increasing transformations: modeling log Y and transforming back estimates conditional quantiles on the original scale without the mean back-transformation bias issue, though zero and support handling must be explicit. Discrete outcomes can produce nonunique solutions and require cautious uncertainty interpretation."
+    },
+    {
+      "id": "optimization-and-regularization",
+      "title": "Linear programming, sparsity, and fitting",
+      "body": "Introduce nonnegative residual parts u_i=max(y_i-x_i^T beta,0) and v_i=max(x_i^T beta-y_i,0), so y-X beta=u-v. The objective tau sum u_i+(1-tau)sum v_i is linear with equality constraints, making unpenalized linear quantile regression a linear program. Modern solvers use interior-point or simplex-family methods and report feasibility and optimality status. The objective is convex but nonsmooth; coefficients may be nonunique under discrete data or rank issues. An L1 coefficient penalty adds sparsity and remains a linear program after splitting coefficients, while other models use gradient approximations or tree-based pinball objectives. Scaling affects regularization and conditioning and belongs inside validation folds. Tail quantiles use fewer effective observations: at tau=0.99, only about one percent lie above the target, so uncertainty and sensitivity can be large. Choose tau from the decision problem before examining results and tune complexity on honest grouped or chronological folds. Bootstrap the entire pipeline with cluster or time blocks for uncertainty when asymptotic formulas are unreliable."
+    },
+    {
+      "id": "calibration-crossing-and-intervals",
+      "title": "Calibration, crossing, and interval meaning",
+      "body": "For a correctly estimated continuous conditional tau quantile, P(Y<=qhat_tau(X)|X) is approximately tau in the target population. Aggregate coverage is necessary but weak: a model can overcover one feature region and undercover another. Plot exceedance rates and pinball loss by time, predicted value, feature slice, and subgroup with uncertainty. Reliability-style quantile calibration can compare nominal tau with empirical fractions. If separately fitted q_0.9 falls below q_0.5 for some x, quantile crossing violates distribution order. Remedies include joint noncrossing constraints, monotone rearrangement, shared distributional models, or post-processing, each affecting fit and uncertainty. The interval [q_alpha/2(x),q_1-alpha/2(x)] is a model-based central conditional interval under the fitted quantile functions. It is not automatically a finite-sample conditional coverage guarantee. Split conformal methods can calibrate marginal coverage under exchangeability and distribution stability, but conditional coverage is generally harder and time or group dependence changes the design. State which guarantee, if any, is supported."
+    },
+    {
+      "id": "failure-modes-and-decision-use",
+      "title": "Tail support, censoring, leverage, and decisions",
+      "body": "Extreme quantiles require substantial representative data in the tail. Sparse regions can yield unstable coefficients, crossing, or enormous extrapolation. High-leverage x points remain influential because linear pinball loss only bounds response-residual slope, not predictor magnitude. Inspect design support and sensitivity. Right censoring means the true outcome exceeds an observed bound; ordinary quantile regression treats the bound as exact and biases the tail. Truncation changes who enters the sample. Use methods designed for censored or truncated quantiles when those processes apply. Repeated outcomes require cluster-aware inference and evaluation. Operationally, choose tau from an asymmetric cost. If underprediction cost c_u and overprediction cost c_o are linear, the optimal quantile is c_u/(c_u+c_o) under the modeled distribution. Real capacity has nonlinear penalties, discrete resources, and feedback, so simulate the actual decision. Monitor both coverage and consequences: a 0.95 demand forecast that achieves nominal coverage may still be too expensive, while a lower quantile may violate service objectives. Compare with empirical and distributional baselines and retain a fallback for unsupported x."
+    }
+  ],
+  "math": "For residual r=y-x^T beta, rho_tau(r)=tau r if r>=0 and (tau-1)r if r<0. Estimate beta_tau by minimizing sum_i rho_tau(y_i-x_i^T beta). The linear program uses y-X beta=u-v with u,v>=0 and objective tau 1^T u+(1-tau)1^T v. At an interior population solution, a subgradient condition is E[X(tau-I(Y<X^T beta_tau))]=0. With linear underprediction cost c_u and overprediction cost c_o, tau=c_u/(c_u+c_o) minimizes expected asymmetric absolute loss.",
+  "workedExamples": [
+    {
+      "title": "Choose tau from asymmetric loss",
+      "body": "If one unit of underforecast costs 9 dollars and one unit of overforecast costs 1 dollar, tau=9/(9+1)=0.9 under linear asymmetric loss. Fit and validate the conditional 0.9 quantile. If shortage cost becomes nonlinear or capacity is discrete, simulate the real policy instead of assuming one quantile remains optimal."
+    },
+    {
+      "title": "Aggregate calibration hides a slice failure",
+      "body": "A q0.9 model covers 90 percent overall, but 98 percent in low-traffic regions and 72 percent in high-traffic regions. The totals cancel. Add supported nonlinear or interaction structure, recalibrate on later data, and report high-traffic uncertainty; do not claim conditional reliability from the aggregate rate."
+    }
+  ],
+  "lab": {
+    "language": "python",
+    "goal": "Solve linear quantile regression as a linear program, compare with scikit-learn, and verify pinball optimality, translation equivariance, and empirical quantile behavior.",
+    "buildIt": "import numpy as np\nfrom scipy.optimize import linprog\ndef fit_quantile_lp(X,y,tau):\n    D=np.column_stack([np.ones(len(X)),np.asarray(X,float)]); n,d=D.shape\n    c=np.r_[np.zeros(d),np.full(n,tau),np.full(n,1-tau)]\n    A=np.column_stack([D,np.eye(n),-np.eye(n)])\n    bounds=[(None,None)]*d+[(0,None)]*(2*n)\n    result=linprog(c,A_eq=A,b_eq=np.asarray(y,float),bounds=bounds,method='highs')\n    assert result.success\n    return result.x[:d],result.fun\ndef pinball(y,p,tau):\n    r=np.asarray(y)-np.asarray(p)\n    return np.mean(np.where(r>=0,tau*r,(tau-1)*r))\nrng=np.random.default_rng(18)\nX=rng.uniform(0,3,size=(180,1)); noise=rng.normal(size=180)*(0.25+0.35*X[:,0])\ny=1+1.7*X[:,0]+noise; tau=.8\nb,obj=fit_quantile_lp(X,y,tau)\nD=np.column_stack([np.ones(len(X)),X]); pred=D@b",
+    "useIt": "from sklearn.linear_model import QuantileRegressor\nsk=QuantileRegressor(quantile=tau,alpha=0,fit_intercept=True,solver='highs').fit(X,y)\nsk_b=np.r_[sk.intercept_,sk.coef_]\nsk_pred=sk.predict(X)",
+    "verifyIt": "assert abs(pinball(y,pred,tau)-obj/len(y))<1e-9\nassert abs(pinball(y,pred,tau)-pinball(y,sk_pred,tau))<1e-8\nassert np.allclose(pred,sk_pred,atol=1e-6)\n# Intercept translation equivariance.\nshift=11.0\nb_shift,_=fit_quantile_lp(X,y+shift,tau)\nassert abs(b_shift[0]-b[0]-shift)<1e-7\nassert np.allclose(b_shift[1:],b[1:],atol=1e-7)\ncovered=np.mean(y<=pred)\nassert abs(covered-tau)<0.03\nmedian_b,_=fit_quantile_lp(X,y,.5)\nassert b[1]>median_b[1]",
+    "shipIt": "Version tau, feature pipeline, scaling, penalty, solver, crossing and extrapolation policy; monitor conditional exceedance, pinball loss, interval width and tail support, and roll back the complete forecast-to-decision pipeline when service or cost thresholds fail."
+  },
+  "exercises": [
+    {
+      "prompt": "At tau=0.9, what are the per-unit slopes of pinball loss for underprediction and overprediction?",
+      "solution": "A positive residual, meaning underprediction, costs 0.9 per unit; a negative residual costs 0.1 per unit in magnitude, a nine-to-one ratio."
+    },
+    {
+      "prompt": "Why might q0.9 have a larger slope than q0.5?",
+      "solution": "Conditional spread or skew can grow with the predictor, so the upper tail moves faster than the median. This is distributional heterogeneity, not necessarily a different causal effect."
+    },
+    {
+      "prompt": "A central interval has nominal overall coverage but crosses in 2 percent of requests. What should you do?",
+      "solution": "Investigate sparse support and model instability, apply a validated noncrossing joint method or rearrangement, then reevaluate conditional coverage, width, and decision loss on untouched data."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "scatter",
+      "title": "Conditional quantiles under widening spread",
+      "series": [
+        {
+          "label": "Observed",
+          "points": [
+            [
+              0.08,
+              0.22
+            ],
+            [
+              0.15,
+              0.27
+            ],
+            [
+              0.23,
+              0.2
+            ],
+            [
+              0.31,
+              0.39
+            ],
+            [
+              0.4,
+              0.3
+            ],
+            [
+              0.49,
+              0.5
+            ],
+            [
+              0.58,
+              0.38
+            ],
+            [
+              0.67,
+              0.68
+            ],
+            [
+              0.76,
+              0.46
+            ],
+            [
+              0.84,
+              0.82
+            ],
+            [
+              0.92,
+              0.58
+            ]
+          ]
+        },
+        {
+          "label": "Median",
+          "points": [
+            [
+              0.06,
+              0.22
+            ],
+            [
+              0.94,
+              0.61
+            ]
+          ]
+        },
+        {
+          "label": "0.9 quantile",
+          "points": [
+            [
+              0.06,
+              0.31
+            ],
+            [
+              0.94,
+              0.9
+            ]
+          ]
+        }
+      ],
+      "caption": "Conceptual heteroskedastic data: the upper conditional quantile can steepen faster than the median as spread grows.",
+      "afterSection": "estimand-and-loss"
+    },
+    {
+      "type": "compare",
+      "title": "Model-based quantile band versus coverage guarantee",
+      "left": {
+        "title": "Quantile band",
+        "items": [
+          "Fits conditional boundaries",
+          "May cross",
+          "Depends on specification",
+          "Validate by feature slices"
+        ]
+      },
+      "right": {
+        "title": "Conformal calibration",
+        "items": [
+          "Adds calibration procedure",
+          "Typical guarantee is marginal",
+          "Needs exchangeability or adaptation",
+          "Still monitor shift and width"
+        ]
+      },
+      "caption": "Fitted quantiles and conformal coverage are related tools but make different claims.",
+      "afterSection": "calibration-crossing-and-intervals"
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "koenker-bassett-1978",
+      "contribution": "Provides the original regression-quantile estimator, asymmetric absolute-loss formulation, and inferential foundation."
+    },
+    {
+      "resource": "sklearn-linear-models",
+      "contribution": "Verifies the current pinball-plus-L1 objective, linear-program solver, and QuantileRegressor API behavior."
+    },
+    {
+      "resource": "stanford-stats200",
+      "contribution": "Supports the statistical interpretation of conditional estimation and uncertainty used to separate quantiles from means."
+    }
+  ]
 }

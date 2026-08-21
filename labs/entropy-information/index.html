@@ -1,0 +1,24 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Entropy &amp; Information Content — Code Lab</title><script>(()=>{const s=localStorage.getItem('atlas-theme');const t=s||((matchMedia('(prefers-color-scheme: dark)').matches)?'dark':'light');document.documentElement.dataset.theme=t})()</script><style>:root{--bg:#fff;--text:#121417;--muted:#5d6470;--line:#dfe3e8;--soft:#f6f7f8;--blue:#155eef;--code:#0d1117;color-scheme:light}html[data-theme=dark]{--bg:#0d1117;--text:#eef2f6;--muted:#a8b0ba;--line:#2b333d;--soft:#171d24;--blue:#8fb4ff;--code:#070a0e;color-scheme:dark}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.6 Inter,system-ui,sans-serif}main{max-width:980px;margin:auto;padding:44px 22px 80px}a{color:var(--blue)}h1{font-size:42px;line-height:1.05;margin:8px 0 12px}.k{font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--blue);font-weight:800}.lead{color:var(--muted);font-size:17px}.top{display:flex;justify-content:space-between;gap:16px}button{border:1px solid var(--line);background:var(--soft);color:var(--text);border-radius:8px;padding:7px 9px;cursor:pointer}section{border-top:1px solid var(--line);padding-top:22px;margin-top:26px}pre{background:var(--code);color:#e6edf3;padding:18px;border-radius:12px;overflow:auto;font:13px/1.55 ui-monospace,monospace}.links{display:flex;gap:12px;flex-wrap:wrap;margin:18px 0}.links a{border:1px solid var(--line);border-radius:8px;padding:7px 9px;text-decoration:none;font-size:12px}@media(max-width:600px){h1{font-size:34px}.top{display:block}}</style></head><body><main><div class="top"><div><div class="k">Data, ML & AI Atlas · Runnable Lab</div><h1>Entropy &amp; Information Content</h1></div><button id="t">◐ Theme</button></div><p class="lead">Implement discrete entropy and self-information, compare SciPy, and verify support bounds, base conversion, deterministic limits and independent additivity.</p><div class="links"><a href="../../index.html#/lesson/entropy-information">← Full lesson</a><a href="lab.py">Combined Python file</a><a href="README.md">README</a></div><section><h2>1 · Build it</h2><p>Minimal implementation with as little framework abstraction as practical.</p><pre>import math
+import numpy as np
+def normalize(weights):
+    p=np.asarray(weights,float);
+    if p.ndim!=1 or np.any(p&lt;0) or p.sum()&lt;=0: raise ValueError(&#x27;invalid probability weights&#x27;)
+    return p/p.sum()
+def entropy(weights,base=2):
+    p=normalize(weights); nz=p&gt;0; return float(-np.sum(p[nz]*np.log(p[nz]))/np.log(base))
+def information(probability,base=2):
+    if not 0&lt;probability&lt;=1: raise ValueError(&#x27;probability must be in (0,1]&#x27;)
+    return -math.log(probability,base)
+p=np.array([.75,.25]); h_coin=entropy(p); surprises=np.array([information(v) for v in p])
+uniform=np.ones(8)/8; deterministic=np.array([1,0,0]); joint=np.outer(p,[.6,.4]).ravel()</pre></section><section><h2>2 · Use it</h2><p>The same idea through a common library or practical API.</p><pre>from scipy.stats import entropy as scipy_entropy
+h_scipy=float(scipy_entropy(p,base=2))</pre></section><section><h2>3 · Ship it</h2><p>Version alphabet, probability estimator, smoothing, conditioning variables and log base; monitor support and distribution drift, keep finite-sample uncertainty visible, and compare only metrics computed under compatible definitions.</p></section><section><h2>4 · Verify it</h2><p>Assertions and sanity checks that catch conceptual or implementation mistakes.</p><pre>assert abs(h_coin-.8112781244591328)&lt;1e-12
+assert np.allclose(h_coin,np.dot(p,surprises)) and abs(h_coin-h_scipy)&lt;1e-12
+assert entropy(uniform)==3.0 and entropy(deterministic)==0.0
+assert entropy([1,1,1,1])==2.0
+assert abs(entropy(joint)-(entropy(p)+entropy([.6,.4])))&lt;1e-12
+assert abs(entropy(p,base=math.e)*math.log2(math.e)-entropy(p,base=2))&lt;1e-12
+try:
+    entropy([-1,2])
+    raise AssertionError(&#x27;expected invalid weights&#x27;)
+except ValueError:
+    pass</pre></section></main><script>const b=document.getElementById('t');function u(){b.textContent=document.documentElement.dataset.theme==='dark'?'☀ Light':'☾ Dark'}u();b.onclick=()=>{const n=document.documentElement.dataset.theme==='dark'?'light':'dark';document.documentElement.dataset.theme=n;localStorage.setItem('atlas-theme',n);u()}</script></body></html>

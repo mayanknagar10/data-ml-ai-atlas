@@ -7,30 +7,178 @@
     "ds",
     "da"
   ],
-  "interviewAnswer": "Survival models require metrics that handle censoring, such as concordance index and time-dependent calibration/Brier scores. Ordinary classification metrics at arbitrary cutoffs can discard useful time information.",
+  "interviewAnswer": "I evaluate survival models along four axes. Concordance measures whether higher predicted risk precedes observed events among comparable subjects, but Harrell's C can be optimistic under heavy censoring, so I also use IPCW or Uno-style estimates. At prespecified horizons I report cumulative/dynamic AUC for discrimination, time-dependent Brier score for probability error, and calibration of predicted versus observed survival. IPCW estimates the censoring survival distribution on training data and weights observable cases and controls; people censored before a horizon are not treated as event-free. I integrate only over horizons with adequate follow-up, validate on later cohorts, bootstrap at the subject or cluster level, show subgroup event and censoring counts, and connect scores to threshold-specific decisions. One metric never proves ranking, calibration, and utility simultaneously.",
   "keyPoints": [
-    "C-index assesses ranking.",
-    "Calibration matters at relevant horizons.",
-    "Evaluation must account for censoring."
+    "Censoring determines which pairs and horizon labels are observable.",
+    "Concordance evaluates ordering, not probability calibration or clinical/product utility.",
+    "IPCW corrects observable contributions under a censoring model and a positivity condition.",
+    "Time-dependent AUC, Brier score, and calibration must be indexed by supported horizons.",
+    "Evaluation preprocessing, censoring estimation, horizons, and bootstrap units must avoid leakage."
   ],
   "resources": [
-    "lifelines"
+    "sksurv-evaluation",
+    "uno-cstat",
+    "graf-brier"
   ],
   "featured": false,
-  "why": "Survival Model Evaluation appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
-  "intuition": "C-index assesses ranking.",
-  "deepDive": "Survival models require metrics that handle censoring, such as concordance index and time-dependent calibration/Brier scores. Ordinary classification metrics at arbitrary cutoffs can discard useful time information. Calibration matters at relevant horizons. Evaluation must account for censoring. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
-  "workedExample": "Evaluate whether higher predicted risk corresponds to earlier churn and whether 90-day survival probabilities are calibrated.",
+  "why": "A survival model outputs a risk score, survival curve, cumulative incidence, or some combination. These outputs answer different questions. A ranking model can send scarce outreach to the riskiest subjects without predicting accurate probabilities; a pricing or capacity model needs calibrated event counts; a treatment decision needs net benefit under explicit consequences. Censoring makes ordinary evaluation invalid because the eventual status of an early-censored subject is unknown. Excluding all censored subjects changes the population, and calling them negative biases results. Survival metrics recover identifiable comparisons by using observable pairs or inverse censoring weights. They still rely on assumptions and support: if nearly everyone is censored before month twelve, no formula creates reliable month-twelve evaluation. A rigorous scorecard therefore declares the estimand, horizon, prediction type, censoring strategy, split, uncertainty method, and action before computing a number.",
+  "intuition": "For ranking, an event at day 20 can be compared with a subject known to remain event-free past day 20. It cannot necessarily be compared with someone censored at day 10. Concordance counts correctly ordered comparable pairs. At a fixed horizon, a subject with an event before the horizon is a case; a subject observed event-free beyond it is a control; an event-free subject censored earlier is indeterminate. IPCW gives more weight to observable subjects who resemble portions of follow-up that censoring made rare. For probability accuracy, compare the model's predicted event or survival probability with the observable binary outcome, using censoring weights. Calibration then asks whether subjects predicted to have 70 percent survival actually exhibit about 70 percent censoring-adjusted survival. Decision analysis adds the costs of missed events and unnecessary intervention. Each layer catches failures hidden by the previous one.",
+  "deepDive": "Survival evaluation is a family of estimands indexed by time, comparability, and censoring assumptions. Pairwise concordance tests ranking; dynamic AUC tests horizon-specific discrimination; Brier score tests full probability error; calibration tests probability meaning; and decision analysis tests whether actions improve outcomes or operations. IPCW does not make missing outcomes disappear: it transports information from observable subjects under an estimated censoring mechanism and adequate positivity. Honest time splits, mature labels, supported horizons, uncertainty, and subgroup counts are as important as the formula.",
+  "workedExample": "At month six, subject A failed at month four and is a case; subject B is observed event-free through month nine and is a control; subject C was censored event-free at month three and has unknown month-six status. Calling C a control biases the label. An IPCW score uses A and B with weights based on remaining uncensored to their event or the horizon. If only half the source population is expected to remain observable to month six, each representative observable contribution receives roughly twice the weight, subject to the exact estimator.",
   "commonMistakes": [
-    "Applying the method without checking its assumptions or data-generating process.",
-    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+    {
+      "misconception": "Treat everyone censored before a horizon as event-free.",
+      "correction": "Their horizon outcome is unknown. Use an identifiable survival metric with censoring adjustment and adequate support."
+    },
+    {
+      "misconception": "A C-index of 0.8 means predicted probabilities are accurate.",
+      "correction": "Concordance only measures ranking among comparable pairs and is unchanged by monotone score transformations."
+    },
+    {
+      "misconception": "Estimate censoring weights on the complete dataset for stability.",
+      "correction": "That leaks validation follow-up. Fit censoring models within training data and apply them forward."
+    },
+    {
+      "misconception": "Integrating farther in time always gives a more comprehensive score.",
+      "correction": "Late horizons with near-zero censoring survival create unstable weights and unsupported claims."
+    }
   ],
   "followUps": [
-    "What assumptions does Survival Model Evaluation make?",
-    "How would you validate or debug Survival Model Evaluation in practice?"
+    {
+      "question": "Why can Harrell's C be optimistic with heavy censoring?",
+      "answer": "The observable comparable pairs become a selected subset, often removing difficult long-horizon orderings; IPCW targets a defined restricted concordance under assumptions."
+    },
+    {
+      "question": "What is the difference between Brier score and calibration?",
+      "answer": "Brier score combines calibration and resolution in mean squared probability error, while calibration diagnostics directly compare predicted and observed probabilities."
+    },
+    {
+      "question": "How should uncertainty be estimated with repeated interval rows?",
+      "answer": "Resample whole subjects or natural clusters and repeat the required fitting steps; row-level bootstrap falsely treats dependent records as independent."
+    }
   ],
-  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "production": "Maintain an evaluation manifest containing cohort query, cutoff, origin, event and censoring rules, subject grouping, label-maturity delay, prediction time, horizons, prediction orientation, comparable-pair convention, censoring estimator, weight truncation, integration grid, baselines, subgroups, and bootstrap seed. Run preprocessing and censoring estimation inside each training fold. Require minimum events, controls, comparable pairs, censoring survival, and subgroup size before publishing a metric. Monitor evaluation coverage, weight distribution, follow-up maturity, event latency, baseline incidence, discrimination, calibration, and decision outcomes by calendar cohort. Prevent test-set reuse through immutable result ledgers. Protect sensitive labels and suppress small-cell reports. When metric or label semantics change, shadow the new scorecard, reconcile subject-level contributions, and version or roll back it with the compatible model artifact.",
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "Survival-model evaluation must respect censoring, time, and the prediction target. Ordinary accuracy and ROC calculations mislabel subjects censored before a horizon, while a single concordance number can reward ranking without calibrated probabilities. This chapter builds an evaluation stack around comparable pairs, Harrell's concordance, inverse-probability-of-censoring weighting, Uno-style concordance, cumulative/dynamic AUC, time-dependent Brier score, integrated Brier score, survival calibration, and decision utility. It explains which subjects define cases and controls at a horizon, why the censoring distribution must be estimated without test leakage, and how heavy censoring or short follow-up limits the estimand. A worked example separates an event case, an event-free control, and an indeterminate early censor. The lab implements comparable-pair concordance and an IPCW Brier score, then uses scikit-learn only on correctly defined horizon labels. Production guidance freezes evaluation horizons, split logic, censoring models, metric orientation, subgroup support, and label-maturity windows. Good evaluation reports discrimination, probability accuracy, calibration, and operational value together rather than declaring a model successful from one censoring-sensitive leaderboard number.",
+  "prerequisites": [
+    "cox-ph",
+    "cross-validation"
+  ],
+  "learningObjectives": [
+    "Construct comparable event-time pairs and explain what Harrell and IPCW concordance estimate.",
+    "Define horizon-specific cases, controls, Brier scores, and cumulative/dynamic AUC under censoring.",
+    "Assess survival calibration and decision utility at supported horizons instead of relying on ranking alone.",
+    "Build temporal, leakage-safe, subgroup-aware evaluation pipelines with explicit censoring assumptions."
+  ],
+  "deepSections": [
+    {
+      "id": "concordance",
+      "title": "Concordance uses only event-time orderings that can be known",
+      "body": "Harrell's concordance index examines pairs in which one subject has an observed event before the other's observed time. The pair is concordant if the earlier-event subject has higher predicted risk, discordant if lower, and commonly receives half credit for tied predictions. Pairs whose ordering is hidden by censoring are omitted. This makes C interpretable as a conditional ranking probability for the sampled comparable pairs, not a universal probability over all subject pairs. Heavy censoring changes which pairs survive and can make Harrell's estimator optimistic. Uno's concordance uses inverse censoring weights to target a time-restricted concordance with better behavior under censoring, provided the censoring survival is estimated consistently and remains positive. Concordance is invariant to monotone score transformations, so it cannot detect whether a 0.8 risk is numerically meaningful. Report metric orientation, tie handling, restriction time, comparable-pair count, confidence interval, and whether repeated records require subject- or cluster-level resampling."
+    },
+    {
+      "id": "horizon-discrimination",
+      "title": "Time-dependent AUC defines cases and controls at each horizon",
+      "body": "For cumulative/dynamic AUC at horizon t, cumulative cases have experienced the event by t and dynamic controls are known event-free beyond t. A subject censored before t has unknown status and cannot be naively labeled a control. Incident/dynamic definitions instead focus on events near t, answering a different question. IPCW versions weight cases by the probability of remaining uncensored to their event time and controls by the probability of remaining uncensored through t. Estimate the censoring distribution on the training sample or within each training fold, then apply it to validation observations; fitting it on the full dataset leaks follow-up information. Covariate-dependent censoring may require a modeled G(t|x), while misspecification can leave bias. Truncate evaluation before censoring probabilities approach zero because weights then explode. AUC(t) should be plotted with uncertainty and event/control counts. An integrated AUC must state its time weighting and interval; averages across unsupported late horizons are misleading."
+    },
+    {
+      "id": "brier-calibration",
+      "title": "Brier scores and calibration test the full probability scale",
+      "body": "At horizon t, the survival Brier score is the mean squared error between predicted S_i(t) and the indicator I(T_i>t), with IPCW contributions for observed events before t and subjects known event-free beyond t. Early-censored indeterminate outcomes contribute through the weighting formulation rather than being mislabeled. A lower score is better, but its scale depends on event prevalence and horizon; compare with meaningful null models such as marginal Kaplan-Meier survival. Integrated Brier score averages the curve over a declared interval, often with numerical integration, and must not extend past reliable censoring support. Calibration-in-the-large compares average predicted and observed risk, a slope assesses spread, and grouped plots compare predicted probability bins with censoring-adjusted observed survival. Flexible calibration curves reveal nonlinearity but need adequate sample size. Recalibration can correct a shifted baseline while preserving ranking, yet repeated tuning on one test cohort destroys honest evaluation. Confidence bands should reflect the complete fitting and grouping process."
+    },
+    {
+      "id": "design-and-decisions",
+      "title": "Evaluation design must match deployment time and action",
+      "body": "Random row splits can leak subject history, duplicate episodes, future feature transformations, or calendar policies. Prefer subject-grouped and chronological splits that reproduce when training labels become mature and when predictions are issued. Fit imputers, encoders, feature selection, survival model, and censoring model inside the training fold. Evaluate all candidate tuning choices on validation data and reserve a final temporal or external test. Bootstrap subjects or natural clusters rather than individual interval rows. Predeclare horizons based on operational decisions and available follow-up. Report subgroup discrimination and calibration with event, censoring, and risk-set counts; a point estimate for a tiny group is not evidence of fairness. Finally translate predictions into policies: capacity-constrained recall among observable cases, expected event capture, calibration for resource planning, and net benefit across thresholds. Include abstention and fallback behavior when horizons, features, or censoring support fall outside the contract."
+    }
+  ],
+  "math": "Harrell C=(concordant+0.5*tied)/comparable over pairs where subject i has an observed event before subject j's observed time. At horizon tau, an IPCW Brier estimator is n^{-1}sum_i[I(T_i<=tau,delta_i=1)(0-Shat_i(tau))^2/Ghat(T_i-)+I(T_i>tau)(1-Shat_i(tau))^2/Ghat(tau)]. G is censoring survival. Cumulative/dynamic AUC(t)=P(score_i>score_j | T_i<=t, delta_i=1, T_j>t), estimated with appropriate censoring weights. IBS averages BS(t) over a declared supported interval.",
+  "workedExamples": [
+    {
+      "title": "Perfect ranking but poor probabilities",
+      "body": "Suppose every earlier event receives a higher risk score, so concordance is 1.0. If all predicted twelve-month risks are compressed between 0.01 and 0.02 while observed risk is 0.30, ranking is perfect but calibration and Brier performance are poor."
+    },
+    {
+      "title": "Metric reversal across horizons",
+      "body": "A model using acute-warning features may discriminate well at seven days but poorly at one year, while a stable history model does the reverse. Reporting one integrated score hides which deployment decision each model supports."
+    }
+  ],
+  "lab": {
+    "language": "python",
+    "goal": "Implement comparable-pair concordance and an IPCW horizon Brier score, use scikit-learn on correctly defined horizon labels, and verify orientation and censoring behavior.",
+    "buildIt": "import numpy as np\ndef harrell_c(time,event,risk):\n    time=np.asarray(time,float); event=np.asarray(event,int); risk=np.asarray(risk,float)\n    good=ties=total=0.0\n    for i in range(len(time)):\n        if event[i]!=1: continue\n        for j in range(len(time)):\n            if time[i]<time[j]:\n                total+=1; good+=risk[i]>risk[j]; ties+=risk[i]==risk[j]\n    if total==0: raise ValueError('no comparable pairs')\n    return (good+0.5*ties)/total\ndef censor_km(time,event):\n    time=np.asarray(time,float); censor=1-np.asarray(event,int); ts=np.unique(time[censor==1]); s=1.0; vals=[]\n    for t in ts:\n        n=np.sum(time>=t); d=np.sum((time==t)&(censor==1)); s*=1-d/n; vals.append(s)\n    return ts,np.asarray(vals)\ndef g_at(q,ts,vals,left=False):\n    keep=ts<q if left else ts<=q\n    return 1.0 if not np.any(keep) else float(vals[np.flatnonzero(keep)[-1]])\ndef ipcw_brier(time,event,surv,tau):\n    time=np.asarray(time,float); event=np.asarray(event,int); surv=np.asarray(surv,float); ts,g=censor_km(time,event); total=0.0\n    for ti,di,si in zip(time,event,surv):\n        if di==1 and ti<=tau: total+=si**2/g_at(ti,ts,g,left=True)\n        elif ti>tau: total+=(1-si)**2/g_at(tau,ts,g)\n    return total/len(time)\ntime=np.array([2,3,5,6,7,9,10,12],float); event=np.array([1,0,1,1,0,1,0,1]); risk=-time\nsurv6=np.array([.15,.35,.45,.55,.65,.75,.82,.90])\nc_index=harrell_c(time,event,risk); bs6=ipcw_brier(time,event,surv6,6)",
+    "useIt": "from sklearn.metrics import roc_auc_score\ntau=6; known=((event==1)&(time<=tau))|(time>tau); y=((event==1)&(time<=tau)).astype(int)\nauc_complete_cases=roc_auc_score(y[known],(1-surv6)[known])",
+    "verifyIt": "assert c_index==1.0\nassert harrell_c(time,event,np.ones(len(time)))==0.5\nassert 0<=bs6<=1 and np.isfinite(bs6)\nassert auc_complete_cases==1.0\n# The subject censored at time 3 is not labeled a month-6 control.\nassert known[1]==False\nts,g=censor_km(time,event); assert np.all(np.diff(g)<=0)\ntry:\n    harrell_c([1,2],[0,0],[.8,.2])\n    raise AssertionError('expected no-pair error')\nexcept ValueError:\n    pass",
+    "shipIt": "Freeze horizon and metric definitions, fit censoring and preprocessing only on training folds, use chronological subject-grouped tests, publish uncertainty and support counts, and roll back evaluation code with the model when semantics change."
+  },
+  "exercises": [
+    {
+      "prompt": "At day 30, who is an observable control for cumulative/dynamic AUC?",
+      "solution": "A subject known to remain event-free beyond day 30. Someone censored before day 30 has indeterminate status."
+    },
+    {
+      "prompt": "Can two models have identical concordance but different Brier scores?",
+      "solution": "Yes. Any monotone transformation preserves ranking while changing predicted probability levels and therefore probability error."
+    },
+    {
+      "prompt": "Why restrict evaluation before Ghat(t) approaches zero?",
+      "solution": "Few subjects remain observable, inverse weights become extreme, variance rises, and positivity for the desired horizon is effectively lost."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "layers",
+      "title": "Survival evaluation stack",
+      "items": [
+        "Comparable-pair ranking",
+        "Horizon discrimination",
+        "Probability error",
+        "Calibration",
+        "Decision utility"
+      ],
+      "caption": "Each layer answers a different question; higher layers do not become valid from a strong concordance score alone.",
+      "afterSection": "design-and-decisions"
+    },
+    {
+      "type": "compare",
+      "title": "Observable status at a horizon",
+      "left": {
+        "title": "Usable directly",
+        "items": [
+          "Event observed by horizon",
+          "Observed event-free beyond horizon",
+          "Known comparison ordering",
+          "Adequate censoring weight"
+        ]
+      },
+      "right": {
+        "title": "Indeterminate or unstable",
+        "items": [
+          "Censored before horizon",
+          "Pair ordering hidden",
+          "Near-zero G(t)",
+          "Unsupported subgroup"
+        ]
+      },
+      "caption": "Censoring-aware metrics use identifiable contributions without inventing binary labels.",
+      "afterSection": "horizon-discrimination"
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "sksurv-evaluation",
+      "contribution": "Verifies current definitions and implementation guidance for concordance, cumulative dynamic AUC, and Brier scores."
+    },
+    {
+      "resource": "uno-cstat",
+      "contribution": "Grounds inverse-censoring-weighted concordance and its motivation under censoring."
+    },
+    {
+      "resource": "graf-brier",
+      "contribution": "Grounds censoring-adjusted prediction error and integrated survival probability evaluation."
+    }
+  ]
 }

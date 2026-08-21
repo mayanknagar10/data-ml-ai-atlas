@@ -8,34 +8,208 @@
     "mle",
     "as"
   ],
-  "interviewAnswer": "ERM minimizes average training loss; generalization theory asks when low empirical risk also implies low expected risk on unseen data.",
+  "interviewAnswer": "Given hypotheses H and loss ell, population risk is R(h)=E[ell(h(X),Y)] and empirical risk is Rhat(h)=1/n sum_i ell(h(x_i),y_i). ERM chooses hhat minimizing Rhat over H. Generalization requires more than a low training loss because hhat was selected using the data; we control the gap uniformly over H or through stability, compression, margins or other complexity arguments. Excess risk can be separated into approximation error from H, estimation error from finite data, and optimization error from not solving the empirical problem exactly. In practice I choose loss and sample weights to match the deployment estimand, keep preprocessing inside grouped or temporal splits, tune complexity on validation, and evaluate calibration, utility and slices. Regularized ERM adds an inductive bias; it does not repair distribution shift or leakage.",
   "keyPoints": [
-    "Empirical risk",
-    "Population risk",
-    "Hypothesis class",
-    "Generalization gap"
+    "Population risk is the target expectation; empirical risk is its sample estimate.",
+    "ERM over a richer class lowers training error but can increase estimation error.",
+    "Data-dependent selection needs uniform or algorithm-specific generalization reasoning.",
+    "Approximation, estimation and optimization errors are distinct and require different remedies.",
+    "Loss, weights, sampling unit and split encode the real learning objective."
   ],
   "resources": [
     "stanford-cs229",
     "stanford-stats315a"
   ],
   "featured": false,
-  "why": "ERM is the abstraction behind most supervised objectives.",
-  "intuition": "Training optimizes the sample you have, but deployment cares about an unknown population.",
-  "deepDive": "Population risk is an expectation over the data distribution; empirical risk replaces it with a sample average. Capacity, sample size and sampling assumptions affect the gap.",
-  "math": "",
-  "code": "",
+  "why": "Most supervised algorithms minimize an average training loss, whether explicitly through convex optimization or implicitly through stochastic gradients. ERM explains what that computation is trying to approximate and why it can fail. The same empirical minimum may be excellent when the class is controlled and samples represent deployment, or meaningless when IDs leak outcomes, repeated users cross folds, labels are delayed or thousands of models were tried against one validation set. The framework gives precise places to intervene: improve representation for approximation, gather more representative data for estimation, or improve optimization. It also prevents the common mistake of equating near-zero training error with either overfitting or success without considering the algorithm's inductive bias and test distribution.",
+  "intuition": "The true exam contains infinitely many future questions, but only a practice set is visible. ERM chooses the strategy scoring best on that practice set. If allowed to memorize every answer pattern, it can achieve zero practice loss while learning nothing transferable. Restricting the strategy, preferring simpler solutions or using validation injects inductive bias. A concentration bound for one strategy chosen before seeing the practice set is insufficient, because the learner compares many strategies and selects the luckiest. Uniform control asks that none of the allowed strategies has an unexpectedly large gap between practice and future performance.",
+  "deepDive": "ERM replaces an inaccessible population expectation with a sample average and chooses the best hypothesis under that proxy. Its success depends on loss alignment, representative sampling and inductive bias. Excess-risk decomposition tells whether to improve class, data or optimization, while uniform or algorithm-specific arguments handle data-dependent selection. Modern interpolation changes the shape of the story but not the need for honest held-out population evidence.",
+  "math": "R(h)=E_{(X,Y)~P}[ell(h(X),Y)], Rhat_n(h)=n^{-1}sum_i ell(h(x_i),y_i), and hhat in argmin_{h in H} Rhat_n(h). If sup_{h in H}|R(h)-Rhat(h)|<=epsilon, then R(hhat)<=R(h_H)+2epsilon. Excess risk may be decomposed as R(htilde)-R(h*)=[R(h_H)-R(h*)]+[R(hhat)-R(h_H)]+[R(htilde)-R(hhat)], interpreted as approximation, estimation and optimization terms. Regularized ERM minimizes Rhat(h)+lambda Omega(h), equivalently a constrained problem under suitable conditions.",
   "commonMistakes": [
-    "Equating training loss with true risk.",
-    "Assuming ERM guarantees a global optimum for nonconvex networks."
+    {
+      "misconception": "Zero empirical risk proves overfitting.",
+      "correction": "It proves fit to the sample. Generalization depends on data, effective capacity and the selected solution; test honestly."
+    },
+    {
+      "misconception": "A concentration bound for one fixed model applies after testing thousands.",
+      "correction": "Selection is data dependent and needs uniform, corrected or separately held-out evidence."
+    },
+    {
+      "misconception": "Regularization only improves the optimizer.",
+      "correction": "It changes the selected hypothesis and bias-capacity trade-off, even when the empirical problem was already solved."
+    },
+    {
+      "misconception": "Random row splits make empirical risk representative.",
+      "correction": "Groups, time, duplicates and prediction-time leakage can make train and test share information unavailable in deployment."
+    }
   ],
   "followUps": [
-    "What controls the generalization gap?",
-    "How does regularization modify ERM?"
+    {
+      "question": "Why is empirical risk a reasonable proxy?",
+      "answer": "Under representative sampling and capacity or stability control, sample averages concentrate around population risks sufficiently uniformly for selection."
+    },
+    {
+      "question": "What is approximation error?",
+      "answer": "The gap between the best predictor allowed by H and the best target predictor; more data cannot remove a misspecified class's gap."
+    },
+    {
+      "question": "How does early stopping fit ERM?",
+      "answer": "It selects a restricted optimization trajectory using validation, acting as implicit capacity control rather than solving unconstrained ERM fully."
+    }
   ],
-  "production": "Validation must represent deployment; theory cannot fix a mismatched sampling process.",
-  "workedExample": "A deep tree can drive training risk near zero while test risk worsens.",
+  "production": "Maintain a training manifest with target population and prediction time, sampling and grouping, cutoff, loss and reduction, sample and class weights, constraints, hypothesis and preprocessing, augmentation, optimizer, seed, stopping and all validation choices. Reconcile empirical loss from stored predictions with trainer logs. Compare train, validation and mature temporal test risk with uncertainty, calibration and decision utility by critical slices. Monitor label maturity, weight extremes, duplicates, feature leakage, drift, loss tails and optimizer health. Limit repeated adaptive use of final tests and retain an experiment ledger. Protect labels and examples. Rollback data query, preprocessing, model and threshold together because each encodes the empirical objective actually optimized.",
+  "workedExample": "Twelve noisy samples come from a smooth curve. A degree-one polynomial underfits and has noticeable training and test error. A degree-eleven polynomial can interpolate all twelve points, driving empirical squared loss near zero, yet oscillate sharply between them and have high test risk. Validation may choose degree three or five. The failure is not that ERM was computed incorrectly; the hypothesis selection and sample were insufficient to identify a transferable interpolator.",
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "Empirical risk minimization selects a predictor with low average loss on observed samples as a tractable proxy for minimizing unknown population risk. This chapter defines hypothesis classes, loss functions, expected risk, empirical risk, approximation error, estimation error and optimization error. It derives the ERM generalization decomposition, explains uniform convergence and why choosing among many hypotheses invalidates a fixed-model concentration argument, and covers surrogate losses, regularized and constrained ERM, stochastic optimization, interpolation and double descent. It separates i.i.d. theory from grouped, temporal and adaptive data collection. A worked example contrasts linear and interpolating polynomial fits. The lab builds polynomial ERM from normal equations, compares scikit-learn, and verifies that minimum training loss can have worse test risk while validation selects a safer degree. Production guidance versions sampling, loss, weights, features, split and optimizer; monitors population slices and drift; and treats training loss as one component of evidence rather than proof of generalization. ERM is the backbone of supervised learning, but it works only through inductive bias and a representative measurement process.",
+  "prerequisites": [
+    "expectation-variance",
+    "cross-validation",
+    "gradient-descent"
+  ],
+  "learningObjectives": [
+    "Define population and empirical risk for a hypothesis class and chosen loss.",
+    "Decompose excess risk into approximation, estimation and optimization contributions.",
+    "Explain why uniform convergence or algorithmic stability is needed after data-dependent model selection.",
+    "Design weighted, constrained and leakage-safe ERM pipelines under real sampling and deployment conditions."
+  ],
+  "deepSections": [
+    {
+      "id": "risk-and-loss",
+      "title": "Risk connects prediction decisions to a population estimand",
+      "body": "Let Z=(X,Y) follow deployment distribution P and ell(h(X),Y) quantify prediction cost. Population risk R_P(h)=E_P ell is the target; empirical risk averages observed losses. The loss must match the prediction object and action. Squared loss targets a conditional mean and strongly weights outliers; absolute loss targets a median; log loss targets probabilities; asymmetric or cost-sensitive losses encode unequal consequences. Sample weights can transport or rebalance a population, but then effective sample size and calibration change. Observations must correspond to an independent unit or dependence must be modeled: interval rows, images from one patient and repeated user events are not separate independent draws. Labels and features need a defined prediction time. An unbiased empirical risk under one logged policy may not estimate counterfactual risk under another. Before optimizing, state population, sampling mechanism, horizon, loss, constraints and whether missing outcomes are ignorable."
+    },
+    {
+      "id": "excess-risk",
+      "title": "Excess risk separates representation, data and computation",
+      "body": "Let h* be the best possible predictor in a broad target set, h_H the population-risk minimizer within H, hhat_H the empirical minimizer, and htilde the computed solution. Then R(htilde)-R(h*) can be bounded or conceptualized as approximation R(h_H)-R(h*), estimation R(hhat_H)-R(h_H), and optimization R(htilde)-R(hhat_H), with details depending on assumptions. A larger H may reduce approximation error while increasing estimation difficulty. More representative samples shrink estimation error; better features or architecture shrink approximation error; longer or better-conditioned optimization shrinks optimization error. Training loss alone mixes none of these correctly. Regularization can be represented as penalized ERM or a constrained class and adds bias to reduce variance or select among interpolators. In modern overparameterized models, many zero-loss solutions exist and the optimizer, initialization and architecture provide implicit bias, so parameter count alone does not identify effective capacity."
+    },
+    {
+      "id": "uniform-generalization",
+      "title": "Model selection requires control beyond a fixed-hypothesis bound",
+      "body": "For one bounded-loss h fixed independently of data, concentration controls |Rhat(h)-R(h)|. ERM chooses h after seeing all empirical risks, so the lucky minimum can be optimistic. For a finite H, a union bound controls every h simultaneously, introducing log|H|. Infinite classes use VC dimension, Rademacher complexity, covering numbers, margins, stability, PAC-Bayes or compression. A standard ERM argument says if sup_h |R-Rhat|<=epsilon, then R(hhat)<=R(h_H)+2epsilon. Bounds are often conservative and assumption-dependent; they explain scaling and capacity rather than supplying a precise production guarantee. Adaptive reuse of validation data effectively enlarges the selection process and erodes guarantees. Nested evaluation, a final untouched test, experiment ledgers and limited analyst feedback preserve evidence."
+    },
+    {
+      "id": "surrogates-and-operations",
+      "title": "Optimization-friendly surrogates still need target-risk validation",
+      "body": "Zero-one classification loss is discontinuous, so logistic, exponential and hinge losses serve as tractable surrogates. Classification calibration connects surrogate minimization to Bayes decisions under conditions, but finite samples, class weighting and threshold costs still matter. Stochastic mini-batches approximate empirical gradients; sampling, augmentation and curriculum change the effective empirical objective. Early stopping is data-dependent regularization and needs validation. Hyperparameter search, preprocessing, feature selection and threshold tuning belong inside the evaluation protocol. Under temporal or covariate shift, ERM targets the training distribution unless reweighting or robust objectives identify the target. In production, monitor not just aggregate loss but label coverage, weights, subgroup risk, calibration, action cost and the gap between training, validation and mature online cohorts. Reproduce the exact dataset and objective for rollback."
+    }
+  ],
+  "workedExamples": [
+    {
+      "title": "Wrong loss, correct optimizer",
+      "body": "A fraud model minimizes unweighted accuracy loss on a 0.1 percent prevalence population. Predicting no fraud is an empirical optimum with no operational value. The objective failed to encode costs and ranking needs."
+    },
+    {
+      "title": "Optimization versus estimation",
+      "body": "Training loss plateaus above a convex solver's optimum: improve optimization. Training loss reaches zero but later-cohort loss is high: investigate estimation, leakage or shift rather than more optimizer steps."
+    }
+  ],
+  "lab": {
+    "language": "python",
+    "goal": "Fit polynomial ERM solutions, compare scikit-learn, and verify that minimum empirical risk can generalize worse than validation-selected capacity.",
+    "buildIt": "import numpy as np\nrng=np.random.default_rng(7); x=np.linspace(-1,1,14); y=np.sin(3*x)+rng.normal(0,.12,len(x)); xt=np.linspace(-.98,.98,400); yt=np.sin(3*xt)\ndef design(x,degree): return np.vander(np.asarray(x),degree+1,increasing=True)\ndef fit_erm(x,y,degree): return np.linalg.lstsq(design(x,degree),y,rcond=None)[0]\ndef mse(y,p): return float(np.mean((np.asarray(y)-np.asarray(p))**2))\ndegrees=[1,3,5,9,13]; rows=[]\nfor d in degrees:\n    coef=fit_erm(x,y,d); rows.append((d,mse(y,design(x,d)@coef),mse(yt,design(xt,d)@coef)))\ntrain_best=min(rows,key=lambda r:r[1]); test_best=min(rows,key=lambda r:r[2])",
+    "useIt": "from sklearn.preprocessing import PolynomialFeatures\nfrom sklearn.linear_model import LinearRegression\npoly=PolynomialFeatures(degree=3,include_bias=True); sk=LinearRegression(fit_intercept=False).fit(poly.fit_transform(x[:,None]),y)\ncoef3=fit_erm(x,y,3)",
+    "verifyIt": "assert train_best[0]==13\nassert train_best[1]<=min(r[1] for r in rows if r[0]!=13)\nassert train_best[2]>test_best[2]\nassert np.allclose(sk.coef_,coef3)\nassert test_best[0] in degrees and test_best[0]!=13\nassert all(np.isfinite(r[1]) and np.isfinite(r[2]) for r in rows)\n# ERM is invariant to row permutation.\nperm=rng.permutation(len(x)); assert np.allclose(fit_erm(x[perm],y[perm],3),coef3)",
+    "shipIt": "Version population, sampling unit, labels, loss, weights, class, features, split and optimizer; validate on untouched grouped or temporal cohorts, monitor risk and drift by slice, and roll back the complete objective-plus-model artifact."
+  },
+  "exercises": [
+    {
+      "prompt": "Which error does more representative data primarily reduce?",
+      "solution": "Estimation error, although new data can also expose class misspecification and change optimization behavior."
+    },
+    {
+      "prompt": "Why can a richer H lower training risk but worsen test risk?",
+      "solution": "It reduces approximation constraints but enlarges selection capacity, increasing finite-sample estimation error."
+    },
+    {
+      "prompt": "What does uniform convergence buy ERM?",
+      "solution": "It ensures every allowed empirical risk is close to population risk, so choosing the empirical minimum cannot exploit a large hidden gap."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "layers",
+      "title": "Excess-risk decomposition",
+      "items": [
+        "Best target predictor",
+        "Best predictor inside H",
+        "Empirical minimizer",
+        "Computed solution",
+        "Deployment decision and shift"
+      ],
+      "caption": "Representation, finite data, optimization and deployment mismatch create different gaps with different remedies.",
+      "afterSection": "excess-risk"
+    },
+    {
+      "type": "curve",
+      "title": "Capacity and risk",
+      "series": [
+        {
+          "label": "Training risk",
+          "points": [
+            [
+              0.05,
+              0.85
+            ],
+            [
+              0.25,
+              0.58
+            ],
+            [
+              0.48,
+              0.34
+            ],
+            [
+              0.72,
+              0.18
+            ],
+            [
+              0.95,
+              0.08
+            ]
+          ]
+        },
+        {
+          "label": "Validation risk",
+          "points": [
+            [
+              0.05,
+              0.88
+            ],
+            [
+              0.25,
+              0.55
+            ],
+            [
+              0.48,
+              0.31
+            ],
+            [
+              0.72,
+              0.39
+            ],
+            [
+              0.95,
+              0.68
+            ]
+          ]
+        }
+      ],
+      "caption": "Conceptual curves: empirical fit improves monotonically while validation risk can turn upward as selection variance grows.",
+      "afterSection": "uniform-generalization"
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "stanford-cs229",
+      "contribution": "Grounds empirical and generalization error, hypothesis classes, ERM and learning-theory bounds."
+    },
+    {
+      "resource": "stanford-stats315a",
+      "contribution": "Provides modern statistical-learning treatment of excess risk, regularization and generalization."
+    }
+  ]
 }

@@ -6,41 +6,165 @@
   "roles": [
     "ds"
   ],
-  "interviewAnswer": "An inverted index maps terms to documents/postings containing them, making lexical search efficient. Real systems also tokenize, normalize, store term statistics and support field/position information.",
+  "interviewAnswer": "An inverted index maps each normalized term to a sorted postings list of documents that contain it, often including term frequency, positions, field and payload data. Indexing parses documents with a versioned analyzer, emits term-document records, sorts or accumulates them, and writes immutable dictionary and postings segments. AND queries intersect postings, OR queries merge them, and phrase queries require adjacent positions. Sorted doc IDs enable linear or skip-assisted intersection; compression uses doc-ID gaps and compact integer codes. Production engines append segments, expose them on refresh, merge them in the background, and represent deletes with tombstones until merge. I version analyzers and schemas, enforce permissions before final ranking, monitor freshness, segment count, merge debt, cache hit rate and tail latency, and retain an exact snapshot for rollback. Analyzer mismatch between writes and queries is a relevance bug, not cosmetic preprocessing.",
   "keyPoints": [
-    "Index construction vs query-time retrieval.",
-    "Positions enable phrase queries.",
-    "Document/term statistics support ranking."
+    "The dictionary maps terms to sorted postings; postings may contain frequency, positions, fields and payloads.",
+    "Index-time and query-time analyzers must implement a compatible normalization contract.",
+    "Sorted postings make conjunction, phrase checks, skipping and compression efficient.",
+    "Immutable segments simplify concurrency while merges reclaim deletes and improve locality.",
+    "Corpus snapshot, permissions, schema, statistics and analyzer version define search correctness."
   ],
   "resources": [
-    "ir-book"
+    "ir-book",
+    "faiss-getting-started"
   ],
   "featured": false,
-  "why": "Inverted Index & Text Retrieval Pipeline appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
-  "intuition": "Index construction vs query-time retrieval.",
-  "deepDive": "An inverted index maps terms to documents/postings containing them, making lexical search efficient. Real systems also tokenize, normalize, store term statistics and support field/position information. Positions enable phrase queries. Document/term statistics support ranking. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
-  "workedExample": "Index product descriptions so a query only scans postings for its terms rather than every document.",
+  "why": "A dense term-by-document matrix is mostly zero, and scanning every document for every query wastes both latency and computation. Inversion records only observed term occurrences and moves work to indexing, enabling millisecond candidate retrieval over large corpora. The design also supports Boolean filtering, exact phrases, field boosts, BM25 statistics, highlighting and proximity features from one family of structures. But the speedup creates state that must be correct. A missed update produces stale results, a normalization change can make existing terms unreachable, and late permission filtering can leak titles or snippets. Segment and cache behavior can dominate tail latency even when the scoring formula is trivial. Understanding the physical index explains why a seemingly simple relevance request may require reindexing, extra positions, doc values, or a different shard layout.",
+  "intuition": "A textbook index lists each concept followed by page numbers. A search inverted index does the same at machine scale: the term `vector` points to document IDs 2, 9 and 41, perhaps with positions [7, 18] inside document 9. To answer `vector AND database`, intersect two sorted page-number lists rather than rereading every page. To answer the phrase `vector database`, find a document shared by both terms and test whether a `database` position is exactly one after a `vector` position. The dictionary gives the address of each postings list; the list contains just enough evidence to generate and score candidates. Index segments are like separately printed supplement volumes: queries search all visible volumes, and background merges periodically create a consolidated edition.",
+  "deepDive": "The inverted index is a sparse, query-oriented materialization of term occurrences. Its dictionary and sorted postings enable Boolean and positional retrieval, efficient top-k scoring and compact storage. The visible search system also includes analyzer semantics, immutable segments, merges, tombstones, shard coordination, permissions and corpus statistics. Those parts jointly determine recall, latency and correctness; optimizing a postings loop cannot compensate for an incompatible analyzer or stale, unauthorized documents.",
+  "workedExample": "Documents are d0=`fast vector search`, d1=`fast lexical search`, and d2=`vector search index`. The term `fast` has postings [0,1], `vector` has [0,2], and `search` has [0,1,2]. Intersecting `fast` and `vector` returns d0. For phrase `vector search`, d0 contains positions vector=1 and search=2, while d2 contains vector=0 and search=1, so both match. A non-positional index could find shared documents but could not prove adjacency.",
   "commonMistakes": [
-    "Applying the method without checking its assumptions or data-generating process.",
-    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+    {
+      "misconception": "A postings list only needs document IDs for every search feature.",
+      "correction": "Term frequency supports ranking, positions support phrases and proximity, and offsets support highlighting; omit them only after defining requirements."
+    },
+    {
+      "misconception": "Index and query tokenization can evolve independently.",
+      "correction": "Their terms must remain compatible. Analyzer changes commonly require a parallel rebuild and controlled alias switch."
+    },
+    {
+      "misconception": "Deleting a source record immediately removes every search trace.",
+      "correction": "Refresh, replicas, caches, tombstones, snapshots and stored fields need an explicit deletion and compliance lifecycle."
+    },
+    {
+      "misconception": "Post-filtering unauthorized results is always safe.",
+      "correction": "Scores, counts, snippets or latency can leak restricted content; security must be enforced at a nonleaking retrieval boundary."
+    }
   ],
   "followUps": [
-    "What assumptions does Inverted Index & Text Retrieval Pipeline make?",
-    "How would you validate or debug Inverted Index & Text Retrieval Pipeline in practice?"
+    {
+      "question": "Why are postings sorted by document ID?",
+      "answer": "Sorting enables linear intersections, skipping, compact gap encoding and predictable streaming access."
+    },
+    {
+      "question": "When are positions worth their storage cost?",
+      "answer": "When phrases, proximity ranking, exact highlighting or positional features matter. A Boolean-only index may omit them."
+    },
+    {
+      "question": "What is the difference between refresh and commit?",
+      "answer": "A refresh typically makes recent segments searchable; a durable commit establishes a recoverable persisted point. Exact semantics depend on the engine."
+    }
   ],
-  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
-  "visual": {
-    "type": "schema",
-    "title": "Inverted index",
-    "center": "term → posting list",
-    "satellites": [
-      "term: graph → docs 1,4,7",
-      "term: model → docs 2,4",
-      "term: ranking → docs 3,7"
-    ],
-    "caption": "An inverted index maps each term to the documents that contain it, enabling fast lexical retrieval."
-  },
+  "production": "Treat the index as a versioned derived database. Record source snapshot, external document version, schema, analyzers per field, synonym and stop-term sets, permission representation, shard routing, segment format and ranking-statistics epoch. Make ingestion idempotent, reject stale versions, retain dead-letter repair, and reconcile indexed versus source counts. Test token streams and golden queries before any analyzer change. Build migrations into a parallel index, replay a frozen query set for recall, phrase, filter, permission and latency checks, then switch an alias atomically. Monitor ingest lag, refresh lag, rejected documents, segment count, merge backlog, tombstone ratio, disk and memory headroom, cache hit rate, shard skew, timeouts, p50/p95/p99 latency and empty-result rate. Back up compatible segment snapshots and schema metadata. Rollback means switching to the prior complete snapshot and query configuration, not copying a few postings files.",
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "An inverted index turns a document collection into a term-to-postings data structure so search touches documents containing query terms instead of scanning every document. This chapter follows the complete retrieval path: document boundaries, decoding, tokenization, normalization, term dictionary, postings with document IDs, frequencies and positions, Boolean intersection, phrase and field queries, segment construction, compression, merges, deletions, and distributed sharding. It explains why analyzer consistency is a correctness contract, how positional indexes trade storage for expressive queries, and why document frequency and length statistics must remain synchronized with the searchable snapshot. A worked example builds postings for three documents and resolves an AND plus phrase query. The lab implements normalization, positional indexing, linear postings intersection and phrase matching from first principles, then compares the term-document counts with scikit-learn. Production guidance covers immutable segments, write-ahead ingestion, refresh versus commit semantics, tombstones, replicas, checksums, schema migration, backpressure, observability and rollback. The index is not merely a cache: it is the executable representation of the corpus, analyzer, fields, permissions and freshness policy.",
+  "prerequisites": [
+    "hash-tables",
+    "tokenization"
+  ],
+  "learningObjectives": [
+    "Construct a term dictionary and sorted positional postings from a document collection.",
+    "Execute Boolean, phrase, field, and top-k candidate operations using postings rather than full scans.",
+    "Reason about segment construction, compression, updates, deletions, sharding, and query latency.",
+    "Specify analyzer, schema, access-control, freshness, integrity, and rollback contracts for production search."
+  ],
+  "deepSections": [
+    {
+      "id": "analysis-and-postings",
+      "title": "Document analysis defines the vocabulary and occurrence evidence",
+      "body": "Indexing starts by defining a document unit and stable external identifier, decoding bytes, selecting fields, and applying an analyzer. A typical analyzer performs Unicode normalization, tokenization, case handling, optional stemming or lemmatization, stop-term policy, synonyms, and language-specific rules. Each emitted token has a term, document ID, field and optional position, character offsets or payload. The dictionary maps a term to metadata and a pointer into its postings. A basic posting stores doc ID; ranked retrieval adds term frequency and document length; phrase queries and highlighting add positions and offsets. Field-specific analyzers avoid treating a product code, natural-language description and numeric filter identically. Index-time synonym expansion increases storage and complicates changes, while query-time expansion costs latency and can alter matching; choose intentionally. Analyzer versions must be reproducible because changing token boundaries or normalization without rebuilding leaves old and new documents in incompatible vocabularies. Preserve the original stored field separately when exact display or audit is required."
+    },
+    {
+      "id": "query-execution",
+      "title": "Sorted postings turn logical queries into efficient list operations",
+      "body": "For an AND query, intersect sorted doc-ID lists with two pointers in O(m+n), or advance through the shorter list using skips, galloping, or block metadata. OR merges the union; NOT must be scoped carefully because complementing against an enormous universe is expensive and security filters cannot be optional. Order conjunctions by estimated postings length so selective terms reduce candidates early. Phrase evaluation first intersects term postings, then checks whether positions occur at the required offsets. Slop permits bounded gaps; proximity features use minimum positional distance. Wildcards and prefixes can enumerate dictionary terms through finite-state or trie-like structures but need expansion limits. Ranked retrieval often traverses postings document-at-a-time or term-at-a-time, accumulating scores and using upper bounds such as WAND to skip candidates that cannot enter the top k. Filters may use bitsets or column-oriented doc values. Correct query planning uses collection statistics, query operators, field semantics and permission constraints, not just token lookup."
+    },
+    {
+      "id": "construction-and-storage",
+      "title": "Segments, compression and merges make indexing scalable",
+      "body": "A simple builder emits term-doc records and sorts by term then doc ID. Blocked sort-based indexing fills memory, sorts a block, writes a run, and merges runs. Single-pass in-memory indexing accumulates a dictionary and postings until a block is full, avoiding a global term-ID pass. Modern engines write immutable segments: new documents form a fresh segment, a refresh makes it searchable, and a durable commit records a recoverable point. Deletes are tombstones or live-doc bitmaps until merges rewrite surviving postings. Sorted doc IDs are stored as gaps, which are small and compress well with variable-byte, bit packing or related codes; term frequencies and positions have their own streams. Skip data and block maximum scores trade storage for query pruning. Too many small segments increase file handles, cache churn and fan-out; aggressive merges consume I/O and can amplify writes. Capacity planning includes raw text, stored fields, postings, positions, vectors, replicas, merge headroom and snapshot space."
+    },
+    {
+      "id": "distributed-correctness",
+      "title": "Distributed search must reconcile routing, statistics and mutable state",
+      "body": "Large indexes partition documents into shards and replicate each shard. A coordinator analyzes the query, fans out shard requests, merges local top-k results, and may fetch stored fields in a second phase. Shard-local inverse document frequencies can differ; global-statistics strategies improve comparability at extra cost, while randomized routing reduces systematic skew. Routing by tenant or key can support isolation but creates hot or imbalanced shards. Replicas improve read capacity and availability only if refresh and snapshot semantics are understood. Exactly-once indexing is rarely assumed: ingestion should be idempotent by external ID and version, reject out-of-order updates, and expose dead-letter repair. Security filters must participate in candidate generation or an equivalent nonleaking boundary; filtering only after snippets or scores are produced can reveal restricted content. Verify document counts, sampled term postings, checksums, query replay and source-index reconciliation. A rollback restores compatible documents, analyzer, schema, synonyms, statistics, segment snapshot and query code together."
+    }
+  ],
+  "math": "Let P_t=[(d,tf_{t,d},positions_{t,d}),...] be the postings for term t, sorted by d. A conjunctive query returns intersection_t {d:(d,...) in P_t}. Two sorted lists of lengths m and n can be intersected in O(m+n), with skipping improving constants and some distributions. A phrase t_1...t_r matches d when there exists position p such that p in pos(t_1,d) and p+j-1 in pos(t_j,d) for every j. If sorted doc IDs are d_1<...<d_k, gap coding stores d_1,d_2-d_1,...,d_k-d_{k-1}. Query cost depends on postings visited, candidates scored and shards contacted rather than total corpus size alone.",
+  "workedExamples": [
+    {
+      "title": "Selective conjunction planning",
+      "body": "If `database` occurs in one million documents and `hnsw` in two thousand, begin with the hnsw postings and test its candidates against database. Traversing the long list first wastes work without changing results."
+    },
+    {
+      "title": "Analyzer migration failure",
+      "body": "An index built with hyphen splitting stores `zero`, `shot`; a new query analyzer preserves `zero-shot`. Queries suddenly miss old documents. Safe migration builds a parallel index with the new analyzer and switches an alias after replay validation."
+    }
+  ],
+  "lab": {
+    "language": "python",
+    "goal": "Build a positional inverted index, execute AND and phrase queries, compare with scikit-learn term counts, and verify ordering and analyzer invariants.",
+    "buildIt": "import re\nfrom collections import defaultdict\ndef tokenize(text): return re.findall(r\"(?u)\\b\\w+\\b\",text.lower())\ndef build_index(documents):\n    raw=defaultdict(lambda:defaultdict(list))\n    for doc_id,text in enumerate(documents):\n        for pos,term in enumerate(tokenize(text)): raw[term][doc_id].append(pos)\n    return {term:[{'doc_id':d,'tf':len(pos),'positions':pos} for d,pos in sorted(by_doc.items())] for term,by_doc in raw.items()}\ndef intersect(a,b):\n    out=[]; i=j=0\n    while i<len(a) and j<len(b):\n        if a[i]==b[j]: out.append(a[i]); i+=1; j+=1\n        elif a[i]<b[j]: i+=1\n        else: j+=1\n    return out\ndef and_query(index,terms):\n    lists=[[p['doc_id'] for p in index.get(t,[])] for t in map(str.lower,terms)]\n    if not lists: return []\n    result=lists[0]\n    for posting in lists[1:]: result=intersect(result,posting)\n    return result\ndef phrase_query(index,phrase):\n    terms=tokenize(phrase); candidates=and_query(index,terms); hits=[]\n    lookup={t:{p['doc_id']:set(p['positions']) for p in index.get(t,[])} for t in terms}\n    for d in candidates:\n        if any(all((p+j) in lookup[t][d] for j,t in enumerate(terms)) for p in lookup[terms[0]][d]): hits.append(d)\n    return hits\ndocs=['Fast vector search','Fast lexical search','Vector search index']; index=build_index(docs)",
+    "useIt": "from sklearn.feature_extraction.text import CountVectorizer\ncv=CountVectorizer(lowercase=True,token_pattern=r'(?u)\\b\\w+\\b'); matrix=cv.fit_transform(docs)\nterm_counts=matrix.toarray(); vocab=cv.vocabulary_",
+    "verifyIt": "assert and_query(index,['fast','vector'])==[0]\nassert phrase_query(index,'vector search')==[0,2]\nassert phrase_query(index,'search vector')==[]\nassert [p['doc_id'] for p in index['search']]==[0,1,2]\nassert all(p['tf']==len(p['positions']) for ps in index.values() for p in ps)\nassert term_counts[:,vocab['search']].tolist()==[1,1,1]\nassert tokenize('CAFÉ café')==['café','café']\nassert and_query(index,['missing'])==[]",
+    "shipIt": "Version source IDs, schema and analyzer; build immutable segments, reconcile counts and sampled postings, enforce permissions before exposure, monitor refresh and merge health, and switch aliases only after replay validation with a rollback snapshot."
+  },
+  "exercises": [
+    {
+      "prompt": "Postings are A=[1,4,8,10] and B=[2,4,8,11]. What is A AND B?",
+      "solution": "[4,8]. A two-pointer scan advances the smaller current document ID and emits equal IDs."
+    },
+    {
+      "prompt": "Why can a phrase query not be answered from document IDs and term frequencies alone?",
+      "solution": "Those fields show co-occurrence but not token order or adjacency; positional postings are required."
+    },
+    {
+      "prompt": "A stemmer change is deployed only at query time. What failure should you expect?",
+      "solution": "New query terms may not match the old indexed vocabulary, producing asymmetric recall. Rebuild or preserve compatible analysis."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "flow",
+      "title": "Text-to-search pipeline",
+      "items": [
+        "Source document and version",
+        "Field analysis",
+        "Term-position records",
+        "Dictionary and postings segments",
+        "Candidate and phrase execution",
+        "Ranked authorized results"
+      ],
+      "caption": "Every stage is versioned because retrieval correctness depends on the same analysis and state assumptions.",
+      "afterSection": "analysis-and-postings"
+    },
+    {
+      "type": "schema",
+      "title": "Positional posting anatomy",
+      "center": "term -> postings",
+      "satellites": [
+        "dictionary pointer",
+        "doc ID gap",
+        "term frequency",
+        "position gaps",
+        "offset or payload",
+        "live-doc and permission state"
+      ],
+      "caption": "Optional posting fields trade index size for ranking, phrase, highlighting and policy capabilities.",
+      "afterSection": "construction-and-storage"
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "ir-book",
+      "contribution": "Grounds inverted-index construction, postings, token processing, compression and Boolean query execution."
+    },
+    {
+      "resource": "faiss-getting-started",
+      "contribution": "Provides a contrasting official vector-index interface and reinforces explicit index, add and search lifecycle contracts."
+    }
+  ]
 }

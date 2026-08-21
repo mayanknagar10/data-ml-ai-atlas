@@ -1,0 +1,34 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Generalized Additive Models (GAMs) — Code Lab</title><script>(()=>{const s=localStorage.getItem('atlas-theme');const t=s||((matchMedia('(prefers-color-scheme: dark)').matches)?'dark':'light');document.documentElement.dataset.theme=t})()</script><style>:root{--bg:#fff;--text:#121417;--muted:#5d6470;--line:#dfe3e8;--soft:#f6f7f8;--blue:#155eef;--code:#0d1117;color-scheme:light}html[data-theme=dark]{--bg:#0d1117;--text:#eef2f6;--muted:#a8b0ba;--line:#2b333d;--soft:#171d24;--blue:#8fb4ff;--code:#070a0e;color-scheme:dark}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.6 Inter,system-ui,sans-serif}main{max-width:980px;margin:auto;padding:44px 22px 80px}a{color:var(--blue)}h1{font-size:42px;line-height:1.05;margin:8px 0 12px}.k{font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--blue);font-weight:800}.lead{color:var(--muted);font-size:17px}.top{display:flex;justify-content:space-between;gap:16px}button{border:1px solid var(--line);background:var(--soft);color:var(--text);border-radius:8px;padding:7px 9px;cursor:pointer}section{border-top:1px solid var(--line);padding-top:22px;margin-top:26px}pre{background:var(--code);color:#e6edf3;padding:18px;border-radius:12px;overflow:auto;font:13px/1.55 ui-monospace,monospace}.links{display:flex;gap:12px;flex-wrap:wrap;margin:18px 0}.links a{border:1px solid var(--line);border-radius:8px;padding:7px 9px;text-decoration:none;font-size:12px}@media(max-width:600px){h1{font-size:34px}.top{display:block}}</style></head><body><main><div class="top"><div><div class="k">Data, ML & AI Atlas · Runnable Lab</div><h1>Generalized Additive Models (GAMs)</h1></div><button id="t">◐ Theme</button></div><p class="lead">Build a centered additive spline design, fit penalized components, compare with an idiomatic scikit-learn pipeline, and verify additivity, permutation, and nonlinear generalization.</p><div class="links"><a href="../../index.html#/lesson/gam">← Full lesson</a><a href="lab.py">Combined Python file</a><a href="README.md">README</a></div><section><h2>1 · Build it</h2><p>Minimal implementation with as little framework abstraction as practical.</p><pre>import numpy as np
+def cubic_block(x,knots):
+    x=np.asarray(x,float).reshape(-1)
+    B=np.column_stack([x,x**2,x**3]+[np.maximum(x-k,0)**3 for k in knots])
+    return B
+def additive_design(X,knots_by_feature,means=None):
+    blocks=[cubic_block(X[:,j],knots_by_feature[j]) for j in range(X.shape[1])]
+    raw=np.column_stack(blocks)
+    if means is None: means=raw.mean(0)
+    return np.column_stack([np.ones(len(X)),raw-means]),means
+def fit_additive(X,y,knots,alpha=.02):
+    D,means=additive_design(X,knots); P=np.eye(D.shape[1]); P[0,0]=0
+    coef=np.linalg.solve(D.T@D+alpha*P,D.T@y)
+    return coef,means
+rng=np.random.default_rng(12)
+X=rng.uniform(-1,1,size=(240,2)); y=np.sin(2.6*X[:,0])+1.4*(X[:,1]**2-.33)+rng.normal(0,.12,240)
+train=np.arange(240)%4!=0; test=~train; knots=[[-.5,0,.5],[-.5,0,.5]]
+coef,means=fit_additive(X[train],y[train],knots)
+Dtest,_=additive_design(X[test],knots,means); pred=Dtest@coef</pre></section><section><h2>2 · Use it</h2><p>The same idea through a common library or practical API.</p><pre>from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import SplineTransformer
+from sklearn.linear_model import Ridge,LinearRegression
+sk=make_pipeline(SplineTransformer(n_knots=5,degree=3,include_bias=False),Ridge(alpha=.02)).fit(X[train],y[train])
+sk_pred=sk.predict(X[test])
+linear=LinearRegression().fit(X[train],y[train])</pre></section><section><h2>3 · Ship it</h2><p>Persist per-component bases, centering vectors, penalties, link, interaction set, support, and component order; test component sums against total predictions, monitor contribution and support drift, and canary or roll back the complete GAM pipeline.</p></section><section><h2>4 · Verify it</h2><p>Assertions and sanity checks that catch conceptual or implementation mistakes.</p><pre>assert np.mean((pred-y[test])**2)&lt;0.08
+assert np.mean((sk_pred-y[test])**2)&lt;np.mean((linear.predict(X[test])-y[test])**2)
+# Additivity: changing feature 0 has the same contribution at two feature-1 values.
+base=np.array([[0.1,-.8],[.7,-.8],[0.1,.8],[.7,.8]])
+Db,_=additive_design(base,knots,means); bp=Db@coef
+assert abs((bp[1]-bp[0])-(bp[3]-bp[2]))&lt;1e-10
+perm=np.random.default_rng(2).permutation(train.sum())
+coef2,means2=fit_additive(X[train][perm],y[train][perm],knots)
+assert np.allclose(means2,means)
+assert np.allclose(coef2,coef,atol=1e-8)
+assert np.isfinite(pred).all()</pre></section></main><script>const b=document.getElementById('t');function u(){b.textContent=document.documentElement.dataset.theme==='dark'?'☀ Light':'☾ Dark'}u();b.onclick=()=>{const n=document.documentElement.dataset.theme==='dark'?'light':'dark';document.documentElement.dataset.theme=n;localStorage.setItem('atlas-theme',n);u()}</script></body></html>

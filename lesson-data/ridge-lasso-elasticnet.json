@@ -7,58 +7,236 @@
     "ds",
     "as"
   ],
-  "interviewAnswer": "Ridge uses L2 regularization to shrink coefficients; Lasso uses L1 and can set coefficients exactly to zero; Elastic Net combines both, often helping with correlated features.",
+  "interviewAnswer": "Ridge minimizes squared error plus an L2 coefficient penalty, shrinking correlated or weakly identified directions continuously and improving stability. Lasso uses L1, whose corners can set coefficients exactly to zero, but selection may be unstable among correlated features. Elastic net combines both, often retaining correlated groups while remaining sparse. I standardize continuous features within each training fold, generally exclude the intercept from the penalty, tune alpha and l1_ratio with a split that matches deployment, and reserve a final test set. Regularization trades bias for variance; it does not fix leakage or confounding, and lasso's nonzero set should not be interpreted as a uniquely true or causally important feature list.",
   "keyPoints": [
-    "Regularization trades variance for bias.",
-    "Scale features before coefficient-penalty comparisons.",
-    "Tune strength with validation."
+    "Ridge stabilizes all coefficients; lasso can produce exact zeros.",
+    "Elastic net combines grouping stability with sparsity.",
+    "Penalty strength depends on feature scale and library objective conventions.",
+    "Tune the whole preprocessing-plus-model pipeline on honest folds.",
+    "Sparse prediction and valid post-selection inference are different goals."
   ],
   "resources": [
     "isl",
-    "sklearn"
+    "sklearn-linear-models",
+    "glmnet-coordinate-descent"
   ],
   "featured": true,
-  "why": "Ridge, Lasso & Elastic Net appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
-  "intuition": "Regularization trades variance for bias.",
-  "deepDive": "Ridge uses L2 regularization to shrink coefficients; Lasso uses L1 and can set coefficients exactly to zero; Elastic Net combines both, often helping with correlated features. Scale features before coefficient-penalty comparisons. Tune strength with validation. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
-  "workedExample": "For thousands of correlated marketing features, Elastic Net can stabilize estimates while selecting a sparse-ish subset.",
+  "why": "Modern tables often contain many correlated, noisy, or engineered features relative to independent observations. Ordinary least squares spends variance estimating directions the data barely identify. Penalization encodes a willingness to accept some bias in exchange for smaller sampling variation and improved test prediction. Ridge is especially useful for dense weak signals and collinearity. Lasso can reduce serving and interpretation surface by producing sparse coefficients. Elastic net is often safer when variables arrive in correlated groups, such as one-hot categories, lag families, or related embeddings. These benefits only appear under a correct pipeline: scale leakage, duplicated entities across folds, or tuning on the test set can make a path look better than it is. The methods also create operational questions—what happens when a selected feature disappears, how stable is the active set, and how should coefficient changes be monitored—that a purely algebraic account misses.",
+  "intuition": "Least squares defines elliptical contours of equal training error around its optimum. A penalty restricts or charges movement away from zero. Ridge uses a round L2 geometry, so the first contour touching a radius constraint usually lands on a smooth boundary with every coordinate nonzero. It pulls hardest in poorly identified directions and turns an unstable inverse into a better-conditioned system. Lasso uses a diamond-shaped L1 geometry with corners on coordinate axes; a contour often touches a corner, making a coefficient exactly zero. With two nearly duplicate predictors, many combinations fit similarly. Ridge tends to share weight, while lasso may pick either one based on tiny sample changes. Elastic net rounds the lasso while preserving corners, encouraging a sparse but more grouped solution. The coefficient path as penalty weakens shows when features enter and whether signs or identities change. Stability across resamples is as informative as a single chosen model.",
+  "deepDive": "Regularization changes the estimation problem, not merely the optimizer. Ridge adds stable curvature in weak design directions; lasso introduces a nonsmooth threshold that creates zeros; elastic net combines both. Scaling, objective convention, cross-validation structure, and stability evidence are therefore part of the mathematical meaning of the fitted coefficients. The useful product is a versioned pipeline and tuning decision, not a bare alpha value.",
+  "workedExample": "Two standardized marketing features correlate at 0.98 because they describe nearly the same campaign exposure. Ordinary least squares estimates 3.8 and -2.9 in one sample, then 0.5 and 0.4 in another, while combined predictions barely move. Ridge shares a smaller total effect across both and stabilizes prediction. Lasso selects one and zeros the other, but the selected identity flips across bootstrap samples. Elastic net keeps both with moderate shrinkage. This is evidence about redundant representation, not proof that one channel is truly causal.",
   "commonMistakes": [
-    "Applying the method without checking its assumptions or data-generating process.",
-    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+    {
+      "misconception": "Lasso always finds the true important variables.",
+      "correction": "Selection depends on signal, correlation, sample size, scaling, penalty, and assumptions. Predictive sparsity is not guaranteed scientific discovery or causal importance."
+    },
+    {
+      "misconception": "Scaling before cross-validation is harmless.",
+      "correction": "Global scaling leaks validation-distribution information into training and changes the penalty. Fit scaling inside every fold through a pipeline."
+    },
+    {
+      "misconception": "Alpha values are directly comparable across libraries.",
+      "correction": "Objectives differ in factors of n, one-half, sample weights, and inverse-strength parameters. Compare documented objective functions."
+    },
+    {
+      "misconception": "Ridge solves all multicollinearity problems.",
+      "correction": "It stabilizes prediction and yields a unique penalized solution, but it does not create separate information for interpreting redundant variables causally."
+    }
   ],
   "followUps": [
-    "What assumptions does Ridge, Lasso & Elastic Net make?",
-    "How would you validate or debug Ridge, Lasso & Elastic Net in practice?"
+    {
+      "question": "Why does lasso produce exact zeros but ridge usually does not?",
+      "answer": "The L1 penalty is nonsmooth at zero and its constraint geometry has axis-aligned corners. Soft-thresholding maps a range of partial correlations exactly to zero; L2 shrinkage is smooth."
+    },
+    {
+      "question": "When would you prefer elastic net over lasso?",
+      "answer": "When predictors are strongly correlated or arrive in groups and you want sparsity without arbitrarily retaining only one representative. Validate both rho and total penalty."
+    },
+    {
+      "question": "Can regularized coefficients have ordinary OLS p-values?",
+      "answer": "Not by default. Shrinkage and data-dependent selection change the sampling distribution. Use methods designed for penalized or post-selection inference, or separate confirmatory data."
+    }
   ],
-  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "production": "Deploy preprocessing and coefficients as one immutable artifact. Persist feature names and order, category vocabulary, imputation, means and scales, penalty objective, solver, convergence tolerance, sample weights, and tuning folds. Verify predictions against a golden batch and assert behavior under feature permutation, missing columns, and unseen categories. Monitor input drift in standardized units, prediction error, active-set changes, coefficient norms, solver warnings, and dependency availability. For sparse models, test the effect of losing each active feature and define fallback behavior. Repeated retraining can swap correlated selected variables, causing false interpretability alarms or unstable downstream contracts; compare group-level contributions and predictions as well as raw coefficients. Keep the final test window and prior pipeline protected, canary the challenger, and roll back the entire preprocessing-model-policy bundle when error, stability, latency, or subgroup criteria fail.",
   "lab": {
-    "goal": "See how L1/L2 regularization changes coefficients.",
     "language": "python",
-    "buildIt": "import numpy as np\nfrom sklearn.datasets import make_regression\nX,y=make_regression(n_samples=250,n_features=12,n_informative=4,noise=15,random_state=0)\n",
-    "useIt": "from sklearn.pipeline import make_pipeline\nfrom sklearn.preprocessing import StandardScaler\nfrom sklearn.linear_model import Ridge,Lasso\nridge=make_pipeline(StandardScaler(),Ridge(alpha=10)).fit(X,y)\nlasso=make_pipeline(StandardScaler(),Lasso(alpha=3,max_iter=10000)).fit(X,y)\nprint(ridge[-1].coef_)\nprint(lasso[-1].coef_)\n",
-    "verifyIt": "assert (abs(lasso[-1].coef_)<1e-8).sum() >= 1\n",
-    "shipIt": "Tune alpha with leakage-safe cross-validation; persist the full preprocessing+model pipeline so training and serving use identical scaling."
-  },
-  "visual": {
-    "type": "compare",
-    "title": "Regularization behavior",
-    "left": {
-      "title": "Ridge (L2)",
-      "items": [
-        "Shrinks coefficients smoothly",
-        "Usually keeps all features"
-      ]
-    },
-    "right": {
-      "title": "Lasso (L1)",
-      "items": [
-        "Can drive coefficients to zero",
-        "Acts as feature selection"
-      ]
-    },
-    "caption": "Elastic Net combines L1 and L2 penalties."
+    "goal": "Implement ridge and lasso coordinate descent on standardized data, compare with scikit-learn, and verify shrinkage, sparsity, permutation, and objective convergence.",
+    "buildIt": "import numpy as np\ndef soft(t,a): return np.sign(t)*max(abs(t)-a,0.0)\ndef ridge_fit(X,y,alpha):\n    X=np.asarray(X,float); y=np.asarray(y,float)\n    return np.linalg.solve(X.T@X+alpha*np.eye(X.shape[1]),X.T@y)\ndef lasso_cd(X,y,alpha,steps=5000,tol=1e-12):\n    X=np.asarray(X,float); y=np.asarray(y,float); n,p=X.shape; b=np.zeros(p)\n    old=np.inf\n    for _ in range(steps):\n        for j in range(p):\n            r=y-X@b+X[:,j]*b[j]\n            b[j]=soft((X[:,j]@r)/n,alpha)/((X[:,j]@X[:,j])/n)\n        obj=np.mean((y-X@b)**2)/2+alpha*np.abs(b).sum()\n        if abs(old-obj)<tol: break\n        old=obj\n    return b,obj\nrng=np.random.default_rng(7)\nX=rng.normal(size=(120,4)); X=(X-X.mean(0))/X.std(0)\ny=2.5*X[:,0]-1.2*X[:,2]+rng.normal(scale=.25,size=120); y-=y.mean()\nridge_b=ridge_fit(X,y,alpha=12.0)\nlasso_b,lasso_obj=lasso_cd(X,y,alpha=0.08)",
+    "useIt": "from sklearn.linear_model import Ridge,Lasso\nsk_ridge=Ridge(alpha=12.0,fit_intercept=False).fit(X,y)\nsk_lasso=Lasso(alpha=0.08,fit_intercept=False,max_iter=100000,tol=1e-12).fit(X,y)",
+    "verifyIt": "ols=np.linalg.lstsq(X,y,rcond=None)[0]\nassert np.linalg.norm(ridge_b)<np.linalg.norm(ols)\nassert np.allclose(ridge_b,sk_ridge.coef_,atol=1e-10)\nassert np.allclose(lasso_b,sk_lasso.coef_,atol=2e-7)\nassert np.count_nonzero(np.abs(lasso_b)<1e-8)>=2\nperm=np.array([2,0,3,1])\nperm_b,_=lasso_cd(X[:,perm],y,alpha=0.08)\nunperm=np.empty_like(perm_b); unperm[perm]=perm_b\nassert np.allclose(unperm,lasso_b,atol=2e-7)\nzero_obj=np.mean(y**2)/2\nassert lasso_obj<zero_obj",
+    "shipIt": "Persist preprocessing statistics, exact objective convention, alpha, l1 ratio, solver and feature order; reject schema drift, track convergence and coefficient-path stability, ablate active dependencies, and keep the previous pipeline for canary rollback."
   },
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "Ridge, lasso, and elastic net regularize linear models by charging for coefficient magnitude. They address variance, ill-conditioning, and high-dimensional representation, but they express different beliefs and produce different stability properties. This chapter derives the penalized objectives, explains ridge as continuous shrinkage, lasso as sparse soft-thresholding, and elastic net as a compromise that can keep correlated groups together. You will learn why scaling must be fit inside the training pipeline, why the intercept is usually not penalized, how cross-validation chooses predictive tuning parameters, and why lasso's selected variables are not automatically scientific discoveries. Coefficient paths and bias-variance trade-offs are connected to design geometry and Bayesian priors. A correlated-feature example shows ridge distributing weight while lasso may arbitrarily choose one representative. The lab implements ridge and coordinate-descent lasso from scratch, compares with scikit-learn, and verifies shrinkage, sparsity, permutation, and convergence invariants. Production guidance covers feature-order contracts, sparse schema evolution, convergence, tuning leakage, coefficient drift, challenger evaluation, and rollback. Regularization can stabilize a prediction system; it cannot create information, fix leakage, or make a conditional association causal.",
+  "prerequisites": [
+    "linear-regression",
+    "norms-distances"
+  ],
+  "learningObjectives": [
+    "Compare ridge, lasso, and elastic-net objectives, geometry, and coefficient behavior.",
+    "Implement ridge and lasso mechanisms and verify their solutions against a trusted library.",
+    "Design leakage-safe scaling and cross-validation for regularization strength.",
+    "Explain why sparse selection can be unstable and why predictive tuning is not valid post-selection inference."
+  ],
+  "deepSections": [
+    {
+      "id": "objectives-and-scaling",
+      "title": "Objectives, parameterization, and scaling",
+      "body": "For centered design X and outcome y, ridge solves min_b (1/(2n))||y-Xb||_2^2 + (lambda/2)||b||_2^2. Lasso replaces the penalty with lambda||b||_1. Elastic net uses lambda[rho||b||_1 +(1-rho)||b||_2^2/2], where rho controls the mix. Packages use different constants: some omit 1/n or use alpha and C with opposite direction. Compare mathematical objectives, not parameter names. A penalty acts on coefficient units. If age is measured in years and income in dollars, equal coefficient charges do not represent equal predictive contribution. Standardize continuous columns using statistics learned on the training fold and applied unchanged to validation and serving. Binary indicators may or may not be standardized depending on the desired penalty interpretation; document the choice. The intercept usually remains unpenalized because it sets the outcome baseline rather than complexity, and centering separates it from slopes. Sample weights also change the effective objective and should be normalized or interpreted with library conventions. Collinearity, sparse matrices, and constrained feature groups may require specialized solvers, but convergence diagnostics remain part of the model evidence."
+    },
+    {
+      "id": "ridge-mechanism",
+      "title": "Ridge shrinks unstable directions",
+      "body": "Ridge has closed-form solution (X^T X+n lambda I)^-1X^T y under the displayed scaling, computed with a linear solver rather than an inverse. In the singular-vector basis X=U S V^T, ordinary least-squares contributions divide by singular values s_j, making small-s_j directions explode. Ridge uses factors s_j/(s_j^2+n lambda), damping weak directions most. It therefore yields a unique slope vector for lambda>0 even under exact collinearity, improves numerical conditioning, and often reduces prediction variance. It does not set coefficients exactly to zero. From a Bayesian view, the objective is a maximum a posteriori estimate under an independent zero-centered Gaussian prior after aligning noise and penalty scales; that interpretation is conditional on the prior and likelihood, not a universal uncertainty statement. Effective degrees of freedom decrease smoothly as lambda increases. Ridge is not invariant to arbitrary feature rescaling, which reinforces the pipeline requirement. It can also be used with polynomial or spline bases, where shrinkage controls flexibility, though structured smoothness penalties may be more appropriate than penalizing raw basis coefficients equally."
+    },
+    {
+      "id": "lasso-elastic-mechanism",
+      "title": "Lasso sparsity and elastic-net grouping",
+      "body": "For one standardized coordinate with all others held fixed, lasso updates the coefficient by soft-thresholding its partial correlation: values within the lambda band become zero; larger values are reduced toward zero. Cyclic coordinate descent repeats these updates until the objective or duality gap converges. Sparsity can lower serving cost and create a compact prediction rule, but it is not a guarantee of selecting the data-generating variables. When p exceeds n, a generic lasso solution selects at most roughly n features, and correlated features can substitute unpredictably. Small perturbations may swap active variables while predictions barely change. Elastic net adds L2 curvature, making the objective more strongly convex and encouraging correlated variables to enter together. The mixing ratio is another tuning parameter. Exact zeros also depend on solver tolerance and scaling. If feature groups must enter or leave together, group lasso or structured penalties encode that contract more directly. If unbiased effect estimation is the goal, naive confidence intervals after using the same data for selection ignore selection uncertainty; sample splitting, selective inference, or domain-predeclared models may be required."
+    },
+    {
+      "id": "tuning-and-operational-evidence",
+      "title": "Tune for the deployment question",
+      "body": "Construct a pipeline containing imputation, encoding, scaling, and the penalized estimator. Fit every learned transformation inside each training fold. Use grouped or chronological folds when entities or time would leak under random splitting. Search lambda on a log scale and include a simple unregularized or mean baseline. For elastic net, tune rho without exploding the search; repeated cross-validation can expose instability. Select by the operational metric and consider the one-standard-error rule when a simpler stronger penalty performs indistinguishably. Keep a final test period untouched until design choices are frozen. Record the entire coefficient path, convergence status, active-set stability, and performance uncertainty, not only the winning point estimate. Under covariate drift, coefficients can remain numerically fixed while standardized inputs change meaning, so persist preprocessing statistics. A sparse model also has a dependency contract: removal, latency, or semantic drift of one active feature can be disproportionately damaging. Evaluate ablations and define fallback behavior. Regularization reduces estimation variance; it cannot compensate for missing target signal, mislabeled outcomes, post-outcome leakage, or deployment populations outside training support."
+    }
+  ],
+  "math": "Using centered X and y, ridge objective J_R(b)=||y-Xb||^2/(2n)+lambda||b||^2/2 has solution (X^T X+n lambda I)b=X^T y. Lasso J_L(b)=||y-Xb||^2/(2n)+lambda||b||_1 has coordinate update b_j <- S(r_j,lambda)/z_j, where r_j=(1/n)X_j^T[y-X_{-j}b_{-j}], z_j=(1/n)||X_j||^2, and S(t,l)=sign(t)max(|t|-l,0). Elastic net adds lambda(1-rho)||b||^2/2 and scales the denominator by z_j+lambda(1-rho), with threshold lambda rho. Intercepts are handled separately.",
+  "workedExamples": [
+    {
+      "title": "Penalty path under correlated predictors",
+      "body": "At very large lambda, all standardized slopes are near zero. As lambda decreases, a strong feature enters. Under lasso, one of two near-duplicates may enter while the other stays zero; under elastic net they often enter together. Plot validation error and both coefficient paths. If the active identity changes across folds but predictions are stable, communicate group-level signal rather than a definitive selected variable."
+    },
+    {
+      "title": "Why fold-local scaling matters",
+      "body": "Suppose a future validation period has a much higher feature mean. Scaling once on all data lets that future mean influence the training representation and penalty. The apparent validation performance is optimistic. A pipeline fits mean and scale on each training fold, transforms its validation fold with those stored values, and repeats the process for every candidate penalty."
+    }
+  ],
+  "exercises": [
+    {
+      "prompt": "Why does ridge especially shrink directions with small singular values?",
+      "solution": "OLS divides by small singular values, amplifying noise. Ridge replaces the inverse factor with s/(s^2+n lambda), which damps small-s directions most."
+    },
+    {
+      "prompt": "Two lasso fits choose different correlated features but have nearly identical test predictions. What should you conclude?",
+      "solution": "The data support a shared predictive direction but do not stably identify one feature. Report selection instability and avoid treating either active variable as uniquely important."
+    },
+    {
+      "prompt": "A library uses objective ||y-Xb||^2 + alpha||b||^2 while your derivation uses mean squared loss plus lambda||b||^2. Relate strengths.",
+      "solution": "Match coefficients: dividing the library objective by n gives mean squared loss plus (alpha/n)||b||^2, up to any one-half convention. Thus lambda scales with alpha/n under aligned definitions."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "curve",
+      "title": "Coefficient paths as penalty weakens",
+      "series": [
+        {
+          "label": "Strong signal",
+          "points": [
+            [
+              0.05,
+              0.5
+            ],
+            [
+              0.25,
+              0.52
+            ],
+            [
+              0.45,
+              0.61
+            ],
+            [
+              0.65,
+              0.75
+            ],
+            [
+              0.9,
+              0.88
+            ]
+          ]
+        },
+        {
+          "label": "Correlated substitute",
+          "points": [
+            [
+              0.05,
+              0.5
+            ],
+            [
+              0.25,
+              0.5
+            ],
+            [
+              0.45,
+              0.52
+            ],
+            [
+              0.65,
+              0.63
+            ],
+            [
+              0.9,
+              0.72
+            ]
+          ]
+        },
+        {
+          "label": "Noise",
+          "points": [
+            [
+              0.05,
+              0.5
+            ],
+            [
+              0.9,
+              0.51
+            ]
+          ]
+        }
+      ],
+      "caption": "Conceptual path: stronger penalties shrink coefficients; entry order and stability reveal how representation and correlation affect selection.",
+      "afterSection": "lasso-elastic-mechanism"
+    },
+    {
+      "type": "compare",
+      "title": "Regularizer behavior",
+      "left": {
+        "title": "Ridge (L2)",
+        "items": [
+          "Continuous shrinkage",
+          "Keeps correlated groups",
+          "Unique with lambda > 0",
+          "Dense dependency surface"
+        ]
+      },
+      "right": {
+        "title": "Lasso / elastic net",
+        "items": [
+          "L1 creates exact zeros",
+          "Selection may be unstable",
+          "Elastic net adds grouping",
+          "Sparse serving surface"
+        ]
+      },
+      "caption": "The penalties trade sparsity, grouping behavior, bias, variance, and operational dependency differently.",
+      "afterSection": "ridge-mechanism"
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "glmnet-coordinate-descent",
+      "contribution": "Provides the canonical coordinate-descent path algorithms and exact elastic-net objective family."
+    },
+    {
+      "resource": "sklearn-linear-models",
+      "contribution": "Verifies current ridge, lasso, elastic-net objectives, APIs, solver behavior, and practical guidance."
+    },
+    {
+      "resource": "isl",
+      "contribution": "Supports the bias-variance, coefficient-path, validation, and interpretability treatment for shrinkage methods."
+    }
+  ]
 }

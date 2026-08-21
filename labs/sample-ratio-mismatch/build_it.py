@@ -8,6 +8,6 @@ from math import erfc,sqrt
 def srm_two_arm(observed,proportions=(0.5,0.5)):
     stat,expected=srm_stat(observed,proportions)
     return stat,erfc(sqrt(stat/2)),expected
-global_report=srm_two_arm([10000,9700])
-slices={'before':[5000,5002],'after':[5000,4698]}
+global_report=srm_two_arm([10000,9300])
+slices={'before':[5000,5002],'after':[5000,4298]}
 slice_reports={k:srm_two_arm(v) for k,v in slices.items()}

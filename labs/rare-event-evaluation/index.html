@@ -1,0 +1,33 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Rare-event Evaluation &amp; Alert Thresholds — Code Lab</title><script>(()=>{const s=localStorage.getItem('atlas-theme');const t=s||((matchMedia('(prefers-color-scheme: dark)').matches)?'dark':'light');document.documentElement.dataset.theme=t})()</script><style>:root{--bg:#fff;--text:#121417;--muted:#5d6470;--line:#dfe3e8;--soft:#f6f7f8;--blue:#155eef;--code:#0d1117;color-scheme:light}html[data-theme=dark]{--bg:#0d1117;--text:#eef2f6;--muted:#a8b0ba;--line:#2b333d;--soft:#171d24;--blue:#8fb4ff;--code:#070a0e;color-scheme:dark}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.6 Inter,system-ui,sans-serif}main{max-width:980px;margin:auto;padding:44px 22px 80px}a{color:var(--blue)}h1{font-size:42px;line-height:1.05;margin:8px 0 12px}.k{font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--blue);font-weight:800}.lead{color:var(--muted);font-size:17px}.top{display:flex;justify-content:space-between;gap:16px}button{border:1px solid var(--line);background:var(--soft);color:var(--text);border-radius:8px;padding:7px 9px;cursor:pointer}section{border-top:1px solid var(--line);padding-top:22px;margin-top:26px}pre{background:var(--code);color:#e6edf3;padding:18px;border-radius:12px;overflow:auto;font:13px/1.55 ui-monospace,monospace}.links{display:flex;gap:12px;flex-wrap:wrap;margin:18px 0}.links a{border:1px solid var(--line);border-radius:8px;padding:7px 9px;text-decoration:none;font-size:12px}@media(max-width:600px){h1{font-size:34px}.top{display:block}}</style></head><body><main><div class="top"><div><div class="k">Data, ML & AI Atlas · Runnable Lab</div><h1>Rare-event Evaluation &amp; Alert Thresholds</h1></div><button id="t">◐ Theme</button></div><p class="lead">Implement rare-event counts, top-k metrics, average precision, and cost-sensitive threshold selection, then verify against scikit-learn and imbalance invariants.</p><div class="links"><a href="../../index.html#/lesson/rare-event-evaluation">← Full lesson</a><a href="lab.py">Combined Python file</a><a href="README.md">README</a></div><section><h2>1 · Build it</h2><p>Minimal implementation with as little framework abstraction as practical.</p><pre>import numpy as np
+def counts(y,score,threshold):
+    y=np.asarray(y,int); pred=np.asarray(score)&gt;=threshold
+    tp=int(np.sum(pred&amp;(y==1))); fp=int(np.sum(pred&amp;(y==0)))
+    fn=int(np.sum((~pred)&amp;(y==1))); tn=int(np.sum((~pred)&amp;(y==0)))
+    return tp,fp,fn,tn
+def average_precision(y,score):
+    order=np.argsort(-np.asarray(score),kind=&#x27;stable&#x27;); yy=np.asarray(y)[order]
+    precision=np.cumsum(yy)/(np.arange(len(yy))+1)
+    return float(np.sum(precision*yy)/np.sum(yy))
+def top_k(y,score,k):
+    order=np.argsort(-np.asarray(score),kind=&#x27;stable&#x27;)[:k]; tp=np.asarray(y)[order].sum()
+    return float(tp/k),float(tp/np.sum(y))
+def best_cost_threshold(y,score,c_fp=1,c_fn=8):
+    candidates=np.r_[np.inf,np.sort(np.unique(score))[::-1],-np.inf]
+    rows=[]
+    for h in candidates:
+        tp,fp,fn,tn=counts(y,score,h); rows.append((c_fp*fp+c_fn*fn,h))
+    return min(rows,key=lambda z:z[0])
+y=np.array([0,0,1,0,0,0,1,0,0,0,0,0,1,0,0,0,0,0,0,0])
+score=np.array([.05,.2,.91,.8,.08,.1,.7,.6,.03,.25,.15,.35,.65,.12,.55,.18,.02,.3,.45,.5])
+ap=average_precision(y,score); p3,r3=top_k(y,score,3); best=best_cost_threshold(y,score)</pre></section><section><h2>2 · Use it</h2><p>The same idea through a common library or practical API.</p><pre>from sklearn.metrics import average_precision_score,confusion_matrix
+sk_ap=average_precision_score(y,score)
+threshold=best[1]
+sk_tn,sk_fp,sk_fn,sk_tp=confusion_matrix(y,score&gt;=threshold,labels=[0,1]).ravel()</pre></section><section><h2>3 · Ship it</h2><p>Version label and incident definitions, maturity window, score, grouping, costs, capacity and threshold; report raw counts and uncertainty, audit nonalerts, monitor backlog and prevalence, and roll back score-plus-policy together.</p></section><section><h2>4 · Verify it</h2><p>Assertions and sanity checks that catch conceptual or implementation mistakes.</p><pre>assert abs(ap-sk_ap)&lt;1e-12
+assert (p3,r3)==(2/3,2/3)
+tp,fp,fn,tn=counts(y,score,threshold)
+assert (tp,fp,fn,tn)==(sk_tp,sk_fp,sk_fn,sk_tn)
+all_negative_accuracy=np.mean(y==0)
+assert all_negative_accuracy==0.85
+assert top_k(y,np.zeros_like(score),len(y))[1]==1.0
+assert best[0]&lt;=8*np.sum(y)
+assert abs(np.mean(y)-0.15)&lt;1e-12</pre></section></main><script>const b=document.getElementById('t');function u(){b.textContent=document.documentElement.dataset.theme==='dark'?'☀ Light':'☾ Dark'}u();b.onclick=()=>{const n=document.documentElement.dataset.theme==='dark'?'light':'dark';document.documentElement.dataset.theme=n;localStorage.setItem('atlas-theme',n);u()}</script></body></html>

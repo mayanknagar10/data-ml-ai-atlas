@@ -6,34 +6,180 @@
   "roles": [
     "all"
   ],
-  "interviewAnswer": "Mutual information measures how much knowing one variable reduces uncertainty about another and can capture nonlinear dependence.",
+  "interviewAnswer": "Mutual information is I(X;Y)=sum p(x,y)log[p(x,y)/(p(x)p(y))]. Equivalently it is H(X)-H(X|Y), H(Y)-H(Y|X), or KL between the joint and independent product of marginals. It is symmetric, nonnegative and zero exactly for independence under standard conditions. It detects nonlinear dependence, but has no direction and does not imply causality. If Z is a function or noisy processing of X in a Markov chain Y-X-Z, data processing gives I(Y;Z)<=I(Y;X). For feature selection I estimate MI inside training folds and still check redundancy and interactions; univariate MI misses XOR-style jointly useful features. Continuous MI estimation is difficult, so I state the estimator, scaling, neighbors or bins, sample size and uncertainty rather than comparing opaque values as ground truth.",
   "keyPoints": [
-    "Dependence",
-    "Zero under independence",
-    "Feature selection",
-    "Representation learning"
+    "MI is the KL divergence between joint dependence and the product distribution that represents independence.",
+    "It is symmetric and detects general dependence but gives neither causal direction nor effect sign.",
+    "A deterministic copy has MI equal to source entropy; independent variables have zero MI.",
+    "Data processing says a downstream transformation cannot create information about a target absent new data.",
+    "Estimator, discretization, sample size and dimensionality can dominate empirical MI values."
   ],
   "resources": [
+    "shannon-1948",
     "mit-info-theory",
     "probml-book"
   ],
   "featured": false,
-  "why": "MI connects probability, feature selection and representation learning.",
-  "intuition": "If knowing X says nothing about Y, MI is zero; if X nearly determines Y, shared information is large.",
-  "deepDive": "I(X;Y)=D_KL(p(x,y)||p(x)p(y))=H(X)-H(X|Y). Estimating MI in high-dimensional continuous data is difficult and estimator-dependent.",
-  "math": "",
-  "code": "",
+  "why": "Correlation summarizes a particular linear association and can be zero when variables are strongly dependent. Mutual information provides a broader dependence measure that appears in feature selection, clustering, representation learning, channel capacity and fairness analysis. Its generality comes at a price: accurate estimation is easy for a small known table and hard for continuous, sparse or high-dimensional data. Naively ranking hundreds of features by plug-in MI can select cardinality artifacts and leak validation labels. The chapter pairs mathematical properties with estimation discipline so MI becomes a useful diagnostic rather than a sophisticated-looking score without an estimand.",
+  "intuition": "Before seeing Y, uncertainty about X is H(X). After seeing Y, remaining uncertainty is H(X|Y). Their difference is information shared between the variables. If Y is an exact copy, it removes all uncertainty; if independent, it changes nothing. The joint-versus-product view asks whether observed pairs occur as they would if marginals were shuffled independently. Pairs that are much more or less likely contribute log ratios. Because both variables enter symmetrically, MI says they share information but not which causes the other. Processing X into a compressed Z can preserve or lose relevant distinctions, but cannot manufacture extra information about Y unless another source enters.",
+  "deepDive": "Mutual information is the amount of shared probabilistic structure between variables: an entropy reduction and a divergence from independence. Its symmetry, conditional chain rules and data-processing inequality support reasoning about transformations and representations. Its usefulness in data science depends on estimator honesty. Sparse counts, bins, neighborhoods and variational bounds can create very different numerical values, while univariate selection can miss synergy or duplicate redundant signals.",
+  "math": "I(X;Y)=sum_{x,y}p(x,y)log[p(x,y)/(p(x)p(y))]=D_KL(p_XY||p_Xp_Y)=H(X)+H(Y)-H(X,Y)=H(X)-H(X|Y). For discrete variables, 0<=I(X;Y)<=min[H(X),H(Y)]. Conditional MI is I(X;Y|Z)=sum_z p(z)D_KL(p_XY|z||p_X|z p_Y|z). Chain rule: I(X;Y,Z)=I(X;Z)+I(X;Y|Z). If Y-X-Z is a Markov chain, I(Y;Z)<=I(Y;X). PMI(x,y)=log[p(x,y)/(p(x)p(y)] is a local signed contribution whose expectation is MI.",
   "commonMistakes": [
-    "Assuming zero correlation means zero MI.",
-    "Comparing biased MI estimators as if values were directly comparable."
+    {
+      "misconception": "MI identifies which variable causes the other.",
+      "correction": "It is symmetric dependence. Causal direction requires assumptions, design and interventions or a causal model."
+    },
+    {
+      "misconception": "Zero correlation implies zero mutual information.",
+      "correction": "Nonlinear dependence such as Y=X squared under symmetric X can have zero correlation but positive MI."
+    },
+    {
+      "misconception": "Select features by MI once before cross-validation.",
+      "correction": "That uses all labels and leaks validation information; fit selection within each training fold."
+    },
+    {
+      "misconception": "Higher estimated MI always means stronger dependence across estimators.",
+      "correction": "Bins, scale, neighbors, critic and bias change values; compare under one validated estimation protocol."
+    }
   ],
   "followUps": [
-    "MI vs correlation?",
-    "Conditional mutual information?"
+    {
+      "question": "Why is MI zero at independence?",
+      "answer": "The joint equals the product of marginals, so their KL divergence and every log ratio are zero."
+    },
+    {
+      "question": "What does data processing mean for a learned representation?",
+      "answer": "If it is produced only from X, it cannot contain more information about Y than X did, though estimation and added side information complicate empirical claims."
+    },
+    {
+      "question": "Why can univariate MI miss useful features?",
+      "answer": "Predictive information may exist only jointly through interactions such as XOR, while redundant features can each appear individually strong."
+    }
   ],
-  "production": "Use MI-based features carefully: leakage can look like strong information.",
-  "workedExample": "Y=X² can have weak linear correlation for symmetric X while still having substantial MI.",
+  "production": "Define each variable, observational unit, conditioning set, alphabet or discretization, missing-value policy, sample window, estimator, feature scaling, k or bandwidth, random seed, bias correction and log base. For feature selection, fit every transform and MI estimate within training folds and validate the whole downstream model. Report per-variable sample size, support occupancy, estimate uncertainty, stability under resampling and shuffled-label nulls. Monitor category growth, sparse cells, scale drift and estimator failures. Do not infer causality or fairness from MI alone; sensitive-attribute MI can flag dependence but requires task and legal interpretation. High-dimensional neural estimates should be labeled as estimator-specific bounds. Preserve historical configurations, and start a new series when bins or representation models change rather than presenting false continuity.",
+  "workedExample": "Let X be a fair bit and Y=X. Joint mass is 0.5 on (0,0) and 0.5 on (1,1), while each product marginal cell has mass 0.25. Each observed pair has log2(0.5/0.25)=1 bit of pointwise information, so MI is one bit. Knowing Y determines X and removes H(X)=1 bit. If Y were an independent fair bit, every joint cell would equal 0.25 and every log ratio would be zero.",
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "Mutual information measures how much observing one variable reduces uncertainty about another, including nonlinear dependence that correlation can miss. It can be written as an entropy reduction, a KL divergence between the joint distribution and the product of marginals, or an expected pointwise log density ratio. This chapter derives symmetry, nonnegativity, independence, deterministic limits, chain rules, conditional mutual information and the data-processing inequality. It distinguishes discrete MI from continuous estimation, explains normalization choices and develops feature-selection, representation, leakage and fairness use cases without implying causality or direction. Worked examples compute a perfectly copied bit and an XOR relationship with zero linear correlation. The lab implements MI from a joint table, compares scikit-learn, and verifies symmetry, independence, deterministic equality and invariance to relabeling. Production guidance freezes discretization or estimators, performs selection inside training folds, reports uncertainty and sample support, and avoids comparing raw MI across variables with different entropy scales. Mutual information is a population dependence quantity; empirical estimates can be strongly biased in sparse or high-dimensional settings.",
+  "prerequisites": [
+    "entropy-information",
+    "kl-divergence",
+    "joint-marginal-conditional"
+  ],
+  "learningObjectives": [
+    "Compute mutual information from joint and marginal probabilities and connect its equivalent definitions.",
+    "Use conditional MI, chain rules and data processing to reason about transformations and shared information.",
+    "Apply MI to feature selection and representation analysis without confusing dependence with causality.",
+    "Choose and validate discrete, binned, k-nearest-neighbor or variational estimators under finite samples."
+  ],
+  "deepSections": [
+    {
+      "id": "equivalent-definitions",
+      "title": "Entropy reduction and departure from independence are the same quantity",
+      "body": "For a discrete joint distribution, I(X;Y)=sum_{x,y}p(x,y)log[p(x,y)/(p(x)p(y))]. This is D_KL(p_XY||p_Xp_Y), so it is nonnegative and equals zero exactly when the joint factorizes. Algebra gives I=H(X)+H(Y)-H(X,Y)=H(X)-H(X|Y)=H(Y)-H(Y|X), proving symmetry. Pointwise mutual information PMI(x,y)=log[p(x,y)/(p(x)p(y))] can be positive or negative for a pair; MI is its joint expectation and cannot be negative. A deterministic Y=f(X) gives I(X;Y)=H(Y), which equals H(X) only when f is invertible on the support. MI is bounded above by min(H(X),H(Y)) for discrete variables. Base two yields bits. Raw MI tends to be larger for high-entropy variables, motivating normalized variants, but there is no single canonical normalization; state the formula and preserve raw values where theoretical identities matter."
+    },
+    {
+      "id": "conditional-chain-processing",
+      "title": "Conditional information separates direct and context-dependent dependence",
+      "body": "Conditional mutual information I(X;Y|Z)=E_Z D_KL(p(X,Y|Z)||p(X|Z)p(Y|Z)) measures dependence remaining after Z is known. It is nonnegative and supports the chain rule I(X;Y,Z)=I(X;Z)+I(X;Y|Z). Marginal independence does not imply conditional independence, and conditioning can create association through a collider, so CMI is not an automatic causal adjustment tool. In a Markov chain Y-X-Z, where Z is generated from X without additional Y information, the data-processing inequality I(Y;Z)<=I(Y;X). Equality characterizes information-preserving sufficient transformations under conditions. The inequality motivates representations that retain target information, but estimating MI for deterministic continuous neural networks can be ill-posed or infinite without noise or quantization. Channel capacity maximizes I(X;Y) over allowable input distributions, connecting shared information to reliable communication."
+    },
+    {
+      "id": "feature-selection",
+      "title": "Univariate feature MI is useful screening, not a complete subset objective",
+      "body": "A feature with high I(X_j;Y) can predict the target nonlinearly, making MI a model-agnostic screening score. But selecting top individual features ignores redundancy: two copies each have high MI but add little together. It also misses synergy: with independent bits X1,X2 and Y=XOR(X1,X2), each feature alone has zero MI with Y while the pair determines Y. Methods such as mRMR trade target relevance against feature redundancy, still relying on estimated quantities and heuristic subset search. Compute all selection only within training folds, including binning and hyperparameters, or target information leaks into validation. IDs, timestamps and post-outcome fields can have high MI for invalid reasons. MI gives no effect direction, calibration or causal interpretation. Confirm selected features with leakage review, model validation, stability across resamples and domain constraints."
+    },
+    {
+      "id": "estimation",
+      "title": "MI estimation is a density-ratio problem with severe finite-sample trade-offs",
+      "body": "For low-cardinality discrete tables, plug-in counts are straightforward but upward biased because sampling noise creates apparent dependence; sparse cells and many categories worsen bias. Permutation baselines, bias corrections or Bayesian estimates help. Binning continuous variables makes results depend on edges and resolution. Kernel and k-nearest-neighbor estimators avoid fixed bins but depend on scale, metric, neighbor count and local-density assumptions and degrade with dimension. Variational neural bounds estimate density ratios or lower bounds, but optimization looseness and batch negatives can dominate the reported number; comparing bounds from different critics is unsafe. For mixed variables use an estimator designed for that setting. Scale features before distance-based estimation using training data. Report sample size, estimator, parameters, uncertainty and a shuffled-null distribution. Use nested validation if MI guides feature choice. For monitoring, prefer stable low-dimensional summaries over attempting exact MI on drifting high-dimensional embeddings."
+    }
+  ],
+  "workedExamples": [
+    {
+      "title": "XOR synergy",
+      "body": "Independent fair X1 and X2 determine Y=XOR(X1,X2). Each Xj alone leaves Y fair, so I(Xj;Y)=0, but I((X1,X2);Y)=1 bit. Top-univariate-MI selection can discard both useful features."
+    },
+    {
+      "title": "Noninvertible function",
+      "body": "If X has four equally likely values and Y records only whether X is even, H(X)=2 bits and H(Y)=1 bit. Because Y is deterministic, I(X;Y)=H(Y)=1 bit; one bit about X was preserved and one lost."
+    }
+  ],
+  "lab": {
+    "language": "python",
+    "goal": "Implement mutual information from a joint table, compare scikit-learn, and verify symmetry, independence, deterministic information and relabeling invariance.",
+    "buildIt": "import numpy as np\ndef joint_probability(table):\n    p=np.asarray(table,float);\n    if p.ndim!=2 or np.any(p<0) or p.sum()<=0: raise ValueError('invalid joint table')\n    return p/p.sum()\ndef entropy(p):\n    p=np.asarray(p,float); p=p/p.sum(); nz=p>0; return float(-np.sum(p[nz]*np.log2(p[nz])))\ndef mutual_information(table):\n    p=joint_probability(table); px=p.sum(1,keepdims=True); py=p.sum(0,keepdims=True); expected=px@py; nz=p>0\n    return float(np.sum(p[nz]*np.log2(p[nz]/expected[nz])))\nindependent=np.array([[.12,.18],[.28,.42]]); copied=np.array([[.5,0],[0,.5]]); dependent=np.array([[.4,.1],[.1,.4]])\nmi_ind=mutual_information(independent); mi_copy=mutual_information(copied); mi_dep=mutual_information(dependent)",
+    "useIt": "from sklearn.metrics import mutual_info_score\nx=np.array([0,0,1,1]*100); y=x.copy(); sklearn_copy=float(mutual_info_score(x,y)/np.log(2))",
+    "verifyIt": "assert abs(mi_ind)<1e-12\nassert abs(mi_copy-1.0)<1e-12 and abs(sklearn_copy-1.0)<1e-12\nassert mi_dep>0 and abs(mi_dep-mutual_information(dependent.T))<1e-12\nassert abs(mi_copy-entropy(copied.sum(axis=1)))<1e-12\n# Relabeling either variable preserves MI.\nassert abs(mutual_information(dependent[::-1,:])-mi_dep)<1e-12\nassert abs(mutual_information(dependent[:,::-1])-mi_dep)<1e-12\nassert mutual_information([[1,0],[0,0]])==0.0\ntry:\n    mutual_information([1,2])\n    raise AssertionError('expected 2D joint table')\nexcept ValueError:\n    pass",
+    "shipIt": "Version variables, alphabet or bins, estimator, scaling, neighbor or critic settings and sampling unit; run selection only inside training folds, report uncertainty and shuffled nulls, and avoid silent comparison across incompatible estimators."
+  },
+  "exercises": [
+    {
+      "prompt": "If Y is an invertible deterministic copy of discrete X, what is I(X;Y)?",
+      "solution": "H(X)=H(Y), because observing either removes all uncertainty about the other."
+    },
+    {
+      "prompt": "Can I(X;Y) be negative?",
+      "solution": "No for the population quantity. Pointwise mutual information can be negative, and finite estimators may have correction artifacts."
+    },
+    {
+      "prompt": "Why does discretization change continuous-variable MI estimates?",
+      "solution": "Bins discard within-bin structure and create a new discrete representation; edge placement and resolution determine the resulting joint table."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "compare",
+      "title": "Two views of mutual information",
+      "left": {
+        "title": "Entropy reduction",
+        "items": [
+          "H(X)-H(X|Y)",
+          "Uncertainty removed",
+          "Symmetric equivalent",
+          "Bounded by marginal entropy"
+        ]
+      },
+      "right": {
+        "title": "Joint divergence",
+        "items": [
+          "KL(joint || marginals product)",
+          "Departure from independence",
+          "Expected pointwise ratio",
+          "Supports data processing"
+        ]
+      },
+      "caption": "The same shared information is seen as uncertainty removed or dependence beyond marginals.",
+      "afterSection": "equivalent-definitions"
+    },
+    {
+      "type": "flow",
+      "title": "Feature-information audit",
+      "items": [
+        "Define target and sampling unit",
+        "Estimate inside training fold",
+        "Check redundancy and synergy",
+        "Compare shuffled null and stability",
+        "Validate downstream model and leakage",
+        "Interpret without causal claims"
+      ],
+      "caption": "MI screening is one fold-contained diagnostic in a larger feature-validation process.",
+      "afterSection": "feature-selection"
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "shannon-1948",
+      "contribution": "Grounds mutual information as a communication and dependence quantity connected to channels."
+    },
+    {
+      "resource": "mit-info-theory",
+      "contribution": "Provides rigorous entropy identities, conditional MI, chain rules and data processing."
+    },
+    {
+      "resource": "probml-book",
+      "contribution": "Connects MI to feature selection, probabilistic modeling and modern estimation contexts."
+    }
+  ]
 }

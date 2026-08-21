@@ -6,30 +6,175 @@
   "roles": [
     "ds"
   ],
-  "interviewAnswer": "Anomalies can be unusual individual points, unusual only in context, or unusual sequences/groups. The detection method should match the anomaly definition rather than treating every extreme value as the same problem.",
+  "interviewAnswer": "A point anomaly is unusual by itself, a contextual anomaly is unusual only relative to conditions such as time or peer group, and a collective anomaly is a sequence or set whose joint pattern is unusual even when each element is ordinary. Before choosing a detector, I define the observation unit, normal reference population, available context, score, alert budget, investigation action, and label process. I fit transformations only on clean historical reference data and avoid future leakage. Detection scores rank cases; thresholds are operational policies chosen from capacity and cost. I monitor score and alert-rate drift, duplicate incidents, group coverage, delayed labels, and the share of alerts caused by data-pipeline failures.",
   "keyPoints": [
-    "Context can be time, user, device or season.",
-    "Collective anomalies require sequence/group features.",
-    "Anomaly labels are often scarce."
+    "Anomaly is relative to a reference distribution, context, and action.",
+    "Point, contextual, and collective anomalies require different features and units.",
+    "A continuous anomaly score is separate from the alert threshold.",
+    "Reference contamination, future leakage, and cold starts can dominate algorithm choice.",
+    "Investigation feedback and alert burden are part of the model system."
   ],
   "resources": [
+    "anomaly-survey",
     "sklearn-outlier"
   ],
   "featured": false,
-  "why": "Point, Contextual & Collective Anomalies appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
-  "intuition": "Context can be time, user, device or season.",
-  "deepDive": "Anomalies can be unusual individual points, unusual only in context, or unusual sequences/groups. The detection method should match the anomaly definition rather than treating every extreme value as the same problem. Collective anomalies require sequence/group features. Anomaly labels are often scarce. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
-  "workedExample": "A temperature of 30°C may be normal in summer but anomalous in winter for the same sensor.",
+  "why": "Teams often begin with an algorithm and only later discover that nobody agreed on what an anomaly meant. A detector then flags weekend traffic because the baseline ignored seasonality, large customers because the reference mixed segments, or duplicate telemetry because the ingestion pipeline broke. The taxonomy prevents those mistakes by asking whether unusualness is global, conditional, or joint. It also clarifies evaluation. If the action is to investigate accounts, scoring transactions independently can produce a hundred alerts for one incident. If the goal is early warning, labels that arrive after an investigation cannot be treated as immediate ground truth. A simple robust contextual score with a clear baseline and response path can outperform a sophisticated unsupervised model whose alerts are unactionable. The purpose is not to find rare numbers; it is to identify deviations whose timely review changes an outcome.",
+  "intuition": "Imagine a transaction amount of 500. Globally it may be common. For a customer who normally spends between 10 and 30, it is a contextual anomaly; for a wholesale merchant it may be routine. Now imagine twenty transactions of 20 dollars in one minute. Each point looks normal, but their temporal cluster is collectively abnormal. A point detector looks at position in feature space. A contextual detector first conditions or residualizes against time, entity, cohort, or state, then scores the remaining surprise. A collective detector changes the unit to a window, run, graph neighborhood, or sequence representation. These choices define what information is compared. The threshold comes afterward: a score of six has no intrinsic operational meaning until calibrated against a reference distribution, capacity, or risk. An alert is a decision with downstream cost, not a mathematical property of a row.",
+  "deepDive": "Anomaly detection begins with a reference contract, not a model name. Point, contextual, and collective anomalies differ in the unit and comparison that make deviation visible. The score only ranks surprise under that representation; an operational policy converts it to finite investigation work. Reference contamination, selective labels, incident duplication, and drift therefore belong to the core statistical problem rather than to post-deployment cleanup.",
+  "workedExample": "A 500-dollar payment is ordinary for wholesale accounts but 20 robust deviations above a personal account's past median. A contextual score flags the latter. Separately, twenty 20-dollar payments within one minute are individually typical but the rolling count is far above the account's historical minute-level rate, so a collective detector opens one incident. The response queue deduplicates both signals by account and time window and records which rule drove review.",
   "commonMistakes": [
-    "Applying the method without checking its assumptions or data-generating process.",
-    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+    {
+      "misconception": "An anomaly is simply a rare value.",
+      "correction": "Rarity is relative to a reference and may be legitimate. Important anomalies can be common-valued points in an abnormal context or sequence."
+    },
+    {
+      "misconception": "The contamination parameter discovers the true anomaly rate.",
+      "correction": "It usually controls the score threshold or expected flag fraction. Treat it as a policy or modeling assumption and validate against operations."
+    },
+    {
+      "misconception": "Unreviewed alerts and nonalerts are negatives.",
+      "correction": "Review is selective and labels are delayed. Use audit samples, exploration, and explicit unknown status to avoid feedback bias."
+    },
+    {
+      "misconception": "Retraining on the newest window automatically adapts safely.",
+      "correction": "A persistent attack or outage can be absorbed into normal. Quarantine updates, use trusted windows, and require drift and incident review."
+    }
   ],
   "followUps": [
-    "What assumptions does Point, Contextual & Collective Anomalies make?",
-    "How would you validate or debug Point, Contextual & Collective Anomalies in practice?"
+    {
+      "question": "What is the difference between novelty and outlier detection?",
+      "answer": "Novelty detection learns from a reference assumed normal and scores new data; outlier detection allows contamination in the fitted data and identifies unusual training cases. APIs and evaluation semantics can differ."
+    },
+    {
+      "question": "How do you evaluate an unsupervised detector with few labels?",
+      "answer": "Use incident replay, synthetic mechanism tests, expert review with blinded sampling, random audits of nonalerts, stability checks, and eventual label or downstream outcomes. Avoid treating injected points as the only truth."
+    },
+    {
+      "question": "Why aggregate alerts into incidents?",
+      "answer": "One underlying failure can create thousands of anomalous rows. Incident grouping aligns evaluation and workload with the action unit and prevents alert storms from dominating metrics."
+    }
   ],
-  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "production": "Deploy the reference builder, feature transformations, detector, threshold, and incident grouper as one versioned system. Enforce event-time semantics and past-only windows. Track missing or unseen contexts, reference age and contamination quarantine, score distribution, alert and unique-incident volume, per-entity concentration, reviewer yield, audit-sample misses, label delay, and time to detection. Store enough explanation and provenance for triage while minimizing sensitive data exposure. Rate-limit alert storms, define cooldown and escalation, and provide deterministic invariants as fallback when the learned detector or context store fails. A new mode may be legitimate business growth or an attack; do not auto-normalize it without review. Canary threshold or representation changes on replayed traffic and shadow queues. Roll back the full reference-plus-score-plus-policy bundle when workload, missed-incident, latency, or subgroup criteria exceed declared bounds.",
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "An anomaly is an observation or pattern that violates an explicitly defined expectation in a context that matters. Point anomalies are individually unusual, contextual anomalies are unusual only given time, segment, or state, and collective anomalies are ordinary-looking elements whose sequence or group is abnormal. This chapter turns that taxonomy into an engineering contract: define the unit, reference population, context, score direction, contamination assumptions, action, label horizon, and cost of review before choosing an algorithm. You will distinguish anomaly detection from novelty detection, supervised rare-event classification, data-quality validation, and change-point detection. Robust scaling, peer groups, seasonal residuals, sequence windows, and representation choices are connected to the kinds of deviation they expose. A worked payment example shows why the same amount can be normal for one merchant and anomalous for another, while a burst of small transactions can be collectively suspicious. The lab builds contextual median/MAD scores and a collective window score, compares with standardized residuals, and verifies invariance and context behavior. Production guidance prioritizes alert budgets, deduplication, investigation feedback, drift, cold starts, and safe fallback over arbitrary score cutoffs.",
+  "prerequisites": [
+    "distributions-outliers",
+    "distributions"
+  ],
+  "learningObjectives": [
+    "Classify point, contextual, and collective anomalies and connect each type to a valid reference set and representation.",
+    "Write an anomaly-detection contract covering unit, context, score, threshold, action, feedback, and failure costs.",
+    "Distinguish outlier detection, novelty detection, supervised rare-event prediction, change-point detection, and data validation.",
+    "Build and verify robust contextual and collective scores without using future or cross-entity information."
+  ],
+  "deepSections": [
+    {
+      "id": "taxonomy-and-unit",
+      "title": "Choose the anomaly unit before the algorithm",
+      "body": "A point anomaly is a single observation far from an expected distribution, such as an impossible sensor value or a transaction with an unusual feature combination. A contextual anomaly is unusual conditional on context: temperature in winter, latency for a route, amount for an account, or activity for a time of day. A collective anomaly is a group whose relationship, frequency, order, or duration is abnormal: a burst, a coordinated graph pattern, a stalled sequence, or a waveform. The same raw event can belong to multiple units. Define whether one score corresponds to a row, entity-day, session, rolling window, graph substructure, or incident. This determines labels, independence, deduplication, and action. The reference population must match the unit and intended normal regime. Global peer mixing can turn minority but valid modes into false positives. Context features must be available at scoring time and must not encode outcomes or future observations. When context is high-cardinality, use shrinkage or hierarchical baselines so cold entities borrow information rather than receiving unstable estimates."
+    },
+    {
+      "id": "problem-formulations",
+      "title": "Separate neighboring problem formulations",
+      "body": "Outlier detection assumes the training data may contain anomalies and seeks unusual cases in that set. Novelty detection assumes training data represent normal behavior and scores new observations against the learned support; using a novelty API on its own training rows can change neighborhood semantics. Supervised rare-event classification has labeled positives and estimates a conditional event score or probability; its label and sampling biases differ from unsupervised detection. Change-point detection locates persistent distributional regime boundaries rather than isolated cases. Data validation checks declared invariants such as nonnegative amounts or referential integrity; a deterministic rule is preferable when the failure is known. Forecast-residual monitoring predicts an expected value and scores deviation conditional on past information. These formulations can be combined, but their evidence differs. A support score is not a calibrated event probability. An outlier is not necessarily bad data. A change point may describe a legitimate launch. State the target, available labels, contamination, reference update policy, and whether the objective is discovery, triage, prevention, or system health."
+    },
+    {
+      "id": "representation-and-baselines",
+      "title": "Make normal behavior representable",
+      "body": "Raw distance is meaningful only after units, skew, categories, and periodicity are handled. Fit robust or standard scaling on the reference period, not on a batch containing the cases being judged. Log transforms can prevent large legitimate values from dominating, but preserve zeros and units explicitly. Contextual detection may subtract a seasonal forecast, compare within peer group, or form features such as deviation from an entity's rolling median using past-only windows. Collective detection aggregates counts, transitions, run length, spectral energy, or embedding sequences. Representation can erase anomalies: daily aggregation hides a one-minute burst, while a rolling maximum may expose it. It can also manufacture them: one-hot unseen categories or missing context may create extreme vectors. Start with domain rules, robust univariate baselines, and simple multivariate distance or density scores. Use synthetic and replayed incidents to verify that the representation exposes the intended failure before adding a complex detector. Record which transformations depend on mutable reference data."
+    },
+    {
+      "id": "threshold-action-and-feedback",
+      "title": "Turn scores into bounded, learnable operations",
+      "body": "A detector should usually produce a continuous score. Select a threshold or top-k policy using investigation capacity, false-negative severity, alert grouping, and latency. A fixed contamination fraction asserts how many cases to flag; it does not estimate the true anomaly rate. Calibrate thresholds on a later reference window and stress them under seasonal and volume changes. Group duplicate alerts into incidents and apply cooldowns so one outage does not exhaust the queue. Log score, contributing context, threshold version, model version, and disposition. Labels are selectively observed because only alerts are reviewed; unreviewed cases are not confirmed negatives. Random audits or exploration samples can measure blind spots and correct feedback bias. Monitor score distribution, alerts per unit time and entity, unique incidents, investigation yield, time to detection, label delay, and downstream loss. If reference behavior drifts, update cautiously with quarantine so recent anomalies do not become normal automatically. Provide deterministic fallbacks and rate limits when context or model service is unavailable."
+    }
+  ],
+  "math": "A contextual robust score can be z_i^robust=|x_i-m_c|/[1.4826 MAD_c+epsilon], where m_c and MAD_c are median and median absolute deviation estimated from past reference observations in context c. A collective window score might be S_t=sum_{j=t-w+1}^t I(z_j^robust>q) or a deviation of window count from its contextual expectation. These are scores, not probabilities. A threshold h defines alert A_i=I(S_i>=h); h should minimize or constrain an operational loss using representative data and an incident-level unit.",
+  "workedExamples": [
+    {
+      "title": "Global score versus peer score",
+      "body": "Two merchants have medians 25 and 600. A transaction of 500 is a global middle value, about 32 robust scales above the first merchant's median, and close to the second merchant's normal range. A global detector misses the contextual anomaly and may overflag the legitimate high-value merchant. Estimate peer baselines from past data with minimum-support shrinkage."
+    },
+    {
+      "title": "Collective burst from ordinary points",
+      "body": "Each login request has normal device and location features. One account emits 40 requests in 30 seconds after months below three per minute. Point scores remain low, but a past-only rolling-count feature is extreme. Alert once at the account-window level and preserve event detail for investigation."
+    }
+  ],
+  "lab": {
+    "language": "python",
+    "goal": "Build robust contextual and collective anomaly scores, compare with standardized residuals, and verify context, translation, and burst-detection invariants.",
+    "buildIt": "import numpy as np\ndef fit_context(values,contexts):\n    model={}\n    for c in np.unique(contexts):\n        x=np.asarray(values)[np.asarray(contexts)==c]\n        med=np.median(x); mad=np.median(np.abs(x-med))\n        model[c]=(med,max(1.4826*mad,1e-9))\n    return model\ndef contextual_score(values,contexts,model):\n    return np.array([abs(x-model[c][0])/model[c][1] for x,c in zip(values,contexts)])\ndef rolling_count(flags,width):\n    flags=np.asarray(flags,int); cs=np.r_[0,np.cumsum(flags)]\n    return np.array([cs[i+1]-cs[max(0,i+1-width)] for i in range(len(flags))])\nref_values=np.array([18,20,22,19,21,580,600,620,590,610],float)\nref_context=np.array(['personal']*5+['wholesale']*5)\nmodel=fit_context(ref_values,ref_context)\nvalues=np.array([590,590,20,20,20,20,20],float)\ncontexts=np.array(['personal','wholesale']+['personal']*5)\nscores=contextual_score(values,contexts,model)\nburst=rolling_count(np.array([0,0,1,1,1,1,1]),width=4)",
+    "useIt": "from sklearn.preprocessing import StandardScaler\nscaler=StandardScaler().fit(ref_values[:,None])\nglobal_scores=np.abs(scaler.transform(values[:,None]).ravel())",
+    "verifyIt": "assert scores[0]>20 and scores[1]<2\nassert abs(global_scores[0]-global_scores[1])<1e-12\nassert burst[-1]==4 and burst[:2].max()==0\nshift=123.0\nshifted_model=fit_context(ref_values+shift,ref_context)\nshifted=contextual_score(values+shift,contexts,shifted_model)\nassert np.allclose(shifted,scores)\nassert contextual_score(ref_values,ref_context,model).shape==ref_values.shape\nassert np.isfinite(scores).all()",
+    "shipIt": "Version unit, contexts, reference window, robust statistics, aggregation and threshold; enforce past-only features, deduplicate incidents, monitor context coverage and alert budget, quarantine reference updates, and fall back to safe deterministic rules when context is unavailable."
+  },
+  "exercises": [
+    {
+      "prompt": "Classify a normal-value event occurring at an impossible time for that device.",
+      "solution": "It is a contextual anomaly: the value is ordinary globally but unusual conditional on device state or time."
+    },
+    {
+      "prompt": "Why might daily aggregation miss a fraud burst?",
+      "solution": "The collective deviation occurs at a shorter time scale. Daily totals can dilute a one-minute burst; use a window aligned with the action and mechanism."
+    },
+    {
+      "prompt": "A detector flags 1 percent because contamination=0.01. What has been learned?",
+      "solution": "Primarily a ranking plus a threshold set to the assumed fraction. The parameter does not prove that one percent of cases are truly anomalous or harmful."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "compare",
+      "title": "Three anomaly units",
+      "left": {
+        "title": "Point / contextual",
+        "items": [
+          "Single row or event",
+          "Global or peer reference",
+          "Context changes the verdict",
+          "Score the residual surprise"
+        ]
+      },
+      "right": {
+        "title": "Collective",
+        "items": [
+          "Window, sequence, or group",
+          "Elements may look normal",
+          "Relationship is unusual",
+          "Alert at incident level"
+        ]
+      },
+      "caption": "The unit and reference determine what an anomaly means and how it should be investigated.",
+      "afterSection": "taxonomy-and-unit"
+    },
+    {
+      "type": "flow",
+      "title": "Anomaly system contract",
+      "items": [
+        "Define unit + context",
+        "Build trusted reference",
+        "Create score",
+        "Apply budgeted threshold",
+        "Group incidents",
+        "Review + audit feedback",
+        "Monitor and quarantine updates"
+      ],
+      "caption": "Detection quality depends on the full reference-to-action loop, not only an algorithm score.",
+      "afterSection": "threshold-action-and-feedback"
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "anomaly-survey",
+      "contribution": "Provides the canonical point, contextual, and collective taxonomy and the assumptions behind major detector families."
+    },
+    {
+      "resource": "sklearn-outlier",
+      "contribution": "Grounds the practical distinction between novelty and outlier detection and current estimator score semantics."
+    }
+  ]
 }

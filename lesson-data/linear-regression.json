@@ -8,109 +8,220 @@
     "mle",
     "as"
   ],
-  "interviewAnswer": "Linear regression models the target as a weighted sum of features and typically minimizes squared error. Know its assumptions, how coefficients are interpreted, and why multicollinearity/outliers can matter.",
+  "interviewAnswer": "Linear regression models the conditional mean as E[Y|X=x] = beta_0 + x^T beta and estimates beta by minimizing squared residuals. With a full-rank design, the fitted residual is orthogonal to every design column; software normally solves the least-squares system with QR or singular-value decomposition rather than forming an inverse. A coefficient is the expected change in the modeled outcome for a one-unit predictor change while other included predictors are held fixed. That is an associational interpretation unless causal assumptions justify more. I check residual structure, influential points, conditioning, train-serving feature consistency, and extrapolation, and I report intervals or out-of-sample error rather than only R-squared.",
   "keyPoints": [
-    "OLS objective",
-    "Residual assumptions",
-    "R²",
-    "Regularized variants"
+    "A linear model is linear in coefficients; transformed predictors may still be used.",
+    "Least squares projects y onto the design-matrix column space.",
+    "Coefficients are conditional associations unless identification supports causality.",
+    "Prediction intervals are wider than mean-response confidence intervals.",
+    "Use stable solvers and validate outside the training sample."
   ],
   "resources": [
+    "isl",
     "stanford-cs229",
-    "google-mlcc",
-    "statquest",
-    "isl"
+    "sklearn-linear-models",
+    "nist-regression-diagnostics"
   ],
   "featured": false,
-  "why": "Linear regression is simple enough to derive but rich enough to test assumptions, loss functions, interpretation, regularization and statistical reasoning.",
-  "intuition": "The model fits a plane through feature space. Each coefficient changes the predicted target by a constant amount per unit feature change, holding other features fixed.",
-  "deepDive": "Ordinary least squares minimizes squared residuals. Under standard assumptions it has useful unbiasedness/inference properties, but prediction can still work when inference assumptions are imperfect. Multicollinearity makes coefficients unstable; nonlinear relationships require transformed features or other models; heteroscedasticity affects standard errors. Ridge/Lasso trade bias for stability/sparsity.",
-  "math": "ŷ = Xβ + b\nOLS: minimize ||y-Xβ||₂²\nClosed form when invertible: β̂=(XᵀX)^{-1}Xᵀy",
-  "workedExample": "If house price increases roughly linearly with area but location shifts the baseline, include both area and encoded location. A strong coefficient does not by itself prove area causally changes price.",
-  "code": "from sklearn.linear_model import LinearRegression\nm=LinearRegression().fit(X_train,y_train)\nprint(m.coef_, m.intercept_)",
+  "why": "Linear regression is valuable because it gives a transparent benchmark, exposes data problems, and often performs competitively when signal is approximately additive and sample size is limited. Its coefficients support scenario analysis and communication in units people understand. It also supplies the local building block for splines, generalized additive models, generalized linear models, and many causal estimators. The discipline it teaches is more important than the formula: define an estimand, specify the conditioning set, choose an objective, examine the residual process, quantify uncertainty, and test whether the operational environment matches the training environment. A complex model that cannot beat a carefully validated linear baseline may not justify its cost. Conversely, a high in-sample R-squared cannot rescue leakage, nonrepresentative sampling, extrapolation, or an unstable coefficient vector.",
+  "intuition": "Imagine every observation as one coordinate of a vector y. Each design column is another direction: an intercept direction, a price direction, a seasonality direction, and so on. All linear combinations of those columns form a subspace of possible fitted vectors. Least squares selects the point in that subspace closest to y. The leftover residual points at right angles to the subspace, so no included column has any remaining linear correlation with it in the training sample. This geometric fact explains the normal equations and why adding a column cannot increase training squared error. It does not guarantee better test error. A coefficient describes how the fitted plane tilts along one coordinate after accounting for the other included coordinates. If predictors nearly duplicate one another, many coefficient combinations tilt the plane almost identically; predictions may remain adequate while individual coefficients become unstable. Centering changes where the intercept is measured, scaling changes coefficient units, and interactions allow the slope of one predictor to depend on another.",
+  "deepDive": "The unifying idea is projection under a declared data contract. Least squares chooses the closest representable fitted vector, while inference adds assumptions about how repeated samples vary and production adds assumptions about how future data relate to training data. Keeping those layers separate prevents common category errors: orthogonal training residuals do not imply causal coefficients, normal equations do not justify explicit inversion, and strong in-sample fit does not imply calibrated future predictions.",
+  "math": "For X in R^(nxd) and y in R^n, beta_hat=argmin_b (y-Xb)^T(y-Xb). The first-order condition X^T(y-X beta_hat)=0 yields beta_hat=(X^T X)^-1X^T y only when X has full column rank. With H=X(X^T X)^-1X^T, fitted values are Hy and residuals are (I-H)y. Under E[epsilon|X]=0 and Var(epsilon|X)=sigma^2 I, E[beta_hat|X]=beta and Var(beta_hat|X)=sigma^2(X^T X)^-1. At x0, estimated mean variance is sigma_hat^2 x0^T(X^T X)^-1x0; a new-observation prediction variance adds sigma_hat^2. These formulas condition on the chosen design and specification.",
+  "workedExample": "A demand model uses units = beta0 + beta1(price-20) + beta2(holiday) + error. Centering price at 20 makes beta0 the expected non-holiday demand at a meaningful price; it leaves every prediction and beta1 unchanged. If beta1=-4.2, the fitted conditional mean falls 4.2 units per one-dollar increase, holding holiday status fixed. That statement is not automatically the causal effect of changing price because pricing may respond to expected demand.",
   "commonMistakes": [
-    "Saying linear regression requires every feature to be Normally distributed.",
-    "Interpreting coefficients causally without design assumptions.",
-    "Ignoring multicollinearity and residual structure."
+    {
+      "misconception": "A significant coefficient is an important causal effect.",
+      "correction": "Significance concerns sampling variation under a specification. Magnitude, decision value, multiplicity, confounding, and identification are separate questions."
+    },
+    {
+      "misconception": "Normality of every predictor is required.",
+      "correction": "Classical normal-theory inference concerns errors conditional on the design, not marginal predictor distributions. More central assumptions are conditional mean specification, dependence, and variance behavior."
+    },
+    {
+      "misconception": "The safest implementation computes inv(X.T@X).",
+      "correction": "Explicit normal-equation inversion can be numerically unstable. Use QR/SVD-based least-squares routines and inspect rank or conditioning."
+    },
+    {
+      "misconception": "High R-squared proves a useful model.",
+      "correction": "R-squared can be inflated by leakage, trend, or irrelevant complexity and does not establish out-of-sample accuracy, calibration, or utility."
+    }
   ],
   "followUps": [
-    "What assumptions matter for inference?",
-    "Ridge vs Lasso?",
-    "Why use MSE?",
-    "What is R² and when can it mislead?"
+    {
+      "question": "Why can coefficients be unstable while predictions remain stable?",
+      "answer": "Correlated design columns create nearly interchangeable directions. Large opposing coefficient changes can yield similar X beta over observed support, while individual parameter estimates have high variance."
+    },
+    {
+      "question": "When should you use heteroskedasticity-robust standard errors?",
+      "answer": "When the conditional mean model is credible but error variance is not constant and the sampling structure supports the estimator. They do not repair nonlinearity, dependence, bias, or a wrong estimand."
+    },
+    {
+      "question": "Does adding a feature always help?",
+      "answer": "It cannot worsen training squared error, but it can increase estimation variance, leakage, serving cost, or test error. Selection must use an honest evaluation design and domain constraints."
+    }
   ],
-  "production": "Monitor residual distribution, drift, coefficient stability and extrapolation. Linear models can be excellent baselines because they are cheap, interpretable and easy to debug.",
+  "production": "Ship the model together with its feature and measurement contract. Version categorical levels, centering/scaling constants, missing-value policy, target construction, coefficient order, and numeric precision. Test train-serving parity and invariants such as finite outputs and expected monotonic relationships where the domain truly supports them. Monitor missingness, feature ranges, leverage-like distance from training support, prediction distribution, subgroup error, and delayed residuals. Measure both point error and empirical interval coverage if intervals drive decisions. Cap or route extreme extrapolation rather than silently trusting an infinite plane. Protect sensitive features and logs; coefficients can disclose relationships or encode discrimination. Define latency and fallback behavior, keep a simple baseline, and canary material changes. Roll back when schema drift, coverage loss, or decision-level harm exceeds declared thresholds. Refit cadence should follow data-generating change, not a calendar alone, and every refit should rerun temporal or grouped validation.",
   "lab": {
-    "goal": "Implement ordinary least squares with gradient descent, then compare it with scikit-learn.",
     "language": "python",
-    "buildIt": "import numpy as np\nrng=np.random.default_rng(0)\nX=rng.normal(size=(200,1)); y=3*X[:,0]+2+rng.normal(0,.3,200)\nXb=np.c_[np.ones(len(X)),X]\nw=np.zeros(2); lr=.05\nfor _ in range(1000):\n    pred=Xb@w\n    grad=(2/len(Xb))*Xb.T@(pred-y)\n    w-=lr*grad\nprint('from scratch:',w)\n",
-    "useIt": "from sklearn.linear_model import LinearRegression\nm=LinearRegression().fit(X,y)\nprint('sklearn:',m.intercept_,m.coef_)\n",
-    "verifyIt": "assert abs(w[0]-2)<0.2\nassert abs(w[1]-3)<0.2\n"
-  },
-  "visual": {
-    "type": "scatter",
-    "title": "Linear regression",
-    "series": [
-      {
-        "label": "data",
-        "points": [
-          [
-            0.08,
-            0.16
-          ],
-          [
-            0.18,
-            0.24
-          ],
-          [
-            0.25,
-            0.33
-          ],
-          [
-            0.37,
-            0.39
-          ],
-          [
-            0.46,
-            0.5
-          ],
-          [
-            0.58,
-            0.55
-          ],
-          [
-            0.68,
-            0.68
-          ],
-          [
-            0.82,
-            0.74
-          ],
-          [
-            0.9,
-            0.86
-          ]
-        ]
-      },
-      {
-        "label": "fit",
-        "points": [
-          [
-            0.06,
-            0.14
-          ],
-          [
-            0.93,
-            0.86
-          ]
-        ]
-      }
-    ],
-    "caption": "The model estimates a conditional mean relationship; residual diagnostics matter as much as the fitted line.",
-    "xLabel": "x",
-    "yLabel": "y"
+    "goal": "Fit ordinary least squares from the design matrix, compare with scikit-learn, and verify projection, translation, and rank-sensitive behavior.",
+    "buildIt": "import numpy as np\ndef ols_fit(X,y):\n    X=np.asarray(X,float); y=np.asarray(y,float)\n    design=np.column_stack([np.ones(len(X)),X])\n    beta,_,rank,singular=np.linalg.lstsq(design,y,rcond=None)\n    fitted=design@beta; residual=y-fitted\n    return beta,fitted,residual,rank,singular\nX=np.array([[18,0],[20,0],[22,1],[24,1],[26,0],[28,1]],float)\ny=np.array([132,123,130,120,91,101],float)\nbeta,fitted,residual,rank,singular=ols_fit(X,y)",
+    "useIt": "from sklearn.linear_model import LinearRegression\nmodel=LinearRegression().fit(X,y)\nsk_pred=model.predict(X)\nsk_beta=np.r_[model.intercept_,model.coef_]",
+    "verifyIt": "design=np.column_stack([np.ones(len(X)),X])\nassert rank==design.shape[1]\nassert np.allclose(design.T@residual,0,atol=1e-10)\nassert np.allclose(beta,sk_beta,atol=1e-10)\nassert np.allclose(fitted,sk_pred,atol=1e-10)\nshift=37.0\nbeta_shift,fit_shift,res_shift,_,_=ols_fit(X,y+shift)\nassert np.allclose(fit_shift,fitted+shift)\nassert np.allclose(beta_shift[1:],beta[1:])\nassert abs(beta_shift[0]-beta[0]-shift)<1e-10\nassert singular[-1]>0",
+    "shipIt": "Persist feature order, transforms, units, training ranges, solver and model version; reject schema violations, monitor range and residual drift, measure delayed interval coverage, and keep the previous model and baseline available for rollback."
   },
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "Linear regression is the baseline model for estimating how a numerical outcome changes with one or more predictors. Its apparent simplicity hides several separate ideas: a linear conditional-mean specification, least-squares estimation, the geometry of projection, uncertainty statements, and prediction under a stable data-generating process. This chapter develops those ideas without treating the fitted line as automatically causal. You will derive the normal equations, understand why a numerically stable least-squares solver is preferable to explicitly inverting a matrix, interpret coefficients under transformations and interactions, and separate confidence intervals for a mean response from prediction intervals for a new observation. A worked pricing example shows how centering changes the intercept but not predictions. The lab implements ordinary least squares with a QR-style NumPy solver, compares it with scikit-learn, and verifies orthogonality and translation invariants. The production section covers feature contracts, extrapolation, drift, interval coverage, numerical conditioning, and rollback. The boundary is important: linear regression can be an excellent predictive or descriptive model, but causal language requires a separate identification argument and diagnostics cannot prove that argument.",
+  "prerequisites": [
+    "projections-least-squares",
+    "expectation-variance"
+  ],
+  "learningObjectives": [
+    "State the population model, sample objective, and interpretation of a partial regression coefficient.",
+    "Derive the normal equations and explain least squares as an orthogonal projection.",
+    "Distinguish coefficient uncertainty, mean-response uncertainty, and new-observation uncertainty.",
+    "Fit and verify a stable multivariate least-squares implementation without explicit matrix inversion."
+  ],
+  "deepSections": [
+    {
+      "id": "estimand-and-specification",
+      "title": "Start with the estimand and specification",
+      "body": "Let Y be a numerical outcome and X=(X1,...,Xp) a predictor vector. The population linear conditional-mean specification is E[Y|X=x]=beta0+x^T beta. This statement is weaker than saying every observed point lies on a plane: the error epsilon=Y-E[Y|X] may be large, and its variance or distribution may depend on x. It is also different from assuming beta is causal. A partial coefficient beta_j compares modeled means for observations that differ by one unit in X_j while their other included predictor values are fixed. Omitted common causes, post-treatment controls, selection, measurement error, and lack of overlap can make that conditional association a poor causal effect. Specification includes representation. A model with log price, category indicators, and price-by-category interactions remains linear in its coefficients even though it is not a single straight line in raw inputs. Reference levels determine categorical interpretations. Centering a feature makes the intercept correspond to a meaningful reference profile. Before fitting, state the unit of observation, prediction horizon, target timestamp, admissible features, intended prediction population, and whether the goal is prediction, description, or causal estimation. Those choices determine what a coefficient and an evaluation actually mean."
+    },
+    {
+      "id": "least-squares-geometry",
+      "title": "Least squares, normal equations, and rank",
+      "body": "Stack an intercept and predictors into an n by d design matrix X and outcomes into y. Ordinary least squares minimizes S(beta)=||y-X beta||_2^2. Differentiating gives -2X^T(y-X beta); a stationary solution satisfies X^T X beta_hat=X^T y. Equivalently, X^T e=0 for residual e=y-X beta_hat: the residual is orthogonal to every design column. If X has full column rank, the solution is unique. If columns are exactly dependent, infinitely many coefficient vectors produce the same projection, and a pseudoinverse chooses one minimum-norm solution. Near dependence makes X^T X ill-conditioned, amplifying small perturbations in data into large coefficient changes. The textbook expression (X^T X)^-1 X^T y is useful algebra but poor implementation: forming X^T X squares the condition number and explicit inversion adds error and work. QR, SVD, or a trusted least-squares routine is safer. Weighted least squares changes the geometry by scaling observations according to known or modeled inverse variances; generalized least squares also represents correlated errors. Neither should be used merely to make residual plots look nicer without a defensible variance model."
+    },
+    {
+      "id": "interpretation-and-uncertainty",
+      "title": "Interpret coefficients and uncertainty correctly",
+      "body": "Under independent errors with E[epsilon|X]=0 and constant conditional variance sigma^2, beta_hat is unbiased conditional on X and Var(beta_hat|X)=sigma^2(X^T X)^-1. Normal errors give exact small-sample t and F inference; with large samples, suitable central-limit arguments or robust covariance estimators can support approximate inference under weaker conditions. The standard error measures repeated-sample variability of an estimator, not the spread of outcomes and not the probability that a fixed parameter lies in one realized interval. At a new feature vector x0, a confidence interval for the conditional mean concerns x0^T beta. A prediction interval for a new Y also includes irreducible error variance, so it is wider. Coefficient interpretation depends on encoding: with log Y and raw X, a one-unit X change approximates a 100 beta_j percent change for small beta_j; with log X and raw Y, beta_j is change in Y for a proportional X change. Interaction terms mean main effects are slopes at the reference value of the interacting feature. Standardized coefficients may aid scale comparison but do not establish importance when features are correlated. Bootstrap intervals can represent complex pipelines, provided resampling respects clusters, time, and the complete fitting process."
+    },
+    {
+      "id": "evaluation-and-boundaries",
+      "title": "Evaluate the model as a prediction system",
+      "body": "Training residual sum of squares always decreases when columns are added, so it cannot select model complexity. Evaluate on data representing the deployment population, using chronological or grouped splits when random splitting would leak related observations. Mean squared error emphasizes large misses; mean absolute error describes a different operational loss. R-squared compares squared error with predicting the evaluation-set mean, but it can be negative out of sample and says nothing about calibration across important subgroups. Inspect residuals against fitted values, influential cases, and relevant time or feature axes. Pattern can reveal missing nonlinear terms, changing variance, seasonality, or segmentation, but a clean plot does not prove independence, causal identification, or future stability. Extrapolation is especially dangerous because a plane extends indefinitely beyond observed support. Record training ranges and flag or route out-of-range requests. When the target is delayed, monitor feature and prediction distributions first, then backfill error and interval coverage. Compare against a simple baseline and retain a rollback artifact. A linear model earns trust through a complete measurement and monitoring contract, not because its equation is easy to print."
+    }
+  ],
+  "workedExamples": [
+    {
+      "title": "Centering and a partial slope",
+      "body": "Suppose the fitted model is demand=120-4.2(price-20)+18 holiday. At price 22 on a holiday, the prediction is 120-8.4+18=129.6. Re-expressing raw price gives demand=204-4.2 price+18 holiday; predictions and the price slope are identical, while the intercept now describes the nonsensical price zero. If observed demand is 140, the residual is 10.4. To call -4.2 a causal price effect, assignment or conditional exchangeability, positivity, consistency, and correct adjustment would need separate support."
+    },
+    {
+      "title": "Mean interval versus prediction interval",
+      "body": "If the fitted mean at a customer profile is 80, its standard error is 2, and residual standard deviation is 12, an approximate 95% mean interval is 80 plus or minus 1.96*2, or [76.1,83.9]. A new-observation interval uses sqrt(2^2+12^2)=12.17 and is about [56.1,103.9]. The wider interval answers a different question and includes individual variability."
+    }
+  ],
+  "exercises": [
+    {
+      "prompt": "Explain why training residuals sum to zero when the design includes an intercept.",
+      "solution": "The intercept column is the all-ones vector. Orthogonality X^T e=0 therefore includes 1^T e=0, so residuals sum to zero up to numerical tolerance."
+    },
+    {
+      "prompt": "A coefficient changes dramatically after adding a correlated predictor but test predictions barely change. Diagnose this.",
+      "solution": "The design has multicollinearity: the new column redistributes attribution among nearly redundant directions. Inspect singular values, coefficient uncertainty and stability, but judge predictive value on honest held-out data."
+    },
+    {
+      "prompt": "Choose between a mean-response interval and prediction interval for staffing one future day.",
+      "solution": "Use a prediction interval because staffing concerns one realized future outcome, including irreducible day-to-day variation. A mean interval only quantifies uncertainty in the conditional mean."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "scatter",
+      "title": "Projection onto a fitted line",
+      "series": [
+        {
+          "label": "Observed",
+          "points": [
+            [
+              0.08,
+              0.18
+            ],
+            [
+              0.22,
+              0.28
+            ],
+            [
+              0.35,
+              0.31
+            ],
+            [
+              0.48,
+              0.5
+            ],
+            [
+              0.62,
+              0.57
+            ],
+            [
+              0.76,
+              0.72
+            ],
+            [
+              0.9,
+              0.83
+            ]
+          ]
+        },
+        {
+          "label": "Fitted mean",
+          "points": [
+            [
+              0.08,
+              0.17
+            ],
+            [
+              0.9,
+              0.84
+            ]
+          ]
+        }
+      ],
+      "caption": "Conceptual data: least squares chooses fitted values in the design space and leaves an orthogonal residual vector.",
+      "afterSection": "least-squares-geometry"
+    },
+    {
+      "type": "compare",
+      "title": "Two different uncertainty questions",
+      "left": {
+        "title": "Mean response",
+        "items": [
+          "Uncertainty in E[Y|x]",
+          "Shrinks with information",
+          "Narrower interval",
+          "Answers an average question"
+        ]
+      },
+      "right": {
+        "title": "New observation",
+        "items": [
+          "Includes outcome noise",
+          "Adds residual variance",
+          "Wider interval",
+          "Answers an individual forecast"
+        ]
+      },
+      "caption": "A confidence interval for a modeled mean is not a prediction interval for a new outcome.",
+      "afterSection": "interpretation-and-uncertainty"
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "isl",
+      "contribution": "Supplies the statistical-learning treatment of least squares, coefficient interpretation, uncertainty, and flexible linear-model extensions."
+    },
+    {
+      "resource": "sklearn-linear-models",
+      "contribution": "Verifies the current least-squares implementation contract, solver framing, and practical linear-model API behavior."
+    },
+    {
+      "resource": "nist-regression-diagnostics",
+      "contribution": "Grounds the residual, leverage, and influence guidance in an engineering statistics reference."
+    }
+  ]
 }

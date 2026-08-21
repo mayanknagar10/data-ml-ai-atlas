@@ -6,12 +6,13 @@
   "roles": [
     "all"
   ],
-  "interviewAnswer": "Cross-entropy evaluates a predicted probability distribution against the target. In classification it rewards high probability on the true class and heavily penalizes confident wrong predictions.",
+  "interviewAnswer": "Cross-entropy is H(p,q)=-sum_y p(y)log q(y). For a one-hot label y it becomes -log q_y, so minimizing average cross-entropy maximizes conditional likelihood. With softmax logits z, the stable per-example loss is logsumexp(z)-z_y and the gradient is softmax(z)-onehot(y). Cross-entropy equals H(p)+KL(p||q), so for fixed target p it is minimized at q=p and is a proper scoring rule. I compute from logits with log-sum-exp, define class weights and reduction explicitly, mask padded tokens, distinguish label smoothing from calibration, and evaluate probability reliability separately from accuracy. Infinite or NaN loss often means zero predicted probability, overflow, invalid labels or a masking bug. Scores are comparable only under the same label space, sampling and weighting policy.",
   "keyPoints": [
-    "Negative log-likelihood",
-    "Probabilistic classification",
-    "Logits + softmax",
-    "Calibration connection"
+    "One-hot cross-entropy is negative log probability of the observed class and equals conditional NLL.",
+    "Use logits and log-sum-exp; never form unstable exponentials or log clipped probabilities casually.",
+    "The gradient softmax-minus-target directly increases target mass and decreases total non-target mass.",
+    "Weights, smoothing, sampling, masking and reduction change the optimization target and reported scale.",
+    "Low log loss rewards calibrated probability forecasts; accuracy alone ignores confidence."
   ],
   "resources": [
     "mit-info-theory",
@@ -19,22 +20,193 @@
     "stanford-cs229"
   ],
   "featured": false,
-  "why": "Cross-entropy is a core training objective in classification and language modeling.",
-  "intuition": "Predicting 0.9 for the correct class is mildly penalized; predicting 0.001 is punished strongly because -log(0.001) is large.",
-  "deepDive": "With one-hot targets, cross-entropy is the negative log probability assigned to the true class and corresponds to maximum likelihood for common probabilistic classifiers.",
-  "math": "CE(p,q)=-Σp(x)log q(x)",
-  "code": "",
+  "why": "Classification systems must decide not just which class ranks first but how probability mass is distributed. A model predicting 0.51 and one predicting 0.999 receive the same accuracy when correct, yet should behave differently in risk decisions and when wrong. Log loss rewards truthful probability forecasts in expectation and arises naturally from likelihood and coding. Its sensitivity to confident mistakes exposes failures hidden by accuracy, while also making it vulnerable to mislabeled data and numerical bugs. Understanding the loss, gradient and reduction prevents common errors such as double-applying softmax, averaging across padding, treating class-weighted outputs as calibrated, or comparing per-token losses across different vocabularies.",
+  "intuition": "Imagine encoding the true class using a code designed from predicted probabilities. A class assigned probability one-half needs about one bit; one assigned probability one-thousandth needs about ten bits. When that unlikely class actually occurs, the model pays a large surprise penalty. Training shifts probability toward observed classes. Softmax couples every class: raising one probability lowers others, and the gradient measures predicted mass minus target mass. Across many honest examples, reporting the true conditional probabilities minimizes expected penalty. A model cannot improve expected log loss by being systematically overconfident, even if its top-class decisions stay unchanged.",
+  "deepDive": "Cross-entropy is expected logarithmic surprise under predicted probabilities. It joins coding, likelihood and proper scoring, while softmax log-sum-exp provides a stable multiclass implementation with gradient q-y. Its apparent simplicity hides a target definition: label space, sampling, weights, smoothing, masks and reductions determine what distribution the model learns and what the reported number means. Pair it with calibration, discrimination and decision metrics under honest splits.",
+  "math": "H(p,q)=-sum_k p_k log q_k=H(p)+D_KL(p||q). For class y and logits z, L(z,y)=log(sum_j exp z_j)-z_y, evaluated with logsumexp. Softmax q_k=exp(z_k-logsumexp(z)), and dL/dz_k=q_k-I(k=y). Binary log loss is -y log q-(1-y)log(1-q), stably softplus(a)-ya for logit a. With label smoothing epsilon over K classes, a common target is (1-epsilon)onehot(y)+epsilon/K. Weighted and masked means divide by a defined count or weight sum.",
   "commonMistakes": [
-    "Calling cross-entropy an accuracy metric.",
-    "Applying softmax twice when a framework loss expects logits."
+    {
+      "misconception": "Cross-entropy and KL divergence are always the same number.",
+      "correction": "H(p,q)=H(p)+KL(p||q); they differ by target entropy unless p is one-hot with zero entropy."
+    },
+    {
+      "misconception": "Apply softmax before a framework cross-entropy-with-logits function.",
+      "correction": "That usually applies log-softmax to probabilities again and harms gradients and stability."
+    },
+    {
+      "misconception": "Class weighting preserves calibrated population probabilities.",
+      "correction": "It changes the optimized distribution or costs; calibrate on an unweighted representative validation set if needed."
+    },
+    {
+      "misconception": "Label smoothing guarantees calibration.",
+      "correction": "It can affect confidence and generalization but calibration must be measured under the target distribution."
+    }
   ],
   "followUps": [
-    "Cross-entropy vs KL divergence?",
-    "Why train on logits?"
+    {
+      "question": "Why is log loss a proper scoring rule?",
+      "answer": "The expected score under true p is H(p)+KL(p||q), uniquely minimized at q=p when support conditions hold."
+    },
+    {
+      "question": "Why subtract the maximum logit?",
+      "answer": "Softmax is shift invariant, and the subtraction prevents exponential overflow without changing probabilities."
+    },
+    {
+      "question": "What does the softmax gradient sum to zero imply?",
+      "answer": "Adding a constant to every logit cannot change the loss, so the gradient has no component in that common-shift direction."
+    }
   ],
-  "production": "Monitor calibration and downstream decision metrics in addition to cross-entropy.",
-  "workedExample": "True-class probability .9 gives loss ≈.105; probability .1 gives ≈2.303.",
+  "production": "Define label ontology and order, unknown and ignored classes, target construction, class or example weights, label smoothing, sampled-negative procedure, token or pixel masks, reduction numerator and denominator, logarithm base and distributed aggregation. Unit-test hand examples, extreme logits, empty masks, duplicated labels, mixed precision and equivalence with a trusted implementation. Preserve per-example loss and identifiers on controlled samples for debugging. Monitor NaN and infinity, logit magnitude, probability entropy, high-loss tail, class and subgroup loss, active-token counts, calibration, discrimination and decision utility. Validate temporally or by entity to prevent leakage. If sampling or weights differ between training and serving prevalence, calibrate separately. Roll back label mapping, preprocessing, model and serving loss interpretation together; a model with swapped class order is not compatible even if tensor shapes match.",
+  "workedExample": "For a three-class example with predicted probabilities [0.7,0.2,0.1] and true class one, loss is -ln(0.7)=0.357 nats. If the model confidently predicts [0.01,0.98,0.01] for the same class, loss is -ln(0.01)=4.605. Both top-class accuracy outcomes differ, but the second penalty explicitly records misplaced confidence. Adding the same constant to all three logits leaves both probabilities and loss unchanged.",
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "Cross-entropy measures the average code length or logarithmic loss incurred when outcomes follow a target distribution p but predictions use q. In supervised classification, one-hot targets reduce categorical cross-entropy to the negative log probability assigned to the true class, making it both maximum-likelihood training and a strictly proper scoring rule in expectation. This chapter derives softmax cross-entropy, binary log loss, gradients, stable log-sum-exp, class weighting, label smoothing, masking, reductions and sequence-token losses. It separates discrimination from calibration and explains how sampling, imbalance, noisy labels and transformed objectives change score interpretation. Worked examples compare confident correct and confident wrong predictions. The lab implements stable cross-entropy from logits, matches scikit-learn log loss, and verifies shift invariance, the entropy-plus-KL decomposition and zero-sum softmax gradients. Production guidance fixes label maps, padding and ignore rules, weights, sampling and reductions; monitors finite losses, probability calibration and slices; and avoids comparing training losses computed under different tokenizers or label policies. Cross-entropy strongly penalizes misplaced confidence, which is useful only when labels and probabilities correspond to the intended outcome distribution.",
+  "prerequisites": [
+    "entropy-information",
+    "logistic-regression",
+    "numerical-stability"
+  ],
+  "learningObjectives": [
+    "Derive binary and multiclass cross-entropy from expected code length and maximum likelihood.",
+    "Compute stable softmax log probabilities and gradients directly from logits.",
+    "Reason about class weights, label smoothing, masking, sampling, calibration and reduction conventions.",
+    "Diagnose numerical, label, imbalance, leakage and distribution-shift failures in training and evaluation."
+  ],
+  "deepSections": [
+    {
+      "id": "definition-likelihood",
+      "title": "Cross-entropy is model-based coding cost and conditional likelihood",
+      "body": "For target distribution p and model q on the same support, H(p,q)=-sum p(y)log q(y). It is not symmetric because p supplies averaging frequencies and q supplies code lengths. If p is an empirical one-hot target, only the observed y contributes, giving -log q_y. Summing over independent examples is negative log likelihood for a categorical model; minimizing it estimates conditional probabilities under model and sampling assumptions. Binary cross-entropy is -[y log q+(1-y)log(1-q)]. For soft labels, every target component contributes. The identity H(p,q)=H(p)+D_KL(p||q) shows q=p minimizes expected cross-entropy when p is fixed. This proper-scoring property concerns the true outcome distribution, not finite-sample perfection. If selection, label noise or case-control sampling changes observed p, uncorrected training targets that sampled distribution. The logarithm base changes units; machine-learning losses usually use natural logs."
+    },
+    {
+      "id": "softmax-stability-gradient",
+      "title": "Logits, log-sum-exp and a simple gradient make training stable",
+      "body": "Softmax gives q_k=exp(z_k)/sum_j exp(z_j). Direct exponentiation overflows for large positive logits and underflows for negative ones. Subtract max(z) without changing probabilities, or compute log q_k=z_k-logsumexp(z). For one-hot y, loss=logsumexp(z)-z_y. Differentiation yields dL/dz_k=q_k-I(k=y), whose components sum to zero because adding a constant to every logit leaves softmax unchanged. Framework losses commonly accept raw logits and combine log-softmax with NLL; passing probabilities into such a function applies the transform twice. Mixed precision requires tested kernels and finite-gradient monitoring. Clipping probabilities can prevent infinity in reporting but changes the objective and may hide the root problem. For binary logits a, use softplus(a)-ya rather than sigmoid followed by logs. Unit tests should include extreme logits, shift invariance and known hand calculations."
+    },
+    {
+      "id": "weights-smoothing-masking",
+      "title": "Objective modifications encode a different training distribution or preference",
+      "body": "Class weights multiply contributions, often to emphasize rare or costly classes. They can improve a decision boundary but no longer estimate unweighted population probabilities directly; recalibration and threshold selection are separate. Example weights and focal modulation similarly change the proper-scoring target. Label smoothing replaces a one-hot target with most mass on the observed class and some on others, discouraging extreme logits and sometimes improving generalization; it does not guarantee calibration and changes the minimum attainable loss. In sequence models, padding and ignored labels must be removed from both numerator and denominator. `mean` may average over examples, active tokens, pixels or weighted mass depending on the API. Distributed training must aggregate sums and counts consistently across workers. Sampled softmax or negative sampling approximates a huge-vocabulary objective but its numerical loss is not automatically the full-vocabulary cross-entropy. Document every label map, smoothing coefficient, weight, mask and reduction."
+    },
+    {
+      "id": "evaluation-and-failure",
+      "title": "Log loss, calibration and decisions reveal different model properties",
+      "body": "Average cross-entropy measures probability accuracy but can be dominated by a small number of confident errors. Report its distribution, high-loss examples and confidence intervals alongside accuracy, AUROC or ranking metrics. Calibration plots and proper scores test probability reliability; threshold-specific utility tests actions. A lower training loss can reflect memorization, leakage or label noise rather than generalization, so use grouped or temporal validation and freeze preprocessing. In imbalanced data, a trivial low-prevalence predictor may obtain modest average loss while missing every positive; use class and decision slices. Dataset shift changes p(y|x), label prevalence or feature support and can destroy calibration even when ranking remains. Common failures include swapped label indices, ignored-class leakage, NaN logits, all-masked batches, duplicated records, train-time weights used unknowingly at evaluation and summing losses across variable-length examples. Preserve per-example IDs and reductions so discrepancies can be traced."
+    }
+  ],
+  "workedExamples": [
+    {
+      "title": "Soft target",
+      "body": "Target p=[0.8,0.2] and prediction q=[0.6,0.4] give cross-entropy -0.8 ln 0.6-0.2 ln 0.4. Both classes contribute because the target represents uncertainty or smoothing rather than one observed category."
+    },
+    {
+      "title": "Padding bug",
+      "body": "Two sequences have 2 and 20 real tokens. Averaging per sequence weights them equally; averaging active token losses weights the long sequence ten times more. Neither is universally right, but the denominator must match the intended estimand."
+    }
+  ],
+  "lab": {
+    "language": "python",
+    "goal": "Implement stable cross-entropy from logits, compare scikit-learn log loss, and verify shift invariance, gradients and the entropy-plus-KL identity.",
+    "buildIt": "import numpy as np\ndef log_softmax(logits):\n    z=np.asarray(logits,float); m=np.max(z,axis=-1,keepdims=True); return z-m-np.log(np.exp(z-m).sum(axis=-1,keepdims=True))\ndef cross_entropy_logits(logits,labels):\n    logp=log_softmax(logits); labels=np.asarray(labels,int); return -logp[np.arange(len(labels)),labels]\ndef softmax(logits): return np.exp(log_softmax(logits))\ndef entropy(p):\n    p=np.asarray(p,float); nz=p>0; return -np.sum(p[nz]*np.log(p[nz]))\ndef kl(p,q):\n    p=np.asarray(p,float); q=np.asarray(q,float); nz=p>0; return np.sum(p[nz]*np.log(p[nz]/q[nz]))\nlogits=np.array([[2.,1.,-1.],[-2.,1.,3.]]); labels=np.array([0,2]); losses=cross_entropy_logits(logits,labels); probs=softmax(logits)\ngrad=probs-np.eye(3)[labels]\np=np.array([.7,.2,.1]); q=np.array([.6,.3,.1]); cross=-np.sum(p*np.log(q))",
+    "useIt": "from sklearn.metrics import log_loss\nsklearn_loss=log_loss(labels,probs,labels=[0,1,2],normalize=False)/len(labels)",
+    "verifyIt": "assert np.allclose(losses.mean(),sklearn_loss)\nassert np.allclose(cross,entropy(p)+kl(p,q))\nassert np.allclose(cross_entropy_logits(logits+10000,labels),losses)\nassert np.allclose(grad.sum(axis=1),0)\nassert np.all(np.isfinite(cross_entropy_logits([[1000,-1000]], [0])))\nassert cross_entropy_logits([[5,0]],[0])[0]<cross_entropy_logits([[0,5]],[0])[0]\nassert np.allclose(probs.sum(axis=1),1)\nassert kl(p,p)==0.0",
+    "shipIt": "Version labels, logits API, weights, smoothing, masks, sampling and reduction; test extreme values and golden batches, monitor finite per-slice losses and calibration, and roll back preprocessing plus model as one compatible artifact."
+  },
+  "exercises": [
+    {
+      "prompt": "True-class probability is 0.1. What is one-hot cross-entropy in nats?",
+      "solution": "-ln(0.1)=2.3026 nats."
+    },
+    {
+      "prompt": "Why does adding 100 to every logit not change cross-entropy?",
+      "solution": "Softmax numerator and denominator gain the same factor exp(100), which cancels; stable implementations exploit this."
+    },
+    {
+      "prompt": "What does a confident wrong prediction do to log loss?",
+      "solution": "As assigned probability to the true class approaches zero, -log q_y grows without bound."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "curve",
+      "title": "True-class log loss",
+      "series": [
+        {
+          "label": "-log p(true)",
+          "points": [
+            [
+              0.02,
+              0.98
+            ],
+            [
+              0.08,
+              0.78
+            ],
+            [
+              0.2,
+              0.56
+            ],
+            [
+              0.4,
+              0.35
+            ],
+            [
+              0.65,
+              0.17
+            ],
+            [
+              0.9,
+              0.04
+            ],
+            [
+              0.99,
+              0.0
+            ]
+          ]
+        }
+      ],
+      "caption": "Conceptual normalized curve: confident mistakes receive a steep penalty as true-class probability approaches zero.",
+      "afterSection": "definition-likelihood"
+    },
+    {
+      "type": "compare",
+      "title": "Loss and decision views",
+      "left": {
+        "title": "Cross-entropy",
+        "items": [
+          "Uses full probability vector",
+          "Penalizes confidence",
+          "Proper in expectation",
+          "Sensitive to label policy"
+        ]
+      },
+      "right": {
+        "title": "Accuracy / threshold utility",
+        "items": [
+          "Uses chosen decision",
+          "Ignores probability margin",
+          "Matches discrete actions",
+          "Depends on costs and threshold"
+        ]
+      },
+      "caption": "Probability quality and decision quality are related but distinct evaluation targets.",
+      "afterSection": "evaluation-and-failure"
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "mit-info-theory",
+      "contribution": "Grounds cross-entropy, entropy and divergence identities in formal information theory."
+    },
+    {
+      "resource": "google-mlcc",
+      "contribution": "Verifies practical classification log-loss, logits and training interpretation."
+    },
+    {
+      "resource": "stanford-cs229",
+      "contribution": "Supports maximum-likelihood classification, softmax and optimization foundations."
+    }
+  ]
 }

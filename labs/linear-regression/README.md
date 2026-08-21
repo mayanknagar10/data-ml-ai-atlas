@@ -1,6 +1,6 @@
 # Linear Regression — Code Lab
 
-Implement ordinary least squares with gradient descent, then compare it with scikit-learn.
+Fit ordinary least squares from the design matrix, compare with scikit-learn, and verify projection, translation, and rank-sensitive behavior.
 
 ## 1. Build it
 

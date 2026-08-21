@@ -6,30 +6,228 @@
   "roles": [
     "ds"
   ],
-  "interviewAnswer": "LOF compares local density with neighbors, while One-Class SVM learns a boundary around normal data. LOF captures local anomalies; One-Class SVM can be sensitive to scaling and hyperparameters.",
+  "interviewAnswer": "LOF finds points whose local reachability density is low relative to their k nearest neighbors, so a point can be normal inside a sparse cluster even if it is globally far away. A score near one is locally comparable; much above one suggests a local outlier. One-Class SVM instead estimates a regularized support boundary in feature space, often with an RBF kernel; nu controls a trade-off related to training errors and support vectors, while gamma controls boundary scale. I fit scaling on a trusted reference, tune k or gamma/nu on later data and alert capacity, and distinguish LOF's default training-set outlier mode from novelty=True scoring of new points. I monitor distance concentration, neighbor/support-vector stability, reference contamination, score direction, and incident yield.",
   "keyPoints": [
-    "Novelty vs outlier-detection modes differ.",
-    "Local methods struggle in high dimensions.",
-    "Thresholds should be calibrated to alert capacity."
+    "LOF compares local density with neighbor density rather than using one global threshold.",
+    "Reachability distance reduces unstable density estimates around very close neighbors.",
+    "One-Class SVM learns a kernel support boundary, not an event probability.",
+    "Scaling, metric, k, gamma, nu, and reference purity define the detector.",
+    "LOF outlier and novelty modes have different scoring semantics."
   ],
   "resources": [
+    "lof-paper",
+    "one-class-svm-paper",
     "sklearn-outlier"
   ],
   "featured": false,
-  "why": "Local Outlier Factor & One-Class SVM appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
-  "intuition": "Novelty vs outlier-detection modes differ.",
-  "deepDive": "LOF compares local density with neighbors, while One-Class SVM learns a boundary around normal data. LOF captures local anomalies; One-Class SVM can be sensitive to scaling and hyperparameters. Local methods struggle in high dimensions. Thresholds should be calibrated to alert capacity. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
-  "workedExample": "Flag a transaction unusual relative to similar customer behavior even if globally common.",
+  "why": "A dataset can have a dense city-center cluster and a sparse rural cluster, or high-volume and low-volume customer segments. Global distance or density thresholds often call the sparse legitimate mode anomalous. LOF asks a more local question and can surface a point that is isolated relative to nearby peers. One-Class SVM is useful when trusted normal examples define a complicated boundary and new observations must be accepted or rejected. Both methods are powerful precisely where their assumptions are risky: neighborhoods depend on a metric, kernels depend on scale, and a contaminated or drifting reference changes the definition of support. They can be computationally expensive and difficult in high-dimensional sparse encodings. The correct choice comes from the anomaly geometry and scoring mode, not from which method draws the most attractive two-dimensional boundary.",
+  "intuition": "LOF asks whether a point lives in a neighborhood as crowded as the neighborhoods of its nearest neighbors. For each point, look at k neighbors and estimate how far one must reach to connect to them, using the neighbor's own k-distance as a floor. The inverse average reach is local density. Divide the neighbors' average density by the point's density. If the ratio is near one, it belongs locally; if much larger, the point is in a local pocket of low density. One-Class SVM has a different picture: map reference points through a kernel and place a maximum-margin boundary separating most of them from the origin. New points outside receive negative decision values. A narrow RBF kernel can wrap each point and overfit; a broad kernel can collapse distinct modes into a crude region. Both scores need an operational threshold and later evidence.",
+  "deepDive": "LOF and One-Class SVM encode two distinct notions of normality: density relative to local neighbors and membership in a regularized kernel support. Their scores are inseparable from metric, scale, neighborhood or bandwidth, reference, and scoring mode. Correct API semantics and operational validation matter as much as formulas, especially when new modes, dimensionality, or reference contamination change the learned support.",
+  "workedExample": "A dense urban cluster has typical neighbor distance 0.1; a sparse rural cluster has distance 0.8. A rural point with neighbors also spaced near 0.8 gets LOF near one even though it is globally distant. Another point one unit beyond the rural cluster has reach distances much larger than its neighbors' local scale and LOF above two. An RBF One-Class SVM can represent both modes if gamma and nu are tuned on a reference containing both, but can exclude the sparse mode when the boundary is too tight.",
   "commonMistakes": [
-    "Applying the method without checking its assumptions or data-generating process.",
-    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+    {
+      "misconception": "LOF is simply distance to the kth neighbor.",
+      "correction": "LOF compares the point's local reachability density with neighbor densities, enabling different legitimate density regions."
+    },
+    {
+      "misconception": "nu is the known anomaly percentage.",
+      "correction": "Nu controls the optimization trade-off and relates to bounds under assumptions. It is a tuning parameter, not a prevalence estimate."
+    },
+    {
+      "misconception": "LOF fit_predict and novelty prediction are interchangeable.",
+      "correction": "Training-set scoring excludes self and uses transductive semantics; novelty mode scores unseen cases against the stored reference. Follow the exact API contract."
+    },
+    {
+      "misconception": "Standard scaling solves high-dimensional neighbor failure.",
+      "correction": "It aligns units but does not prevent distance concentration, irrelevant features, sparse-category artifacts, or unstable neighbor identities."
+    }
   ],
   "followUps": [
-    "What assumptions does Local Outlier Factor & One-Class SVM make?",
-    "How would you validate or debug Local Outlier Factor & One-Class SVM in practice?"
+    {
+      "question": "Why use reachability distance instead of raw distance in LOF?",
+      "answer": "The neighbor's k-distance floors very small pair distances, stabilizing local density within clusters and reducing sensitivity to tightly packed duplicate-like points."
+    },
+    {
+      "question": "How do you choose k?",
+      "answer": "Match expected anomaly and cluster scale, then examine performance and ranking stability over a defensible range using later data, incidents, audits, and workload."
+    },
+    {
+      "question": "What does gamma do in RBF One-Class SVM?",
+      "answer": "It sets kernel locality. Large gamma produces narrow, potentially fragmented support around points; small gamma produces a broader smoother boundary."
+    }
   ],
-  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "production": "Serialize the exact scaler and transforms, metric, feature weights, reference identifiers, k and tie convention or kernel/gamma/nu, support vectors or neighbor index, score direction, offset, and threshold. Golden tests should cover known inliers, local outliers, and API novelty behavior. Monitor feature and k-distance drift, neighbor overlap, support-vector fraction, score distribution, alert and incident volume, latency, memory, approximate-index recall, missing contexts, and subgroup concentration. Quarantine reference refreshes and audit both alerts and nonalerts. Rate-limit neighbor-query failures and retain hard domain rules if the index or model is unavailable. Canary parameter and reference changes in shadow mode, comparing top-alert overlap and later yield. Roll back transforms, reference/index, estimator, and threshold as one unit when workload, detection, fairness, or latency criteria fail.",
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "Local Outlier Factor (LOF) and One-Class SVM answer two different versions of support-based anomaly detection. LOF compares a point's local reachability density with the densities of its neighbors, making it useful when normal data contain regions of different density. One-Class SVM learns a regularized boundary around reference data in a kernel feature space and is naturally framed as novelty detection. This chapter derives k-distance, reachability distance, local reachability density, LOF, the one-class support-estimation objective, kernel and nu behavior, and the practical difference between transductive training-set outlier detection and scoring unseen observations. You will learn why distance scaling, categorical representation, neighborhood size, curse of dimensionality, reference contamination, kernel bandwidth, and computational cost control results. A worked two-cluster example shows why a global distance score can overflag a sparse legitimate cluster while LOF compares locally. The lab implements LOF from first principles, compares exactly with scikit-learn, adds an RBF One-Class SVM novelty score, and verifies density-ratio, permutation, and injected-outlier behavior. Production guidance freezes reference, scaler, metric, k, kernel, nu, and score direction while monitoring neighbor distances, support vectors, alert burden, and cold-start coverage.",
+  "prerequisites": [
+    "anomaly-types",
+    "knn"
+  ],
+  "learningObjectives": [
+    "Compute LOF from k-neighbor reachability distances and explain local density-ratio interpretation.",
+    "Explain One-Class SVM support estimation, kernel bandwidth, nu, and decision score semantics.",
+    "Distinguish training-set outlier detection from novelty scoring and avoid invalid LOF API use.",
+    "Diagnose scaling, high-dimensional distance concentration, reference contamination, and computational constraints."
+  ],
+  "deepSections": [
+    {
+      "id": "lof-definition",
+      "title": "From k-distance to local outlier factor",
+      "body": "Choose a distance metric and neighborhood size k. The k-distance of object o is the distance to its kth nearest neighbor, with tie handling defining the exact neighborhood. For query p and neighbor o, reachability distance reach_k(p,o)=max{k-distance(o), d(p,o)}. The floor prevents extremely close pairs from creating arbitrarily high density and makes density relative to the neighbor's local scale. Local reachability density lrd_k(p) is the reciprocal of the average reachability distance from p to its k neighbors. Finally LOF_k(p) is the average lrd of p's neighbors divided by lrd(p). Values around one mean comparable local density; values substantially greater than one indicate lower density than neighbors. LOF is a ranking, not a calibrated probability, and values below one can indicate unusually dense points. k defines the scale of locality. Too small makes scores noisy and duplicate-sensitive; too large crosses cluster boundaries and approaches a global comparison. Examine a range of k values and tie behavior, and align the neighborhood with the action and expected anomaly size."
+    },
+    {
+      "id": "one-class-support",
+      "title": "One-Class SVM as regularized support estimation",
+      "body": "One-Class SVM maps x to feature space phi(x) and finds a hyperplane that separates most mapped reference points from the origin while maximizing margin. A common primal minimizes ||w||^2/2 +(1/(nu n))sum_i xi_i-rho subject to w^T phi(x_i)>=rho-xi_i and xi_i>=0. The decision f(x)=w^T phi(x)-rho is positive inside the learned region and negative outside under common APIs. Nu in (0,1] controls a trade-off and has theoretical relationships as an upper bound on training outlier fraction and lower bound on support-vector fraction under conditions; it is not a known anomaly prevalence. With an RBF kernel exp(-gamma||x-x'||^2), gamma controls locality. Scaling changes distances and therefore the entire boundary. Small gamma gives a broad smooth support; large gamma creates fragmented regions and can label much of new space abnormal. Kernel fitting scales poorly with n, motivating linear approximations or alternative detectors for large streaming data. Fit on trusted normal data for novelty detection and validate boundary stability under legitimate modes."
+    },
+    {
+      "id": "mode-representation-and-dimension",
+      "title": "Scoring mode, representation, and dimensionality",
+      "body": "scikit-learn's default LOF performs outlier detection on the fitted sample and exposes negative_outlier_factor_. With novelty=False, scoring arbitrary new rows is intentionally unavailable. Set novelty=True only when training data are treated as reference normals; then predict or decision_function should be used on unseen data, not interpreted as reproducing fit_predict on training rows because neighbor membership differs. Normalize score direction at the application boundary. Both LOF and RBF One-Class SVM rely on meaningful distances. Standardize numeric features inside the reference pipeline, use robust transforms for skew, and choose categorical or learned representations that preserve semantic similarity. In high dimensions, pairwise distances concentrate and nearest-neighbor identities become unstable; irrelevant columns can overwhelm signal. Assess neighbor overlap across resamples, intrinsic dimension, feature subsets, and domain metrics. One-hot rare categories and missingness patterns can dominate. Approximate neighbor indexes change results and need recall-versus-latency tests. Reference contamination can create local density pockets or expand a support boundary, so quarantine updates and retain audit samples."
+    },
+    {
+      "id": "selection-evaluation-and-serving",
+      "title": "Select scale and threshold with operational evidence",
+      "body": "Tune k, metric, scaler, gamma, and nu using known incidents, realistic injection, expert review, and later normal regimes. Avoid choosing parameters solely from the fraction of flags on the fit data. Evaluate precision-recall or recall at top-k when labels exist, plus incident-level workload and time to detection. For novelty systems, create chronological reference and test windows and include legitimate new modes. Compare LOF and One-Class SVM with robust univariate, Isolation Forest, and supervised baselines. Measure top-alert stability across bootstrap references and small parameter changes. In serving, LOF requires storing or indexing reference points; One-Class SVM stores support vectors. Budget memory and latency, version index build and approximate search settings, and define behavior when the reference or feature store is stale. Monitor k-distance distributions, support-vector fraction, score quantiles, unseen contexts, alert and incident volume, review yield, and subgroup concentration. A fallback should preserve hard safety rules and rate limits rather than return every request as normal."
+    }
+  ],
+  "math": "For neighbor set N_k(p), reach_k(p,o)=max{kdist(o),d(p,o)}. Then lrd_k(p)=[|N_k(p)|^{-1}sum_{o in N_k(p)}reach_k(p,o)]^{-1} and LOF_k(p)=|N_k(p)|^{-1}sum_{o in N_k(p)}lrd_k(o)/lrd_k(p). A One-Class SVM solves min_{w,xi,rho} ||w||^2/2 +(nu n)^{-1}sum xi_i-rho with w^T phi(x_i)>=rho-xi_i. Its signed decision is f(x)=sum_i alpha_i K(x_i,x)-rho under the dual representation.",
+  "workedExamples": [
+    {
+      "title": "Calculate a simple LOF ratio",
+      "body": "Suppose p's average reachability distance is 4, so lrd(p)=0.25. Its three neighbors have lrd values 0.5, 0.6, and 0.4. Their mean is 0.5, giving LOF(p)=0.5/0.25=2. The point is about half as locally dense as its neighbors under this k and metric."
+    },
+    {
+      "title": "Novelty mode changes the question",
+      "body": "A detector learns from a month of reviewed normal telemetry and scores next month's events. Use LOF novelty mode or One-Class SVM. Do not call a training-set outlier API and assume its neighbor exclusions and thresholds transfer unchanged to unseen rows; validate the exact deployed method."
+    }
+  ],
+  "lab": {
+    "language": "python",
+    "goal": "Implement Local Outlier Factor exactly, compare it with scikit-learn, and verify local-density, permutation, and One-Class SVM novelty behavior.",
+    "buildIt": "import numpy as np\ndef lof_scores(X,k=10):\n    X=np.asarray(X,float); dist=np.sqrt(((X[:,None,:]-X[None,:,:])**2).sum(2))\n    np.fill_diagonal(dist,np.inf)\n    neighbors=np.argsort(dist,axis=1)[:,:k]\n    kdist=np.take_along_axis(dist,neighbors[:,-1:],axis=1).ravel()\n    reach=np.empty((len(X),k))\n    for i in range(len(X)):\n        js=neighbors[i]; reach[i]=np.maximum(kdist[js],dist[i,js])\n    lrd=1/np.maximum(reach.mean(1),1e-12)\n    lof=np.array([lrd[neighbors[i]].mean()/lrd[i] for i in range(len(X))])\n    return lof\nrng=np.random.default_rng(8)\ndense=rng.normal([0,0],[.18,.18],size=(60,2))\nsparse=rng.normal([4,4],[.55,.55],size=(35,2))\nX=np.vstack([dense,sparse,[[4,7]]])\nlof=lof_scores(X,k=12)",
+    "useIt": "from sklearn.neighbors import LocalOutlierFactor\nfrom sklearn.pipeline import make_pipeline\nfrom sklearn.preprocessing import StandardScaler\nfrom sklearn.svm import OneClassSVM\nsk_lof=LocalOutlierFactor(n_neighbors=12,contamination='auto').fit_predict(X)\nsk_score=-LocalOutlierFactor(n_neighbors=12,contamination='auto').fit(X).negative_outlier_factor_\noc=make_pipeline(StandardScaler(),OneClassSVM(nu=.05,gamma='scale')).fit(X[:-1])\noc_score=-oc.decision_function(X)",
+    "verifyIt": "assert np.allclose(lof,sk_score,atol=1e-10)\nassert lof[-1]==lof.max() and lof[-1]>1.5\nassert oc_score[-1]>np.median(oc_score[:-1])\nperm=np.random.default_rng(4).permutation(len(X))\npermuted=lof_scores(X[perm],k=12)\nrestored=np.empty_like(permuted); restored[perm]=permuted\nassert np.allclose(restored,lof,atol=1e-10)\nassert 0.8<np.median(lof[:-1])<1.2\nassert np.isfinite(lof).all()",
+    "shipIt": "Persist scaler, metric, reference, k or kernel/gamma/nu, score direction and threshold; version neighbor indexes or support vectors, test novelty semantics, monitor distance and support drift, and roll back model plus reference together."
+  },
+  "exercises": [
+    {
+      "prompt": "A point and all its neighbors lie in a uniformly sparse cluster. What LOF do you expect?",
+      "solution": "Near one, because the point's local reachability density resembles its neighbors even if the cluster is globally far from dense modes."
+    },
+    {
+      "prompt": "Why can increasing k turn a local detector into a global one?",
+      "solution": "Large neighborhoods cross cluster boundaries and average over multiple density regimes, weakening the local comparison that LOF was designed to make."
+    },
+    {
+      "prompt": "A One-Class SVM marks nearly every new case abnormal after a unit conversion. Diagnose.",
+      "solution": "The scaler or feature contract likely differs from training. RBF distances and support are scale-sensitive; restore train-serving transform parity before retuning."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "scatter",
+      "title": "Local density versus global distance",
+      "series": [
+        {
+          "label": "Dense mode",
+          "points": [
+            [
+              0.1,
+              0.25
+            ],
+            [
+              0.14,
+              0.3
+            ],
+            [
+              0.18,
+              0.23
+            ],
+            [
+              0.2,
+              0.34
+            ],
+            [
+              0.24,
+              0.27
+            ]
+          ]
+        },
+        {
+          "label": "Sparse legitimate mode",
+          "points": [
+            [
+              0.62,
+              0.58
+            ],
+            [
+              0.69,
+              0.7
+            ],
+            [
+              0.77,
+              0.55
+            ],
+            [
+              0.82,
+              0.68
+            ]
+          ]
+        },
+        {
+          "label": "Local outlier",
+          "points": [
+            [
+              0.78,
+              0.92
+            ]
+          ]
+        }
+      ],
+      "caption": "Conceptual geometry: LOF can accept a sparse cluster while flagging a point sparse relative to that cluster's neighbors.",
+      "afterSection": "lof-definition"
+    },
+    {
+      "type": "compare",
+      "title": "Local density and kernel support",
+      "left": {
+        "title": "LOF",
+        "items": [
+          "Neighbor density ratio",
+          "k defines locality",
+          "Good for varying density",
+          "Reference storage/query cost"
+        ]
+      },
+      "right": {
+        "title": "One-Class SVM",
+        "items": [
+          "Kernel support boundary",
+          "gamma defines scale",
+          "Natural novelty framing",
+          "Support-vector compute cost"
+        ]
+      },
+      "caption": "The methods encode different notions of normality and expose different tuning and serving risks.",
+      "afterSection": "one-class-support"
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "lof-paper",
+      "contribution": "Provides the original reachability-distance, local-density, and LOF definitions plus locality interpretation."
+    },
+    {
+      "resource": "one-class-svm-paper",
+      "contribution": "Provides the primary regularized support-estimation objective and theoretical nu relationships."
+    },
+    {
+      "resource": "sklearn-outlier",
+      "contribution": "Verifies current LOF novelty versus outlier API semantics and One-Class SVM score conventions."
+    }
+  ]
 }

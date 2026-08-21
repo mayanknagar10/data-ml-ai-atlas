@@ -1,0 +1,31 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Hybrid Lexical + Vector Retrieval — Code Lab</title><script>(()=>{const s=localStorage.getItem('atlas-theme');const t=s||((matchMedia('(prefers-color-scheme: dark)').matches)?'dark':'light');document.documentElement.dataset.theme=t})()</script><style>:root{--bg:#fff;--text:#121417;--muted:#5d6470;--line:#dfe3e8;--soft:#f6f7f8;--blue:#155eef;--code:#0d1117;color-scheme:light}html[data-theme=dark]{--bg:#0d1117;--text:#eef2f6;--muted:#a8b0ba;--line:#2b333d;--soft:#171d24;--blue:#8fb4ff;--code:#070a0e;color-scheme:dark}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.6 Inter,system-ui,sans-serif}main{max-width:980px;margin:auto;padding:44px 22px 80px}a{color:var(--blue)}h1{font-size:42px;line-height:1.05;margin:8px 0 12px}.k{font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--blue);font-weight:800}.lead{color:var(--muted);font-size:17px}.top{display:flex;justify-content:space-between;gap:16px}button{border:1px solid var(--line);background:var(--soft);color:var(--text);border-radius:8px;padding:7px 9px;cursor:pointer}section{border-top:1px solid var(--line);padding-top:22px;margin-top:26px}pre{background:var(--code);color:#e6edf3;padding:18px;border-radius:12px;overflow:auto;font:13px/1.55 ui-monospace,monospace}.links{display:flex;gap:12px;flex-wrap:wrap;margin:18px 0}.links a{border:1px solid var(--line);border-radius:8px;padding:7px 9px;text-decoration:none;font-size:12px}@media(max-width:600px){h1{font-size:34px}.top{display:block}}</style></head><body><main><div class="top"><div><div class="k">Data, ML & AI Atlas · Runnable Lab</div><h1>Hybrid Lexical + Vector Retrieval</h1></div><button id="t">◐ Theme</button></div><p class="lead">Build lexical and vector rankings, fuse them with RRF, and verify scale invariance, candidate union, deduplication and complementary retrieval.</p><div class="links"><a href="../../index.html#/lesson/hybrid-search">← Full lesson</a><a href="lab.py">Combined Python file</a><a href="README.md">README</a></div><section><h2>1 · Build it</h2><p>Minimal implementation with as little framework abstraction as practical.</p><pre>import math,re
+import numpy as np
+from collections import Counter
+def tokenize(s): return re.findall(r&#x27;(?u)\b\w+\b&#x27;,s.lower())
+def bm25(query,docs,k1=1.2,b=.75):
+    tok=[tokenize(d) for d in docs]; terms=set(tokenize(query)); N=len(docs); avg=sum(map(len,tok))/N; out=[]
+    for doc in tok:
+        c=Counter(doc); score=0.0
+        for t in terms:
+            df=sum(t in row for row in tok); idf=math.log(1+(N-df+.5)/(df+.5)); tf=c[t]; norm=k1*(1-b+b*len(doc)/avg); score+=idf*tf*(k1+1)/(tf+norm) if tf else 0
+        out.append(score)
+    return np.asarray(out)
+def ranks(scores): return np.argsort(-np.asarray(scores),kind=&#x27;stable&#x27;).tolist()
+def rrf(rankings,k0=60,weights=None):
+    weights=weights or [1.0]*len(rankings); score={}
+    for ranking,w in zip(rankings,weights):
+        for r,d in enumerate(dict.fromkeys(ranking),1): score[d]=score.get(d,0)+w/(k0+r)
+    return sorted(score,key=lambda d:(-score[d],d)),score
+docs=[&#x27;ZX 4817 reset procedure&#x27;,&#x27;change your password credentials&#x27;,&#x27;troubleshoot wireless router&#x27;,&#x27;account recovery guide&#x27;]
+query=&#x27;ZX 4817 change credentials&#x27;; lexical=bm25(query,docs)
+emb=np.array([[1,0,0],[.2,.95,0],[0,0,1],[.1,.8,.2]],float); emb/=np.linalg.norm(emb,axis=1,keepdims=True); q=np.array([.55,.8,0]); q/=np.linalg.norm(q)
+semantic=emb@q; lex_rank=ranks(lexical); vec_rank=ranks(semantic); fused,fused_scores=rrf([lex_rank[:3],vec_rank[:3]])</pre></section><section><h2>2 · Use it</h2><p>The same idea through a common library or practical API.</p><pre>from sklearn.metrics.pairwise import cosine_similarity
+sk_cos=cosine_similarity(q.reshape(1,-1),emb).ravel(); scaled_fused,_=rrf([ranks(1000*lexical+7)[:3],ranks(semantic*0.01-4)[:3]])</pre></section><section><h2>3 · Ship it</h2><p>Version both indexes, analyzers, embeddings, IDs, filters, branch depths, timeouts and fusion; evaluate branch and union recall plus final ranking and latency, shadow compatible generations, and preserve single-branch safe fallbacks and atomic rollback.</p></section><section><h2>4 · Verify it</h2><p>Assertions and sanity checks that catch conceptual or implementation mistakes.</p><pre>assert np.allclose(sk_cos,semantic)
+assert lex_rank[0]==0 and vec_rank[0]==1
+assert set(fused)==set(lex_rank[:3])|set(vec_rank[:3])
+assert fused==scaled_fused
+assert len(fused)==len(set(fused))
+assert all(v&gt;0 and np.isfinite(v) for v in fused_scores.values())
+# Each specialist&#x27;s top result survives the candidate fusion.
+assert 0 in fused and 1 in fused
+assert rrf([[1,1,2]])[0]==[1,2]</pre></section></main><script>const b=document.getElementById('t');function u(){b.textContent=document.documentElement.dataset.theme==='dark'?'☀ Light':'☾ Dark'}u();b.onclick=()=>{const n=document.documentElement.dataset.theme==='dark'?'light':'dark';document.documentElement.dataset.theme=n;localStorage.setItem('atlas-theme',n);u()}</script></body></html>

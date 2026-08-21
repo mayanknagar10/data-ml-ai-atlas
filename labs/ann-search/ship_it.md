@@ -1,3 +1,3 @@
 # Ship it
 
-At large scale swap exact search for ANN (HNSW/IVF/Faiss), then benchmark recall@K versus latency, memory, build/update cost.
+Version metric, normalization, embeddings, corpus IDs, index training and search parameters; benchmark exact recall and tail latency with filters and load, shadow a rebuilt index, and atomically switch with an exact or prior-index fallback.

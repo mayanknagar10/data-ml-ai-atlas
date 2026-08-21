@@ -1,6 +1,6 @@
 # Logistic Regression — Code Lab
 
-Build binary logistic regression and verify probabilities/decision boundary.
+Implement L2-regularized logistic regression with damped Newton updates, compare with scikit-learn, and verify likelihood, probability, and label-symmetry invariants.
 
 ## 1. Build it
 

@@ -1,6 +1,6 @@
 # Ridge, Lasso & Elastic Net — Code Lab
 
-See how L1/L2 regularization changes coefficients.
+Implement ridge and lasso coordinate descent on standardized data, compare with scikit-learn, and verify shrinkage, sparsity, permutation, and objective convergence.
 
 ## 1. Build it
 

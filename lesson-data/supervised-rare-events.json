@@ -6,31 +6,181 @@
   "roles": [
     "ds"
   ],
-  "interviewAnswer": "When rare-event labels exist, treat the problem as cost-sensitive classification with careful temporal splits, sampling/weighting and precision-recall evaluation rather than unsupervised anomaly detection.",
+  "interviewAnswer": "For rare events, I first protect the label, split, and evaluation design. I can retain all positives and subsample negatives for efficiency, but I store inclusion probabilities and either weight the likelihood or correct and calibrate probabilities on representative data. Class weights and oversampling change the training objective; they may help ranking or optimization but do not automatically produce population probabilities. Duplicating positives adds no new information, and synthetic examples can violate temporal, categorical, or causal constraints. I evaluate PR/AP, recall at review capacity, calibration, and cost on a later untouched population, tune thresholds separately, audit nonalerts, and monitor prevalence, label maturity, hard-negative mix, subgroup support, and queue outcomes.",
   "keyPoints": [
-    "Negative sampling can distort prevalence.",
-    "Calibrate/adjust probabilities if training distribution changes.",
-    "Use event-time split to avoid leakage."
+    "Event diversity and label quality matter more than raw class ratio alone.",
+    "Negative subsampling changes the sample prior and usually the probability intercept.",
+    "Weights, resampling, calibration, and thresholding solve different problems.",
+    "Validation must preserve deployment prevalence, time, groups, and label maturity.",
+    "Selective review and hard-negative mining create feedback that requires audits."
   ],
   "resources": [
-    "sklearn",
-    "google-rules-ml"
+    "rare-events-logistic",
+    "sklearn-calibration",
+    "cost-sensitive-learning",
+    "pr-imbalanced-paper"
   ],
   "featured": false,
-  "why": "Supervised Rare-event Modeling is a recurring foundation across data science and machine learning because it affects both theoretical correctness and practical system behavior.",
-  "intuition": "Negative sampling can distort prevalence.",
-  "deepDive": "When rare-event labels exist, treat the problem as cost-sensitive classification with careful temporal splits, sampling/weighting and precision-recall evaluation rather than unsupervised anomaly detection. Calibrate/adjust probabilities if training distribution changes. Use event-time split to avoid leakage. The interview-level skill is not merely recalling the definition: explain the assumptions, what diagnostic evidence you would inspect, and what alternative you would choose when those assumptions fail.",
-  "workedExample": "Train a failure classifier on 1% positives using weighted loss and evaluate recall at a fixed false-alert budget.",
+  "why": "At one event per ten thousand cases, training on every easy negative can be expensive and may contribute little gradient, while only a few event mechanisms determine whether the model generalizes. Sampling and weighting can focus computation, but they also tempt teams to report results on balanced test sets, interpret weighted scores as probabilities, or synthesize impossible positives. Rare labels are often delayed, disputed, and selected by an existing policy. A model may learn investigator behavior rather than event risk. The engineering objective is a trustworthy pipeline from event definition through sampling, training, calibration, threshold, review, and outcome. A simple regularized logistic model with corrected probabilities and honest evaluation can be more useful than a sophisticated imbalance technique whose score is impossible to calibrate or audit.",
+  "intuition": "Suppose the real population contains one positive in one hundred cases, but training keeps every positive and only enough negatives to make one positive in four sampled rows. The feature relationship within positives and negatives may remain informative, so score ordering can be good. Yet the sample tells the model that positives are far more common than reality, shifting its intercept upward. Subtracting the difference between sample and population prior log-odds restores the base-rate level under random case-control sampling and a correctly specified logistic model; an independent calibration set can handle additional misspecification. Class weighting creates a similar objective change. Thresholding then asks which calibrated risks justify action under cost or capacity. These are separate knobs. Copying a rare positive many times increases its gradient weight but does not reveal another kind of positive, and can make one mislabeled event dominate.",
+  "deepDive": "Rare-event modeling is a distribution and feedback problem, not a request to mechanically balance a table. Sampling and weighting decide which likelihood is optimized; calibration restores probability meaning under a representative population; thresholding converts risk to action. Honest time/group splits, mature labels, event diversity, inclusion probabilities, audits, and operational costs determine whether the score can be trusted.",
+  "workedExample": "Fraud prevalence is 0.5 percent. Training retains all 5,000 frauds and samples 15,000 nonfrauds, creating sample prevalence 25 percent. An unweighted logistic model can rank well but predicts probabilities near the sample prior. The log-odds correction is logit(0.005)-logit(0.25), about -4.20. Add it to every fitted logit, then validate and recalibrate on a later untouched population. Operations reviews the top 2,000 expected-value cases, not every probability above 0.5.",
   "commonMistakes": [
-    "Using the concept mechanically without checking assumptions or data semantics.",
-    "Reporting one metric/result without examining uncertainty, slices or failure modes."
+    {
+      "misconception": "Balancing the classes is always required.",
+      "correction": "Many models learn useful rankings from imbalanced data. Sampling or weighting should address compute, optimization, or cost for a stated reason and preserve honest evaluation."
+    },
+    {
+      "misconception": "Class weights automatically make probabilities better.",
+      "correction": "Weights change the target loss and effective prior. Validate and usually calibrate probabilities on a representative independent population."
+    },
+    {
+      "misconception": "SMOTE creates more real positive information.",
+      "correction": "It interpolates training representations under strong validity assumptions. It does not create independent event mechanisms and can generate impossible mixed or temporal cases."
+    },
+    {
+      "misconception": "Loss weighting and lowering the alert threshold are equivalent.",
+      "correction": "They act at training and decision stages and can change rankings, calibration, and regularization differently. Tune and validate each layer explicitly."
+    }
   ],
   "followUps": [
-    "What assumptions or limitations does Supervised Rare-event Modeling have?",
-    "How would you validate Supervised Rare-event Modeling on a real dataset?"
+    {
+      "question": "When is negative subsampling safe for logistic slopes?",
+      "answer": "Under random sampling within outcome class, correct specification, and appropriate estimation, slopes can be preserved while the intercept shifts. Feature-dependent selection needs weights or explicit modeling."
+    },
+    {
+      "question": "Why calibrate on independent predictions?",
+      "answer": "Training predictions are optimistically fit and can make a calibrator too extreme. Use held-out or cross-validated predictions that represent deployment sampling."
+    },
+    {
+      "question": "What is the biggest limit with ten positives?",
+      "answer": "The event diversity and uncertainty are fundamentally small. Complex resampling cannot replace independent positive evidence; simplify, report wide uncertainty, and collect or transfer defensible information."
+    }
   ],
-  "production": "In production, make assumptions explicit, validate on representative slices, compare with a simple baseline and monitor the signals that can drift.",
+  "production": "Version event, entity, horizon and maturity definitions, extraction timestamps, split rules, incident grouping, class and stratum inclusion probabilities, resampling seed, sample and class weights, feature pipeline, estimator, calibration cohort, prevalence assumption, and threshold or top-k policy. Test prior correction and weighted metrics on golden populations. Monitor true and sampled prevalence, label maturity, event diversity, hard-negative source mix, score and calibration drift, AP and recall at capacity when mature, alert and incident yield, audit misses, intervention outcomes, and subgroup support. Keep nonalert exploration to reduce selective-label blindness. Secure event data and avoid exposing rare cases through explanations. Define queue overflow and model-failure fallbacks. Canary the complete model-calibration-policy bundle on later traffic and roll back all stages together when probability, workload, detection, fairness, or net-value limits fail.",
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "Supervised rare-event modeling uses labeled positives and negatives to learn a ranking or event probability when positives are scarce. The central problem is not that algorithms cannot see a minority class; it is that effective information is limited by the number, diversity, and labeling quality of events, while naive sampling and weighting can distort probabilities and validation. This chapter develops rare-event logistic behavior, case-control and negative subsampling, inverse-probability weighting, prior or intercept correction, class weights, hard-negative mining, resampling, calibration, cost-sensitive thresholds, and temporal or grouped evaluation. You will understand why oversampling duplicates does not create new positive information, why synthetic interpolation can be invalid for mixed or temporal data, and why weighting the training loss is different from choosing a decision threshold. A worked fraud example shows how a model trained on all positives and sampled negatives can preserve ranking yet overstate prevalence until corrected or calibrated. The lab reproduces that intercept shift with scikit-learn, applies a log-odds prior correction, and verifies prevalence, ranking, and cost-policy invariants. Production guidance versions inclusion probabilities, label maturity, calibration and policy separately; audits nonalerts; monitors prevalence, hard-negative mix, calibration, queue yield, and subgroup event support.",
+  "prerequisites": [
+    "logistic-regression",
+    "rare-event-evaluation"
+  ],
+  "learningObjectives": [
+    "Design case-control, weighted, or resampled training data without corrupting evaluation or probability interpretation.",
+    "Apply and explain prior-log-odds correction after random negative subsampling.",
+    "Separate representation, ranking objective, probability calibration, and cost-sensitive threshold policy.",
+    "Diagnose label delay, leakage, hard-negative feedback, subgroup scarcity, and prevalence drift in production."
+  ],
+  "deepSections": [
+    {
+      "id": "information-labels-and-splits",
+      "title": "Protect event information before changing class balance",
+      "body": "Define the event, prediction time, horizon, entity, maturity, and action. Ensure every feature is available before the prediction timestamp; post-investigation status, future aggregates, and resolution codes are common leakage. Split chronologically when prevalence, policy, or behavior changes, and keep related entities or incidents together. The effective positive sample size is the number of independent and diverse event mechanisms, not the number of duplicated rows. Inspect positive coverage across time, source, severity, subgroup, and acquisition process. Negatives may be unlabeled future positives or unreviewed unknowns. Label delay requires matured cohorts; selective investigation requires random audits or exploration. Deduplicate events and decide whether repeated positive rows represent separate prediction opportunities or one incident. Start with regularized logistic and tree baselines, stable features, and PR plus capacity evaluation. If a fold contains too few positives for tuning or calibration, reduce complexity, aggregate carefully, use repeated grouped windows, or collect more evidence rather than hiding the problem with resampling."
+    },
+    {
+      "id": "sampling-weighting-and-correction",
+      "title": "Sampling and weighting change the fitted distribution",
+      "body": "Keeping all positives and randomly sampling negatives can reduce training cost. Record inclusion probability for every class and stratum. Unweighted case-control logistic regression can estimate slopes consistently under ideal random sampling and correct specification, while the intercept reflects sample prevalence. If population prevalence pi and sampled prevalence pi_s are known, add logit(pi)-logit(pi_s) to the fitted sample logit. More generally use inverse-probability weights or calibrate on a representative independent set. Stratified, time-dependent, or hard-negative sampling needs corresponding weights and may alter slopes if selection depends on features given class. Class weights multiply loss contributions and can emphasize events or approximate costs, but the resulting probability scores target a weighted distribution unless corrected. Weight normalization and library regularization conventions matter. Negative sampling should happen after split boundaries; sampling first can duplicate entities across train and test. Preserve a representative untouched evaluation set even if training is sampled. Track sampling changes as model-version changes."
+    },
+    {
+      "id": "resampling-objectives-and-calibration",
+      "title": "Use resampling and specialized objectives for a stated purpose",
+      "body": "Random oversampling repeats positive rows. It can help minibatch composition or solver gradients but adds no independent information and increases overfitting to mislabeled or atypical events. Random undersampling saves compute but may discard informative hard negatives and distort probability estimates. Synthetic interpolation methods such as SMOTE assume that interpolating minority neighbors creates valid events. That can fail with one-hot categories, sequences, graph identities, time, constraints, or disconnected event mechanisms; synthetic rows must be generated inside training folds and validated mechanistically. Focal loss downweights easy examples in some high-capacity models, changing optimization toward difficult cases; its scores still need representative calibration. Hard-negative mining can improve boundaries by adding confusing negatives, but feedback from a deployed model changes the training distribution and can neglect unseen regions. Separate the representation and ranking objective from probability calibration. Fit Platt-style logistic or isotonic calibration on independent representative predictions with enough events, and assess reliability uncertainty. Calibration cannot rescue leakage or absent event modes."
+    },
+    {
+      "id": "policy-evaluation-and-feedback",
+      "title": "Select decisions and learn from a selective feedback loop",
+      "body": "After estimating or calibrating probabilities, choose a threshold from coherent intervention costs, severity, constraints, and capacity. Weighting the loss is not equivalent to selecting the final threshold in every model, especially under regularization, misspecification, and heterogeneous costs. A top-k policy can fit a fixed review queue; severity-aware expected value can prioritize different event types. Evaluate the locked end-to-end policy on a later population with real prevalence using AP, recall and precision at capacity, calibration, raw counts, incident grouping, delay, and net outcomes. Report confidence intervals driven by rare positive support. In production, only selected alerts may receive high-quality labels, creating selective labels and self-fulfilling hard-negative pools. Randomly audit nonalerts and explore score bands. Monitor population and sampled prevalence, inclusion rates, event support, score and calibration drift, queue yield, audit misses, label age, intervention effects, and subgroup recall. Retain examples before intervention when evaluating natural outcomes, or define policy-value estimands explicitly."
+    }
+  ],
+  "math": "For population prevalence pi and case-control sample prevalence pi_s, a fitted sample logit eta_s(x) can be corrected under ideal random within-class sampling by eta_pop(x)=eta_s(x)+log[pi/(1-pi)]-log[pi_s/(1-pi_s)]. The sigmoid of eta_pop estimates population probability under the model assumptions. Inverse-probability weighted loss uses weight 1/q_i for inclusion probability q_i. With calibrated p and costs C_FP,C_FN, the simple action threshold is C_FP/(C_FP+C_FN), modified when intervention cost, benefit, capacity, or heterogeneous severity enters.",
+  "workedExamples": [
+    {
+      "title": "Why duplicated positives do not create evidence",
+      "body": "Repeating one confirmed attack 100 times makes the optimizer see 100 identical gradients, but uncertainty about unseen attack types has not fallen as if 100 independent attacks occurred. Group duplicates, weight deliberately, and evaluate on distinct incidents."
+    },
+    {
+      "title": "Hard-negative mining changes the sample",
+      "body": "After deployment, investigators label many high-score false positives. Adding them improves that boundary, but low-score nonalerts remain mostly unlabeled. Keep inclusion metadata, audit low-score regions, and evaluate on a representative cohort so the next model does not overfit yesterday's alert policy."
+    }
+  ],
+  "lab": {
+    "language": "python",
+    "goal": "Demonstrate probability distortion from negative subsampling, apply prior-log-odds correction, and verify ranking, prevalence, and cost-policy invariants.",
+    "buildIt": "import numpy as np\ndef sigmoid(z): return 1/(1+np.exp(-np.clip(z,-35,35)))\ndef logit(p): return np.log(p/(1-p))\ndef prior_correct(sample_probability,pop_prevalence,sample_prevalence):\n    eta=logit(np.clip(sample_probability,1e-9,1-1e-9))\n    return sigmoid(eta+logit(pop_prevalence)-logit(sample_prevalence))\nrng=np.random.default_rng(21)\nX=rng.normal(size=(6000,2)); true_p=sigmoid(-4.2+1.1*X[:,0]-.7*X[:,1])\ny=rng.binomial(1,true_p); prevalence=y.mean()\npos=np.flatnonzero(y==1); neg=np.flatnonzero(y==0)\nkeep_neg=rng.choice(neg,size=min(len(neg),3*len(pos)),replace=False)\nkeep=np.r_[pos,keep_neg]; sample_prevalence=y[keep].mean()",
+    "useIt": "from sklearn.linear_model import LogisticRegression\nfrom sklearn.metrics import average_precision_score\nmodel=LogisticRegression(C=1e6,max_iter=2000).fit(X[keep],y[keep])\nraw=model.predict_proba(X)[:,1]\ncorrected=prior_correct(raw,prevalence,sample_prevalence)\nraw_ap=average_precision_score(y,raw); corrected_ap=average_precision_score(y,corrected)",
+    "verifyIt": "assert sample_prevalence>5*prevalence\nassert raw.mean()>3*prevalence\nassert abs(corrected.mean()-prevalence)<0.01\nassert abs(raw_ap-corrected_ap)<1e-12\nassert np.array_equal(np.argsort(raw),np.argsort(corrected))\n# Correction changes probability policy even though ranking is fixed.\nassert np.sum(raw>=0.1)>np.sum(corrected>=0.1)\n# Perfect prior-only sample predictions map back to the population prior.\nassert abs(prior_correct(np.array([sample_prevalence]),prevalence,sample_prevalence)[0]-prevalence)<1e-12",
+    "shipIt": "Persist event and maturity definitions, splits, inclusion probabilities, weights, model, calibration and threshold separately; audit nonalerts, monitor population/sample prevalence and queue outcomes, and roll back the entire sampled-training-to-policy bundle."
+  },
+  "exercises": [
+    {
+      "prompt": "Training prevalence is 0.5 but population prevalence is 0.01. What happens to uncorrected probabilities?",
+      "solution": "They generally reflect the sampled prior and are too high for the population. Apply a justified prior or weighting correction and validate calibration on representative data."
+    },
+    {
+      "prompt": "Why must synthetic oversampling happen inside each training fold?",
+      "solution": "Creating synthetic rows before splitting lets validation information and neighbors influence training and can place related synthetic points across folds, causing leakage."
+    },
+    {
+      "prompt": "A weighted model improves recall but doubles false-alert cost. Is it better?",
+      "solution": "Not under the declared operational objective unless recovered event benefit exceeds the extra cost. Compare a locked threshold or capacity policy and net value on later representative data."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "flow",
+      "title": "Rare-event modeling layers",
+      "items": [
+        "Mature event labels",
+        "Time/group split",
+        "Sample or weight with metadata",
+        "Fit ranking model",
+        "Correct + calibrate probability",
+        "Choose cost/capacity policy",
+        "Audit feedback"
+      ],
+      "caption": "Sampling, fitting, calibration, and thresholding are separate stages with separate evidence.",
+      "afterSection": "sampling-weighting-and-correction"
+    },
+    {
+      "type": "compare",
+      "title": "What imbalance techniques actually change",
+      "left": {
+        "title": "Training distribution",
+        "items": [
+          "Negative subsampling saves compute",
+          "Weights change loss",
+          "Oversampling repeats gradients",
+          "Synthetic rows add assumptions"
+        ]
+      },
+      "right": {
+        "title": "Decision distribution",
+        "items": [
+          "Calibration restores probability meaning",
+          "Threshold applies costs",
+          "Top-k applies capacity",
+          "Audit measures unseen outcomes"
+        ]
+      },
+      "caption": "Changing training balance does not remove the need for representative probability and decision evaluation.",
+      "afterSection": "policy-evaluation-and-feedback"
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "rare-events-logistic",
+      "contribution": "Provides the primary rare-event logistic sampling-bias and probability-correction framework."
+    },
+    {
+      "resource": "sklearn-calibration",
+      "contribution": "Verifies independent or cross-validated calibration practice and current reliability evaluation."
+    },
+    {
+      "resource": "cost-sensitive-learning",
+      "contribution": "Supports coherent separation of probability learning, sampling changes, costs, and optimal decisions."
+    }
+  ]
 }

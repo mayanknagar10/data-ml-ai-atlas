@@ -1,6 +1,6 @@
 # Data, ML & AI Atlas — Curriculum
 
-**45 modules · 394 topics · 199 curated resources**
+**45 modules · 394 topics · 241 curated resources**
 
 ## 01. 🐍 Python & Software Engineering
 
@@ -141,17 +141,17 @@ Deep-complete: **9/9** · Visual models: **18/9**
 
 Linear models, diagnostics, regularization, GLMs, splines and interpretable statistical modeling.
 
-Deep-complete: **0/9** · Visual models: **4/9**
+Deep-complete: **9/9** · Visual models: **18/9**
 
-- 🔥 **Linear Regression** — ◻ interview-ready · 🖼 visual
-- 🔥 **Logistic Regression** — ◻ interview-ready · 🖼 visual
-- 🔥 **Linear Regression Assumptions & Diagnostics** — ◻ interview-ready · 🖼 visual
-- 🔥 **Ridge, Lasso & Elastic Net** — ◻ interview-ready · 🖼 visual
-- ⬆️ **Polynomial Regression & Splines** — ◻ interview-ready
-- ⬆️ **Generalized Additive Models (GAMs)** — ◻ interview-ready
-- ⬆️ **Poisson & Count Regression** — ◻ interview-ready
-- • **Robust Regression** — ◻ interview-ready
-- ⬆️ **Quantile Regression** — ◻ interview-ready
+- 🔥 **Linear Regression** — ✅ deep · 🖼 visual
+- 🔥 **Logistic Regression** — ✅ deep · 🖼 visual
+- 🔥 **Linear Regression Assumptions & Diagnostics** — ✅ deep · 🖼 visual
+- 🔥 **Ridge, Lasso & Elastic Net** — ✅ deep · 🖼 visual
+- ⬆️ **Polynomial Regression & Splines** — ✅ deep · 🖼 visual
+- ⬆️ **Generalized Additive Models (GAMs)** — ✅ deep · 🖼 visual
+- ⬆️ **Poisson & Count Regression** — ✅ deep · 🖼 visual
+- • **Robust Regression** — ✅ deep · 🖼 visual
+- ⬆️ **Quantile Regression** — ✅ deep · 🖼 visual
 
 ## 11. 🧠 Classical Machine Learning
 
@@ -276,27 +276,27 @@ Deep-complete: **0/20** · Visual models: **13/20**
 
 Outliers, novelty detection, rare-event classification and alerting systems.
 
-Deep-complete: **0/6** · Visual models: **3/6**
+Deep-complete: **6/6** · Visual models: **12/6**
 
-- ⬆️ **Point, Contextual & Collective Anomalies** — ◻ interview-ready
-- ⬆️ **Isolation Forest** — ◻ interview-ready · 🖼 visual
-- • **Local Outlier Factor & One-Class SVM** — ◻ interview-ready
-- 🔥 **Rare-event Evaluation & Alert Thresholds** — ◻ interview-ready · 🖼 visual
-- • **Change-point Detection** — ◻ interview-ready · 🖼 visual
-- ⬆️ **Supervised Rare-event Modeling** — ◻ interview-ready
+- ⬆️ **Point, Contextual & Collective Anomalies** — ✅ deep · 🖼 visual
+- ⬆️ **Isolation Forest** — ✅ deep · 🖼 visual
+- • **Local Outlier Factor & One-Class SVM** — ✅ deep · 🖼 visual
+- 🔥 **Rare-event Evaluation & Alert Thresholds** — ✅ deep · 🖼 visual
+- • **Change-point Detection** — ✅ deep · 🖼 visual
+- ⬆️ **Supervised Rare-event Modeling** — ✅ deep · 🖼 visual
 
 ## 18. ⏳ Survival & Event-Time Modeling
 
 Censoring, hazards, Kaplan–Meier, Cox models and time-to-event prediction.
 
-Deep-complete: **0/6** · Visual models: **2/6**
+Deep-complete: **6/6** · Visual models: **12/6**
 
-- ⬆️ **Censoring, Survival & Hazard Functions** — ◻ interview-ready
-- ⬆️ **Kaplan–Meier Estimator & Log-rank Test** — ◻ interview-ready · 🖼 visual
-- ⬆️ **Cox Proportional Hazards Model** — ◻ interview-ready · 🖼 visual
-- • **Survival Model Evaluation** — ◻ interview-ready
-- • **Accelerated Failure Time Models** — ◻ interview-ready
-- • **Competing Risks** — ◻ interview-ready
+- ⬆️ **Censoring, Survival & Hazard Functions** — ✅ deep · 🖼 visual
+- ⬆️ **Kaplan–Meier Estimator & Log-rank Test** — ✅ deep · 🖼 visual
+- ⬆️ **Cox Proportional Hazards Model** — ✅ deep · 🖼 visual
+- • **Survival Model Evaluation** — ✅ deep · 🖼 visual
+- • **Accelerated Failure Time Models** — ✅ deep · 🖼 visual
+- • **Competing Risks** — ✅ deep · 🖼 visual
 
 ## 19. 🎯 Optimization & Decision Science
 
@@ -333,16 +333,16 @@ Deep-complete: **0/11** · Visual models: **5/11**
 
 Lexical/vector search, approximate nearest neighbors, reranking and retrieval evaluation.
 
-Deep-complete: **0/8** · Visual models: **6/8**
+Deep-complete: **8/8** · Visual models: **16/8**
 
-- ⬆️ **Inverted Index & Text Retrieval Pipeline** — ◻ interview-ready · 🖼 visual
-- 🔥 **TF-IDF & BM25** — ◻ interview-ready · 🖼 visual
-- 🔥 **MRR, MAP, Recall@K & NDCG** — ◻ interview-ready · 🖼 visual
-- 🔥 **Approximate Nearest Neighbor Search** — ◻ interview-ready · 🖼 visual
-- ⬆️ **HNSW Intuition & Tuning** — ◻ interview-ready · 🖼 visual
-- 🔥 **Hybrid Lexical + Vector Retrieval** — ◻ interview-ready · 🖼 visual
-- ⬆️ **Cross-encoder / Learned Reranking** — ◻ interview-ready
-- ⬆️ **Query Understanding: Spelling, Intent & Filters** — ◻ interview-ready
+- ⬆️ **Inverted Index & Text Retrieval Pipeline** — ✅ deep · 🖼 visual
+- 🔥 **TF-IDF & BM25** — ✅ deep · 🖼 visual
+- 🔥 **MRR, MAP, Recall@K & NDCG** — ✅ deep · 🖼 visual
+- 🔥 **Approximate Nearest Neighbor Search** — ✅ deep · 🖼 visual
+- ⬆️ **HNSW Intuition & Tuning** — ✅ deep · 🖼 visual
+- 🔥 **Hybrid Lexical + Vector Retrieval** — ✅ deep · 🖼 visual
+- ⬆️ **Cross-encoder / Learned Reranking** — ✅ deep · 🖼 visual
+- ⬆️ **Query Understanding: Spelling, Intent & Filters** — ✅ deep · 🖼 visual
 
 ## 22. 🕸️ Graph ML
 
@@ -645,14 +645,14 @@ Deep-complete: **0/4** · Visual models: **3/4**
 
 Entropy, divergence, mutual information and compression ideas used throughout statistics, ML and language modeling.
 
-Deep-complete: **0/6** · Visual models: **1/6**
+Deep-complete: **6/6** · Visual models: **12/6**
 
-- ⬆️ **Entropy & Information Content** — ◻ interview-ready · 🖼 visual
-- ⬆️ **Cross-Entropy & Log Loss** — ◻ interview-ready
-- ⬆️ **KL Divergence** — ◻ interview-ready
-- ⬆️ **Mutual Information** — ◻ interview-ready
-- • **Perplexity** — ◻ interview-ready
-- • **Information Bottleneck & Representation Learning** — ◻ interview-ready
+- ⬆️ **Entropy & Information Content** — ✅ deep · 🖼 visual
+- ⬆️ **Cross-Entropy & Log Loss** — ✅ deep · 🖼 visual
+- ⬆️ **KL Divergence** — ✅ deep · 🖼 visual
+- ⬆️ **Mutual Information** — ✅ deep · 🖼 visual
+- • **Perplexity** — ✅ deep · 🖼 visual
+- • **Information Bottleneck & Representation Learning** — ✅ deep · 🖼 visual
 
 ## 42. 🎲 Probabilistic ML & Uncertainty
 
@@ -674,14 +674,14 @@ Deep-complete: **0/9** · Visual models: **2/9**
 
 Empirical risk, capacity, PAC/VC intuition, margins, regularization and distribution shift.
 
-Deep-complete: **0/6** · Visual models: **0/6**
+Deep-complete: **6/6** · Visual models: **12/6**
 
-- ⬆️ **Empirical Risk Minimization** — ◻ interview-ready
-- • **PAC Learning Intuition** — ◻ interview-ready
-- • **VC Dimension & Capacity** — ◻ interview-ready
-- • **Margins & Generalization** — ◻ interview-ready
-- ⬆️ **Regularization as Capacity Control** — ◻ interview-ready
-- ⬆️ **Generalization Under Distribution Shift** — ◻ interview-ready
+- ⬆️ **Empirical Risk Minimization** — ✅ deep · 🖼 visual
+- • **PAC Learning Intuition** — ✅ deep · 🖼 visual
+- • **VC Dimension & Capacity** — ✅ deep · 🖼 visual
+- • **Margins & Generalization** — ✅ deep · 🖼 visual
+- ⬆️ **Regularization as Capacity Control** — ✅ deep · 🖼 visual
+- ⬆️ **Generalization Under Distribution Shift** — ✅ deep · 🖼 visual
 
 ## 44. ⛏️ Data Mining, Sketches & Web Algorithms
 

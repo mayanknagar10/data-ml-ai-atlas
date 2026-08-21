@@ -1,3 +1,3 @@
 # Ship it
 
-Keep lexical retrieval as a production baseline even with vectors; exact identifiers, rare codes and filters often benefit from BM25/hybrid search.
+Version analyzer, fields, statistics snapshot, k1, b and boosts; tune on judged development queries, replay query slices and latency, shadow on a compatible index, and retain prior index plus scorer for atomic rollback.

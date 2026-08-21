@@ -9,12 +9,13 @@
     "as",
     "ds"
   ],
-  "interviewAnswer": "Perplexity is the exponential of average negative log-likelihood. Lower is better on the same data/tokenization, but perplexity is not directly comparable across different tokenizers.",
+  "interviewAnswer": "Perplexity is exp of average token NLL: PPL=exp[-1/N sum_t log p(x_t|context)]. A uniform model over V tokens has perplexity V; a model assigning probability one to every observed token has perplexity one. It is the geometric inverse probability per token and is monotonic with cross-entropy. I compute it with shifted causal labels, exclude padding and any prompt tokens outside the estimand, and aggregate total NLL divided by total active tokens before exponentiating. I freeze tokenizer, vocabulary, BOS/EOS, context-window and sliding-window policy because those change the unit. Perplexity cannot by itself measure factuality, instruction following, long-form coherence or safety, and comparing values across different tokenizers is usually invalid unless converted to a common unit such as carefully defined bits per byte.",
   "keyPoints": [
-    "Exponentiated NLL",
-    "Language modeling",
-    "Tokenizer dependence",
-    "Intrinsic metric"
+    "Perplexity is exponentiated average log loss, not an independent model-quality objective.",
+    "Corpus perplexity uses token-weighted total NLL, not the arithmetic mean of batch or sequence perplexities.",
+    "Tokenizer, vocabulary, special tokens, context and masking define the prediction unit.",
+    "Lower perplexity means better probability fit on the evaluated text, not necessarily better generation behavior.",
+    "Evaluation contamination can produce excellent perplexity without generalization."
   ],
   "resources": [
     "stanford-cs224n",
@@ -23,22 +24,170 @@
     "mit-info-theory"
   ],
   "featured": false,
-  "why": "Perplexity links sequence-model evaluation to information theory.",
-  "intuition": "It loosely represents the model’s effective uncertainty over next-token choices.",
-  "deepDive": "With natural logs, perplexity=exp(mean NLL). Tokenization changes sequence length and token probabilities, so cross-tokenizer comparisons can mislead.",
-  "math": "",
-  "code": "",
+  "why": "Language models predict distributions over the next token, and average log loss is mathematically natural but hard to interpret at a glance. Perplexity returns it to an effective-choice scale and provides a sensitive training and held-out-fit diagnostic. The simplicity encourages misleading comparisons. A model using longer subword tokens makes fewer predictions than a byte model; one evaluated with overlapping full context has an advantage over one reset at document boundaries; and a leaked benchmark can look excellent. Perplexity also rewards matching the reference distribution, while useful assistants need factuality, controllability and safe decisions not captured by next-token likelihood. A rigorous protocol makes the number reproducible and appropriately narrow.",
+  "intuition": "If a model always chooses uniformly among eight tokens, each observed token costs log 8 and perplexity is eight. If its probabilities vary, multiply the inverse probability assigned to every observed token and take the Nth root: that geometric mean is perplexity. One very unlikely token can contribute heavily through its log loss. Context reduces uncertainty, so giving a model more preceding text usually lowers perplexity. Tokenization changes what counts as a choice: predicting one word is not the same unit as predicting several bytes. The number is meaningful only after fixing that game.",
+  "deepDive": "Perplexity is simply exponentiated average conditional log loss. That makes it interpretable as an effective branching factor and mathematically connected to entropy rate, but also binds it to every detail of the prediction protocol. Correct label shifting, global token weighting, context policy, tokenizer and corpus are prerequisites. It is a strong probabilistic-fit diagnostic and a weak standalone claim about what generated answers know or do.",
+  "math": "For active target tokens x_1,...,x_N, PPL=exp[-(1/N)sum_t log p_theta(x_t|x_{<t})]=(product_t 1/p_t)^(1/N). With base-two cross-entropy B bits/token, PPL=2^B. If probabilities are all 1/V, PPL=V; the lower bound is 1. For corpora A and B, log PPL_union=(N_A log PPL_A+N_B log PPL_B)/(N_A+N_B), so perplexities combine by a token-weighted geometric mean, not an arithmetic mean. Bits per byte is total base-two NLL divided by the number of bytes under a fixed encoding.",
   "commonMistakes": [
-    "Treating perplexity as human preference.",
-    "Comparing across tokenizers without care."
+    {
+      "misconception": "Average sequence perplexities to get corpus perplexity.",
+      "correction": "Add token NLL and counts first, then exponentiate their global ratio; this is a token-weighted geometric combination."
+    },
+    {
+      "misconception": "Lower perplexity proves more factual answers.",
+      "correction": "It measures probability fit to reference tokens, not factual grounding, reasoning, safety or instruction compliance."
+    },
+    {
+      "misconception": "Compare token perplexity across any tokenizers.",
+      "correction": "Token units and sequence lengths differ; use one tokenizer or a carefully defined common character or byte denominator."
+    },
+    {
+      "misconception": "Nonoverlapping blocks are neutral for long documents.",
+      "correction": "They discard context at artificial boundaries and can inflate loss; use a fixed documented sliding-window protocol."
+    }
   ],
   "followUps": [
-    "Bits-per-character?",
-    "Why can lower perplexity fail downstream?"
+    {
+      "question": "Why exponentiate cross-entropy?",
+      "answer": "It converts average log surprise into an equivalent uniform number of choices and the inverse geometric mean observed-token probability."
+    },
+    {
+      "question": "What is the minimum possible perplexity?",
+      "answer": "One, achieved when every evaluated observed token receives probability one under the conditioning protocol."
+    },
+    {
+      "question": "How do you compare models with different tokenizers?",
+      "answer": "Prefer a common tokenizer if possible or compare total log loss per common byte or character unit under an identical text and encoding protocol."
+    }
   ],
-  "production": "Use task, safety, latency and cost metrics alongside perplexity.",
-  "workedExample": "Two models using the same tokenizer can be compared on held-out perplexity; byte- and word-level perplexity should not be compared naively.",
+  "production": "Record immutable evaluation text hashes and chronology, tokenizer and normalizer hash, vocabulary, BOS/EOS and separator rules, prompt template, causal shift, ignored-token policy, document boundaries, maximum context, stride, retrieval context, dtype and loss implementation, aggregation unit and log base. Assert every target is scored exactly once, no future tokens enter context, masks are nonempty, distributed sums and counts reconcile, and uniform-logit fixtures match vocabulary size. Report total NLL, active tokens, perplexity and bits per common unit with domain, language, length and frequency slices. Monitor high-loss tails, coverage, context truncation and tokenizer unknowns. Audit training overlap before claiming generalization. Never overwrite a historical series after a tokenizer or corpus change; start a new version. Roll back the compatible model, tokenizer and prompt pipeline together.",
+  "workedExample": "A model assigns probabilities [0.5,0.25,0.125] to three observed next tokens. Average NLL is -[ln .5+ln .25+ln .125]/3=1.386 nats, so perplexity is exp(1.386)=4. Equivalently, inverse probabilities [2,4,8] have geometric mean 4. The model did not literally choose among four tokens at each step, but four is the equivalent uniform branching factor.",
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "Perplexity exponentiates average negative log likelihood to express how many equally likely choices a probabilistic sequence model faces per evaluated token. For an autoregressive language model it is exp[-(1/N)sum_t log p(x_t|x_{<t})], so lower values mean higher assigned probability to observed tokens under a fixed evaluation protocol. This chapter derives perplexity from cross-entropy and entropy rate, explains its weighted geometric-mean interpretation, and distinguishes token, character, byte and word units. It covers causal shifting, beginning and end tokens, padding masks, context truncation, sliding windows, batching, numerical stability, vocabulary support, tokenizer dependence and data contamination. It explains why perplexity measures predictive fit rather than factuality, reasoning, diversity or human preference. Worked examples calculate uniform and variable-probability sequences. The lab computes perplexity from probabilities and logits, verifies uniform and deterministic limits, and checks corpus aggregation by token-weighted log loss. Production guidance freezes corpus, tokenizer, context policy and normalization; reports domain and length slices; monitors loss tails and evaluation coverage; and pairs perplexity with task, factuality and safety measures. Values from different tokenizers are generally not directly comparable, even when evaluated on the same visible text.",
+  "prerequisites": [
+    "cross-entropy-loss",
+    "joint-marginal-conditional",
+    "causal-masks"
+  ],
+  "learningObjectives": [
+    "Derive token-level perplexity from autoregressive negative log likelihood and interpret its scale.",
+    "Implement causal alignment, masking, context windows and token-weighted corpus aggregation correctly.",
+    "Explain why tokenizer, unit, vocabulary and corpus prevent naive cross-model comparisons.",
+    "Use perplexity with contamination, slice, generation-quality, factuality and deployment diagnostics."
+  ],
+  "deepSections": [
+    {
+      "id": "definition-factorization",
+      "title": "Autoregressive factorization turns sequence likelihood into per-token perplexity",
+      "body": "An autoregressive model factorizes p(x_1,...,x_N)=product_t p(x_t|x_{<t}). Negative log likelihood is the sum of token surprises, and cross-entropy per active token is their mean. Perplexity is exp of that mean when natural logs are used, or 2 to the bits-per-token value with base-two logs. It equals the inverse geometric mean of probabilities assigned to observed tokens. Sequence likelihood shrinks exponentially with length, while per-token cross-entropy and perplexity normalize length for aggregate comparison. The normalization does not remove domain or context differences. For a true stationary source and an optimal model, cross-entropy approaches entropy rate; model mismatch adds a KL rate. Conditional perplexity may evaluate only response tokens given a prompt, while standard language modeling evaluates every eligible next token. State which conditional distribution and tokens define N."
+    },
+    {
+      "id": "evaluation-mechanics",
+      "title": "One-token alignment and denominator bugs can invalidate the score",
+      "body": "For causal transformers, logits at position t predict the next label x_{t+1}; shift logits and labels exactly once. Mask padding, packed-sequence boundaries and ignored prompt or metadata tokens according to the estimand. Decide whether BOS and EOS are predictions. Sum NLL over active tokens and divide by their count globally; averaging sequence perplexities gives short sequences excessive weight, and averaging batch losses can depend on batch composition. Compute log-softmax stably from logits, not probabilities rounded to zero. Distributed evaluation must reduce both total loss and active-token count across workers before exponentiation. Report token count, document count and any excluded fraction. Check a tiny hand sequence, a uniform-logit model and a copy or oracle fixture. Empty masks should fail rather than return a plausible zero. If weights are applied, the result is a weighted exponential loss and should not be called ordinary corpus perplexity without qualification."
+    },
+    {
+      "id": "context-tokenization",
+      "title": "Context windows and tokenization define different prediction games",
+      "body": "A fixed-context model cannot condition on an arbitrarily long document. Nonoverlapping blocks discard cross-block history and unfairly raise loss near every boundary. Sliding-window or strided evaluation supplies as much prior context as possible but scores each target token once; stride and maximum context must be fixed. Reset context at true document boundaries to avoid leaking unrelated or future documents. Retrieval-augmented evaluation must state whether retrieved text is part of the condition and whether it contains target leakage. Tokenizers choose segmentation, vocabulary and unknown handling. Fewer, longer tokens can lower or raise token perplexity without improving probability per character. Compare models with the same tokenizer, or convert total log loss to a common denominator such as bytes or Unicode code points under a carefully identical text encoding. Word perplexity reconstructed from subwords needs explicit accounting and is not generally a simple token-PPL conversion."
+    },
+    {
+      "id": "interpretation-and-monitoring",
+      "title": "Predictive fit is necessary evidence but not a complete generation evaluation",
+      "body": "Lower held-out perplexity usually signals better modeling of the evaluation distribution and often correlates with downstream capability during controlled scaling, but exceptions matter. A model can assign high likelihood to fluent misconceptions, copy benchmark text, or improve frequent-token prediction while worsening rare factual entities. Generation depends on decoding temperature, sampling, prompts and interaction. Evaluate factuality, retrieval or tool accuracy, instruction adherence, long-context behavior, calibration, toxicity, privacy memorization and task outcomes separately. Slice perplexity by domain, language, document length, token frequency and time, showing token support. Check contamination through exact and approximate overlap, source chronology and training-data governance. Track high-loss tokens and documents rather than only the mean. For serving drift, changes in input perplexity may reflect tokenizer or prompt-template updates, user mix or adversarial text, and thresholds need a stable reference distribution."
+    }
+  ],
+  "workedExamples": [
+    {
+      "title": "Correct corpus aggregation",
+      "body": "A 10-token sequence has PPL 2 and a 90-token sequence has PPL 8. Combined log PPL is (10 ln2+90 ln8)/100, giving about 6.50, not the arithmetic mean 5."
+    },
+    {
+      "title": "Tokenizer mismatch",
+      "body": "One tokenizer represents a rare word as one token and another as five bytes. Their per-token prediction tasks differ, so token PPL cannot rank the models directly even on identical visible sentences."
+    }
+  ],
+  "lab": {
+    "language": "python",
+    "goal": "Compute perplexity from token probabilities and logits, verify uniform and deterministic limits, and aggregate corpora by token-weighted log loss.",
+    "buildIt": "import math\nimport numpy as np\ndef perplexity_from_probabilities(probabilities):\n    p=np.asarray(probabilities,float)\n    if p.ndim!=1 or len(p)==0 or np.any(p<=0) or np.any(p>1): raise ValueError('invalid observed-token probabilities')\n    return float(np.exp(-np.mean(np.log(p))))\ndef nll_from_logits(logits,labels):\n    z=np.asarray(logits,float); labels=np.asarray(labels,int); m=z.max(axis=1,keepdims=True); logsum=m[:,0]+np.log(np.exp(z-m).sum(axis=1))\n    return logsum-z[np.arange(len(labels)),labels]\ndef corpus_perplexity(loss_sums,token_counts):\n    counts=np.asarray(token_counts,float)\n    if counts.sum()<=0: raise ValueError('no active tokens')\n    return float(np.exp(np.sum(loss_sums)/counts.sum()))\np=np.array([.5,.25,.125]); pp=perplexity_from_probabilities(p)\nlogits=np.array([[2,0,-1],[0,1,2]],float); labels=np.array([0,2]); losses=nll_from_logits(logits,labels)",
+    "useIt": "from scipy.special import logsumexp\ntrusted=logsumexp(logits,axis=1)-logits[np.arange(len(labels)),labels]",
+    "verifyIt": "assert abs(pp-4.0)<1e-12\nassert abs(perplexity_from_probabilities(np.ones(5)/5)-5.0)<1e-12\nassert perplexity_from_probabilities([1,1,1])==1.0\nassert np.allclose(losses,trusted)\ncombined=corpus_perplexity([10*math.log(2),90*math.log(8)],[10,90]); assert abs(combined-math.exp((10*math.log(2)+90*math.log(8))/100))<1e-12\nassert combined!=5.0\nassert perplexity_from_probabilities([.5,.5])==2.0\ntry:\n    perplexity_from_probabilities([.5,0])\n    raise AssertionError('expected zero-probability failure')\nexcept ValueError:\n    pass",
+    "shipIt": "Version corpus, tokenizer, vocabulary, special tokens, context and stride, masks and denominator; reduce total NLL and token count reproducibly, audit contamination and slices, and pair perplexity with task, factuality and safety evaluation."
+  },
+  "exercises": [
+    {
+      "prompt": "A model assigns probability 0.25 to every observed token. What is perplexity?",
+      "solution": "4, because -log probability is log 4 and exponentiating returns 4."
+    },
+    {
+      "prompt": "Why is arithmetic mean of document PPL wrong?",
+      "solution": "Perplexity is exponential average log loss; documents must contribute in proportion to active tokens before exponentiation."
+    },
+    {
+      "prompt": "Does PPL 10 under tokenizer A beat PPL 12 under tokenizer B?",
+      "solution": "Not necessarily. Their token units differ, so the values are not directly comparable without a common evaluation unit."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "flow",
+      "title": "Perplexity evaluation contract",
+      "items": [
+        "Freeze text and tokenizer",
+        "Construct causal contexts",
+        "Score each active target once",
+        "Sum stable token NLL",
+        "Divide by total active tokens",
+        "Exponentiate and slice"
+      ],
+      "caption": "The final scalar is trustworthy only when every preceding unit and alignment choice is fixed.",
+      "afterSection": "evaluation-mechanics"
+    },
+    {
+      "type": "compare",
+      "title": "What perplexity does and does not test",
+      "left": {
+        "title": "Supported",
+        "items": [
+          "Held-out probability fit",
+          "Average token surprise",
+          "Training progress",
+          "Domain and length slices"
+        ]
+      },
+      "right": {
+        "title": "Needs separate evaluation",
+        "items": [
+          "Factual correctness",
+          "Instruction following",
+          "Reasoning and tools",
+          "Safety and human utility"
+        ]
+      },
+      "caption": "Next-token fit is one layer of model evaluation, not the complete capability claim.",
+      "afterSection": "interpretation-and-monitoring"
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "stanford-cs224n",
+      "contribution": "Grounds neural language modeling, autoregressive token likelihood and perplexity evaluation."
+    },
+    {
+      "resource": "stanford-cs336",
+      "contribution": "Supports current language-model training, tokenization, context and evaluation practice."
+    },
+    {
+      "resource": "hf-llm",
+      "contribution": "Verifies practical tokenizer, causal model, batching and inference conventions."
+    },
+    {
+      "resource": "mit-info-theory",
+      "contribution": "Connects cross-entropy, entropy rate and effective coding interpretation."
+    }
+  ]
 }

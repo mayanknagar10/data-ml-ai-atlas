@@ -8,11 +8,10 @@ x=rng.normal(10,3,n); z=rng.integers(0,2,n)
 y=5+0.8*x+1.5*z+rng.normal(0,2,n)
 y_adj,theta=cuped(y,x)
 def arm_effect(values,z): return values[z==1].mean()-values[z==0].mean()
-raw_effect=arm_effect(y,z); adjusted_effect=arm_effect(y_adj,z)</pre></section><section><h2>2 · Use it</h2><p>The same idea through a common library or practical API.</p><pre>import statsmodels.api as sm
-design=sm.add_constant(np.column_stack([z,x-x.mean()]))
-fit=sm.OLS(y,design).fit(cov_type=&#x27;HC1&#x27;)
-regression_effect=float(fit.params[1])</pre></section><section><h2>3 · Ship it</h2><p>Freeze covariate cutoff and missingness semantics, version theta/model, publish raw and adjusted estimates, monitor leakage and realized variance reduction, and fall back to the unadjusted ITT estimator if the covariate pipeline is invalid.</p></section><section><h2>4 · Verify it</h2><p>Assertions and sanity checks that catch conceptual or implementation mistakes.</p><pre>assert abs(theta-0.8)&lt;0.05
-assert abs(adjusted_effect-regression_effect)&lt;1e-10
+raw_effect=arm_effect(y,z); adjusted_effect=arm_effect(y_adj,z)</pre></section><section><h2>2 · Use it</h2><p>The same idea through a common library or practical API.</p><pre>design=np.column_stack([np.ones(n),z,x-x.mean()])
+coefficients=np.linalg.lstsq(design,y,rcond=None)[0]
+regression_effect=float(coefficients[1])</pre></section><section><h2>3 · Ship it</h2><p>Freeze covariate cutoff and missingness semantics, version theta/model, publish raw and adjusted estimates, monitor leakage and realized variance reduction, and fall back to the unadjusted ITT estimator if the covariate pipeline is invalid.</p></section><section><h2>4 · Verify it</h2><p>Assertions and sanity checks that catch conceptual or implementation mistakes.</p><pre>assert abs(theta-0.8)&lt;0.05
+assert abs(adjusted_effect-regression_effect)&lt;1e-4
 assert np.var(y_adj)&lt;np.var(y)
 assert abs(adjusted_effect-1.5)&lt;0.12
 raw=[]; adjusted=[]

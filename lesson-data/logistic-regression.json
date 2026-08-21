@@ -8,88 +8,196 @@
     "mle",
     "as"
   ],
-  "interviewAnswer": "Logistic regression models log-odds as a linear function of features and maps them through a sigmoid to a probability. Training usually minimizes log loss rather than MSE.",
+  "interviewAnswer": "Logistic regression assumes logit P(Y=1|x)=beta0+x^T beta, so the sigmoid maps any linear score to a probability. Maximum likelihood is equivalent to minimizing binary cross-entropy; with L2 regularization the objective is convex and usually has a unique stable solution. Exp(beta_j) is the conditional multiplicative change in odds for a one-unit increase in x_j, holding other modeled features fixed. It is not a constant probability increase. I evaluate discrimination and calibration separately, choose a threshold from costs or constraints rather than defaulting to 0.5, and watch for separation, leakage, prior shift, subgroup errors, and train-serving mismatches.",
   "keyPoints": [
-    "Sigmoid",
-    "Log odds",
-    "Decision threshold",
-    "Regularization"
+    "The linear predictor acts on log-odds, while the sigmoid returns probability.",
+    "Cross-entropy is the negative Bernoulli log-likelihood.",
+    "Odds ratios are conditional and are not constant risk differences.",
+    "Regularization stabilizes separation and correlated predictors.",
+    "Calibration, ranking, and threshold utility answer different questions."
   ],
   "resources": [
+    "isl",
     "stanford-cs229",
-    "google-mlcc",
-    "statquest",
-    "isl"
+    "sklearn-linear-models",
+    "nelder-wedderburn-glm"
   ],
   "featured": true,
-  "why": "It is one of the best interview algorithms because it combines linear models, probability, classification, loss functions and interpretability.",
-  "intuition": "The model computes a linear score and passes it through a sigmoid so the output lies between 0 and 1. A threshold then converts probability into a class.",
-  "deepDive": "Logistic regression models log-odds linearly. It is typically trained with binary cross-entropy / negative log likelihood. Coefficients describe additive changes in log-odds per unit feature change, conditional on the other features.",
-  "math": "p(y=1|x)=σ(wᵀx+b),  σ(z)=1/(1+e⁻ᶻ)\nlog(p/(1-p)) = wᵀx+b",
-  "code": "from sklearn.linear_model import LogisticRegression\nmodel = LogisticRegression(class_weight='balanced')\nmodel.fit(X_train, y_train)\nproba = model.predict_proba(X_val)[:,1]",
+  "why": "Binary decisions appear in fraud review, conversion, defect detection, diagnosis support, and churn outreach. Logistic regression offers a strong baseline because it produces probabilities, handles sparse designs efficiently, and exposes how features contribute to a log-odds score. It is often easier to calibrate, debug, audit, and retrain than a higher-capacity model. More importantly, it forces teams to separate the statistical model from the operational policy. The fitted probability estimates an event under a specified observation and feature process. A threshold converts that estimate into an action under costs, capacity, fairness constraints, and human review. Mixing those layers leads to brittle systems: a model can rank well but be badly calibrated, a calibrated model can use a harmful threshold, and a seemingly interpretable coefficient can reflect leakage or confounding. A disciplined logistic baseline reveals these failures early.",
+  "intuition": "A straight-line score can range from negative to positive infinity, while probabilities must stay between zero and one. Logistic regression interprets the score as log-odds. Zero score means odds one-to-one and probability 0.5; adding one to the score multiplies the odds by e. The sigmoid is steep near probability 0.5 and flat near zero or one. Therefore the same coefficient change moves probability substantially for an uncertain case but only slightly for a case already near an extreme. Fitting adjusts the plane so observed positives receive high scores and negatives low scores, with cross-entropy penalizing confident wrong predictions sharply. Each Newton step locally approximates the curved loss with a weighted quadratic problem: uncertain observations receive more curvature, while saturated probabilities contribute little curvature. If one hyperplane perfectly separates classes, increasing its magnitude keeps improving unregularized likelihood without reaching a finite optimum. A penalty or prior provides a finite trade-off and better behavior under limited data.",
+  "deepDive": "Logistic regression has three clean layers: a Bernoulli probability model linked to a linear predictor, a convex likelihood-based fitting problem, and a downstream decision rule. Most mistakes come from collapsing those layers. A conditional odds ratio is not a probability increment, likelihood optimization is not threshold optimization, and good ranking is not calibrated decision value. Regularization, honest evaluation, and operational monitoring keep the layers connected without confusing them.",
+  "math": "For design row x_i and y_i in {0,1}, eta_i=x_i^T beta, p_i=sigma(eta_i), and negative log-likelihood L(beta)=-sum_i[y_i log p_i+(1-y_i)log(1-p_i)]. Its gradient is X^T(p-y), and Hessian X^T W X with W_ii=p_i(1-p_i), which is positive semidefinite. An L2 objective adds lambda||beta||_2^2/2, gradient lambda beta, and Hessian lambda I for penalized coefficients. A one-unit x_j change multiplies odds p/(1-p) by exp(beta_j). The probability derivative is partial p/partial x_j=beta_j p(1-p), so probability-scale effect depends on the profile.",
   "commonMistakes": [
-    "Calling it a regression model because of the name without explaining classification.",
-    "Assuming 0.5 is always the right threshold.",
-    "Interpreting coefficients causally."
+    {
+      "misconception": "A coefficient of 0.2 means probability rises by 20 percentage points.",
+      "correction": "It adds 0.2 to log-odds and multiplies odds by exp(0.2). The probability change depends on the starting probability and other features."
+    },
+    {
+      "misconception": "A 0.5 cutoff is statistically natural.",
+      "correction": "The threshold is a decision parameter determined by costs, capacity, prevalence, and constraints. It is not fixed by logistic regression."
+    },
+    {
+      "misconception": "Class weighting automatically yields calibrated population probabilities.",
+      "correction": "Weights change the fitted objective and often the effective prior. Validate and, when needed, correct or recalibrate on representative data."
+    },
+    {
+      "misconception": "Perfect training classification proves the feature set is excellent.",
+      "correction": "It may signal complete separation, leakage, duplicates, or a tiny sample. Inspect provenance and use regularization plus honest validation."
+    }
   ],
   "followUps": [
-    "Why use log loss instead of MSE?",
-    "What does regularization do?",
-    "How do you handle nonlinearity?",
-    "How do coefficients map to odds ratios?"
+    {
+      "question": "Why does complete separation cause trouble?",
+      "answer": "If one direction classifies every training case correctly, scaling its coefficients keeps pushing probabilities toward the labels and improving unregularized likelihood, so no finite maximum-likelihood coefficient exists."
+    },
+    {
+      "question": "What is the difference between discrimination and calibration?",
+      "answer": "Discrimination concerns ordering positives above negatives; calibration concerns whether predicted probability levels match observed frequencies. A model may do well on one and poorly on the other."
+    },
+    {
+      "question": "How does L2 regularization affect interpretation?",
+      "answer": "It trades likelihood fit for smaller coefficients, improves stability, and introduces shrinkage bias. Coefficients remain log-odds parameters of the penalized fit, but classical unpenalized inference does not transfer automatically."
+    }
   ],
-  "production": "It is often a superb baseline because it trains fast, is easy to calibrate/interpret and exposes whether more complex models are truly necessary.",
-  "workedExample": "In rare-failure prediction, fit probabilities, evaluate PR metrics and choose a threshold from the false-negative/false-positive cost rather than default 0.5.",
+  "production": "Treat the probability model, calibration layer, and decision policy as separately versioned artifacts. Lock feature availability times, category handling, scaling, missingness, class sampling, penalty, solver tolerance, and random state. Test finite predictions, probability bounds, invariance to row order, and parity between offline and online transformations. Report temporal and grouped validation for log loss, Brier score, calibration, ranking, workload, and decision value. Monitor feature and score drift, prevalence, calibration intercept and slope, threshold volumes, review capacity, delayed outcomes, and subgroup error. Protect labels and sensitive fields, audit proxy use, and log enough context for appeal without exposing unnecessary personal data. Provide a fallback rule when the service or features fail. Canary new model-policy pairs, define rollback thresholds before launch, and retain prior calibration and threshold artifacts because rolling back only coefficients may not restore old behavior.",
+  "workedExample": "A credit model has coefficient 0.6 for a utilization increase of 0.1 after utilization was encoded in tenths. The conditional odds multiplier is exp(0.6)=1.82 per ten-percentage-point increase. For a baseline default probability 0.05, the new modeled probability is sigmoid(logit(0.05)+0.6)=0.087, an increase of 3.7 percentage points, not 82 percentage points. At baseline 0.5, the same log-odds change yields 0.646.",
   "lab": {
-    "goal": "Build binary logistic regression and verify probabilities/decision boundary.",
     "language": "python",
-    "buildIt": "import numpy as np\nrng=np.random.default_rng(1)\nX=rng.normal(size=(300,2)); y=(X[:,0]+.7*X[:,1]>0).astype(float)\nXb=np.c_[np.ones(len(X)),X]; w=np.zeros(3)\ndef sigmoid(z): return 1/(1+np.exp(-z))\nfor _ in range(2000):\n    p=sigmoid(Xb@w)\n    w-=0.1*(Xb.T@(p-y)/len(y))\nprint('accuracy',((sigmoid(Xb@w)>=.5)==y).mean())\n",
-    "useIt": "from sklearn.linear_model import LogisticRegression\nm=LogisticRegression().fit(X,y)\nprint(m.score(X,y),m.predict_proba(X[:3]))\n",
-    "verifyIt": "p=sigmoid(Xb@w)\nassert np.all((0<=p)&(p<=1))\nassert ((p>=.5)==y).mean()>.9\n"
-  },
-  "visual": {
-    "type": "curve",
-    "title": "Logistic decision function",
-    "series": [
-      {
-        "label": "P(y=1|x)",
-        "points": [
-          [
-            0,
-            0.03
-          ],
-          [
-            0.18,
-            0.07
-          ],
-          [
-            0.35,
-            0.2
-          ],
-          [
-            0.5,
-            0.5
-          ],
-          [
-            0.65,
-            0.8
-          ],
-          [
-            0.82,
-            0.93
-          ],
-          [
-            1,
-            0.97
-          ]
-        ]
-      }
-    ],
-    "caption": "Logistic regression maps a linear score through the sigmoid to obtain a probability between 0 and 1.",
-    "xLabel": "linear score",
-    "yLabel": "probability"
+    "goal": "Implement L2-regularized logistic regression with damped Newton updates, compare with scikit-learn, and verify likelihood, probability, and label-symmetry invariants.",
+    "buildIt": "import numpy as np\ndef sigmoid(z):\n    z=np.clip(z,-35,35)\n    return 1/(1+np.exp(-z))\ndef fit_logistic(X,y,l2=1e-6,steps=40):\n    D=np.column_stack([np.ones(len(X)),np.asarray(X,float)])\n    y=np.asarray(y,float); b=np.zeros(D.shape[1])\n    penalty=np.eye(D.shape[1]); penalty[0,0]=0\n    for _ in range(steps):\n        p=sigmoid(D@b); w=np.maximum(p*(1-p),1e-9)\n        h=D.T@(w[:,None]*D)+l2*penalty\n        score=D.T@(y-p)-l2*penalty@b\n        b+=np.linalg.solve(h,score)\n    return b,sigmoid(D@b)\nX=np.array([[-2,-1],[-1,-1],[-1,1],[0,-1],[0,1],[1,-1],[1,1],[2,1]],float)\ny=np.array([0,0,0,0,1,1,1,1])\nb,p=fit_logistic(X,y,l2=0.2)",
+    "useIt": "from sklearn.linear_model import LogisticRegression\nsk=LogisticRegression(C=5.0,fit_intercept=True,solver='lbfgs',tol=1e-12,max_iter=10000).fit(X,y)\nsk_p=sk.predict_proba(X)[:,1]\nsk_b=np.r_[sk.intercept_,sk.coef_.ravel()]",
+    "verifyIt": "def logloss(prob,target):\n    q=np.clip(prob,1e-12,1-1e-12)\n    return -np.mean(target*np.log(q)+(1-target)*np.log(1-q))\nassert np.all((p>0)&(p<1))\nassert logloss(p,y)<logloss(np.full(len(y),y.mean()),y)\nassert np.allclose(b,sk_b,atol=2e-5)\nassert np.allclose(p,sk_p,atol=2e-5)\nb_flip,p_flip=fit_logistic(X,1-y,l2=0.2)\nassert np.allclose(p_flip,1-p,atol=1e-8)\nassert np.allclose(b_flip,-b,atol=1e-8)\nassert p[-1]>p[0]",
+    "shipIt": "Version feature encodings, penalty, calibration map, evaluation window, and threshold policy separately; monitor prevalence, calibration, ranking, alert volume, subgroup outcomes, and extreme-score rates; canary changes and retain the prior model-policy pair for rollback."
   },
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "Logistic regression models a binary outcome by making the log-odds of the positive class linear in the predictors. It is simultaneously a probabilistic classifier, a generalized linear model, and a tool for estimating conditional associations. This chapter connects Bernoulli likelihood, cross-entropy, odds ratios, decision thresholds, regularization, and calibration. You will derive the score and Hessian, understand iteratively reweighted least squares, and see why perfectly separated data can send unregularized coefficients toward infinity. A worked credit example distinguishes a probability change from an odds ratio and shows that the same coefficient has different probability-scale effects at different baselines. The lab implements damped Newton updates, compares probabilities with scikit-learn, and verifies finite likelihood improvement and label-complement symmetry. Production guidance treats probability estimation and decisions as different layers: validate calibration, choose thresholds using asymmetric costs and capacity, monitor class-prior and conditional drift, and provide safe fallback behavior. Logistic regression is interpretable only with careful units, encoding, interactions, and conditioning; exponentiating a coefficient produces a conditional odds ratio, not a universal risk ratio or causal effect.",
+  "prerequisites": [
+    "linear-regression",
+    "mle-map"
+  ],
+  "learningObjectives": [
+    "Derive logistic regression from a Bernoulli likelihood and interpret coefficients on odds and probability scales.",
+    "Explain Newton or iteratively reweighted least-squares fitting and the role of regularization.",
+    "Separate probability quality, ranking quality, threshold decisions, and causal interpretation.",
+    "Detect separation, calibration failure, leakage, and distribution shift in a deployed classifier."
+  ],
+  "deepSections": [
+    {
+      "id": "probability-link-and-odds",
+      "title": "Probability, log-odds, and coefficient meaning",
+      "body": "For binary Y, write p(x)=P(Y=1|X=x). Logistic regression specifies eta(x)=beta0+x^T beta and p(x)=1/(1+exp(-eta)), equivalently log[p/(1-p)]=eta. The link makes effects additive on the log-odds scale. Holding other modeled features fixed, increasing x_j by one multiplies odds by exp(beta_j). If beta_j=0.4, the odds multiplier is about 1.49. That does not mean probability rises 49 percent or 0.4 points. Moving baseline p=0.1 by 0.4 log-odds gives sigmoid(logit(0.1)+0.4), about 0.142; moving p=0.5 gives about 0.599. For a binary indicator, the odds ratio compares encoded groups conditional on other terms and reference levels. With an interaction beta_jk x_j x_k, the x_j log-odds effect depends on x_k, so main effects are evaluated where the partner is zero. Noncollapsibility also matters: conditional and marginal odds ratios can differ even without confounding. For communication, show probability contrasts at representative profiles, units, and uncertainty rather than quoting an isolated odds ratio. Causal language still requires a design or identification strategy beyond the outcome model."
+    },
+    {
+      "id": "likelihood-and-optimization",
+      "title": "Likelihood, cross-entropy, and IRLS",
+      "body": "Independent Bernoulli observations have log-likelihood sum_i [y_i log p_i +(1-y_i)log(1-p_i)]. Its negative is binary cross-entropy. The score for beta is X^T(y-p), and the negative Hessian is X^T W X, where W has diagonal p_i(1-p_i). Newton's method updates beta by solving (X^T W X) delta=X^T(y-p) and adding delta; this is iteratively reweighted least squares (IRLS). Stable software avoids constructing inverses, clips or reformulates extreme logits, and may damp steps. The loss is convex, but a finite unregularized maximum may not exist under complete or quasi-separation. Adding lambda||beta||_2^2/2 changes the system by lambda I and shrinks coefficients; an intercept is commonly left unpenalized. L1 regularization can produce exact zeros but makes optimization nonsmooth and feature selection unstable among correlated predictors. Libraries parameterize penalty strength differently: scikit-learn's C is inverse regularization, and solvers support different penalty and multiclass combinations. Standardize continuous features inside the training pipeline when a penalty should treat them comparably. Cross-validate penalty strength using the final evaluation design, never after inspecting the test set."
+    },
+    {
+      "id": "evaluation-calibration-decisions",
+      "title": "Evaluate ranking, probability, and decisions separately",
+      "body": "A confusion matrix exists only after choosing a threshold. Accuracy can look excellent on rare events while the model never finds a positive. Receiver operating characteristic area under the curve measures ranking across false-positive rates but can obscure precision in highly imbalanced settings. Precision-recall summaries depend on prevalence and are often more operationally revealing. Log loss and Brier score evaluate probability quality, though they weight errors differently. Calibration asks whether cases assigned probability near q occur about q of the time; inspect reliability by time, cohort, and important subgroup with uncertainty. A monotone recalibration can improve probabilities without changing ranking. Threshold selection belongs to the decision layer: compute expected cost or value using false-positive, false-negative, intervention, and capacity costs, or choose a constrained operating point. Evaluate the entire locked pipeline on an untouched and deployment-representative set. When training uses case-control sampling or class weights, raw fitted scores may target a modified class prior; correct or recalibrate before treating them as real-world probabilities. Do not tune a threshold on the same observations used to report its performance."
+    },
+    {
+      "id": "failure-modes-and-shift",
+      "title": "Failure modes, shift, and responsible interpretation",
+      "body": "Leakage can enter through post-outcome features, future aggregates, labels encoded in workflow status, or preprocessing fitted before the split. Separation may be a small-data artifact or a leakage alarm; inspect feature definitions before celebrating perfect training classification. Correlation makes coefficient attribution unstable, while nonlinear effects and interactions can make a linear logit underfit. Missingness indicators may be predictive because of an operational process that later changes. Prior-probability shift changes event prevalence and calibration even when class-conditional score distributions remain similar; conditional drift can also damage ranking. Monitor score and feature distributions, observed prevalence when labels arrive, calibration intercept and slope, ranking, threshold workload, and subgroup harm. Predictions near zero or one should be stress-tested because numeric saturation and extrapolation can create unjustified confidence. Sensitive decisions require access controls, documented intended use, appeal or human escalation, and evaluation of whether features act as proxies for protected attributes. Interpretability of an equation does not make the data collection or decision policy fair."
+    }
+  ],
+  "workedExamples": [
+    {
+      "title": "From coefficient to two probability contrasts",
+      "body": "With beta=0.6, baseline odds at p=0.05 are 0.05/0.95=0.0526. Multiplying by 1.822 gives 0.0959, hence p=0.0959/(1+0.0959)=0.0875. At p=0.5, odds start at 1, become 1.822, and p=0.646. The coefficient is constant on log-odds, not risk-difference, scale."
+    },
+    {
+      "title": "Choose a capacity-aware threshold",
+      "body": "Suppose 10,000 cases arrive daily but reviewers can inspect 300. Instead of choosing 0.5, rank locked-model probabilities and choose the cutoff producing at most 300 alerts, then estimate precision, missed-positive cost, and uncertainty on a later time window. If capacity changes, the policy threshold can change without retraining the probability model, provided calibration and ranking remain acceptable."
+    }
+  ],
+  "exercises": [
+    {
+      "prompt": "Convert beta=ln(2) into an interpretation.",
+      "solution": "A one-unit predictor increase doubles conditional odds, holding other modeled predictors fixed. It does not necessarily double probability or risk."
+    },
+    {
+      "prompt": "A model has unchanged ROC AUC but worsening Brier score after prevalence shifts. Explain.",
+      "solution": "Ranking can remain stable while probability levels become miscalibrated under a changed prior. Re-estimate calibration on representative labeled data and re-evaluate the decision threshold."
+    },
+    {
+      "prompt": "Training coefficients diverge and predicted probabilities become exactly zero or one. Diagnose first.",
+      "solution": "Check complete or quasi-separation and leakage, inspect category rarity and feature provenance, then use appropriate regularization and stable log-likelihood computation."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "curve",
+      "title": "Logit score mapped to probability",
+      "series": [
+        {
+          "label": "Sigmoid",
+          "points": [
+            [
+              0.02,
+              0.03
+            ],
+            [
+              0.18,
+              0.08
+            ],
+            [
+              0.34,
+              0.22
+            ],
+            [
+              0.5,
+              0.5
+            ],
+            [
+              0.66,
+              0.78
+            ],
+            [
+              0.82,
+              0.92
+            ],
+            [
+              0.98,
+              0.97
+            ]
+          ]
+        }
+      ],
+      "caption": "Conceptual sigmoid: identical score changes have the largest probability effect near 0.5 and smaller effects near the extremes.",
+      "afterSection": "probability-link-and-odds"
+    },
+    {
+      "type": "flow",
+      "title": "Probability model to operational action",
+      "items": [
+        "Linear score",
+        "Sigmoid probability",
+        "Calibration check",
+        "Cost / capacity threshold",
+        "Action + monitoring"
+      ],
+      "caption": "Probability estimation and action selection are different layers with different evaluation criteria.",
+      "afterSection": "evaluation-calibration-decisions"
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "nelder-wedderburn-glm",
+      "contribution": "Provides the primary generalized-linear-model formulation and iterative weighted fitting perspective."
+    },
+    {
+      "resource": "sklearn-linear-models",
+      "contribution": "Verifies current logistic objectives, regularization parameterization, solver constraints, and implementation guidance."
+    },
+    {
+      "resource": "isl",
+      "contribution": "Supports accessible coefficient, classification, and evaluation interpretation in the statistical-learning setting."
+    }
+  ]
 }

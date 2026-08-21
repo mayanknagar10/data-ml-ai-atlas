@@ -1,6 +1,6 @@
 # Kaplan–Meier Estimator & Log-rank Test — Code Lab
 
-Fit and inspect a Kaplan–Meier survival curve.
+Implement Kaplan-Meier and the two-sample log-rank statistic, use SciPy for the chi-square tail, and verify censoring, monotonicity, symmetry, and identical-group behavior.
 
 ## 1. Build it
 

@@ -1,6 +1,22 @@
 import numpy as np
-t=np.array([1,2,2,3,5],float); e=np.array([1,1,0,1,0])
-s=1.0
-for time in sorted(set(t[e==1])):
-    at_risk=(t>=time).sum(); events=((t==time)&(e==1)).sum(); s*=1-events/at_risk
-    print(time,s)
+def kaplan_meier(time,event):
+    time=np.asarray(time,float); event=np.asarray(event,int)
+    event_times=np.unique(time[event==1]); surv=[]; at_risk=[]; events=[]; s=1.0
+    for t in event_times:
+        n=int(np.sum(time>=t)); d=int(np.sum((time==t)&(event==1)))
+        s*=1-d/n; at_risk.append(n); events.append(d); surv.append(s)
+    return event_times,np.array(surv),np.array(at_risk),np.array(events)
+def logrank(t1,e1,t0,e0):
+    times=np.unique(np.r_[np.asarray(t1)[np.asarray(e1)==1],np.asarray(t0)[np.asarray(e0)==1]])
+    oe=0.0; var=0.0
+    for t in times:
+        n1=np.sum(np.asarray(t1)>=t); n0=np.sum(np.asarray(t0)>=t); n=n1+n0
+        d1=np.sum((np.asarray(t1)==t)&(np.asarray(e1)==1)); d0=np.sum((np.asarray(t0)==t)&(np.asarray(e0)==1)); d=d1+d0
+        oe+=d1-d*n1/n
+        if n>1: var+=n1*n0*d*(n-d)/(n*n*(n-1))
+    return oe*oe/var if var>0 else 0.0
+time=np.array([2,3,4,4,5,7],float); event=np.array([1,0,1,1,0,1])
+km_t,km_s,nrisk,deaths=kaplan_meier(time,event)
+t1=np.array([2,4,5,7,8],float); e1=np.array([1,1,0,1,0])
+t0=np.array([3,6,7,9,10],float); e0=np.array([1,1,0,1,0])
+stat=logrank(t1,e1,t0,e0)

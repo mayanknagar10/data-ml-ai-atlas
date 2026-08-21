@@ -6,84 +6,191 @@
   "roles": [
     "ds"
   ],
-  "interviewAnswer": "Isolation Forest isolates observations through random feature splits; points requiring fewer splits are easier to isolate and receive more anomalous scores. It scales well for tabular unsupervised anomaly detection.",
+  "interviewAnswer": "Isolation Forest creates many random partition trees. Each node chooses a feature and a split within that feature's observed range; points that are few and different tend to be isolated in fewer edges. The anomaly score is roughly 2 raised to minus average path length divided by the expected path length c(psi) for a random binary-search tree of subsample size psi. Subsampling makes training fast and can reduce masking by large normal clusters. Tree scores rank unusualness; contamination generally sets a threshold and does not discover prevalence. I validate feature representation, stability across seeds and reference windows, score direction, alert budget, and labeled or audited incident yield, and I watch for clustered anomalies, duplicates, high-dimensional noise, drift, and unsupported novelty use.",
   "keyPoints": [
-    "No distance metric required.",
-    "Contamination threshold maps scores to alerts.",
-    "Feature scaling is less central than distance-based methods but feature quality still matters."
+    "Shorter average isolation path means more anomalous under the fitted forest.",
+    "c(psi) normalizes paths across subsample size.",
+    "Subsampling is central to both efficiency and detection behavior.",
+    "Feature representation shapes the random partitions even without distance metrics.",
+    "A threshold and contamination setting are policy layers over a score."
   ],
   "resources": [
-    "sklearn-outlier"
+    "isolation-forest-paper",
+    "sklearn-outlier",
+    "anomaly-survey"
   ],
   "featured": false,
-  "why": "Isolation Forest appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
-  "intuition": "No distance metric required.",
-  "deepDive": "Isolation Forest isolates observations through random feature splits; points requiring fewer splits are easier to isolate and receive more anomalous scores. It scales well for tabular unsupervised anomaly detection. Contamination threshold maps scores to alerts. Feature scaling is less central than distance-based methods but feature quality still matters. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
-  "workedExample": "Detect unusual transactions from amounts, timing and behavioral features without anomaly labels.",
+  "why": "Distance and density estimation become expensive or unreliable in many dimensions, while anomaly labels are often scarce. Isolation Forest uses random partitioning with expected O(t psi log psi) construction for t trees of small subsample size psi and supports fast scoring. It works well when anomalies occupy sparse, easily separated regions. It also provides a useful nonlinear baseline that requires less scaling sensitivity than Euclidean methods under affine feature rescaling. Its apparent plug-and-play simplicity is dangerous, however. A high score means easy isolation under the encoded training reference, not fraud or failure probability. Random cuts can miss a dense anomalous cluster, and hundreds of irrelevant features reduce the chance of choosing an informative split. A production implementation needs the same reference, feature schema, score sign, and threshold semantics in every environment.",
+  "intuition": "Place a lone point far from a cloud on graph paper. A random vertical or horizontal cut often separates it immediately. A point near the cloud center needs many cuts before it occupies a leaf alone. Repeat random trees and average the number of edges. This is isolation depth. A small tree built from a random subsample gives anomalies more chances to stand alone rather than being masked by the full population. The score converts average depth to a common scale: depth near the random-tree expectation suggests ordinary behavior, much shorter depth suggests anomaly, and much longer depth suggests dense normal structure. The mechanism is relative to observed ranges. Duplicate points cannot be separated by numeric cuts, dense anomalous groups may protect one another, and a curved normal manifold can be fragmented by axis-aligned splits. More trees reduce Monte Carlo variability but cannot repair a wrong representation.",
+  "deepDive": "Isolation Forest replaces density estimation with randomized search depth. The forest is a fixed ensemble of partition trees; normalized path length yields a ranking whose semantics depend on subsample, features, reference, and score direction. The method is fast because it builds small trees, not because it can ignore representation or validation. Threshold selection and incident operations remain separate from the unsupervised score.",
+  "workedExample": "A tree samples eight two-dimensional telemetry rows. Seven form a cloud between 0 and 2; one row is near 8 on both axes. The root selects feature one and split 5.4, isolating the distant row after one edge. A central row remains with seven points and needs several more splits. Across 200 trees, the distant row's mean path is far below c(8), so its normalized score is high. The alert threshold still depends on incident budget and validation.",
   "commonMistakes": [
-    "Applying the method without checking its assumptions or data-generating process.",
-    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+    {
+      "misconception": "Isolation Forest estimates the probability that a case is anomalous.",
+      "correction": "It produces a normalized isolation score or transformed decision value. Probability requires a labeled calibration model and stable sampling process."
+    },
+    {
+      "misconception": "Contamination learns how many true anomalies exist.",
+      "correction": "It usually sets an offset or threshold fraction. Validate it as an operational policy rather than interpreting it as discovered prevalence."
+    },
+    {
+      "misconception": "Feature scaling never matters for Isolation Forest.",
+      "correction": "Affine scaling has limited effect on uniform range cuts, but nonlinear transforms, clipping, categories, sparse encodings, and feature selection materially change partitions."
+    },
+    {
+      "misconception": "More trees fix any missed anomaly pattern.",
+      "correction": "More trees reduce random variance. They cannot fix a contaminated reference, irrelevant representation, dense anomaly cluster, or missing collective context."
+    }
   ],
   "followUps": [
-    "What assumptions does Isolation Forest make?",
-    "How would you validate or debug Isolation Forest in practice?"
+    {
+      "question": "Why use small subsamples?",
+      "answer": "They keep trees shallow and cheap and reduce masking or swamping effects by limiting how many points compete in one tree. Psi also determines the scale of detectable structure."
+    },
+    {
+      "question": "What happens to duplicate observations?",
+      "answer": "Numeric splits may be unable to separate identical rows, so leaves retain multiple points and add expected continuation length. Duplicate-heavy data can suppress anomaly contrast and should be diagnosed."
+    },
+    {
+      "question": "Is Isolation Forest suitable for novelty detection?",
+      "answer": "Yes when fitted on a trusted normal reference and scored on new data, with API semantics and drift handled correctly. Fitting on the current contaminated batch asks a different outlier-detection question."
+    }
   ],
-  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "production": "Version the training window, sampling query, feature transformations, missing and category handling, subsample and feature sample sizes, tree count, random seed, score sign, contamination setting, and threshold. Golden rows should verify exact score direction and stable rank. Track missingness, unseen categories, duplicates, feature support, score and path-depth distributions, alerts and unique incidents, top-alert stability, latency, reviewer yield, and audit misses. Do not refresh from unreviewed recent traffic automatically; quarantine candidate references and shadow-score them. Apply per-entity and global rate limits so an outage cannot consume the queue. Protect anomalous records because they often contain sensitive incidents. Retain domain-rule fallback and the prior forest/reference/threshold bundle. Canary representation or psi changes on replay and later data, then roll back the whole bundle when capacity, yield, missed-incident, subgroup, or latency limits fail.",
   "lab": {
-    "goal": "Detect unusual points without labels using Isolation Forest.",
     "language": "python",
-    "buildIt": "import numpy as np\nrng=np.random.default_rng(0)\nnormal=rng.normal(0,1,(500,2)); out=rng.normal(7,.3,(12,2)); X=np.vstack([normal,out])\n",
-    "useIt": "from sklearn.ensemble import IsolationForest\nm=IsolationForest(contamination=.03,random_state=0).fit(X)\nscore=-m.score_samples(X)\nidx=np.argsort(-score)[:15]\nprint(idx)\n",
-    "verifyIt": "assert (idx>=500).sum() >= 8\n",
-    "shipIt": "Treat anomaly scores as triage, not truth; tune alert thresholds to review capacity and monitor alert-rate/base-rate drift."
-  },
-  "visual": {
-    "type": "network",
-    "title": "Isolation Forest intuition",
-    "nodes": [
-      {
-        "id": "r",
-        "label": "Random split",
-        "x": 0.5,
-        "y": 0.1
-      },
-      {
-        "id": "l",
-        "label": "Dense region",
-        "x": 0.28,
-        "y": 0.48
-      },
-      {
-        "id": "o",
-        "label": "Outlier",
-        "x": 0.77,
-        "y": 0.48
-      },
-      {
-        "id": "ll",
-        "label": "many splits",
-        "x": 0.28,
-        "y": 0.82
-      }
-    ],
-    "edges": [
-      [
-        "r",
-        "l"
-      ],
-      [
-        "r",
-        "o"
-      ],
-      [
-        "l",
-        "ll"
-      ]
-    ],
-    "caption": "Anomalies tend to be isolated in fewer random partitioning steps than dense normal points.",
-    "directed": true
+    "goal": "Build reusable isolation trees and normalized forest scores, compare with scikit-learn, and verify injected-outlier, determinism, range, and translation invariants.",
+    "buildIt": "import numpy as np\nfrom math import log\ndef c_factor(n):\n    if n<=1:return 0.0\n    if n==2:return 1.0\n    return 2*(log(n-1)+0.5772156649)-2*(n-1)/n\ndef build_tree(X,rng,depth,max_depth):\n    X=np.asarray(X,float)\n    valid=np.flatnonzero(X.max(0)>X.min(0))\n    if len(X)<=1 or depth>=max_depth or len(valid)==0:\n        return ('leaf',len(X))\n    j=int(rng.choice(valid)); split=float(rng.uniform(X[:,j].min(),X[:,j].max()))\n    left=X[X[:,j]<split]; right=X[X[:,j]>=split]\n    return ('node',j,split,build_tree(left,rng,depth+1,max_depth),build_tree(right,rng,depth+1,max_depth))\ndef path_length(x,tree,depth=0):\n    if tree[0]=='leaf': return depth+c_factor(tree[1])\n    _,j,split,left,right=tree\n    return path_length(x,left if x[j]<split else right,depth+1)\ndef isolation_scores(train,query,trees=160,sample_size=64,seed=3):\n    rng=np.random.default_rng(seed); n=min(sample_size,len(train)); forest=[]\n    for _ in range(trees):\n        sample=train[rng.choice(len(train),n,replace=False)]\n        forest.append(build_tree(sample,rng,0,int(np.ceil(np.log2(n)))))\n    paths=np.array([[path_length(x,t) for t in forest] for x in query])\n    return 2**(-paths.mean(1)/c_factor(n))\nrng=np.random.default_rng(5)\nnormal=rng.normal(0,.7,size=(200,2)); X=np.vstack([normal,[[6,6],[-6,-5]]])\nscore=isolation_scores(X,X)",
+    "useIt": "from sklearn.ensemble import IsolationForest\nsk=IsolationForest(n_estimators=160,max_samples=64,contamination='auto',random_state=3).fit(X)\nsk_score=-sk.score_samples(X)",
+    "verifyIt": "assert np.all((score>0)&(score<=1))\nassert np.all(score[-2:]>np.quantile(score[:-2],.95))\nassert np.all(sk_score[-2:]>np.quantile(sk_score[:-2],.95))\nassert np.allclose(score,isolation_scores(X,X,seed=3))\nshift=np.array([100,-37])\nshift_score=isolation_scores(X+shift,X+shift,seed=3)\nassert np.allclose(score,shift_score,atol=1e-12)\nassert set(np.argsort(score)[-2:])=={200,201}\nassert set(np.argsort(sk_score)[-2:])=={200,201}",
+    "shipIt": "Persist feature and reference versions, trees, psi, tree count, seed, score direction and threshold; test golden scores, shadow new references, monitor path and incident distributions, and roll back forest plus threshold together."
   },
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "Isolation Forest scores anomalies by how quickly random recursive partitions isolate them. Instead of estimating a density or distance directly, each tree selects a feature and a split between observed minimum and maximum; unusual points tend to reach small leaves along shorter paths. This chapter derives path length, the unsuccessful binary-search-tree normalization c(psi), ensemble scoring, subsampling, feature subsampling, and the separate role of contamination or threshold policy. You will understand why the method is computationally attractive, where axis-aligned random cuts work, and why clustered anomalies, irrelevant high-dimensional features, one-hot representations, duplicates, missing values, and concept drift can defeat it. The chapter distinguishes outlier fitting from novelty scoring and explains score-direction differences in library APIs. A worked telemetry example traces a shallow isolation path. The lab builds a true reusable isolation-tree ensemble from scratch, compares it with scikit-learn, and verifies deterministic, translation, range, and injected-outlier invariants. Production guidance freezes sampling, seed, feature and score conventions; monitors path and alert distributions, support, duplicate rates, and incident yield; and uses a later reference window plus an explicit alert budget rather than presenting contamination as a learned prevalence.",
+  "prerequisites": [
+    "anomaly-types",
+    "random-forest"
+  ],
+  "learningObjectives": [
+    "Build isolation trees and compute normalized ensemble anomaly scores from path lengths.",
+    "Explain how subsample size, tree count, feature representation, and contamination affect behavior.",
+    "Diagnose masking, clustered anomalies, irrelevant features, duplicates, and drift.",
+    "Deploy Isolation Forest with reproducible score direction, thresholds, references, and incident-level monitoring."
+  ],
+  "deepSections": [
+    {
+      "id": "tree-construction-and-paths",
+      "title": "Random isolation trees and path length",
+      "body": "For each tree, draw without replacement up to psi reference observations. At a node, select a feature with nonzero range and choose a split uniformly between its minimum and maximum; send rows left or right and recurse until one row remains, all rows are identical on splittable features, or a height limit is reached. The path length h(x) is the number of edges followed by query x. When recursion stops with n_leaf>1, add an expected continuation c(n_leaf) rather than pretending every duplicate was isolated. For n>2, c(n)=2H_{n-1}-2(n-1)/n, using the harmonic number approximation from unsuccessful binary-search-tree paths; c(2)=1 and c(0)=c(1)=0. A forest averages h_t(x). Build each tree once and reuse it for all queries: randomly choosing new splits while scoring each point would not define one model. Persist tree structure or a deterministic library artifact and test scoring parity. Missing values need an explicit preprocessing or routing rule because standard split comparison is undefined."
+    },
+    {
+      "id": "score-subsampling-and-threshold",
+      "title": "Normalized score, subsampling, and threshold policy",
+      "body": "The original normalized score is s(x,psi)=2^{-E[h(x)]/c(psi)}. Scores near one correspond to very short paths; scores near one-half correspond roughly to expected random-tree depth; lower scores indicate long paths in dense regions. Libraries may expose a decision function where larger is more normal, a raw score with the opposite sign, or labels -1 and 1 after subtracting an offset. Write a score-direction unit test. Psi controls locality and masking: a modest sample creates shallow trees and can expose rare points; too small may fragment legitimate local modes and too large raises cost or lets anomaly groups form their own dense region. Tree count reduces random variance. Feature subsampling can help when many irrelevant dimensions exist, but it may omit the only diagnostic feature on some trees. Contamination is commonly used to choose an offset or quantile for labels. Treat it as an assumed alert fraction or calibration setting. Choose the operational threshold on a later window using review capacity, recall constraints, or cost, and group row alerts into incidents."
+    },
+    {
+      "id": "representation-and-failure-modes",
+      "title": "Representation determines what random cuts can isolate",
+      "body": "Affine scaling of one continuous feature preserves the relative positions of uniform range splits, so Isolation Forest is less sensitive to ordinary standardization than Euclidean neighbors. It is not invariant to nonlinear transforms, clipping, or category encoding. A heavy-tailed feature can devote broad ranges to legitimate extremes; a log transform may express operational separation better. Ordinal encoding invents order for categories, while one-hot encoding creates many sparse binary axes. Rare categories may be isolated merely because they are rare, and high-cardinality features can dominate. Duplicates and quantization create unsplittable leaves. Clustered anomalies can have long paths and be missed; a rare legitimate cluster can be overflagged. With many irrelevant features, random feature selection wastes depth and score contrast collapses. Correlated oblique structure can require many axis cuts, motivating extended isolation variants or a better representation. Fit on a trusted, time-appropriate reference and compare performance across feature subsets, seeds, psi, and later periods. Do not fit preprocessing on the scored batch, since a surge can redefine its own normality."
+    },
+    {
+      "id": "evaluation-and-operations",
+      "title": "Evaluate rankings and alerts as separate artifacts",
+      "body": "With labels, evaluate score ranking using precision-recall and recall at the review budget, then evaluate the chosen threshold at incident level. ROC AUC can look strong while a tiny false-positive rate produces an overwhelming queue. Without labels, replay known incidents, inject mechanism-faithful anomalies, run blinded expert review, and audit samples below threshold. Synthetic points should test a hypothesis, not serve as the sole benchmark. Measure stability of top alerts across seeds and reference windows. In production, log average path or score, feature/reference version, threshold, and incident group. Monitor score quantiles, alert count, unique incidents, per-entity concentration, path-depth distribution, duplicate rate, unseen categories, missingness, review yield, and delayed outcomes. Separate normal regime growth from attacks through quarantine and human review before refreshing the reference. A fallback may use domain invariants and fixed rate limits. Canary new forests in shadow mode and roll back the reference, trees, and threshold together."
+    }
+  ],
+  "math": "For subsample size psi, average path hbar(x)=t^{-1}sum_j h_j(x). Define c(n)=2H_{n-1}-2(n-1)/n for n>2, c(2)=1, and c(n)=0 for n<=1. The original anomaly score is s(x,psi)=2^{-hbar(x)/c(psi)}. Short hbar gives score nearer one. Expected construction is roughly O(t psi log psi) for balanced trees, with scoring O(t log psi), although degenerate splits, representation, and implementation affect constants.",
+  "workedExamples": [
+    {
+      "title": "Trace an isolated point",
+      "body": "With psi=256, c(psi) is approximately 10.25. If an observation averages path length 3, s=2^{-3/10.25}, about 0.82. If another averages 11, its score is about 0.48. The exact action boundary is not universally 0.5; calibrate it under the deployment reference and API convention."
+    },
+    {
+      "title": "A clustered attack can be masked",
+      "body": "Five hundred coordinated events share one unusual feature pattern. When the forest fits on a window containing all of them, they split among themselves and may obtain ordinary path lengths. Use a trusted earlier novelty reference, temporal/count collective features, or supervised signals and quarantine reference refreshes."
+    }
+  ],
+  "exercises": [
+    {
+      "prompt": "What does a shorter path mean in an isolation tree?",
+      "solution": "The point was separated from the sampled reference with fewer random cuts, which is evidence of unusual sparse placement under that representation."
+    },
+    {
+      "prompt": "Why can a dense anomalous cluster receive ordinary scores?",
+      "solution": "Its members protect one another and require multiple partitions to isolate, especially if included in the fitting reference. Use trusted novelty data or collective/context features."
+    },
+    {
+      "prompt": "A library returns lower values for more anomalous cases. What should you do?",
+      "solution": "Document the API convention and normalize score direction at the boundary. Add a golden test asserting that a known extreme ranks above normal cases in the application's convention."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "flow",
+      "title": "One isolation path",
+      "items": [
+        "Random feature",
+        "Random range split",
+        "Follow query branch",
+        "Repeat until leaf",
+        "Short path -> high anomaly score"
+      ],
+      "caption": "Each fixed random tree isolates a query through reusable partitions; the forest averages path length.",
+      "afterSection": "tree-construction-and-paths"
+    },
+    {
+      "type": "curve",
+      "title": "Normalized score versus path length",
+      "series": [
+        {
+          "label": "Isolation score",
+          "points": [
+            [
+              0.05,
+              0.92
+            ],
+            [
+              0.2,
+              0.8
+            ],
+            [
+              0.38,
+              0.67
+            ],
+            [
+              0.56,
+              0.56
+            ],
+            [
+              0.74,
+              0.47
+            ],
+            [
+              0.92,
+              0.39
+            ]
+          ]
+        }
+      ],
+      "caption": "Conceptual curve for fixed psi: shorter normalized paths map to scores nearer one.",
+      "afterSection": "score-subsampling-and-threshold"
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "isolation-forest-paper",
+      "contribution": "Provides the original random partition mechanism, path normalization, subsampling rationale, and score definition."
+    },
+    {
+      "resource": "sklearn-outlier",
+      "contribution": "Verifies current estimator parameters, score and decision semantics, contamination behavior, and novelty guidance."
+    },
+    {
+      "resource": "anomaly-survey",
+      "contribution": "Places isolation within broader anomaly assumptions and evaluation limitations."
+    }
+  ]
 }

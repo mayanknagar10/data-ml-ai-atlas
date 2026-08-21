@@ -1,3 +1,3 @@
 # Ship it
 
-Monitor residual distribution, drift, coefficient stability and extrapolation. Linear models can be excellent baselines because they are cheap, interpretable and easy to debug.
+Persist feature order, transforms, units, training ranges, solver and model version; reject schema violations, monitor range and residual drift, measure delayed interval coverage, and keep the previous model and baseline available for rollback.

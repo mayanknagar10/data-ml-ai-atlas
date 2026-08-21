@@ -1,3 +1,3 @@
 # Ship it
 
-It is often a superb baseline because it trains fast, is easy to calibrate/interpret and exposes whether more complex models are truly necessary.
+Version feature encodings, penalty, calibration map, evaluation window, and threshold policy separately; monitor prevalence, calibration, ranking, alert volume, subgroup outcomes, and extreme-score rates; canary changes and retain the prior model-policy pair for rollback.

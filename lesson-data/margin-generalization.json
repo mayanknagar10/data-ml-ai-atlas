@@ -8,33 +8,191 @@
     "mle",
     "ds"
   ],
-  "interviewAnswer": "A classification margin measures separation from the decision boundary; large-margin methods such as SVMs prefer a wider buffer while allowing controlled violations in the soft-margin case.",
+  "interviewAnswer": "For labels y in {-1,+1} and score f=w^T x+b, functional margin is y f, but it can be inflated by rescaling parameters. Geometric margin is y f/||w||. Hard-margin SVM fixes y_i f_i>=1 and minimizes ||w|| squared, equivalently maximizing the minimum geometric margin. Soft margin minimizes 0.5||w|| squared+C sum hinge(1-y_i f_i), allowing violations. Only points on or inside the margin affect the solution as support vectors. Generalization bounds can depend on radius squared times norm squared or inverse margin squared rather than raw feature dimension, which explains kernel use. I standardize features inside folds, tune C and kernels on grouped or temporal validation, inspect margin distributions and slices, and separately calibrate scores if probabilities are needed.",
   "keyPoints": [
-    "Geometric margin",
-    "Support vectors",
-    "Soft margin",
-    "Robustness intuition"
+    "Geometric margin divides by ||w|| and is invariant to positive score rescaling.",
+    "Hard-margin SVM maximizes separation; soft margin trades norm against hinge violations through C.",
+    "Support vectors determine the boundary because non-support points have inactive constraints.",
+    "Norm-margin bounds can control effective capacity even in very high-dimensional feature spaces.",
+    "Margin is not probability and can degrade under scaling, outliers, shift or adversarial perturbations."
   ],
   "resources": [
+    "svm-paper",
     "stanford-cs229"
   ],
   "featured": false,
-  "why": "Margins connect geometry, regularization and generalization.",
-  "intuition": "Two separators can classify training points correctly, but the one farther from the closest examples is less sensitive to small perturbations.",
-  "deepDive": "Hard-margin SVM maximizes geometric margin; soft-margin SVM trades violations against margin size through C.",
-  "math": "",
-  "code": "",
+  "why": "Two classifiers can label every training point correctly while placing the boundary differently. The one barely clearing several points is more sensitive to sampling noise and perturbation than one with a wide normalized gap. Margin makes this distinction measurable and leads to a convex optimization whose solution depends on boundary-defining examples. It also introduces a general pattern used throughout modern theory: generalization can depend on norms and achieved fit, not only the nominal size of a function class. In applications, however, margin geometry inherits feature representation and scale. A large training margin in a spurious direction or shifted population is not a safety certificate, so it must be paired with honest validation and robustness analysis.",
+  "intuition": "Draw a road separating red and blue houses. Many center lines divide the observed houses, but choose the one that makes the narrowest shoulder as wide as possible. Multiplying the road equation by ten does not physically widen it, so distance must divide by the normal vector length. The houses touching the shoulders are support vectors; moving distant houses slightly does not change the road, while moving a support house can. When perfect separation is impossible, soft margin charges for houses inside the shoulder or on the wrong side and balances those charges against road width.",
+  "deepDive": "Margins turn scale-dependent classifier scores into distances and select wide-separation solutions among many training classifiers. Soft-margin SVM expresses the trade-off between norm and hinge errors, with support vectors determining the solution and kernels extending the geometry. Norm-margin generalization bounds show why effective capacity can be smaller than nominal dimension, while feature scaling, data quality, shift and calibration determine practical reliability.",
+  "math": "Functional margin is y_i(w^T x_i+b); geometric margin is y_i(w^T x_i+b)/||w||. Hard-margin SVM minimizes 0.5||w||^2 subject to y_i(w^T x_i+b)>=1. Soft margin minimizes 0.5||w||^2+C sum_i max(0,1-y_i f_i), equivalently with slack constraints. In the dual maximize sum alpha_i-0.5 sum_{i,j}alpha_i alpha_j y_i y_j K(x_i,x_j), with 0<=alpha_i<=C and sum alpha_i y_i=0. Linear norm bounds scale like O(BR/sqrt(n)); separable margin complexity often involves (R/gamma)^2.",
   "commonMistakes": [
-    "Confusing weight magnitude with geometric margin.",
-    "Assuming margins solve overlapping/noisy labels automatically."
+    {
+      "misconception": "A larger raw decision score always means a larger geometric margin.",
+      "correction": "Raw score can be inflated by scaling w,b; divide by ||w|| and define feature units."
+    },
+    {
+      "misconception": "Hard-margin SVM is robust because it maximizes margin.",
+      "correction": "One outlier or mislabeled point can destroy separability or rotate the boundary; soft margin and data audit are essential."
+    },
+    {
+      "misconception": "Kernel SVM has low capacity because it maximizes margin.",
+      "correction": "Kernel, norm, C and data radius jointly control capacity; flexible settings can memorize."
+    },
+    {
+      "misconception": "SVM scores are probabilities.",
+      "correction": "They are signed decision values. Calibrate on held-out representative data if probabilities are required."
+    }
   ],
   "followUps": [
-    "Hard vs soft margin?",
-    "How do kernels change geometry?"
+    {
+      "question": "Why are only support vectors important?",
+      "answer": "Only points with active or violated margin constraints have nonzero dual coefficients and contribute to the boundary."
+    },
+    {
+      "question": "What does C control?",
+      "answer": "It prices hinge violations relative to norm: larger C favors fitting training points, while smaller C favors a wider, simpler separator."
+    },
+    {
+      "question": "How does the kernel trick work?",
+      "answer": "The dual depends on feature dot products, which a kernel computes without explicitly constructing the potentially high-dimensional feature map."
+    }
   ],
-  "production": "Margin robustness does not replace shift/feature-quality monitoring.",
-  "workedExample": "For separable classes, support vectors determine the maximal-margin boundary.",
+  "production": "Persist training population, label mapping, scaler fit, feature order, kernel and parameters, C and class weights, optimizer tolerance, support vectors, decision threshold and calibration artifact. Validate signed margins, hinge loss, discrimination, calibration and decision utility by class, group and time on grouped or temporal tests. Monitor input norms, decision-score and margin distributions, support-vector fraction, out-of-support distances, drift and calibrated reliability. Protect support vectors because they may be sensitive training examples. Test numerical equivalence after runtime optimization and bound query resource use for kernels. Shadow changes to scaling or representation and roll back the compatible scaler, model and calibrator together; rescaling features without retraining changes the geometric classifier.",
+  "workedExample": "Let w=[3,4], b=-5, x=[3,1], y=+1. Score is 3*3+4*1-5=8, so functional margin is 8. ||w||=5, so geometric margin is 1.6 distance units. Replacing w,b by twice their values makes functional margin 16 but geometric margin remains 16/10=1.6 and the boundary is unchanged.",
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "Margins measure how confidently a decision boundary separates labeled examples relative to the classifier's scale. For a linear score f(x)=w^T x+b, the functional margin y f(x) changes if w and b are rescaled, while the geometric margin y f(x)/||w|| is invariant and equals signed distance to the hyperplane. This chapter derives hard- and soft-margin support vector machines, hinge loss, support vectors, primal and dual views, kernels, norm-radius generalization bounds and multiclass margins. It explains why maximizing training margin can control effective capacity even in high-dimensional spaces, while feature scaling, outliers, nonseparability, distribution shift and adversarial directions limit the story. A worked example computes geometric distance. The lab solves a hard-margin primal with SciPy, compares scikit-learn SVC, and verifies constraints, support points and scale invariance. Production guidance versions feature scaling, kernel and C, evaluates margin distributions and calibration on later cohorts, and treats low margin as an uncertainty signal rather than a probability. Margins connect fitted geometry to generalization more tightly than dimension alone, but only under bounded norms and representative samples.",
+  "prerequisites": [
+    "vc-dimension",
+    "norms-distances",
+    "convexity"
+  ],
+  "learningObjectives": [
+    "Distinguish functional and geometric margins and compute distance to a linear decision boundary.",
+    "Derive hard- and soft-margin SVM objectives, hinge loss and support-vector behavior.",
+    "Connect radius, norm and margin to capacity bounds in linear and kernel feature spaces.",
+    "Diagnose scaling, outlier, calibration, robustness, nonseparability and shift failures in practice."
+  ],
+  "deepSections": [
+    {
+      "id": "margin-geometry",
+      "title": "Normalization turns score confidence into geometric distance",
+      "body": "For hyperplane {x:w^T x+b=0}, signed Euclidean distance is (w^T x+b)/||w||_2. Multiplying w,b by c>0 preserves the boundary and predictions but scales raw scores, so only the normalized geometric margin is representation-invariant under that rescaling. Dataset margin is min_i y_i(w^T x_i+b)/||w||. Feature rescaling is different: changing units changes Euclidean geometry unless preprocessing transforms w consistently, which is why SVMs require standardized or domain-meaningful features. For separable data, impose functional constraints y_i f_i>=1; then maximizing geometric margin is minimizing ||w||. The two supporting planes w^T x+b=+1 and -1 are distance 2/||w|| apart. In nonlinear feature map phi(x), the same geometry occurs in feature space, even when the input boundary is curved."
+    },
+    {
+      "id": "soft-margin-dual",
+      "title": "Hinge slack makes maximum margin robust to nonseparable samples",
+      "body": "Hard-margin constraints fail with overlap or mislabeled points. Introduce slack xi_i>=0 and minimize 0.5||w||^2+C sum xi_i subject to y_i f_i>=1-xi_i. Eliminating slack gives hinge loss max(0,1-y_i f_i). C controls the cost of violations: large C prioritizes training fit and can shrink margin; small C accepts violations for stronger norm control. In the dual, examples receive coefficients alpha_i bounded by C and satisfying sum alpha_i y_i=0. The weight vector is a combination sum alpha_i y_i x_i. Points with alpha>0 are support vectors; those strictly outside the margin have zero coefficient. The dual uses only dot products, enabling kernels K(x,x')=<phi(x),phi(x')>. Kernel and hyperparameters define capacity; a flexible RBF kernel with large C can memorize. Optimization tolerances, duplicate points and class weights alter support patterns."
+    },
+    {
+      "id": "generalization-bounds",
+      "title": "Margin and norm provide data-dependent capacity control",
+      "body": "Suppose inputs lie in a ball of radius R and a separator achieves geometric margin gamma. The number of effectively distinguishable dichotomies and sample bounds can scale with (R/gamma)^2, largely independent of explicit feature dimension. More generally, Rademacher bounds for linear scores with ||w||<=B and ||x||<=R scale like BR/sqrt(n). Since normalized margin corresponds inversely to norm after fixing functional margin, SVM minimization controls this complexity. Bounds involve margin distribution or surrogate loss, not only the smallest margin, and constants can be loose. Kernel feature norms K(x,x) must be bounded. Deep-network margin bounds involve products or sums of layer norms and are sensitive to rescaling symmetries. The theory explains a mechanism, not a precise error forecast: a high margin on leaked or nonrepresentative data generalizes to the wrong process."
+    },
+    {
+      "id": "evaluation-robustness",
+      "title": "Margin diagnostics complement probability and shift evaluation",
+      "body": "Decision scores rank confidence relative to the fitted boundary but are not calibrated probabilities. Platt scaling or isotonic regression must use held-out representative data and preserve threshold evaluation. Inspect signed margins by class, group, time, data source and error type. Many near-zero margins signal ambiguity or drift; very large margins on wrong predictions can signal representation failure. Adversarial vulnerability relates to margin in the chosen norm and input transformation: a large L2 feature-space margin may not protect semantic perturbations. Outliers can dominate hard-margin solutions, motivating soft margin, robust features or label audit. Multiclass strategies define margin as the correct-class score minus the strongest alternative or through structured losses. In deployment, abstention can use calibrated uncertainty and utility, not a universal raw margin threshold. Refit scalers and kernels only in training folds and monitor support-vector fraction and score shift."
+    }
+  ],
+  "workedExamples": [
+    {
+      "title": "Soft-margin violation",
+      "body": "A point has y f(x)=0.4. Its hinge loss is 0.6: it is correctly classified but inside the unit functional margin. If y f=-0.2, hinge loss is 1.2 and it is misclassified."
+    },
+    {
+      "title": "Feature units",
+      "body": "One feature measured in meters and another in millimeters can dominate Euclidean norm solely from units. Standardizing inside each fold changes the geometric problem and must be deployed with the classifier."
+    }
+  ],
+  "lab": {
+    "language": "python",
+    "goal": "Solve a hard-margin linear SVM primal, compare scikit-learn, and verify constraints, support points, decision agreement and geometric scale invariance.",
+    "buildIt": "import numpy as np\nX=np.array([[-2,-1],[-1.5,-2],[-1,-1.2],[1,1.1],[1.5,2],[2,1]],float); y=np.array([-1,-1,-1,1,1,1],float)\ndef objective(theta): return .5*np.dot(theta[:-1],theta[:-1])\ndef gradient(theta): return np.r_[theta[:-1],0.]\ndef constraints(theta): return y*(X@theta[:-1]+theta[-1])-1\ndef geometric_margins(theta): return y*(X@theta[:-1]+theta[-1])/np.linalg.norm(theta[:-1])",
+    "useIt": "from scipy.optimize import minimize\nfrom sklearn.svm import SVC\nfit=minimize(objective,np.array([1.,1.,0.]),jac=gradient,constraints={'type':'ineq','fun':constraints},method='SLSQP',options={'ftol':1e-12,'maxiter':1000}); theta=fit.x\nsvc=SVC(kernel='linear',C=1e6).fit(X,y); sk_theta=np.r_[svc.coef_[0],svc.intercept_[0]]\nmargin=geometric_margins(theta)",
+    "verifyIt": "assert fit.success and constraints(theta).min()>-1e-7\nassert np.all(np.sign(X@theta[:-1]+theta[-1])==y)\nassert np.all(np.sign(X@sk_theta[:-1]+sk_theta[-1])==y)\nassert abs(margin.min()-geometric_margins(7*theta).min())<1e-10\nsupport=np.flatnonzero(np.isclose(constraints(theta),0,atol=1e-6)); assert len(support)>=2\nassert np.allclose(theta,sk_theta,atol=2e-3)\nassert np.linalg.norm(theta[:-1])>0 and margin.min()>0",
+    "shipIt": "Version scaling, feature map, kernel, C, weights and calibration; validate margin and error distributions on later cohorts, monitor score and support drift, and roll back preprocessing and classifier together."
+  },
+  "exercises": [
+    {
+      "prompt": "What happens to geometric margin if w and b are multiplied by 5?",
+      "solution": "Nothing: numerator and ||w|| both multiply by 5, while the boundary and predictions remain the same."
+    },
+    {
+      "prompt": "A point has y f=1.4. What is hinge loss?",
+      "solution": "Zero because max(0,1-1.4)=0; it lies beyond the unit functional margin."
+    },
+    {
+      "prompt": "Why standardize before an RBF or linear SVM?",
+      "solution": "Feature units define distances and norms; uncontrolled scales can dominate geometry for irrelevant numerical reasons."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "layers",
+      "title": "Maximum-margin geometry",
+      "items": [
+        "Positive support plane f=+1",
+        "Decision plane f=0",
+        "Negative support plane f=-1",
+        "Margin width 2/||w||",
+        "Slack for violations"
+      ],
+      "caption": "Functional constraints fix scale so minimizing norm maximizes geometric separation.",
+      "afterSection": "margin-geometry"
+    },
+    {
+      "type": "curve",
+      "title": "Hinge loss",
+      "series": [
+        {
+          "label": "max(0,1-yf)",
+          "points": [
+            [
+              0.02,
+              0.95
+            ],
+            [
+              0.2,
+              0.75
+            ],
+            [
+              0.4,
+              0.55
+            ],
+            [
+              0.6,
+              0.35
+            ],
+            [
+              0.8,
+              0.15
+            ],
+            [
+              0.9,
+              0
+            ],
+            [
+              0.98,
+              0
+            ]
+          ]
+        }
+      ],
+      "caption": "Conceptual normalized curve: loss decreases linearly until the unit margin, then remains zero.",
+      "afterSection": "soft-margin-dual"
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "svm-paper",
+      "contribution": "Grounds soft-margin support-vector networks, kernels and generalization motivation."
+    },
+    {
+      "resource": "stanford-cs229",
+      "contribution": "Provides geometric-margin, primal-dual, kernel and learning-theory derivations."
+    }
+  ]
 }

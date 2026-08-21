@@ -6,30 +6,180 @@
   "roles": [
     "ds"
   ],
-  "interviewAnswer": "Search quality often improves before retrieval by normalizing queries, correcting spelling, identifying entities/intent and extracting structured filters. Query rewriting must preserve user intent.",
+  "interviewAnswer": "I retain the raw query, then apply a versioned locale-aware analyzer to produce normalized tokens and protected spans such as quotes, SKUs, URLs and names. Spelling correction uses candidates from edit or phonetic indexes and ranks them with frequency plus query context; high-confidence suggestions can be applied, while risky changes are shown as `did you mean` or searched in parallel. Intent classification and entity extraction produce confidence and provenance, not hard truth. Structured constraints become typed filters only after units, dates, ranges and negation are resolved. Synonyms and expansions are field- and intent-specific with budgets. I evaluate rewrite precision and recall, exact-token preservation, intent F1, filter accuracy and downstream retrieval on locale and tail slices. Sensitive logs are minimized, access controlled and retained briefly; ambiguous high-cost queries trigger clarification.",
   "keyPoints": [
-    "Exact identifiers should not be “corrected” like prose.",
-    "Filters can improve precision dramatically.",
-    "Log query reformulations as feedback."
+    "Preserve the raw query and annotate every rewrite so failures are reversible and explainable.",
+    "Spelling candidates need contextual ranking; minimum edit distance alone can corrupt valid rare entities.",
+    "Exact identifiers, quotes, exclusions and structured operators require stronger preservation rules than ordinary words.",
+    "Intent and filter predictions should carry confidence and support clarification or parallel retrieval.",
+    "Query logs are biased, sensitive behavioral data and require privacy, security and evaluation discipline."
   ],
   "resources": [
-    "ir-book"
+    "ir-book",
+    "elastic-hybrid",
+    "bm25-robertson"
   ],
   "featured": false,
-  "why": "Query Understanding: Spelling, Intent & Filters is a recurring foundation across data science and machine learning because it affects both theoretical correctness and practical system behavior.",
-  "intuition": "Exact identifiers should not be “corrected” like prose.",
-  "deepDive": "Search quality often improves before retrieval by normalizing queries, correcting spelling, identifying entities/intent and extracting structured filters. Query rewriting must preserve user intent. Filters can improve precision dramatically. Log query reformulations as feedback. The interview-level skill is not merely recalling the definition: explain the assumptions, what diagnostic evidence you would inspect, and what alternative you would choose when those assumptions fail.",
-  "workedExample": "Parse “red M8 bolt 50mm” into lexical terms plus product/color/size filters.",
+  "why": "Users rarely write clean document prose. They enter `zx4817 under 200`, abbreviations, misspellings, partial names, mixed languages and implicit goals. Retrieval cannot match the intended corpus field or apply the correct filter until these signals are interpreted. A good query layer recovers vocabulary and structure, reduces zero results and routes expensive semantic or reranking stages intelligently. A bad one is more dangerous than no rewrite: changing a medication name, legal citation, account identifier or exclusion can return confident but wrong results. Query understanding must therefore balance recall with semantic preservation, use uncertainty explicitly and make transformations observable.",
+  "intuition": "Treat the query as a compact program written by a hurried person. Some characters are content, some express operators, and some are mistakes. The parser first protects literal regions, then proposes interpretations: `under 200` may mean price<200, `last quarter` needs a locale and reference date, and `jaguar` may be an animal or brand. Rather than overwrite the program, produce an analysis record containing original text, normalized tokens, candidate corrections, entities, filters, intent probabilities and warnings. Retrieval can execute the confident parts, search original and corrected forms together, or ask one clarifying question when interpretations lead to substantially different results.",
+  "deepDive": "Query understanding is a probabilistic compiler front end for retrieval. It preserves source text, protects literal spans, proposes spelling and semantic alternatives, classifies useful intents, extracts linked entities and emits typed filters. Every transformation trades recall against the risk of changing meaning, so confidence, provenance, parallel plans and clarification are core features. Separate component metrics plus downstream retrieval and safety evaluation keep convenient rewrites from becoming invisible correctness failures.",
+  "workedExample": "Query `vecotr serch under 200` contains transpositions or omissions and an apparent numeric constraint. Candidates include `vector search` and less likely terms such as `sector`. Corpus frequency plus two-word context favors `vector search`. If the selected catalog has a typed price field and currency context, parse price<200; otherwise expose `under 200` as an unresolved phrase or ask for the dimension. Preserve the raw text and show that correction and filter were inferred.",
   "commonMistakes": [
-    "Using the concept mechanically without checking assumptions or data semantics.",
-    "Reporting one metric/result without examining uncertainty, slices or failure modes."
+    {
+      "misconception": "Always replace a misspelling with the nearest dictionary word.",
+      "correction": "Rare valid names and identifiers can be closer to a frequent wrong word; use context, protection and confidence."
+    },
+    {
+      "misconception": "Intent classification is useful even when every label runs the same search.",
+      "correction": "A taxonomy should correspond to meaningful routing, features or presentation; otherwise it adds failure without benefit."
+    },
+    {
+      "misconception": "An extracted filter is harmless because it makes results precise.",
+      "correction": "A wrong hard filter can eliminate every relevant document. Use typed confidence, confirmation or soft interpretation."
+    },
+    {
+      "misconception": "Query logs are ordinary anonymous text.",
+      "correction": "They can contain identities, health, finances and confidential plans and require minimization, access control and deletion policy."
+    }
   ],
   "followUps": [
-    "What assumptions or limitations does Query Understanding: Spelling, Intent & Filters have?",
-    "How would you validate Query Understanding: Spelling, Intent & Filters on a real dataset?"
+    {
+      "question": "When should correction be automatic?",
+      "answer": "Only when calibrated precision is high and the cost of changing meaning is low; otherwise suggest, search both forms or ask."
+    },
+    {
+      "question": "How do you evaluate query expansion?",
+      "answer": "Measure relevant recall gained, precision lost, expansion size and downstream metrics by query type, with original-query fallback and latency."
+    },
+    {
+      "question": "Why preserve provenance for parsed filters?",
+      "answer": "It lets users and engineers see which span produced a constraint, undo it, audit errors and compare model or rule versions."
+    }
   ],
-  "production": "In production, make assumptions explicit, validate on representative slices, compare with a simple baseline and monitor the signals that can drift.",
+  "production": "Maintain a query-analysis manifest with Unicode and locale rules, tokenizer, protected-pattern library, dictionary and frequencies, spell model and thresholds, synonym graph, segmentation, language and intent models, entity linker, schema allowlist, unit and date resolver, filter grammar, expansion budgets and clarification policy. Log raw queries only where justified and protected; prefer redacted structured traces with strict retention, access and deletion. Golden suites include rare identifiers, names, mixed scripts, typos, negation, quoted phrases, ranges, currencies, relative dates, adversarial operators and ambiguous intent. Monitor component confidence and abstention, harmful correction, exact-token preservation, filter accuracy, zero results, reformulation, accepted suggestions, downstream relevance, latency and clause counts by locale and slice. Shadow new rules, show top transformation diffs, canary, and roll back the manifest without rebuilding unrelated indexes unless analyzer compatibility changed.",
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "Query understanding converts a short, noisy user string plus context into a retrieval plan without silently changing the user's intent. It spans Unicode and locale normalization, tokenization, spelling correction, segmentation, language detection, intent classification, entity and attribute extraction, structured filters, units and dates, synonyms, abbreviations, query expansion, routing and clarification. This chapter develops noisy-channel spelling as candidate generation plus contextual ranking, distinguishes correction from suggestion, and shows how exact identifiers and quoted terms require preservation. It treats intent and filter extraction as uncertain predictions with confidence, provenance and safe fallback, not unquestionable facts. Worked examples parse a misspelled product query and an ambiguous temporal request. The lab implements edit distance, frequency-aware suggestions, quoted/excluded/filter parsing and a small scikit-learn intent classifier, then verifies exact-token protection and deterministic output. Production guidance versions dictionaries and rewrite rules, evaluates changes by error type and locale, protects sensitive query logs, caps expansion, resists operator and injection abuse, and asks for clarification when the cost of a wrong rewrite is high. Good query understanding improves recall while preserving an inspectable route back to the original request.",
+  "prerequisites": [
+    "inverted-index",
+    "classification-metrics",
+    "tokenization"
+  ],
+  "learningObjectives": [
+    "Design a query-analysis pipeline that preserves raw text while producing normalized tokens, entities, filters and intent hypotheses.",
+    "Implement and evaluate spelling correction, segmentation, synonyms and expansion with exact-identifier safeguards.",
+    "Represent intent and structured constraints with confidence, provenance, clarification and fallback behavior.",
+    "Monitor rewrite precision, zero results, reformulation, latency, fairness, privacy and security in production."
+  ],
+  "deepSections": [
+    {
+      "id": "analysis-and-protection",
+      "title": "Normalize text without erasing the evidence needed to interpret it",
+      "body": "Store the raw query and character offsets before Unicode normalization, case handling or tokenization. Locale affects decimal separators, dates, scripts and case; language detection on very short text is uncertain and may need user or tenant context. Protect quoted phrases, escaped characters, negative terms, URLs, email-like strings, model numbers, chemical names and known entities before aggressive stemming or correction. Token graphs can represent alternatives such as compounds or synonyms without selecting one early. Segment concatenated strings using dictionary and language-model evidence, but preserve exact fallback. Map user-facing field names and units to a typed internal schema rather than interpolating raw text into a backend query. Distinguish lexical normalization from semantic rewrite: case folding or Unicode composition is usually low risk, while changing `form` to `from` changes meaning. Emit a structured analysis with transformation type, source span, confidence, model or rule version and protected status so ranking explanations and debugging can reconstruct the path."
+    },
+    {
+      "id": "spelling-and-expansion",
+      "title": "Spelling correction is a noisy-channel ranking problem",
+      "body": "Candidate generation can use Levenshtein or Damerau distance, keyboard adjacency, phonetic keys, character n-gram indexes and observed query-document vocabulary. Ranking combines an error model P(observed|candidate) with candidate prior or contextual probability P(candidate|context). A frequent candidate is not always correct: `pythn` likely means `python`, but a rare surname or SKU should be protected. Whitelist corpus entities, detect mixed alphanumeric patterns and use user-selected locale. Auto-correct only at a precision threshold; otherwise show a suggestion, retrieve original and corrected variants, or ask. Evaluate false corrections separately because their harm can exceed missed corrections. Synonym expansion addresses vocabulary mismatch, but bidirectional synonyms can be wrong: `laptop` may expand to `notebook`, while a technical notebook query may not mean a laptop. Use domain, field, intent and direction-aware rules, cap alternatives, and measure precision. Pseudo-relevance feedback can drift toward an initially wrong topic, so constrain and evaluate it."
+    },
+    {
+      "id": "intent-entities-filters",
+      "title": "Intent and entities turn text into a typed retrieval plan",
+      "body": "Intent taxonomies should correspond to different retrieval, ranking or presentation behavior: exact navigation, informational answer, transaction, troubleshooting or broad exploration. If all intents run the same pipeline, classification adds complexity without value. Train on representative, temporally split queries with hierarchical or multi-label outputs where needs overlap. Report per-class precision, recall, confusion and abstention, not only accuracy. Entity extraction identifies products, people, places, dates and attributes; entity linking maps mentions to canonical IDs while preserving alternatives. Filter parsing resolves ranges, comparison words, units, currency, negation and temporal expressions against a reference time and locale. `under 200` needs a typed numeric field; `not refurbished` is an exclusion; `near Paris` may be a geo constraint or textual preference. A wrong hard filter destroys recall, so uncertain constraints can become soft boosts, chips for confirmation or parallel plans. Validate generated backend queries against an allowlisted schema and parameterized AST, never raw string concatenation."
+    },
+    {
+      "id": "evaluation-and-safety",
+      "title": "Measure transformations by their own accuracy and downstream consequences",
+      "body": "Create labeled sets for spelling errors, valid rare tokens, segmentation, intent, entity spans and links, filter values, negation, locale and ambiguous queries. Report correction precision, coverage and harmful rewrite rate; intent and entity metrics; exact-token preservation; and filter exact match. Then replay retrieval to measure zero-result rate, Recall@K, NDCG, latency and query reformulation. Logs reflect the old system, user exposure and self-selection; clicks and accepted suggestions are not unbiased truth. Online experiments need guardrails for abandonment, safety and high-value exact queries. Query text may contain personal, medical, financial or confidential information. Minimize logging, redact or tokenize where feasible, control access, set retention and deletion, and avoid sending raw queries to unnecessary external services. Cap query length, Boolean clauses, wildcard expansion and synonym fan-out to prevent denial of service. Treat query strings as untrusted data and use typed APIs, not executable expressions."
+    }
+  ],
+  "math": "Levenshtein distance uses D(i,j)=min[D(i-1,j)+1,D(i,j-1)+1,D(i-1,j-1)+I(a_i!=b_j)]. A noisy-channel correction chooses c*=argmax_c P(observed|c)P(c|context), often approximated with edit features, frequency and a language model. An intent classifier estimates P(z|q,context); routing may choose argmax only when max probability exceeds a calibrated threshold. Expected action loss selects a plan a minimizing sum_z P(z|q)L(a,z), which can favor clarification when confident mistakes are costly. Expansion and parsing budgets constrain the number of generated terms and Boolean clauses.",
+  "workedExamples": [
+    {
+      "title": "Protect a rare identifier",
+      "body": "Query `AB-019X` is one edit from a frequent `AB-019`. Auto-correction would select the wrong product. An alphanumeric identifier pattern and exact catalog lookup mark it protected and search the literal first."
+    },
+    {
+      "title": "Clarify ambiguous intent",
+      "body": "Query `jaguar service` could concern a vehicle appointment or animal conservation. If context and results do not separate them confidently, two labeled intent choices are safer than a hidden rewrite."
+    }
+  ],
+  "lab": {
+    "language": "python",
+    "goal": "Implement edit-distance suggestions and typed query parsing, train a small intent classifier, and verify exact-token protection, deterministic correction and safe filter extraction.",
+    "buildIt": "import math,re\ndef levenshtein(a,b):\n    prev=list(range(len(b)+1))\n    for i,ca in enumerate(a,1):\n        cur=[i]\n        for j,cb in enumerate(b,1): cur.append(min(cur[-1]+1,prev[j]+1,prev[j-1]+(ca!=cb)))\n        prev=cur\n    return prev[-1]\ndef protected(token): return bool(re.fullmatch(r'(?=.*[A-Za-z])(?=.*\\d)[A-Za-z0-9-]+',token))\ndef suggest(token,frequencies):\n    if token in frequencies or protected(token): return token\n    return max(frequencies,key=lambda c:(-3*levenshtein(token,c)+math.log1p(frequencies[c]),-len(c),c))\ndef parse_query(text,frequencies):\n    quoted=re.findall(r'\"([^\"]+)\"',text); excluded=re.findall(r'(?<!\\w)-(\\w+)',text); price=re.search(r'\\b(?:under|below|price\\s*<)\\s*[$€£]?\\s*(\\d+(?:\\.\\d+)?)',text.lower())\n    raw=re.findall(r'(?u)\\b[\\w-]+\\b',re.sub(r'\"[^\"]+\"',' ',text)); corrected=[suggest(t.lower(),frequencies) for t in raw if t not in excluded]\n    return {'raw':text,'tokens':corrected,'quoted':quoted,'excluded':excluded,'max_price':float(price.group(1)) if price else None}\nfreq={'vector':100,'search':180,'sector':20,'server':35,'price':80}; parsed=parse_query('vecotr serch under 200 -used \"exact phrase\"',freq)",
+    "useIt": "from sklearn.feature_extraction.text import TfidfVectorizer\nfrom sklearn.linear_model import LogisticRegression\nfrom sklearn.pipeline import make_pipeline\ntrain=['how to reset password','why is account locked','guide to vector search','what is bm25','buy red shoes','order replacement cable','pricing enterprise plan','purchase laptop','github login','open account settings','go to billing portal','documentation home']; labels=['info']*4+['transaction']*4+['navigate']*4\nintent_model=make_pipeline(TfidfVectorizer(ngram_range=(1,2)),LogisticRegression(C=20,random_state=0)).fit(train,labels); intent=intent_model.predict(['buy replacement laptop'])[0]",
+    "verifyIt": "assert levenshtein('serch','search')==1 and levenshtein('vector','vector')==0\nassert parsed['tokens'][:2]==['vector','search']\nassert parsed['max_price']==200 and parsed['excluded']==['used'] and parsed['quoted']==['exact phrase']\nassert suggest('AB-019X',freq)=='AB-019X'\nassert suggest('vector',freq)=='vector'\nassert intent=='transaction' and intent_model.score(train,labels)==1.0\nassert parse_query('plain query',freq)['max_price'] is None\nassert parsed['raw'].startswith('vecotr')",
+    "shipIt": "Version analyzers, dictionaries, intent and entity models, schemas and rewrite thresholds; replay component and downstream slices, shadow transformations with provenance, enforce privacy and expansion limits, and retain original-query fallback and prior rules for rollback."
+  },
+  "exercises": [
+    {
+      "prompt": "Why should `AB-019X` often bypass spelling correction?",
+      "solution": "Its mixed alphanumeric pattern suggests an exact identifier where one-character changes alter identity; literal lookup is safer."
+    },
+    {
+      "prompt": "A filter parser is 95 percent accurate. Is automatic filtering safe?",
+      "solution": "Not necessarily. Consider error cost and calibration by type; uncertain high-impact filters may need confirmation, soft boosts or parallel search."
+    },
+    {
+      "prompt": "What does noisy-channel spelling combine?",
+      "solution": "A model of how the intended candidate could produce the observed error and a prior or contextual probability for the candidate."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "flow",
+      "title": "Query-to-plan analysis",
+      "items": [
+        "Preserve raw query",
+        "Protect literal spans",
+        "Normalize and propose corrections",
+        "Infer intent and entities",
+        "Resolve typed filters",
+        "Retrieve, clarify or run parallel plans"
+      ],
+      "caption": "Transformations remain annotated so uncertain interpretations can be reversed or confirmed.",
+      "afterSection": "analysis-and-protection"
+    },
+    {
+      "type": "compare",
+      "title": "Rewrite confidence actions",
+      "left": {
+        "title": "Low semantic risk",
+        "items": [
+          "Unicode normalization",
+          "Known abbreviation expansion",
+          "Protected exact lookup",
+          "High-precision correction"
+        ]
+      },
+      "right": {
+        "title": "High semantic risk",
+        "items": [
+          "Rare entity replacement",
+          "Ambiguous hard filter",
+          "Negation rewrite",
+          "Uncertain intent routing"
+        ]
+      },
+      "caption": "High-risk transformations favor parallel retrieval, visible suggestions or clarification over silent replacement.",
+      "afterSection": "spelling-and-expansion"
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "ir-book",
+      "contribution": "Grounds token processing, tolerant retrieval, spelling correction, vocabulary construction and query expansion."
+    },
+    {
+      "resource": "elastic-hybrid",
+      "contribution": "Verifies current structured lexical-vector query planning and filter integration context."
+    },
+    {
+      "resource": "bm25-robertson",
+      "contribution": "Grounds how analyzed and expanded query terms enter lexical relevance scoring."
+    }
+  ]
 }

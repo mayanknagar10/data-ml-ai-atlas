@@ -6,53 +6,202 @@
   "roles": [
     "ds"
   ],
-  "interviewAnswer": "TF-IDF weights terms by within-document frequency and corpus rarity. BM25 adds saturation and document-length normalization, making it a strong lexical ranking baseline.",
+  "interviewAnswer": "TF-IDF gives a term more weight when it occurs often in a document but rarely in the collection, then often uses cosine similarity between sparse query and document vectors. BM25 scores each query term with an IDF factor times a saturating TF fraction: tf*(k1+1)/(tf+k1*(1-b+b*dl/avgdl)). k1 controls how quickly repetition saturates and b controls document-length normalization. A common positive IDF is log(1+(N-df+0.5)/(df+0.5)). BM25 usually handles document length and repeated terms better than plain TF-IDF, but both depend critically on the analyzer and corpus snapshot. I tune on representative judged queries, inspect performance by query type, preserve exact identifiers, use BM25F or field boosts deliberately, and never compare raw scores across different queries or index statistics as if they were probabilities.",
   "keyPoints": [
-    "Rare terms carry more discrimination.",
-    "BM25 term-frequency gain saturates.",
-    "Lexical search handles exact names/codes well."
+    "IDF rewards discriminative terms using collection document frequency, not semantic importance in isolation.",
+    "BM25 term frequency saturates, so the tenth repetition adds less evidence than the first few.",
+    "The b parameter corrects length relative to the average indexed document under a field definition.",
+    "Analyzer, field boundaries and corpus statistics are part of the ranking model.",
+    "Lexical scores order candidates for a query; they are not calibrated relevance probabilities."
   ],
   "resources": [
+    "bm25-robertson",
     "ir-book",
     "elastic-bm25"
   ],
   "featured": true,
-  "why": "TF-IDF & BM25 appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
-  "intuition": "Rare terms carry more discrimination.",
-  "deepDive": "TF-IDF weights terms by within-document frequency and corpus rarity. BM25 adds saturation and document-length normalization, making it a strong lexical ranking baseline. BM25 term-frequency gain saturates. Lexical search handles exact names/codes well. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
-  "workedExample": "A query containing a rare error code should strongly match documents containing that exact code.",
+  "why": "Exact lexical evidence solves a large portion of real search. Error codes, chemical names, legal citations, product SKUs and uncommon entities may be represented poorly by dense embeddings but have highly discriminative tokens. TF-IDF and BM25 are fast on inverted indexes, transparent enough to debug term by term, and strong baselines for candidate generation and hybrid systems. Their weaknesses are equally instructive: synonyms do not match automatically, tokenization can destroy identifiers, common but necessary terms receive little weight, and verbose documents can collect accidental matches. BM25 addresses repetition and length but does not understand intent. Mastering the formulas gives a controlled reference against which neural retrieval must demonstrate incremental value, latency and operational cost.",
+  "intuition": "A term is useful when it is surprising in the collection and well supported in a document. Seeing `the` says little because almost every document contains it; seeing a rare model number sharply narrows candidates. Repeating a query term once or twice in a document increases confidence, but repeating it one hundred times should not yield one hundred times the relevance, so BM25 bends the TF curve toward a ceiling. Long documents naturally contain more words and accidental matches, so the length denominator discounts them relative to the field's average length. Setting b to zero removes this length correction; setting it near one applies the full relative-length factor. The final BM25 score is an additive evidence ledger over query terms, not a normalized percentage.",
+  "deepDive": "TF-IDF and BM25 convert term occurrence into additive lexical evidence using three main ideas: rarity across the collection, support within a document, and control for document verbosity. TF-IDF expresses this through sparse vector weighting and normalization; BM25 makes saturation and length correction explicit. The ranking behavior is inseparable from analyzer, fields and corpus statistics, so reliable improvements are measured on representative judged queries and deployed with the compatible index snapshot.",
+  "workedExample": "A collection has N=1000 documents and `hnsw` appears in df=10. Positive BM25 IDF is log(1+(990.5/10.5)) about 4.56. Let k1=1.2, b=0.75, document length equal average length, and tf=3. The saturation factor is 3*2.2/(3+1.2)=1.57, so the term contributes about 7.17. Raising tf from three to six increases the factor only to 1.83, demonstrating diminishing returns rather than doubling the evidence.",
   "commonMistakes": [
-    "Applying the method without checking its assumptions or data-generating process.",
-    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+    {
+      "misconception": "BM25 score 12 means 12 percent or a calibrated probability.",
+      "correction": "It is a query- and corpus-dependent ranking score with no universal probability scale."
+    },
+    {
+      "misconception": "Higher term frequency should increase relevance linearly.",
+      "correction": "BM25 deliberately saturates repeated evidence to reduce verbosity and stuffing effects."
+    },
+    {
+      "misconception": "One global b parameter fixes every field.",
+      "correction": "Fields have different length distributions and meanings; use field-aware modeling and evaluate each configuration."
+    },
+    {
+      "misconception": "Clicks are unbiased relevance labels for tuning.",
+      "correction": "Clicks reflect exposure, position, presentation and the old ranker; use judgments, debiasing or experiments."
+    }
   ],
   "followUps": [
-    "What assumptions does TF-IDF & BM25 make?",
-    "How would you validate or debug TF-IDF & BM25 in practice?"
+    {
+      "question": "What happens when k1 approaches zero?",
+      "answer": "The TF fraction approaches a presence indicator, so additional occurrences provide almost no extra contribution."
+    },
+    {
+      "question": "Why is IDF based on document frequency rather than total term count?",
+      "answer": "Retrieval asks how many documents a term distinguishes; repetition inside a few documents is handled separately by TF."
+    },
+    {
+      "question": "When can TF-IDF outperform BM25?",
+      "answer": "It can on particular corpora or weight choices; neither dominates universally, so compare on the target query and judgment distribution."
+    }
   ],
-  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "production": "Store analyzer and field schema, corpus generation, N, df source, average lengths, IDF convention, k1, b, query-frequency rule, boosts, synonyms and score-combination logic in one ranking manifest. Maintain judged golden queries and slices for exact IDs, phrases, tail entities, verbose queries, multilingual text, empty input and adversarial repetition. Before rollout, rebuild or verify compatible statistics, compare explanations and top-k diffs, measure NDCG/MRR/recall alongside p95/p99 latency, and shadow traffic. Monitor zero results, clicked rank, reformulation, term and length drift, duplicate rate, shard score skew, expansion size and score anomalies without treating behavioral metrics as unbiased labels. Cap token and expansion budgets, preserve security filters, and provide safe exact-match fallbacks. Rollback scorer, analyzer, statistics and index alias as a consistent unit.",
   "lab": {
-    "goal": "Implement a tiny BM25 scorer and compare lexical ranking.",
     "language": "python",
-    "buildIt": "import math,re\ndocs=['red bolt m8 stainless','blue bolt m6 steel','m8 stainless anchor bolt']\nq='m8 stainless bolt'.split()\ntok=[re.findall(r'\\w+',doc.lower()) for doc in docs]\nN=len(tok); avg=sum(map(len,tok))/N\ndef bm25(i,k1=1.5,b=.75):\n    s=0.0\n    for term in q:\n        df=sum(term in x for x in tok)\n        idf=math.log(1+(N-df+.5)/(df+.5))\n        tf=tok[i].count(term)\n        if tf:\n            s+=idf*tf*(k1+1)/(tf+k1*(1-b+b*len(tok[i])/avg))\n    return s\nprint([bm25(i) for i in range(N)])\n",
-    "useIt": "from sklearn.feature_extraction.text import TfidfVectorizer\nfrom sklearn.metrics.pairwise import cosine_similarity\nv=TfidfVectorizer().fit(docs+[' '.join(q)])\nM=v.transform(docs); qq=v.transform([' '.join(q)])\nprint(cosine_similarity(qq,M)[0])\n",
-    "verifyIt": "assert max(range(N),key=bm25) in {0,2}\n",
-    "shipIt": "Keep lexical retrieval as a production baseline even with vectors; exact identifiers, rare codes and filters often benefit from BM25/hybrid search."
-  },
-  "visual": {
-    "type": "flow",
-    "title": "BM25 scoring",
-    "items": [
-      "Query terms",
-      "Term frequency",
-      "Inverse document frequency",
-      "Length normalization",
-      "Document score"
-    ],
-    "caption": "BM25 combines term match strength with rarity and document-length normalization.",
-    "accent": 2,
-    "orientation": "horizontal"
+    "goal": "Implement BM25 scoring, compare sparse TF-IDF rankings, and verify IDF rarity, TF saturation, query-order invariance and numerical safety.",
+    "buildIt": "import math,re\nfrom collections import Counter\ndef tokens(text): return re.findall(r'(?u)\\b\\w+\\b',text.lower())\ndef bm25_scores(query,documents,k1=1.2,b=.75):\n    docs=[tokens(d) for d in documents]; N=len(docs); avgdl=sum(map(len,docs))/N; terms=set(tokens(query)); out=[]\n    df={t:sum(t in d for d in docs) for t in terms}\n    for doc in docs:\n        counts=Counter(doc); score=0.0\n        for t in terms:\n            idf=math.log(1+(N-df[t]+.5)/(df[t]+.5)); tf=counts[t]\n            norm=k1*(1-b+b*len(doc)/avgdl); score+=idf*tf*(k1+1)/(tf+norm) if tf else 0.0\n        out.append(score)\n    return out\ndef saturation(tf,dl,avgdl,k1=1.2,b=.75): return tf*(k1+1)/(tf+k1*(1-b+b*dl/avgdl))\ndocs=['vector search search system','lexical search inverted index','vector database semantic retrieval','search']; query='vector search'\nbm25=bm25_scores(query,docs)",
+    "useIt": "from sklearn.feature_extraction.text import TfidfVectorizer\nfrom sklearn.metrics.pairwise import cosine_similarity\nvectorizer=TfidfVectorizer(); matrix=vectorizer.fit_transform(docs); qvec=vectorizer.transform([query])\ntfidf=cosine_similarity(qvec,matrix).ravel(); tfidf_rank=tfidf.argsort()[::-1].tolist()",
+    "verifyIt": "assert max(range(len(bm25)),key=bm25.__getitem__)==0\nassert bm25_scores('search vector',docs)==bm25\nassert all(math.isfinite(v) and v>=0 for v in bm25)\n# Repetition has diminishing marginal contribution.\ns1,s2,s3=[saturation(t,10,10) for t in (1,2,3)]\nassert (s2-s1)>(s3-s2)>0\nidf_rare=math.log(1+(4-1+.5)/(1+.5)); idf_common=math.log(1+(4-3+.5)/(3+.5)); assert idf_rare>idf_common\nassert tfidf_rank[0]==0 and tfidf[0]>tfidf[3]\nassert bm25_scores('missing',docs)==[0.0]*4",
+    "shipIt": "Version analyzer, fields, statistics snapshot, k1, b and boosts; tune on judged development queries, replay query slices and latency, shadow on a compatible index, and retain prior index plus scorer for atomic rollback."
   },
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "TF-IDF and BM25 are foundational lexical ranking methods that score exact term evidence while discounting ubiquitous words. TF-IDF represents documents and queries as weighted sparse vectors; cosine similarity normalizes their dot product. BM25 instead sums probabilistic term contributions with saturating term frequency and explicit document-length normalization. This chapter derives term frequency, inverse document frequency, cosine scoring, Robertson-style BM25 IDF, k1 saturation and b length correction. It explains tokenization and field effects, query term frequency, BM25F, stop words, rare-term pathologies, score noncomparability across shards or index snapshots, and why parameter tuning must use judged queries rather than arbitrary score intuition. Worked examples calculate IDF and a BM25 contribution. The lab implements BM25 from first principles, compares sparse TF-IDF with scikit-learn, and verifies rare-term weight, diminishing returns, query order invariance and finite scores. Production guidance freezes analyzers, corpus statistics and parameter versions; evaluates relevance, latency and subgroup behavior; and combines lexical scores with filters, business constraints or semantic retrieval without pretending raw scores are calibrated probabilities. Lexical ranking remains hard to beat for identifiers, names, rare entities and exact constraints.",
+  "prerequisites": [
+    "inverted-index",
+    "norms-distances"
+  ],
+  "learningObjectives": [
+    "Compute TF-IDF vectors, cosine similarity, and BM25 term contributions from collection statistics.",
+    "Explain term-frequency saturation, inverse-document-frequency weighting, and document-length normalization.",
+    "Tune and evaluate k1, b, field boosts, analyzers and query expansion without leaking test judgments.",
+    "Diagnose shard-statistic drift, score-scale misuse, spam, vocabulary mismatch and exact-match failures."
+  ],
+  "deepSections": [
+    {
+      "id": "tfidf-vector-space",
+      "title": "TF-IDF turns lexical evidence into a sparse vector geometry",
+      "body": "Raw term frequency tf_{t,d} counts occurrences, but linear counts overreward repetition. Common variants use binary presence, 1+log(tf), or normalized frequency. Document frequency df_t counts documents containing t, and inverse document frequency can be log(N/df_t), often smoothed to handle unseen terms. A document weight is tf-weight times idf; a query receives analogous or asymmetric weighting. Cosine similarity divides the weighted dot product by vector norms, reducing the advantage of longer vectors. Choices matter: sublinear TF, L1 versus L2 normalization, whether IDF is added by one, and query normalization can change rankings. The representation ignores token order unless phrase or proximity features are added. Zero vectors arise after filtering or out-of-vocabulary queries and require explicit fallback. IDF is collection-specific: adding documents changes weights, and comparing a score from one index snapshot or shard with another may be invalid unless statistics and scoring are coordinated."
+    },
+    {
+      "id": "bm25-formula",
+      "title": "BM25 separates rarity, saturation and length correction",
+      "body": "For each query term t, BM25 multiplies IDF(t) by tf_{t,d}(k1+1)/[tf_{t,d}+k1(1-b+b|d|/avgdl)]. When tf is zero, contribution is zero. As tf grows, the fraction approaches k1+1, producing diminishing returns. Larger k1 delays saturation; k1=0 reduces matching to term presence apart from IDF. The b parameter interpolates between no length normalization at zero and full normalization relative to average document length at one. Robertson's original probabilistic IDF can be negative for terms in more than half the collection; common implementations use a nonnegative transformed form such as log(1+(N-df+0.5)/(df+0.5)), so document the exact engine formula. Query term frequency may be ignored for short web queries or modeled with a separate saturation factor. Scores add across terms, implicitly favoring documents covering more discriminative query concepts. BM25 is a family of engineered probabilistic-retrieval approximations, not one universally identical formula."
+    },
+    {
+      "id": "fields-and-tuning",
+      "title": "Fields, analyzers and judged queries determine useful parameters",
+      "body": "A title match and a body match should not necessarily share length statistics or importance. BM25F combines field-specific term frequencies, lengths and boosts before or during saturation. Blindly duplicating title text into the body distorts both frequency and length. Exact keyword fields, shingles, character n-grams, phrase boosts and structured filters can complement analyzed text. Parameter tuning requires a representative query set, relevance judgments and a metric aligned with the surface: NDCG for graded ranked quality, MRR for first-answer tasks, recall for candidate stages, plus latency and coverage. Tune k1, b, field boosts and analyzer changes inside development data; keep a final test and inspect head, tail, navigational, informational, identifier, multilingual and adversarial queries separately. Global averages can hide a disastrous regression on zero-result or safety-critical queries. Search logs are biased by the old ranker and position, so clicks need debiasing or controlled experiments rather than direct labels."
+    },
+    {
+      "id": "failure-and-operations",
+      "title": "Lexical relevance failures often originate outside the formula",
+      "body": "Vocabulary mismatch occurs when user and document use different terms; query expansion, synonyms or hybrid retrieval can help, but expansion may reduce precision. Tokenization can split model numbers, URLs, code and compounds incorrectly. Very rare misspellings can receive huge IDF, while keyword stuffing exploits repeated terms despite saturation. Field-length extremes, duplicate documents and boilerplate contaminate scores. Fresh corpus changes alter df and avgdl; shard-local statistics can cause inconsistent ordering when local top-k lists are merged. Filters applied after retrieving too few candidates can erase recall. Monitor explanations for sampled queries, term and field distributions, zero-result rate, result duplication, score distributions by query, shard disagreement and judged metrics. Protect ranking features against untrusted text and cap pathological expansion. Roll out analyzer or scoring changes through a versioned parallel index or controlled query path because the stored statistics must match the scorer."
+    }
+  ],
+  "math": "A common TF-IDF weight is w_{t,d}=(1+log tf_{t,d})log(N/df_t), and cosine(q,d)=(w_q dot w_d)/(||w_q||||w_d||). One BM25 variant is score(q,d)=sum_{t in q} log(1+(N-df_t+0.5)/(df_t+0.5))*[tf_{t,d}(k1+1)/(tf_{t,d}+k1(1-b+b|d|/avgdl))]. As tf tends to infinity, the TF fraction tends to k1+1. At b=0, length does not affect the denominator; at b=1, it scales fully by |d|/avgdl. Exact smoothing and query-frequency conventions are implementation choices that must be versioned.",
+  "workedExamples": [
+    {
+      "title": "Length normalization",
+      "body": "With k1=1.2, b=0.75 and tf=2, a document at twice the average length has a larger denominator than an average-length document. The same two matches are discounted because verbose text has more opportunities for accidental occurrence."
+    },
+    {
+      "title": "Exact identifier retrieval",
+      "body": "For query `ZX-4817`, an analyzer-preserved identifier field gives an extremely selective exact match. A semantic-only embedding may retrieve descriptions of similar products while missing the requested SKU, so lexical evidence should dominate that intent."
+    }
+  ],
+  "exercises": [
+    {
+      "prompt": "What does b=0 do in BM25?",
+      "solution": "It removes document-length normalization from the TF denominator while retaining TF saturation and IDF."
+    },
+    {
+      "prompt": "Why does repeating a term from tf=20 to tf=21 add little?",
+      "solution": "The BM25 TF fraction is already near its asymptote k1+1, so marginal evidence diminishes."
+    },
+    {
+      "prompt": "Can BM25 scores be compared across two unrelated queries?",
+      "solution": "Not as calibrated relevance or confidence. Query terms and IDFs change the score scale; use ranks or a separately calibrated model for cross-query decisions."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "curve",
+      "title": "BM25 term-frequency saturation",
+      "series": [
+        {
+          "label": "Saturating contribution",
+          "points": [
+            [
+              0.02,
+              0.05
+            ],
+            [
+              0.12,
+              0.38
+            ],
+            [
+              0.25,
+              0.6
+            ],
+            [
+              0.45,
+              0.77
+            ],
+            [
+              0.68,
+              0.87
+            ],
+            [
+              0.95,
+              0.93
+            ]
+          ]
+        }
+      ],
+      "caption": "Conceptual curve: early repetitions add evidence, while later repetitions approach a ceiling controlled by k1.",
+      "afterSection": "bm25-formula"
+    },
+    {
+      "type": "compare",
+      "title": "TF-IDF and BM25",
+      "left": {
+        "title": "TF-IDF cosine",
+        "items": [
+          "Sparse vector geometry",
+          "Configurable TF and IDF",
+          "Vector norm normalization",
+          "Transparent linear weights"
+        ]
+      },
+      "right": {
+        "title": "BM25",
+        "items": [
+          "Additive term evidence",
+          "Explicit TF saturation",
+          "Relative length correction",
+          "Field-aware extensions"
+        ]
+      },
+      "caption": "Both depend on the same analyzed vocabulary but control repetition and length differently.",
+      "afterSection": "tfidf-vector-space"
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "bm25-robertson",
+      "contribution": "Grounds probabilistic relevance, BM25 derivation, saturation, length normalization and variants."
+    },
+    {
+      "resource": "ir-book",
+      "contribution": "Grounds TF-IDF, vector-space scoring, normalization and efficient ranked retrieval."
+    },
+    {
+      "resource": "elastic-bm25",
+      "contribution": "Verifies practical engine conventions and explainable BM25 scoring behavior."
+    }
+  ]
 }

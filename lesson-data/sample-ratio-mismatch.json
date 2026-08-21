@@ -166,9 +166,9 @@
   "lab": {
     "language": "python",
     "goal": "Implement a multinomial SRM check, compare it with SciPy, and localize a treatment-specific count loss across time slices.",
-    "buildIt": "from math import exp\ndef srm_stat(observed,proportions):\n    total=sum(observed); expected=[total*p for p in proportions]\n    stat=sum((o-e)**2/e for o,e in zip(observed,expected))\n    return stat,expected\n# For two arms, chi-square survival is erfc(sqrt(x/2)).\nfrom math import erfc,sqrt\ndef srm_two_arm(observed,proportions=(0.5,0.5)):\n    stat,expected=srm_stat(observed,proportions)\n    return stat,erfc(sqrt(stat/2)),expected\nglobal_report=srm_two_arm([10000,9700])\nslices={'before':[5000,5002],'after':[5000,4698]}\nslice_reports={k:srm_two_arm(v) for k,v in slices.items()}",
-    "useIt": "from scipy.stats import chisquare\nscipy_result=chisquare([10000,9700],f_exp=global_report[2])",
-    "verifyIt": "stat,pvalue,expected=global_report\nassert abs(sum(expected)-19700)<1e-12\nassert abs(stat-scipy_result.statistic)<1e-12\nassert abs(pvalue-scipy_result.pvalue)<1e-12\nassert slice_reports['before'][1]>0.5\nassert slice_reports['after'][1]<1e-4\nassert srm_two_arm([9000,1000],(0.9,0.1))[1]>0.99\nassert pvalue<1e-6",
+    "buildIt": "from math import exp\ndef srm_stat(observed,proportions):\n    total=sum(observed); expected=[total*p for p in proportions]\n    stat=sum((o-e)**2/e for o,e in zip(observed,expected))\n    return stat,expected\n# For two arms, chi-square survival is erfc(sqrt(x/2)).\nfrom math import erfc,sqrt\ndef srm_two_arm(observed,proportions=(0.5,0.5)):\n    stat,expected=srm_stat(observed,proportions)\n    return stat,erfc(sqrt(stat/2)),expected\nglobal_report=srm_two_arm([10000,9300])\nslices={'before':[5000,5002],'after':[5000,4298]}\nslice_reports={k:srm_two_arm(v) for k,v in slices.items()}",
+    "useIt": "from scipy.stats import chisquare\nscipy_result=chisquare([10000,9300],f_exp=global_report[2])",
+    "verifyIt": "stat,pvalue,expected=global_report\nassert abs(sum(expected)-19300)<1e-12\nassert abs(stat-scipy_result.statistic)<1e-12\nassert abs(pvalue-scipy_result.pvalue)<1e-12\nassert slice_reports['before'][1]>0.5\nassert slice_reports['after'][1]<1e-6\nassert srm_two_arm([9000,1000],(0.9,0.1))[1]>0.99\nassert pvalue<1e-6",
     "shipIt": "Run unique-unit SRM at every evidence stage against versioned ramp expectations, gate effect visibility on trust, alert with onset and slices, preserve forensic snapshots, and restart rather than reweight when selective loss is plausible."
   },
   "sourceNotes": [

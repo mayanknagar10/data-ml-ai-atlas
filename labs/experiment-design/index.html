@@ -10,7 +10,7 @@ def blocked_assign(rows,namespace):
         ordered=sorted(members,key=lambda r:score(namespace,r[&#x27;id&#x27;]))
         for i,row in enumerate(ordered):assignment[row[&#x27;id&#x27;]]=i%2
     return assignment
-rows=[{&#x27;id&#x27;:i,&#x27;block&#x27;:&#x27;high&#x27; if i%3==0 else &#x27;low&#x27;,&#x27;baseline&#x27;:10+(i%3)*4} for i in range(120)]
+rows=[{&#x27;id&#x27;:i,&#x27;block&#x27;:f&#x27;baseline-{i%3}&#x27;,&#x27;baseline&#x27;:10+(i%3)*4} for i in range(120)]
 assignment=blocked_assign(rows,&#x27;exp-v1&#x27;)</pre></section><section><h2>2 · Use it</h2><p>The same idea through a common library or practical API.</p><pre>import pandas as pd
 df=pd.DataFrame(rows); df[&#x27;treatment&#x27;]=df[&#x27;id&#x27;].map(assignment)
 block_counts=df.groupby([&#x27;block&#x27;,&#x27;treatment&#x27;]).size().unstack(fill_value=0)

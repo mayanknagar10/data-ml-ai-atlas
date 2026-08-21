@@ -8,33 +8,173 @@
     "mle",
     "ds"
   ],
-  "interviewAnswer": "PAC learning formalizes whether enough samples let a learner find, with high probability, a hypothesis whose true error is approximately small.",
+  "interviewAnswer": "A class is PAC learnable if an algorithm uses a number of samples polynomial in relevant complexity, 1/epsilon and log(1/delta), and with probability at least 1-delta returns a hypothesis whose true error is at most epsilon in the realizable case. Agnostic PAC instead competes with the best hypothesis in H up to epsilon. For finite H, a consistent realizable learner needs on the order of [log|H|+log(1/delta)]/epsilon examples; agnostic uniform convergence scales roughly [log|H|+log(1/delta)]/epsilon squared. The guarantee is over a random sample from the assumed distribution, often uniformly for all distributions. It says nothing automatic about shifted deployment, dependent observations, computational tractability, fairness or calibration. I use the framework to explain capacity and confidence, then test the actual data-generating and selection process.",
   "keyPoints": [
-    "ε accuracy",
-    "δ confidence",
-    "Sample complexity",
-    "Learnability"
+    "Probably refers to sample randomness delta; approximately refers to population error epsilon.",
+    "Realizable PAC assumes a zero-error target in the class; agnostic PAC competes with the class optimum.",
+    "Confidence costs logarithmically, accuracy typically costs 1/epsilon or 1/epsilon squared.",
+    "Information-theoretic learnability does not imply an efficient algorithm.",
+    "Distribution-free guarantees still rely on i.i.d. sampling and a stable target protocol."
   ],
   "resources": [
+    "valiant-pac",
     "stanford-cs229"
   ],
   "featured": false,
-  "why": "PAC provides a clean vocabulary for learnability and sample complexity.",
-  "intuition": "The question is how much data is needed so a learned model is likely to be good enough, not whether it can be perfect.",
-  "deepDive": "Bounds connect hypothesis complexity, desired error ε, confidence δ and sample size. Classical bounds can be loose but reveal qualitative dependencies.",
-  "math": "",
-  "code": "",
+  "why": "Learning claims need quantifiers. Saying a model `usually generalizes` leaves unstated the target accuracy, confidence, class, sample mechanism and distribution. PAC isolates these components and shows how capacity determines the data needed for selection. It also clarifies several distinct failures: a concept may not be representable, samples may be insufficient, or finding the good hypothesis may be computationally hard. Real production data violate many clean assumptions, but the discipline remains useful: write what randomness a confidence claim covers, what population error means and what changes invalidate it.",
+  "intuition": "Imagine a box of hypotheses, one of which labels every example correctly. Any bad hypothesis with true error more than epsilon has at most probability (1-epsilon)^n of making zero mistakes on n independent samples. If the box is finite, sum that chance over every bad hypothesis. Choose n so the total is below delta. Then with probability at least 1-delta, no bad hypothesis remains consistent, so any consistent learner succeeds. More hypotheses require only logarithmically more samples in this simple argument, but demanding half the error roughly doubles the realizable sample need and quadruples the agnostic concentration need.",
+  "deepDive": "PAC learning formalizes learnability through explicit accuracy and confidence parameters. Finite realizable classes yield a simple consistency bound, while agnostic learning pays a square in accuracy to compare with the best class member. Capacity and sample complexity are only part of the story: representation, computation, sampling assumptions and deployment stability determine whether the guarantee maps to a real system.",
+  "math": "Realizable PAC requires P_S[R_D(A(S))<=epsilon]>=1-delta. For finite H and a consistent learner, P(any bad h consistent)<=|H|(1-epsilon)^n<=|H|e^{-epsilon n}; thus n>=[ln|H|+ln(1/delta)]/epsilon suffices. In finite-class agnostic ERM, a typical bound is sup_h|R-Rhat|<=sqrt([ln(2|H|/delta)]/(2n)), leading to sample complexity O([ln|H|+ln(1/delta)]/epsilon^2) for excess error epsilon. Efficient learnability also bounds runtime polynomially.",
   "commonMistakes": [
-    "Treating PAC bounds as exact data calculators.",
-    "Ignoring IID-like assumptions."
+    {
+      "misconception": "Probably means the model is correct on most examples.",
+      "correction": "Probability 1-delta is over training-sample randomness; approximately epsilon controls population error."
+    },
+    {
+      "misconception": "Distribution-free means no i.i.d. assumption.",
+      "correction": "It means the result holds for any fixed distribution under the stated sampling protocol, usually i.i.d."
+    },
+    {
+      "misconception": "PAC learnable means efficiently trainable.",
+      "correction": "Sample complexity and computational complexity are distinct unless efficient learnability is required."
+    },
+    {
+      "misconception": "A classical bound certifies production under drift.",
+      "correction": "Its guarantee targets the assumed distribution and protocol; distribution shift requires new assumptions and evidence."
+    }
   ],
   "followUps": [
-    "Realizable vs agnostic PAC?",
-    "How does VC dimension enter?"
+    {
+      "question": "What changes from realizable to agnostic PAC?",
+      "answer": "The learner competes with the best H risk instead of assuming a perfect member, and typical accuracy dependence becomes 1/epsilon squared."
+    },
+    {
+      "question": "Why does finite-class capacity enter as log|H|?",
+      "answer": "A union bound sums failure probabilities across hypotheses, and solving the exponential concentration inequality takes a logarithm."
+    },
+    {
+      "question": "What is improper learning?",
+      "answer": "The learner may output a hypothesis outside the reference concept or hypothesis class while still meeting the risk guarantee."
+    }
   ],
-  "production": "Use theory for intuition and empirical validation for actual deployment decisions.",
-  "workedExample": "A simpler class may need fewer samples to control generalization but can have more approximation bias.",
+  "production": "For any theoretical guarantee, store the exact hypothesis or algorithm class, loss bound, realizability or noise condition, independent sampling unit, distribution claim, epsilon, delta, sample count and computational assumption. Do not quote a bound after adaptive class selection without accounting for that selection. In empirical validation, group dependent records, use mature labels and a temporal or external test, report uncertainty and minimum detectable practical effects, and preserve an experiment ledger. Monitor deployment loss, coverage and slices for evidence that the fixed-distribution abstraction has failed. PAC parameters are not substitutes for safety or fairness thresholds. Keep theoretical derivations and executable checks versioned with the model card so a change in class, sampling or loss invalidates the old claim visibly.",
+  "workedExample": "A finite class has 1000 hypotheses, realizability holds, epsilon=0.05 and delta=0.01. The consistency bound gives n>=[ln1000+ln100]/0.05, about 231 examples. This means the probability that any hypothesis with more than five percent true error fits all examples is at most one percent. It does not mean every run needs exactly 231 samples or that shifted deployment error is below five percent.",
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "Probably Approximately Correct learning turns generalization into a quantified contract: with probability at least 1-delta over a random training sample, the learned hypothesis has population error at most epsilon, or excess error at most epsilon in agnostic settings. This chapter defines instance space, concept and hypothesis classes, unknown data distribution, learner, realizable and agnostic cases, sample complexity and efficient learnability. It derives finite-class bounds with union and Hoeffding arguments, explains how logarithmic confidence and capacity enter, and distinguishes information-theoretic sample sufficiency from computational feasibility. It covers classification noise, misspecification, improper learning, distribution dependence and modern practical limits. A worked example sizes a finite threshold class. The lab computes a realizable finite-class bound and simulates consistent threshold learning, verifying failure probability and monotonicity in epsilon, delta and class size. Production guidance uses PAC concepts to reason about capacity and confidence but validates real dependencies, shift, adaptive tuning and effect sizes directly. PAC is a family of mathematical learning models, not a certificate automatically attached to any trained model.",
+  "prerequisites": [
+    "empirical-risk-minimization",
+    "clt"
+  ],
+  "learningObjectives": [
+    "State PAC guarantees with correct quantifiers over distributions, targets, samples and learner randomness.",
+    "Derive finite-class sample bounds in realizable and agnostic settings.",
+    "Separate sample complexity, representation or approximation and computational efficiency.",
+    "Relate epsilon-delta theory to honest validation while recognizing dependence, shift and adaptive-selection limits."
+  ],
+  "deepSections": [
+    {
+      "id": "quantifiers-model",
+      "title": "PAC guarantees are defined by their quantifier order",
+      "body": "Let X be an instance space, C a target concept class, H a hypothesis class and D an unknown distribution over X. In realizable binary PAC, for every target c in C, every D, and epsilon,delta in (0,1), a learner receiving i.i.d. labeled examples outputs h such that P_D[h(X)!=c(X)]<=epsilon with probability at least 1-delta over the sample and learner randomness. Distribution-free means the guarantee holds for every D, not that data have no distribution. Proper learning requires h in C or H; improper learning may output elsewhere. Efficient PAC additionally requires runtime polynomial in representation size and accuracy or confidence parameters. Quantifiers matter: selecting epsilon after seeing test outcomes or promising a result only averaged over convenient targets is different. In regression or unbounded losses, PAC-style guarantees need adapted loss and tail assumptions. Stateful, adaptive or dependent sampling needs different theory."
+    },
+    {
+      "id": "finite-realizable",
+      "title": "Consistency plus a union bound learns finite realizable classes",
+      "body": "Assume c belongs to finite H and the learner returns any h with zero empirical error. A bad h with true error greater than epsilon is consistent on n independent examples with probability at most (1-epsilon)^n<=exp(-epsilon n). By a union bound, probability that any bad h remains consistent is at most |H|exp(-epsilon n). Setting this below delta gives n>=[ln|H|+ln(1/delta)]/epsilon. The result does not say the bound is tight for every class or distribution, and it assumes a consistent hypothesis can be found. Occam-style bounds replace class count with description length. Infinite classes need a finite capacity measure such as VC dimension. Confidence is cheap because ln(1/delta) grows slowly; very small epsilon is expensive. If labels contain noise or the target is outside H, no consistent hypothesis may exist and this argument fails."
+    },
+    {
+      "id": "agnostic-noise",
+      "title": "Agnostic learning competes with the best available hypothesis",
+      "body": "When labels may be noisy or H misspecified, define h*=argmin_H R(h) and require R(hhat)<=R(h*)+epsilon with high probability. Uniform Hoeffding bounds over finite H give deviations on the order sqrt([ln|H|+ln(1/delta)]/n), yielding n on the order [ln|H|+ln(1/delta)]/epsilon^2. The guarantee controls excess zero-one risk, not Bayes regret outside H. Different noise models, including classification noise or Massart and Tsybakov conditions, permit sharper rates. Surrogate-loss ERM needs calibration to translate surrogate excess risk to classification risk. Active learning, membership queries and semi-supervision change the information protocol and can change complexity. Always name the learning setting instead of transferring a clean realizable rate to noisy operational labels."
+    },
+    {
+      "id": "limits-practice",
+      "title": "Sample guarantees do not cover optimization, shift or adaptive validation",
+      "body": "A class can be sample-learnable while empirical optimization is computationally intractable. Conversely, a practical optimizer may work on benign distributions without a worst-case PAC guarantee. Classical bounds can be numerically loose but still reveal dependence on complexity, accuracy and confidence. Deployment differs when users repeat, labels arrive selectively, policies affect examples or the distribution shifts. Hyperparameter searches reuse validation data and expand the effective learner. PAC does not guarantee calibration, subgroup performance, robustness, privacy or causal validity. Translate the mindset into practice by defining a prediction population and bounded loss, grouping independent units, reserving temporal tests, reporting confidence intervals and capacity choices, limiting adaptive test access and monitoring post-launch shift. Use theory as a structural guide rather than a ceremonial bound."
+    }
+  ],
+  "workedExamples": [
+    {
+      "title": "Confidence scaling",
+      "body": "Changing delta from 0.05 to 0.005 adds ln10 divided by epsilon samples in the finite realizable bound, not a tenfold multiplier."
+    },
+    {
+      "title": "Agnostic penalty",
+      "body": "If irreducible or misspecification error prevents consistency, uniform deviation must be small enough to compare empirical and best class risk, producing the characteristic 1/epsilon squared rate."
+    }
+  ],
+  "lab": {
+    "language": "python",
+    "goal": "Compute finite-class PAC sample bounds, simulate consistent threshold learning, and verify monotonic dependence on epsilon, delta and class size.",
+    "buildIt": "import math\nimport numpy as np\ndef realizable_bound(class_size,epsilon,delta):\n    if class_size<1 or not 0<epsilon<1 or not 0<delta<1: raise ValueError('invalid PAC inputs')\n    return math.ceil((math.log(class_size)+math.log(1/delta))/epsilon)\ndef learn_threshold(x,y,candidates):\n    errors=[np.mean((x>=t).astype(int)!=y) for t in candidates]; return candidates[int(np.argmin(errors))]\nrng=np.random.default_rng(12); candidates=np.linspace(0,1,101); target=.6; epsilon=.1; delta=.05; n=realizable_bound(len(candidates),epsilon,delta)\nfailures=0; trials=500\nfor _ in range(trials):\n    x=rng.uniform(size=n); y=(x>=target).astype(int); t=learn_threshold(x,y,candidates); failures+=abs(t-target)>epsilon\nfailure_rate=failures/trials",
+    "useIt": "from scipy.stats import beta\n# A conservative beta-binomial interval summarizes observed simulation uncertainty.\nupper_failure=float(beta.ppf(.975,failures+1,trials-failures+1))",
+    "verifyIt": "assert n==math.ceil((math.log(101)+math.log(20))/.1)\nassert failure_rate<=delta and upper_failure<.08\nassert realizable_bound(1000,.05,.01)==math.ceil((math.log(1000)+math.log(100))/.05)\nassert realizable_bound(1000,.025,.01)>realizable_bound(1000,.05,.01)\nassert realizable_bound(1000,.05,.001)>realizable_bound(1000,.05,.01)\nassert realizable_bound(10000,.05,.01)>realizable_bound(1000,.05,.01)\ntry:\n    realizable_bound(0,.1,.1)\n    raise AssertionError('expected invalid class')\nexcept ValueError:\n    pass",
+    "shipIt": "Record the population, loss, class, assumptions, epsilon and delta; keep validation independent and group-aware, track adaptive selections and shift, and treat bounds as scoped theoretical evidence alongside observed deployment risk."
+  },
+  "exercises": [
+    {
+      "prompt": "What does delta=0.05 represent?",
+      "solution": "At most five percent probability over the random training procedure that the stated error guarantee fails, under assumptions."
+    },
+    {
+      "prompt": "Why is agnostic sample complexity often quadratic in 1/epsilon?",
+      "solution": "Concentration of empirical risk around true risk has square-root n behavior, so resolving an epsilon gap needs order 1/epsilon squared samples."
+    },
+    {
+      "prompt": "Does a small finite-class bound ensure the ERM can be found efficiently?",
+      "solution": "No. It gives information-theoretic sample sufficiency; searching the class may still be computationally hard."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "flow",
+      "title": "PAC quantifiers",
+      "items": [
+        "Choose any target and distribution",
+        "Draw random training sample",
+        "Run learner",
+        "With probability at least 1-delta",
+        "Return population error within epsilon"
+      ],
+      "caption": "Accuracy and confidence refer to different layers of randomness and error.",
+      "afterSection": "quantifiers-model"
+    },
+    {
+      "type": "compare",
+      "title": "Two PAC settings",
+      "left": {
+        "title": "Realizable",
+        "items": [
+          "Perfect target in class",
+          "Consistent learner",
+          "Absolute error epsilon",
+          "Often 1/epsilon samples"
+        ]
+      },
+      "right": {
+        "title": "Agnostic",
+        "items": [
+          "Noise or misspecification",
+          "Compete with best in H",
+          "Excess error epsilon",
+          "Often 1/epsilon squared"
+        ]
+      },
+      "caption": "Do not apply a realizable consistency bound when no perfect hypothesis exists.",
+      "afterSection": "agnostic-noise"
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "valiant-pac",
+      "contribution": "Grounds the computational theory of learnable concepts and the origin of PAC-style analysis."
+    },
+    {
+      "resource": "stanford-cs229",
+      "contribution": "Provides accessible finite-class, uniform-convergence and VC-based PAC derivations."
+    }
+  ]
 }
