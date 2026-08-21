@@ -1,0 +1,40 @@
+{
+  "slug": "regularization-capacity",
+  "title": "Regularization as Capacity Control",
+  "module": "learning-theory",
+  "priority": "high",
+  "roles": [
+    "all"
+  ],
+  "interviewAnswer": "Regularization penalizes or constrains effective model complexity, often trading a little training fit for better generalization when variance is high.",
+  "keyPoints": [
+    "L1/L2",
+    "Implicit regularization",
+    "Early stopping",
+    "Bias-variance"
+  ],
+  "resources": [
+    "stanford-cs229",
+    "isl",
+    "d2l"
+  ],
+  "featured": false,
+  "why": "Regularization is a general principle spanning linear models, trees and deep networks.",
+  "intuition": "When many solutions fit training data, regularization encodes a preference for ones expected to generalize better.",
+  "deepDive": "Explicit penalties add λΩ(θ) to empirical risk; architecture, augmentation, optimization and early stopping can also create implicit biases.",
+  "math": "",
+  "code": "",
+  "commonMistakes": [
+    "Equating regularization only with dropout.",
+    "Assuming stronger regularization always helps."
+  ],
+  "followUps": [
+    "Explicit vs implicit regularization?",
+    "How does λ change bias/variance?"
+  ],
+  "production": "Tune against representative validation and reassess as the data distribution evolves.",
+  "workedExample": "Ridge shrinks coefficients; Lasso can zero some coefficients.",
+  "editorial": {
+    "status": "summary"
+  }
+}

@@ -1,0 +1,39 @@
+{
+  "slug": "responsible-ai",
+  "title": "Responsible AI: Risk, Impact & Governance",
+  "module": "ai-safety",
+  "priority": "high",
+  "roles": [
+    "ds",
+    "mle",
+    "aie"
+  ],
+  "interviewAnswer": "Responsible AI means identifying who can be harmed, how failures are measured, what human oversight exists, and how risks are monitored throughout the lifecycle. I treat it as an engineering requirement, not a final compliance checklist.",
+  "keyPoints": [
+    "stakeholders",
+    "risk assessment",
+    "human oversight",
+    "lifecycle monitoring"
+  ],
+  "resources": [
+    "nist-ai-rmf",
+    "google-rules-ml"
+  ],
+  "featured": true,
+  "why": "Model quality metrics do not capture every business, legal or societal failure mode. High-stakes systems need explicit risk ownership.",
+  "intuition": "Ask not only “does it work?” but “for whom can it fail, what happens when it fails, and who can detect/override it?”",
+  "deepDive": "A practical lifecycle includes mapping intended use/misuse, measuring risk, documenting limitations, testing subgroups/edge cases, governance and monitoring after deployment. Frameworks such as NIST AI RMF help organize this work.",
+  "workedExample": "For a recommendation system, measure not only ranking quality but also exposure concentration, subgroup performance, feedback-loop effects and whether users can understand or override consequential recommendations.",
+  "commonMistakes": [
+    "Treating fairness/safety as a one-time pre-launch test.",
+    "Assuming a high aggregate metric implies low risk for every subgroup/use case."
+  ],
+  "followUps": [
+    "What belongs in a model card?",
+    "When should a human stay in the loop?"
+  ],
+  "production": "Production systems need incident response, audit trails, explicit fallback behavior and ownership for model-risk decisions.",
+  "editorial": {
+    "status": "summary"
+  }
+}

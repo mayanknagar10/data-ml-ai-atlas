@@ -1,0 +1,41 @@
+{
+  "slug": "multimodal-fundamentals",
+  "title": "Multimodal AI Fundamentals & Fusion",
+  "module": "multimodal",
+  "priority": "high",
+  "roles": [
+    "aie",
+    "mle",
+    "cv",
+    "as"
+  ],
+  "interviewAnswer": "Multimodal models combine information from different modalities such as text, images, audio or video. The core problems are representation, alignment and fusion: encode each modality, place or project representations into a compatible space, and let the model combine them for prediction or generation.",
+  "keyPoints": [
+    "representation",
+    "alignment",
+    "fusion",
+    "modality imbalance"
+  ],
+  "resources": [
+    "hf-vlm-course",
+    "hf-multimodal-transformers"
+  ],
+  "featured": false,
+  "why": "Modern AI systems increasingly accept image, text and audio together; architecture questions often reduce to where and how modalities interact.",
+  "intuition": "Different sensors speak different languages. The model needs translators for each modality and a meeting room where their representations can interact.",
+  "deepDive": "Fusion can happen early at token/feature level, through cross-attention/joint attention, or late by combining independent predictions. Training objectives may be contrastive, generative or matching/alignment based. Challenges include unequal information content, missing modalities, temporal/spatial alignment and one modality dominating the prediction.",
+  "workedExample": "For document question answering, a vision encoder represents page regions and a language model represents the question; cross-modal attention lets question tokens retrieve relevant visual/text regions.",
+  "commonMistakes": [
+    "Assuming concatenating embeddings is always sufficient fusion.",
+    "Ignoring missing/noisy modalities and modality dominance."
+  ],
+  "followUps": [
+    "Early vs late fusion?",
+    "How do you handle missing modalities?",
+    "What is cross-attention?"
+  ],
+  "production": "Monitor each modality independently, validate preprocessing contracts and design fallbacks when one modality is missing or corrupted.",
+  "editorial": {
+    "status": "summary"
+  }
+}

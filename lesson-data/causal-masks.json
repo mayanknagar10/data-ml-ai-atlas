@@ -1,0 +1,42 @@
+{
+  "slug": "causal-masks",
+  "title": "Causal Masks vs Bidirectional Attention",
+  "module": "transformers",
+  "priority": "high",
+  "roles": [
+    "aie",
+    "mle",
+    "as"
+  ],
+  "interviewAnswer": "Causal masks prevent tokens from attending to future positions for autoregressive next-token prediction; bidirectional encoders can attend to both sides under different objectives.",
+  "keyPoints": [
+    "Causal mask",
+    "Bidirectional context",
+    "Triangular mask",
+    "No future leakage"
+  ],
+  "resources": [
+    "stanford-cs224n",
+    "stanford-cs336",
+    "hf-llm"
+  ],
+  "featured": false,
+  "why": "Masking determines what information a token is allowed to use.",
+  "intuition": "A next-token model cannot peek at the answer to its right.",
+  "deepDive": "Causal attention sets future logits to -∞ before softmax; padding masks solve a different batching problem.",
+  "math": "",
+  "code": "",
+  "commonMistakes": [
+    "Confusing causal and padding masks.",
+    "Training autoregressive objectives with future leakage."
+  ],
+  "followUps": [
+    "How does BERT differ?",
+    "How does masking interact with KV cache?"
+  ],
+  "production": "Mask bugs can silently leak labels or break variable-length serving.",
+  "workedExample": "When predicting “sat” in “the cat sat”, the model can attend to “the cat” but not future tokens.",
+  "editorial": {
+    "status": "summary"
+  }
+}

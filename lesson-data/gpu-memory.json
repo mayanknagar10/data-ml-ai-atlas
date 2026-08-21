@@ -1,0 +1,51 @@
+{
+  "slug": "gpu-memory",
+  "title": "GPU Memory: Parameters, Activations & KV Cache",
+  "module": "performance",
+  "priority": "high",
+  "roles": [
+    "mle",
+    "aie",
+    "cv"
+  ],
+  "interviewAnswer": "GPU memory is consumed by parameters, activations, gradients, optimizer states and temporary workspaces; LLM inference also spends heavily on KV cache. I estimate which term dominates before deciding between smaller batches, checkpointing, quantization or sharding.",
+  "keyPoints": [
+    "weights",
+    "activations",
+    "optimizer states",
+    "KV cache"
+  ],
+  "resources": [
+    "pytorch-performance",
+    "hf-inference-opt"
+  ],
+  "featured": false,
+  "why": "Many “out of memory” problems are solvable without buying a bigger GPU if you understand which memory term is growing.",
+  "intuition": "Think of VRAM as a budget shared by static model weights and dynamic state that grows with batch/sequence/image size.",
+  "deepDive": "Training stores much more than weights because backward needs activations and optimizers may keep multiple state tensors. Activation checkpointing trades compute for memory. During LLM generation, KV cache scales with layers × sequence length × batch.",
+  "workedExample": "Halving weight precision may not fix an OOM caused by huge activations from 3D images; reducing crop/batch size or checkpointing may matter more.",
+  "commonMistakes": [
+    "Estimating memory from checkpoint file size only.",
+    "Blaming model parameters when activations or KV cache dominate."
+  ],
+  "followUps": [
+    "What does activation checkpointing trade?",
+    "Why does long-context LLM serving consume so much memory?"
+  ],
+  "production": "Log peak memory by workload class and set admission limits before the runtime crashes under unusually long/large requests.",
+  "visual": {
+    "type": "layers",
+    "title": "GPU memory budget",
+    "items": [
+      "Model parameters",
+      "Optimizer states",
+      "Gradients",
+      "Activations / KV cache",
+      "Temporary buffers"
+    ],
+    "caption": "Training memory includes far more than model weights; serving memory is often dominated by weights and KV cache."
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

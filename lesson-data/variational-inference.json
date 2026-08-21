@@ -1,0 +1,43 @@
+{
+  "slug": "variational-inference",
+  "title": "Variational Inference",
+  "module": "probabilistic-ml",
+  "priority": "high",
+  "roles": [
+    "as",
+    "aie",
+    "mle",
+    "ds"
+  ],
+  "interviewAnswer": "Variational inference converts difficult posterior inference into optimization: choose a tractable q(z) and optimize it to approximate the true posterior, commonly by maximizing the ELBO.",
+  "keyPoints": [
+    "Approximate posterior",
+    "ELBO",
+    "KL divergence",
+    "Mean-field"
+  ],
+  "resources": [
+    "stanford-cs228",
+    "probml-book",
+    "d2l"
+  ],
+  "featured": false,
+  "why": "VI is central to VAEs and scalable Bayesian models.",
+  "intuition": "Instead of sampling indefinitely from a hard posterior, fit a simpler distribution that approximates it.",
+  "deepDive": "The ELBO contains an expected data-fit term minus KL(q||prior) and lower-bounds log evidence. The approximation family itself can limit posterior quality.",
+  "math": "",
+  "code": "",
+  "commonMistakes": [
+    "Calling ELBO exact log likelihood.",
+    "Ignoring approximation-family bias."
+  ],
+  "followUps": [
+    "Mean-field VI?",
+    "Why reverse KL?"
+  ],
+  "production": "VI can be fast but may underestimate uncertainty; validate posterior predictive behavior.",
+  "workedExample": "A VAE encoder outputs q(z|x) parameters and trains via an ELBO rather than computing p(z|x) exactly.",
+  "editorial": {
+    "status": "summary"
+  }
+}

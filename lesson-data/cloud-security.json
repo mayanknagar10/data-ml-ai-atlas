@@ -1,0 +1,44 @@
+{
+  "slug": "cloud-security",
+  "title": "IAM, Secrets & Least Privilege",
+  "module": "cloud",
+  "priority": "high",
+  "roles": [
+    "mle",
+    "aie",
+    "de"
+  ],
+  "interviewAnswer": "Production services should receive only the permissions they need, with credentials kept in secret-management mechanisms rather than source code or images. Identity and network boundaries are part of ML system design.",
+  "keyPoints": [
+    "Least privilege",
+    "Roles",
+    "Secrets",
+    "Auditability"
+  ],
+  "resources": [
+    "aws-ml",
+    "azure-ml",
+    "docker",
+    "aws-sagemaker"
+  ],
+  "featured": false,
+  "why": "Security is a system-design expectation: models and data often access sensitive storage, APIs and credentials.",
+  "intuition": "Least privilege means every user/service gets only the permissions needed, for only as long and narrow a scope as practical. Secrets should be injected securely, not baked into code/images.",
+  "deepDive": "Use workload identities/roles rather than long-lived static keys where possible. Separate authentication (who are you?) from authorization (what may you do?). Scope object/container/model registry permissions, encrypt data in transit/at rest, rotate secrets and log access. Network controls and private endpoints may reduce exposure. Treat retrieved documents/model outputs as untrusted content, not authorization decisions.",
+  "workedExample": "An inference container needs read access to one model bucket and write access to one result prefix, not administrator permission to the whole cloud account.",
+  "commonMistakes": [
+    "Putting cloud keys in Git/Docker images.",
+    "Granting broad admin roles “temporarily” and never removing them.",
+    "Letting an LLM decide whether a user is authorized."
+  ],
+  "followUps": [
+    "Authentication vs authorization?",
+    "Why workload roles over static keys?",
+    "How do you store secrets?",
+    "How would you secure a RAG system?"
+  ],
+  "production": "Use centralized secret/identity management, short-lived credentials, audit logs, permission reviews and automated scanning for leaked secrets/dependencies.",
+  "editorial": {
+    "status": "summary"
+  }
+}

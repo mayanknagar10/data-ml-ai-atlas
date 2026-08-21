@@ -1,0 +1,80 @@
+{
+  "slug": "bayesian-networks",
+  "title": "Bayesian Networks & d-Separation",
+  "module": "probabilistic-ml",
+  "priority": "high",
+  "roles": [
+    "ds",
+    "as",
+    "mle"
+  ],
+  "interviewAnswer": "A Bayesian network is a DAG that factorizes a joint distribution into local conditional distributions; d-separation encodes conditional-independence relationships.",
+  "keyPoints": [
+    "DAG factorization",
+    "Conditional independence",
+    "d-Separation",
+    "Inference"
+  ],
+  "resources": [
+    "stanford-cs228",
+    "probml-book"
+  ],
+  "featured": false,
+  "why": "Graphical models represent complex joint distributions in a structured, interpretable way.",
+  "intuition": "Each node only needs a conditional model given its parents rather than one giant joint probability table.",
+  "deepDive": "p(x1,…,xn)=∏p(xi|parents_i). Graph structure determines independence properties, but a causal interpretation requires additional assumptions beyond probability factorization.",
+  "math": "",
+  "code": "",
+  "commonMistakes": [
+    "Assuming every Bayesian network is causal.",
+    "Confusing graph reachability with d-separation."
+  ],
+  "followUps": [
+    "Bayesian network vs MRF?",
+    "Exact vs approximate inference?"
+  ],
+  "production": "Use graphs to make assumptions explicit; dense networks can make inference computationally expensive.",
+  "workedExample": "Rain→WetGrass←Sprinkler is a collider; conditioning on WetGrass can make Rain and Sprinkler dependent.",
+  "visual": {
+    "type": "network",
+    "title": "A simple Bayesian network",
+    "nodes": [
+      {
+        "id": "A",
+        "label": "Rain",
+        "x": 0.2,
+        "y": 0.25,
+        "kind": "a"
+      },
+      {
+        "id": "B",
+        "label": "Sprinkler",
+        "x": 0.2,
+        "y": 0.75,
+        "kind": "b"
+      },
+      {
+        "id": "C",
+        "label": "Wet grass",
+        "x": 0.72,
+        "y": 0.5,
+        "kind": "c"
+      }
+    ],
+    "edges": [
+      [
+        "A",
+        "C"
+      ],
+      [
+        "B",
+        "C"
+      ]
+    ],
+    "directed": true,
+    "caption": "A DAG factorizes a joint distribution into local conditional relationships."
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

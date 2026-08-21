@@ -1,0 +1,56 @@
+{
+  "slug": "mcp",
+  "title": "Model Context Protocol (MCP)",
+  "module": "llm",
+  "priority": "medium",
+  "roles": [
+    "aie"
+  ],
+  "interviewAnswer": "MCP standardizes how AI applications discover and invoke external tools/resources through a common protocol, reducing one-off integrations between assistants and services.",
+  "keyPoints": [
+    "Client/server roles",
+    "Tool/resource discovery",
+    "Standardized interface",
+    "Security boundaries"
+  ],
+  "resources": [
+    "hf-agents",
+    "langchain-academy",
+    "openai-cookbook",
+    "hf-llm"
+  ],
+  "featured": false,
+  "why": "MCP is increasingly relevant for AI engineering because it standardizes how compatible AI clients discover and interact with external tools/resources.",
+  "intuition": "Instead of writing a custom integration separately for every AI client, an MCP server exposes capabilities through a common protocol that clients can discover and invoke.",
+  "deepDive": "MCP separates clients from servers that expose tools/resources/prompts through a standardized interface. It does not replace authorization, business logic or tool safety; those still belong in the server/application. Transport and deployment details can vary. The value is interoperability and a consistent contract, not making LLM outputs inherently more reliable.",
+  "workedExample": "A forecasting application can expose “get_forecast” and “get_reorder_point” through MCP so multiple compatible assistants can use the same deterministic backend tools.",
+  "commonMistakes": [
+    "Describing MCP as a model or vector database.",
+    "Assuming MCP automatically grants safe access to every tool.",
+    "Exposing internal tools without authentication/permission checks."
+  ],
+  "followUps": [
+    "MCP vs normal REST API?",
+    "What does an MCP server expose?",
+    "Where does authorization live?",
+    "Why use MCP for an internal tool ecosystem?"
+  ],
+  "production": "Treat MCP servers as production APIs: authenticate clients, validate arguments, rate-limit, log tool calls and version capability contracts.",
+  "visual": {
+    "type": "flow",
+    "title": "MCP architecture",
+    "items": [
+      "AI client",
+      "MCP client",
+      "MCP server",
+      "Tools / resources / prompts",
+      "External system"
+    ],
+    "caption": "MCP standardizes how AI clients discover and invoke external capabilities through a common protocol.",
+    "accent": 2,
+    "orientation": "horizontal"
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

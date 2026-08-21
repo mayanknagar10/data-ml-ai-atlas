@@ -1,0 +1,114 @@
+{
+  "slug": "tsne-umap",
+  "title": "t-SNE & UMAP for Visualization",
+  "module": "unsupervised",
+  "priority": "medium",
+  "roles": [
+    "ds",
+    "as"
+  ],
+  "interviewAnswer": "t-SNE and UMAP create low-dimensional embeddings that emphasize neighborhood structure, mainly for exploration/visualization. Global distances and cluster sizes can be misleading, especially with t-SNE.",
+  "keyPoints": [
+    "Do not treat 2D distance as ground truth.",
+    "Hyperparameters change plots.",
+    "Use PCA or task metrics alongside visualization."
+  ],
+  "resources": [
+    "sklearn",
+    "d2l",
+    "distill-tsne"
+  ],
+  "featured": false,
+  "why": "t-SNE & UMAP for Visualization appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
+  "intuition": "Do not treat 2D distance as ground truth.",
+  "deepDive": "t-SNE and UMAP create low-dimensional embeddings that emphasize neighborhood structure, mainly for exploration/visualization. Global distances and cluster sizes can be misleading, especially with t-SNE. Hyperparameters change plots. Use PCA or task metrics alongside visualization. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
+  "workedExample": "Visualize embedding neighborhoods to inspect class overlap, but evaluate retrieval quantitatively rather than trusting clusters on the plot.",
+  "commonMistakes": [
+    "Applying the method without checking its assumptions or data-generating process.",
+    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+  ],
+  "followUps": [
+    "What assumptions does t-SNE & UMAP for Visualization make?",
+    "How would you validate or debug t-SNE & UMAP for Visualization in practice?"
+  ],
+  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "visual": {
+    "type": "scatter",
+    "title": "Embedding visualization",
+    "series": [
+      {
+        "label": "group A",
+        "points": [
+          [
+            0.15,
+            0.24
+          ],
+          [
+            0.19,
+            0.31
+          ],
+          [
+            0.25,
+            0.27
+          ],
+          [
+            0.22,
+            0.38
+          ],
+          [
+            0.3,
+            0.34
+          ]
+        ]
+      },
+      {
+        "label": "group B",
+        "points": [
+          [
+            0.6,
+            0.58
+          ],
+          [
+            0.65,
+            0.67
+          ],
+          [
+            0.72,
+            0.61
+          ],
+          [
+            0.75,
+            0.72
+          ],
+          [
+            0.8,
+            0.64
+          ]
+        ]
+      },
+      {
+        "label": "group C",
+        "points": [
+          [
+            0.45,
+            0.8
+          ],
+          [
+            0.5,
+            0.86
+          ],
+          [
+            0.55,
+            0.82
+          ]
+        ]
+      }
+    ],
+    "caption": "t-SNE and UMAP are useful for exploring local structure, but distances and apparent cluster separation can be misleading.",
+    "xLabel": "embedding axis 1",
+    "yLabel": "embedding axis 2"
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

@@ -1,0 +1,41 @@
+{
+  "slug": "kernel-methods",
+  "title": "Kernel Methods & the Kernel Trick",
+  "module": "ml",
+  "priority": "high",
+  "roles": [
+    "ds",
+    "as",
+    "mle"
+  ],
+  "interviewAnswer": "Kernel methods replace an explicit nonlinear feature map with a kernel that computes inner products in that feature space, enabling algorithms such as SVMs to learn nonlinear boundaries without materializing all transformed features.",
+  "keyPoints": [
+    "Positive-semidefinite kernels",
+    "Implicit feature maps",
+    "RBF/polynomial kernels",
+    "Similarity"
+  ],
+  "resources": [
+    "stanford-cs229"
+  ],
+  "featured": false,
+  "why": "Kernels are a classic bridge between linear methods and nonlinear function spaces.",
+  "intuition": "If a linear separator fails in original coordinates, map inputs into richer features—but compute only pairwise inner products through a kernel.",
+  "deepDive": "A valid kernel corresponds to an inner product in some feature space. The RBF kernel creates a very rich space controlled by gamma/bandwidth; regularization still controls effective complexity.",
+  "math": "",
+  "code": "",
+  "commonMistakes": [
+    "Saying kernels simply “add dimensions” with no mathematical constraint.",
+    "Using RBF gamma without scaling/tuning features."
+  ],
+  "followUps": [
+    "What makes a kernel valid?",
+    "RBF vs polynomial?",
+    "Why do kernel methods scale poorly with n?"
+  ],
+  "production": "Kernel matrices can be O(n²) memory/time; use approximations or other models at large scale.",
+  "workedExample": "Two concentric classes can become separable under a suitable nonlinear kernel even though no straight boundary works in input space.",
+  "editorial": {
+    "status": "summary"
+  }
+}

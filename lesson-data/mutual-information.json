@@ -1,0 +1,39 @@
+{
+  "slug": "mutual-information",
+  "title": "Mutual Information",
+  "module": "info-theory",
+  "priority": "high",
+  "roles": [
+    "all"
+  ],
+  "interviewAnswer": "Mutual information measures how much knowing one variable reduces uncertainty about another and can capture nonlinear dependence.",
+  "keyPoints": [
+    "Dependence",
+    "Zero under independence",
+    "Feature selection",
+    "Representation learning"
+  ],
+  "resources": [
+    "mit-info-theory",
+    "probml-book"
+  ],
+  "featured": false,
+  "why": "MI connects probability, feature selection and representation learning.",
+  "intuition": "If knowing X says nothing about Y, MI is zero; if X nearly determines Y, shared information is large.",
+  "deepDive": "I(X;Y)=D_KL(p(x,y)||p(x)p(y))=H(X)-H(X|Y). Estimating MI in high-dimensional continuous data is difficult and estimator-dependent.",
+  "math": "",
+  "code": "",
+  "commonMistakes": [
+    "Assuming zero correlation means zero MI.",
+    "Comparing biased MI estimators as if values were directly comparable."
+  ],
+  "followUps": [
+    "MI vs correlation?",
+    "Conditional mutual information?"
+  ],
+  "production": "Use MI-based features carefully: leakage can look like strong information.",
+  "workedExample": "Y=X² can have weak linear correlation for symmetric X while still having substantial MI.",
+  "editorial": {
+    "status": "summary"
+  }
+}

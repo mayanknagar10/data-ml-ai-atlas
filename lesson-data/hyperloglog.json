@@ -1,0 +1,39 @@
+{
+  "slug": "hyperloglog",
+  "title": "HyperLogLog & Distinct Counting",
+  "module": "data-mining",
+  "priority": "medium",
+  "roles": [
+    "de",
+    "ds"
+  ],
+  "interviewAnswer": "HyperLogLog estimates the number of distinct elements from hashed leading-zero statistics, giving low relative error with very small memory and easy merging.",
+  "keyPoints": [
+    "Cardinality",
+    "Registers",
+    "Hashing",
+    "Mergeability"
+  ],
+  "resources": [
+    "stanford-cs246"
+  ],
+  "featured": false,
+  "why": "Unique-user and cardinality queries are common analytics operations that become expensive with exact sets.",
+  "intuition": "A long leading-zero run is unlikely unless many distinct hashes were observed; many registers stabilize the estimate.",
+  "deepDive": "Distributed HLL sketches can merge register-wise without exchanging raw identifiers.",
+  "math": "",
+  "code": "",
+  "commonMistakes": [
+    "Expecting exact counts.",
+    "Using poor hashes."
+  ],
+  "followUps": [
+    "Why is HLL mergeable?",
+    "How does memory affect error?"
+  ],
+  "production": "Use exact counting for small sets and sketches when scale justifies approximation.",
+  "workedExample": "Services can estimate global daily active users by merging local sketches.",
+  "editorial": {
+    "status": "summary"
+  }
+}

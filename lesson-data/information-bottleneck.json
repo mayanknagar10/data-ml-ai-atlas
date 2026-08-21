@@ -1,0 +1,43 @@
+{
+  "slug": "information-bottleneck",
+  "title": "Information Bottleneck & Representation Learning",
+  "module": "info-theory",
+  "priority": "medium",
+  "roles": [
+    "as",
+    "mle",
+    "aie",
+    "ds"
+  ],
+  "interviewAnswer": "The information-bottleneck view seeks representations that preserve information useful for a target while discarding irrelevant detail.",
+  "keyPoints": [
+    "Compression",
+    "Sufficiency",
+    "Mutual information",
+    "Latent representations"
+  ],
+  "resources": [
+    "mit-info-theory",
+    "probml-book",
+    "paper-vqvae"
+  ],
+  "featured": false,
+  "why": "It provides a useful conceptual lens for learned compression and representation learning.",
+  "intuition": "A good representation should keep structure needed by the downstream task without memorizing every nuisance detail.",
+  "deepDive": "The classical objective trades information retained about input against information retained about the target. Estimating these quantities in deep networks is nontrivial, so it is often a guiding principle rather than a literal measured objective.",
+  "math": "",
+  "code": "",
+  "commonMistakes": [
+    "Assuming smaller latent means more semantic.",
+    "Claiming the theory is directly measurable in every deep model."
+  ],
+  "followUps": [
+    "How does this relate to VAEs/VQ models?",
+    "Compression vs fidelity?"
+  ],
+  "production": "Choose bottlenecks by downstream quality, storage and latency trade-offs.",
+  "workedExample": "A compressed image code may discard sensor noise while retaining boundaries needed for prediction.",
+  "editorial": {
+    "status": "summary"
+  }
+}

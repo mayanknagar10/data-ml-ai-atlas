@@ -1,0 +1,48 @@
+{
+  "slug": "transfer-learning-vision",
+  "title": "Transfer Learning & Fine-tuning in Vision",
+  "module": "cv",
+  "priority": "very-high",
+  "roles": [
+    "cv",
+    "mle",
+    "as"
+  ],
+  "interviewAnswer": "Transfer learning starts from pretrained visual features and adapts them to a target task. With limited data, freeze more layers initially; with enough domain data, fine-tune carefully using smaller learning rates and validation.",
+  "keyPoints": [
+    "Domain shift determines usefulness.",
+    "Head-only training is a baseline, not a law.",
+    "Catastrophic forgetting/overfitting can occur."
+  ],
+  "resources": [
+    "stanford-cs231n",
+    "pytorch"
+  ],
+  "featured": true,
+  "why": "Transfer Learning & Fine-tuning in Vision is a standard part of a broad data/ML curriculum because it changes how models are selected, evaluated or operated in real systems.",
+  "intuition": "Domain shift determines usefulness.",
+  "deepDive": "Transfer learning starts from pretrained visual features and adapts them to a target task. With limited data, freeze more layers initially; with enough domain data, fine-tune carefully using smaller learning rates and validation. Head-only training is a baseline, not a law. Catastrophic forgetting/overfitting can occur. A strong answer connects the formal idea to validation, data requirements and failure modes instead of treating the method as a recipe.",
+  "workedExample": "Fine-tune a pretrained ResNet on a small industrial defect dataset and compare with training from scratch.",
+  "commonMistakes": [
+    "Choosing the technique without checking whether its assumptions match the problem.",
+    "Optimizing an offline metric without checking realistic validation slices or operational constraints."
+  ],
+  "followUps": [
+    "When would you not use Transfer Learning & Fine-tuning in Vision?",
+    "How would you validate or tune Transfer Learning & Fine-tuning in Vision?"
+  ],
+  "production": "In production, validate on realistic slices, track latency/cost when relevant, and monitor for distribution changes or failure modes that the offline metric can hide.",
+  "visual": {
+    "type": "concept-map",
+    "title": "Transfer Learning & Fine-tuning in Vision",
+    "items": [
+      "Domain shift determines usefulness.",
+      "Head-only training is a baseline, not a law.",
+      "Catastrophic forgetting/overfitting can occur."
+    ],
+    "caption": "A compact concept map for the most important ideas in this lesson."
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

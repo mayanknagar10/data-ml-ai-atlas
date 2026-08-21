@@ -1,0 +1,48 @@
+{
+  "slug": "time-series-components",
+  "title": "Trend, Seasonality, Cycles & Remainder",
+  "module": "time-series",
+  "priority": "very-high",
+  "roles": [
+    "ds",
+    "da",
+    "as"
+  ],
+  "interviewAnswer": "A time series can contain trend, seasonal patterns, longer cycles and irregular remainder. I identify these structures before selecting a model because validation and feature construction depend on them.",
+  "keyPoints": [
+    "Plot the series first.",
+    "Seasonality has a known calendar frequency; cycles need not.",
+    "Multiple seasonalities can coexist."
+  ],
+  "resources": [
+    "fpp3"
+  ],
+  "featured": true,
+  "why": "Trend, Seasonality, Cycles & Remainder appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
+  "intuition": "Plot the series first.",
+  "deepDive": "A time series can contain trend, seasonal patterns, longer cycles and irregular remainder. I identify these structures before selecting a model because validation and feature construction depend on them. Seasonality has a known calendar frequency; cycles need not. Multiple seasonalities can coexist. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
+  "workedExample": "Hourly demand may have daily and weekly seasonality plus a long-term growth trend.",
+  "commonMistakes": [
+    "Applying the method without checking its assumptions or data-generating process.",
+    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+  ],
+  "followUps": [
+    "What assumptions does Trend, Seasonality, Cycles & Remainder make?",
+    "How would you validate or debug Trend, Seasonality, Cycles & Remainder in practice?"
+  ],
+  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "visual": {
+    "type": "layers",
+    "title": "Time-series decomposition",
+    "items": [
+      "Observed series",
+      "Trend",
+      "Seasonality",
+      "Remainder"
+    ],
+    "caption": "Decomposition separates recurring structure from long-run movement and irregular variation."
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

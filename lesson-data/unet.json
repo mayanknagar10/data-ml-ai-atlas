@@ -1,0 +1,104 @@
+{
+  "slug": "unet",
+  "title": "U-Net & Segmentation",
+  "module": "cv",
+  "priority": "high",
+  "roles": [
+    "cv",
+    "mle",
+    "as"
+  ],
+  "interviewAnswer": "U-Net combines an encoder that captures context with a decoder that restores spatial resolution, using skip connections to preserve fine localization information.",
+  "keyPoints": [
+    "Encoder/decoder",
+    "Skip connections",
+    "Pixel-wise prediction",
+    "Dice/IoU"
+  ],
+  "resources": [
+    "stanford-cs231n",
+    "mit-6s191",
+    "paper-unet"
+  ],
+  "featured": false,
+  "why": "U-Net is a standard encoder–decoder architecture for segmentation and reconstruction where both context and precise spatial localization matter.",
+  "intuition": "The encoder compresses spatial information while learning context; the decoder restores resolution. Skip connections copy high-resolution features from matching encoder stages to recover detail.",
+  "deepDive": "Downsampling increases semantic context but loses exact position. U-Net concatenates or combines encoder features with decoder features at corresponding scales. Output heads depend on task: class logits per pixel/voxel for segmentation, image channels for reconstruction. 3D U-Nets extend convolutions to volumes but consume much more memory.",
+  "workedExample": "In pore segmentation, deep features identify material context while shallow skip features preserve exact boundary locations that would be blurred by the bottleneck alone.",
+  "code": "# conceptual\nenc1=block(x); enc2=block(pool(enc1))\ndec1=up(enc2); out=block(torch.cat([dec1,enc1],dim=1))",
+  "commonMistakes": [
+    "Calling U-Net skip connections residual additions by default; classic U-Net concatenates.",
+    "Ignoring output activation/loss for multi-class vs binary segmentation.",
+    "Using huge 3D volumes without patch/memory planning."
+  ],
+  "followUps": [
+    "Why skip connections?",
+    "U-Net vs autoencoder?",
+    "2D vs 3D U-Net?",
+    "Which loss for imbalanced segmentation?"
+  ],
+  "production": "Tiled inference needs overlap/blending to avoid seams. Monitor resolution/preprocessing and memory use carefully for 3D deployment.",
+  "visual": {
+    "type": "network",
+    "title": "U-Net encoder–decoder",
+    "nodes": [
+      {
+        "id": "i",
+        "label": "input",
+        "x": 0.08,
+        "y": 0.5
+      },
+      {
+        "id": "e1",
+        "label": "encoder",
+        "x": 0.28,
+        "y": 0.28
+      },
+      {
+        "id": "b",
+        "label": "bottleneck",
+        "x": 0.5,
+        "y": 0.5
+      },
+      {
+        "id": "d1",
+        "label": "decoder",
+        "x": 0.72,
+        "y": 0.28
+      },
+      {
+        "id": "o",
+        "label": "mask / image",
+        "x": 0.92,
+        "y": 0.5
+      }
+    ],
+    "edges": [
+      [
+        "i",
+        "e1"
+      ],
+      [
+        "e1",
+        "b"
+      ],
+      [
+        "b",
+        "d1"
+      ],
+      [
+        "d1",
+        "o"
+      ],
+      [
+        "e1",
+        "d1"
+      ]
+    ],
+    "caption": "U-Net combines a contracting encoder with a decoder and skip connections that restore fine spatial detail.",
+    "directed": true
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

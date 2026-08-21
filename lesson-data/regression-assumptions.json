@@ -1,0 +1,47 @@
+{
+  "slug": "regression-assumptions",
+  "title": "Linear Regression Assumptions & Diagnostics",
+  "module": "regression-glm",
+  "priority": "very-high",
+  "roles": [
+    "ds",
+    "as"
+  ],
+  "interviewAnswer": "For inference, linear regression relies on assumptions about functional form, independent errors, variance structure and error distribution; for prediction, diagnostics still reveal misspecification, outliers and extrapolation risk.",
+  "keyPoints": [
+    "Inspect residual vs fitted plots.",
+    "Check leverage/influence, not just residual size.",
+    "Heteroscedasticity affects uncertainty estimates."
+  ],
+  "resources": [
+    "isl",
+    "stanford-stats200"
+  ],
+  "featured": true,
+  "why": "Linear Regression Assumptions & Diagnostics appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
+  "intuition": "Inspect residual vs fitted plots.",
+  "deepDive": "For inference, linear regression relies on assumptions about functional form, independent errors, variance structure and error distribution; for prediction, diagnostics still reveal misspecification, outliers and extrapolation risk. Check leverage/influence, not just residual size. Heteroscedasticity affects uncertainty estimates. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
+  "workedExample": "Residual variance increasing with fitted revenue suggests transformation, weighted/robust methods or different uncertainty estimates.",
+  "commonMistakes": [
+    "Applying the method without checking its assumptions or data-generating process.",
+    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+  ],
+  "followUps": [
+    "What assumptions does Linear Regression Assumptions & Diagnostics make?",
+    "How would you validate or debug Linear Regression Assumptions & Diagnostics in practice?"
+  ],
+  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "visual": {
+    "type": "concept-map",
+    "title": "Linear Regression Assumptions & Diagnostics",
+    "items": [
+      "Inspect residual vs fitted plots.",
+      "Check leverage/influence, not just residual size.",
+      "Heteroscedasticity affects uncertainty estimates."
+    ],
+    "caption": "A compact concept map for the most important ideas in this lesson."
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

@@ -1,0 +1,46 @@
+{
+  "slug": "encoding-scaling",
+  "title": "Scaling & Encoding Features",
+  "module": "evaluation",
+  "priority": "very-high",
+  "roles": [
+    "ds"
+  ],
+  "interviewAnswer": "Scaling matters for distance- and gradient-based models; categorical encoding choices affect leakage, dimensionality and generalization. Tree models often need less scaling but still require correct category handling.",
+  "keyPoints": [
+    "Standardization uses training statistics only.",
+    "One-hot is robust for low-cardinality nominal categories.",
+    "Target encoding requires leakage-safe folds/smoothing."
+  ],
+  "resources": [
+    "sklearn",
+    "google-mlcc"
+  ],
+  "featured": true,
+  "why": "Scaling & Encoding Features is a recurring foundation across data science and machine learning because it affects both theoretical correctness and practical system behavior.",
+  "intuition": "Standardization uses training statistics only.",
+  "deepDive": "Scaling matters for distance- and gradient-based models; categorical encoding choices affect leakage, dimensionality and generalization. Tree models often need less scaling but still require correct category handling. One-hot is robust for low-cardinality nominal categories. Target encoding requires leakage-safe folds/smoothing. The interview-level skill is not merely recalling the definition: explain the assumptions, what diagnostic evidence you would inspect, and what alternative you would choose when those assumptions fail.",
+  "workedExample": "Fit the scaler/target encoder on training folds only, then transform validation/test.",
+  "commonMistakes": [
+    "Using the concept mechanically without checking assumptions or data semantics.",
+    "Reporting one metric/result without examining uncertainty, slices or failure modes."
+  ],
+  "followUps": [
+    "What assumptions or limitations does Scaling & Encoding Features have?",
+    "How would you validate Scaling & Encoding Features on a real dataset?"
+  ],
+  "production": "In production, make assumptions explicit, validate on representative slices, compare with a simple baseline and monitor the signals that can drift.",
+  "visual": {
+    "type": "concept-map",
+    "title": "Scaling & Encoding Features",
+    "items": [
+      "Standardization uses training statistics only.",
+      "One-hot is robust for low-cardinality nominal categories.",
+      "Target encoding requires leakage-safe folds/smoothing."
+    ],
+    "caption": "A compact concept map for the most important ideas in this lesson."
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

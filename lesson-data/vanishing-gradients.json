@@ -1,0 +1,56 @@
+{
+  "slug": "vanishing-gradients",
+  "title": "Vanishing / Exploding Gradients",
+  "module": "dl",
+  "priority": "high",
+  "roles": [
+    "mle",
+    "aie",
+    "as"
+  ],
+  "interviewAnswer": "Repeated multiplication through deep networks can shrink or amplify gradients. Initialization, normalization, ReLU-like activations, residual connections and gradient clipping help depending on the architecture.",
+  "keyPoints": [
+    "Depth",
+    "Activation saturation",
+    "Residuals",
+    "Gradient clipping"
+  ],
+  "resources": [
+    "mit-6s191",
+    "3b1b-neural",
+    "pytorch",
+    "deep-learning-book"
+  ],
+  "featured": false,
+  "why": "Gradient pathologies explain why older deep networks were hard to train and motivate ReLU, residual connections, normalization and clipping.",
+  "intuition": "Backprop multiplies many local derivatives. If most are below 1, gradients shrink toward zero; if large, gradients can blow up.",
+  "deepDive": "Sigmoid/tanh saturation can produce tiny derivatives; recurrent multiplication across long sequences intensifies the effect. Exploding gradients cause unstable updates/NaNs. Initialization preserves signal variance; ReLU-like activations reduce saturation; residual connections provide shorter identity paths; normalization stabilizes scales; gradient clipping caps extreme norms.",
+  "math": "For a chain, ∂L/∂h_0 = Π_l (∂h_l/∂h_{l-1}) · ∂L/∂h_L; repeated singular values <1 shrink and >1 amplify.",
+  "workedExample": "If early layers show near-zero gradient norms while late layers learn, inspect saturation/initialization and consider residual/norm architecture rather than only increasing learning rate.",
+  "code": "torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)",
+  "commonMistakes": [
+    "Using gradient clipping as a cure for every optimization problem.",
+    "Confusing vanishing gradients with overfitting.",
+    "Ignoring NaNs from data/loss even when gradients explode."
+  ],
+  "followUps": [
+    "Why do residual connections help?",
+    "Why ReLU helps vs sigmoid?",
+    "What does gradient clipping do?",
+    "How does initialization matter?"
+  ],
+  "production": "Track gradient norms/NaNs in training telemetry and checkpoint before instability so long GPU runs can be diagnosed/resumed.",
+  "visual": {
+    "type": "layers",
+    "title": "Gradient through depth",
+    "items": [
+      "Output gradient · strong",
+      "Middle layers · smaller",
+      "Early layers · tiny"
+    ],
+    "caption": "Repeated multiplications can shrink gradients toward zero; residual connections and normalization help preserve signal."
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

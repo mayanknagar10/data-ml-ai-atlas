@@ -1,0 +1,59 @@
+{
+  "slug": "gcn",
+  "title": "Graph Convolutional Networks (GCN)",
+  "module": "graph",
+  "priority": "high",
+  "roles": [
+    "ds",
+    "as",
+    "mle"
+  ],
+  "interviewAnswer": "GCNs aggregate normalized neighbor features and transform them layer by layer, creating node representations that mix local graph structure and attributes. Repeated aggregation can oversmooth representations.",
+  "keyPoints": [
+    "Adjacency normalization stabilizes aggregation.",
+    "Depth increases receptive neighborhood.",
+    "Transductive vs inductive setup matters."
+  ],
+  "resources": [
+    "stanford-cs224w"
+  ],
+  "featured": false,
+  "why": "Graph Convolutional Networks (GCN) is a standard part of a broad data/ML curriculum because it changes how models are selected, evaluated or operated in real systems.",
+  "intuition": "Adjacency normalization stabilizes aggregation.",
+  "deepDive": "GCNs aggregate normalized neighbor features and transform them layer by layer, creating node representations that mix local graph structure and attributes. Repeated aggregation can oversmooth representations. Depth increases receptive neighborhood. Transductive vs inductive setup matters. A strong answer connects the formal idea to validation, data requirements and failure modes instead of treating the method as a recipe.",
+  "workedExample": "Classify papers using citation neighbors and document features with a two-layer GCN.",
+  "commonMistakes": [
+    "Choosing the technique without checking whether its assumptions match the problem.",
+    "Optimizing an offline metric without checking realistic validation slices or operational constraints."
+  ],
+  "followUps": [
+    "When would you not use Graph Convolutional Networks (GCN)?",
+    "How would you validate or tune Graph Convolutional Networks (GCN)?"
+  ],
+  "production": "In production, validate on realistic slices, track latency/cost when relevant, and monitor for distribution changes or failure modes that the offline metric can hide.",
+  "lab": {
+    "goal": "Implement one normalized GCN propagation step with NumPy.",
+    "language": "python",
+    "buildIt": "import numpy as np\nA=np.array([[0,1,1],[1,0,0],[1,0,0]],float)\nX=np.array([[1.,0.],[0.,1.],[1.,1.]])\nAhat=A+np.eye(3); deg=Ahat.sum(1); D=np.diag(1/np.sqrt(deg)); S=D@Ahat@D\nW=np.array([[1.,-.5],[.5,1.]])\nH=np.maximum(0,S@X@W)\nprint(H)\n",
+    "useIt": "print('row norms',np.linalg.norm(H,axis=1))\n",
+    "verifyIt": "assert H.shape==(3,2) and (H>=0).all()\n",
+    "shipIt": "For large graphs use sparse tensors/sampling, version graph snapshots/features and monitor degree/cold-start shifts; full adjacency multiplication will not scale."
+  },
+  "visual": {
+    "type": "flow",
+    "title": "GCN layer",
+    "items": [
+      "Node features H",
+      "Normalize adjacency Â",
+      "Linear transform W",
+      "Nonlinearity",
+      "Updated H′"
+    ],
+    "caption": "A GCN mixes neighboring features using normalized graph connectivity before applying a learned transformation.",
+    "accent": 1,
+    "orientation": "horizontal"
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

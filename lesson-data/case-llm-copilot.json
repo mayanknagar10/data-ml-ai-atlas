@@ -1,0 +1,56 @@
+{
+  "slug": "case-llm-copilot",
+  "title": "Case Study: LLM Copilot with Tools + RAG",
+  "module": "project-defense",
+  "priority": "high",
+  "roles": [
+    "aie"
+  ],
+  "interviewAnswer": "Keep numerical/business logic deterministic in tools, use the LLM for orchestration and explanation, use RAG only for unstructured knowledge, and evaluate tool correctness separately from language quality.",
+  "keyPoints": [
+    "Tool calling",
+    "RAG boundary",
+    "Agent state",
+    "Reliability"
+  ],
+  "resources": [
+    "langchain-academy",
+    "openai-cookbook",
+    "hf-agents",
+    "stanford-cs329s"
+  ],
+  "featured": false,
+  "why": "This case shows modern LLM engineering without using the model for tasks that deterministic tools can perform more reliably.",
+  "intuition": "Let the LLM orchestrate and explain; let trusted tools calculate. Use RAG for unstructured knowledge and tool calls for structured business logic.",
+  "deepDive": "The agent interprets intent, calls deterministic forecasting/inventory functions, optionally retrieves policy/meeting-note context from a vector store, and synthesizes the response. Keep tool schemas explicit, separate retrieval quality from generation quality, log traces, and evaluate both factual/tool correctness and usefulness. MCP can expose the same capabilities to multiple compatible clients.",
+  "workedExample": "Question requiring a deterministic calculation → agent calls a trusted domain tool → structured result returned → LLM explains assumptions. Question about policy or documentation → retrieve relevant chunks → answer with grounded context and citations.",
+  "commonMistakes": [
+    "Letting the LLM invent numerical forecasts that a deterministic model should compute.",
+    "Calling every document query “RAG” without retrieval evaluation.",
+    "Assuming an agent should autonomously act without permission boundaries."
+  ],
+  "followUps": [
+    "Why tool calling instead of pure prompting?",
+    "How would you evaluate RAG?",
+    "Why a vector database?",
+    "What does MCP add?"
+  ],
+  "production": "Add authentication, tool permissions, structured outputs, tracing, retries/timeouts, prompt/model versioning, retrieval evaluation, cost/latency budgets and a safe fallback when the LLM or external provider fails.",
+  "visual": {
+    "type": "flow",
+    "title": "LLM copilot case",
+    "items": [
+      "User question",
+      "Agent chooses tool",
+      "Deterministic forecast / inventory function",
+      "Optional RAG policy lookup",
+      "LLM explanation"
+    ],
+    "caption": "The LLM orchestrates and explains while deterministic tools remain the numerical source of truth.",
+    "accent": 2,
+    "orientation": "horizontal"
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

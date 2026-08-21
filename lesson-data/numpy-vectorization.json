@@ -1,0 +1,202 @@
+{
+  "slug": "numpy-vectorization",
+  "title": "NumPy Vectorization & Broadcasting",
+  "module": "python",
+  "priority": "high",
+  "roles": [
+    "ds",
+    "mle",
+    "aie"
+  ],
+  "interviewAnswer": "Vectorization expresses operations over whole arrays so NumPy can execute tight compiled loops instead of one Python operation per element. Broadcasting compares shapes from the trailing dimensions; dimensions are compatible when equal or when one is 1, with missing leading dimensions treated as 1. It often avoids copying the smaller input, but the output or intermediates can still be large. Correct NumPy code reasons explicitly about shape, axis, dtype, and whether indexing returns a view or copy.",
+  "keyPoints": [
+    "Shape is part of the type",
+    "Broadcast from trailing axes",
+    "Ufuncs run compiled element loops",
+    "Basic slicing usually views",
+    "Intermediates and dtype dominate failures"
+  ],
+  "resources": [
+    "numpy",
+    "numpy-broadcasting",
+    "numpy-copies-views"
+  ],
+  "featured": false,
+  "why": "Array operations are the substrate of data preprocessing, scientific computing, and tensor frameworks. Shape bugs can silently normalize across the wrong axis, mix samples, or create a pairwise matrix instead of a feature-wise operation. Dtype bugs can overflow integers or lose precision. View/copy confusion can mutate upstream data or keep gigabytes alive. Performance advice that stops at 'avoid loops' can make matters worse by allocating an n-by-n intermediate. Interviews probe broadcasting because it reveals whether a candidate can reason dimensionally. Production code needs the same skill plus memory accounting, numerical validation, and a fallback when vectorization exceeds the machine's budget.",
+  "intuition": "An ndarray is a typed block of values plus a shape and a stride recipe for locating each logical element. A universal function walks compatible arrays using those recipes. Broadcasting pretends a size-one dimension repeats so the loop can reuse values; it does not normally tile the input first. Imagine placing shape labels above every expression and aligning them from the right. If one aligned label is neither equal nor 1, the operation is invalid. If it is 1, that value is reused along the larger dimension.",
+  "deepDive": "The full explanation is organized into the structured sections below.",
+  "workedExample": "Standardize each feature of an n-by-d matrix with `(X - mean) / scale`, where both statistics have shape `(d,)` or `(1, d)`.",
+  "code": "import numpy as np\nX=np.random.randn(100000,20)\nmean=X.mean(axis=0); std=X.std(axis=0)\nZ=(X-mean)/std",
+  "commonMistakes": [
+    {
+      "mistake": "Broadcasting duplicates the smaller array in memory before every operation.",
+      "correction": "Broadcasting normally reuses values through iteration/stride logic, but the result and intermediate expressions can still allocate large arrays."
+    },
+    {
+      "mistake": "Every vectorized expression is faster and more memory efficient than a loop.",
+      "correction": "Large temporaries, poor locality, conversion, or an O(n²) output can dominate. A chunked loop around compiled kernels can be safer."
+    },
+    {
+      "mistake": "Slicing and indexing either always copy or always view.",
+      "correction": "Basic slicing generally views; advanced integer/boolean indexing copies. Reshape and related operations depend on layout."
+    }
+  ],
+  "followUps": [
+    {
+      "question": "Why does `keepdims=True` help?",
+      "answer": "It retains reduced axes with size one, preserving dimensional intent and making subsequent broadcasting align explicitly."
+    },
+    {
+      "question": "How can a tiny slice keep a huge allocation alive?",
+      "answer": "A basic slice is a view whose base owns the buffer. Keeping the view keeps that base reachable; copy the small slice if independent lifetime is desired."
+    },
+    {
+      "question": "How do you catch semantically wrong but broadcast-compatible code?",
+      "answer": "Name and assert dimensions, use non-square test shapes, preserve axes with `keepdims`, and verify invariants over the intended axes."
+    }
+  ],
+  "production": "Validate shape, dtype, units, finiteness, and feature order at boundaries. Fit normalization only on training data, version the statistics, and reproduce them in serving. Estimate output and temporary bytes before pairwise operations, monitor peak resident memory, and chunk when necessary. Make mutation and ownership explicit, avoid depending on accidental contiguity, and benchmark representative arrays. Use stable numerical formulations and tolerance-based assertions rather than exact floating-point equality.",
+  "editorial": {
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "NumPy performance comes from representing homogeneous n-dimensional data in an `ndarray` and applying compiled array operations over that data. Vectorization moves element loops out of Python; broadcasting aligns compatible shapes without conceptually writing repeated values. Neither technique removes the need to reason about memory. An expression can allocate several full-size temporaries, a broadcast can create an enormous result, and a small slice can retain a large base array. This chapter develops a shape-first model covering dimensions, axes, strides, dtypes, universal functions, reduction, broadcasting, basic versus advanced indexing, and copies versus views. You will trace a standardization example, derive output shapes from the trailing-dimension rules, and verify memory sharing rather than guessing. The production goal is to write numerical code that is correct before it is clever: explicit about shapes, dtype precision, missing or invalid values, memory budget, and numerical checks. When vectorized code becomes opaque or produces a huge intermediate, chunking, a compiled loop, or a clearer algorithm can be the better engineering choice.",
+  "prerequisites": [
+    "python-data-structures",
+    "big-o"
+  ],
+  "learningObjectives": [
+    "Predict ndarray result shapes using axes, reductions, and the trailing-dimension broadcasting rules.",
+    "Distinguish views from copies using indexing category, strides, base ownership, and memory-sharing checks.",
+    "Design vectorized numerical work that controls dtype, temporaries, invalid values, and memory growth."
+  ],
+  "deepSections": [
+    {
+      "id": "array-model",
+      "title": "Array model: shape, axes, dtype, and strides",
+      "body": "An `ndarray` describes homogeneous elements with `shape`, `ndim`, `dtype`, and strides. Shape `(n, d)` might mean n observations and d features, but NumPy does not know those semantics. Axis numbers are positional: reducing axis 0 removes or retains the first dimension depending on `keepdims`; reducing axis 1 works across columns for each row in this convention. Always state what an axis means before writing the expression.\n\nThe dtype determines element representation and operation behavior. Fixed-width integer arithmetic can overflow. Integer division promotes according to NumPy's type rules; reductions may use a wider accumulator for some dtypes but this should not be guessed. Float32 halves element storage relative to float64 and is common in ML, yet it has less precision and range. Mixed dtypes invoke promotion rules that can change memory and results. Inspect result dtype in critical paths and choose accumulation precision deliberately.\n\nStrides specify byte jumps along each axis. A transpose can often be a new array object with the same underlying buffer and different shape/strides. Such a non-contiguous view may be cheap to create but less friendly to a downstream library requiring contiguous storage. Contiguity, alignment, and memory order affect data movement; they do not change the mathematical shape. Optimize only after measuring the actual kernel and copy boundary."
+    },
+    {
+      "id": "ufunc-vectorization",
+      "title": "Universal functions, reductions, and vectorization",
+      "body": "A universal function such as `np.add` or `np.exp` applies a compiled elementwise loop and supports broadcasting, dtype resolution, and optional output buffers. Vectorized expressions reduce Python interpreter overhead and can exploit optimized low-level loops. Reductions such as `sum`, `mean`, or `max` combine an axis and therefore change shape. `keepdims=True` retains reduced axes with size one, often making the next broadcast explicit and less error-prone.\n\nVectorization can allocate temporaries. `(x - mean) / std` may create a subtraction result and a division result; boolean masks and fancy indexing can allocate more. In-place operations or an `out` parameter can reduce allocations only when aliasing, dtype casting, and error behavior are safe. Mutating input to save memory is a semantic change, not a free optimization. Libraries such as numexpr, Numba, or compiled extensions can fuse or compile suitable work, but each adds constraints and should follow profiling.\n\nNot all loops are bad. A Python loop around a large vectorized kernel can control peak memory. An algorithm with sequential dependence cannot be made elementwise by syntax. A clear loop compiled with an appropriate tool may outperform a maze of temporary arrays. Compare end-to-end time and peak memory on representative shapes, including data conversion, not a tiny isolated expression."
+    },
+    {
+      "id": "broadcasting-rules",
+      "title": "Broadcasting rules and shape derivation",
+      "body": "Compare operand shapes from the rightmost dimension moving left. Missing leading dimensions behave as size one. Each aligned pair is compatible if the sizes are equal or one is 1. The result size is the larger compatible size. For `X` with shape `(n, d)` and feature means `(d,)`, alignment treats the means as `(1, d)`, so subtraction produces `(n, d)`. A column vector `(n, 1)` and row vector `(1, d)` produce `(n, d)`.\n\nUse explicit singleton dimensions to communicate intent: `x[:, None]` changes `(n,)` to `(n, 1)`. Pairwise differences `x[:, None] - x[None, :]` yield `(n, n)`. This is mathematically correct and can be catastrophically large. A conceptual broadcast view may use stride zero for a repeated dimension, but the elementwise operation's output usually requires storage. Estimate output bytes as the product of result dimensions times item size before constructing pairwise or multi-axis expressions.\n\nBroadcasting errors are useful because incompatible shapes stop execution. More dangerous are compatible but semantically wrong shapes, such as subtracting an `(n,)` vector from an `(n, d)` matrix when n happens to equal d. Name dimensions, assert shapes at boundaries, use `keepdims`, and test non-square examples so accidental alignment cannot hide."
+    },
+    {
+      "id": "views-copies-indexing",
+      "title": "Views, copies, and indexing semantics",
+      "body": "Assignment creates another name for the same array object. Basic slicing normally creates a new array object that views the same data, so mutation can affect the original. Advanced indexing with integer or boolean arrays creates a copy. Reshape returns a view when compatible with the memory layout but may copy when necessary. Transpose usually returns a view with permuted strides. The exact base chain can be indirect, so use `np.shares_memory` for a definite sharing check and inspect ownership when debugging.\n\nA view can retain its base buffer. Keeping 100 elements sliced from a massive temporary can keep the massive allocation alive; copying the small result can lower long-term memory. Conversely, an unintended advanced-index copy in a hot path can double peak memory. Write ownership boundaries deliberately: copy when an independent artifact is required, keep a view when shared mutation and lifetime are controlled, and mark arrays read-only when that expresses the contract.\n\nBoolean masks introduce another alignment surface. The mask shape must correspond to indexed axes, and selecting values often flattens or changes shape. Chained indexing can operate on a temporary copy. Prefer one explicit indexing operation, confirm the result shape, and test whether writes are intended to modify the source. These practices matter when feature matrices are shared across training, evaluation, and cached preprocessing."
+    }
+  ],
+  "math": "For operands with aligned dimensions a_i and b_i, broadcasting is valid when a_i = b_i, a_i = 1, or b_i = 1; the result dimension is max(a_i, b_i). An output with shape (s_1, ..., s_k) and dtype item size q requires approximately q·∏s_i bytes, excluding temporaries and allocator overhead.",
+  "workedExamples": [
+    {
+      "title": "Feature-wise standardization with constant-column protection",
+      "setup": "A float matrix has rows as samples and columns as features. Some features may be constant or non-finite.",
+      "walkthrough": "Compute finite-value policy first, then means and standard deviations along axis 0 with `keepdims=True`, producing shape `(1, d)`. Replace zero scales with one so constant columns map to zero after centering rather than divide by zero. Broadcast against `(n, d)`, assert the output shape and finiteness, and verify nonconstant columns have near-zero mean and unit scale within a dtype-appropriate tolerance. Fit statistics only on training data and reuse them on validation and serving inputs to avoid leakage.",
+      "conclusion": "The expression is short because its axis, shape, invalid-value, and zero-scale policies are explicit; the production artifact is the fitted statistics plus their schema."
+    }
+  ],
+  "exercises": [
+    {
+      "difficulty": "recall",
+      "prompt": "Determine the result shape of `(32, 1, 64) + (7, 64)`.",
+      "solution": "Align from the right: 64 with 64, 1 with 7, and 32 with an implicit 1. The result is `(32, 7, 64)`."
+    },
+    {
+      "difficulty": "application",
+      "prompt": "Estimate float32 memory for pairwise differences of 100,000 scalars.",
+      "solution": "The `(100000, 100000)` result has 10^10 elements, about 40 GB before temporaries, so construct a different or chunked algorithm."
+    },
+    {
+      "difficulty": "diagnosis",
+      "prompt": "Changing `subset = x[::2]` changes x, while changing `picked = x[[0, 2]]` does not. Explain.",
+      "solution": "The basic stride slice is a view sharing memory; integer-array advanced indexing creates a copy."
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "numpy-broadcasting",
+      "contribution": "Defines the trailing-axis compatibility rules and explicitly documents both efficient reuse and oversized-intermediate risks."
+    },
+    {
+      "resource": "numpy-copies-views",
+      "contribution": "Defines which indexing operations copy or share data and grounds the ownership and lifetime discussion."
+    },
+    {
+      "resource": "numpy",
+      "contribution": "Provides the broader ndarray, dtype, ufunc, indexing, and reduction semantics used throughout the chapter."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "matrix",
+      "title": "Feature vector broadcast across rows",
+      "rows": [
+        "row 1",
+        "row 2",
+        "row 3"
+      ],
+      "cols": [
+        "f1",
+        "f2",
+        "f3"
+      ],
+      "cells": [
+        [
+          "x11-μ1",
+          "x12-μ2",
+          "x13-μ3"
+        ],
+        [
+          "x21-μ1",
+          "x22-μ2",
+          "x23-μ3"
+        ],
+        [
+          "x31-μ1",
+          "x32-μ2",
+          "x33-μ3"
+        ]
+      ],
+      "caption": "A shape `(d,)` feature vector aligns with the trailing feature axis of an `(n, d)` matrix.",
+      "afterSection": "broadcasting-rules"
+    },
+    {
+      "type": "compare",
+      "title": "View and copy ownership",
+      "left": {
+        "title": "Basic slice view",
+        "items": [
+          "Shares data buffer",
+          "Different shape/strides",
+          "Mutation can propagate",
+          "May retain large base"
+        ]
+      },
+      "right": {
+        "title": "Advanced-index copy",
+        "items": [
+          "Own result data",
+          "Independent mutation",
+          "Allocation cost",
+          "Shape follows index arrays"
+        ]
+      },
+      "caption": "Indexing category determines common ownership behavior; verify sharing when correctness depends on it.",
+      "afterSection": "views-copies-indexing"
+    }
+  ],
+  "lab": {
+    "goal": "Derive broadcast shapes, standardize safely, and verify numerical invariants and memory sharing.",
+    "language": "python",
+    "buildIt": "def broadcast_shape(a, b):\n    out = []\n    for left, right in zip(reversed(a), reversed(b)):\n        if left != right and left != 1 and right != 1:\n            raise ValueError(f'incompatible: {a} and {b}')\n        out.append(max(left, right))\n    longer = a if len(a) > len(b) else b\n    out.extend(reversed(longer[:abs(len(a)-len(b))]))\n    return tuple(reversed(out))",
+    "useIt": "import numpy as np\nX = np.array([[1., 10.], [3., 10.], [5., 10.]])\nmean = X.mean(axis=0, keepdims=True)\nscale = X.std(axis=0, keepdims=True)\nsafe_scale = np.where(scale == 0, 1.0, scale)\nZ = (X - mean) / safe_scale",
+    "verifyIt": "assert broadcast_shape((3, 1, 5), (4, 5)) == (3, 4, 5)\nassert Z.shape == X.shape\nassert np.isfinite(Z).all()\nassert np.allclose(Z[:, 0].mean(), 0.0)\nassert np.allclose(Z[:, 0].std(), 1.0)\nassert np.allclose(Z[:, 1], 0.0)\nview = X[:, :1]\ncopy = X[:, [0]]\nassert np.shares_memory(X, view)\nassert not np.shares_memory(X, copy)",
+    "shipIt": "Package fitted statistics with feature names and dtypes, validate serving shapes, record invalid-value rates, estimate peak memory, and regression-test tolerances across supported NumPy versions."
+  }
+}

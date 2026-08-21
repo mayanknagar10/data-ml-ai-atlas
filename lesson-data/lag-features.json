@@ -1,0 +1,48 @@
+{
+  "slug": "lag-features",
+  "title": "Lags, Rolling Windows & Leakage",
+  "module": "time-series",
+  "priority": "very-high",
+  "roles": [
+    "ds",
+    "da",
+    "as"
+  ],
+  "interviewAnswer": "Lag and rolling features summarize past information, but they must be constructed using only data available at prediction time. Centered windows or post-outcome aggregates silently leak the future.",
+  "keyPoints": [
+    "Shift before rolling when necessary.",
+    "Feature availability timestamp matters.",
+    "Use the same pipeline in backtests and production."
+  ],
+  "resources": [
+    "fpp3",
+    "pandas-user-guide"
+  ],
+  "featured": true,
+  "why": "Lags, Rolling Windows & Leakage appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
+  "intuition": "Shift before rolling when necessary.",
+  "deepDive": "Lag and rolling features summarize past information, but they must be constructed using only data available at prediction time. Centered windows or post-outcome aggregates silently leak the future. Feature availability timestamp matters. Use the same pipeline in backtests and production. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
+  "workedExample": "Predict tomorrow’s demand using demand up to today, never a 7-day centered moving average that includes tomorrow.",
+  "commonMistakes": [
+    "Applying the method without checking its assumptions or data-generating process.",
+    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+  ],
+  "followUps": [
+    "What assumptions does Lags, Rolling Windows & Leakage make?",
+    "How would you validate or debug Lags, Rolling Windows & Leakage in practice?"
+  ],
+  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "visual": {
+    "type": "concept-map",
+    "title": "Lags, Rolling Windows & Leakage",
+    "items": [
+      "Shift before rolling when necessary.",
+      "Feature availability timestamp matters.",
+      "Use the same pipeline in backtests and production."
+    ],
+    "caption": "A compact concept map for the most important ideas in this lesson."
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

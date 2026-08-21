@@ -1,0 +1,58 @@
+{
+  "slug": "cross-validation",
+  "title": "Train/Validation/Test & Cross-validation",
+  "module": "evaluation",
+  "priority": "very-high",
+  "roles": [
+    "all"
+  ],
+  "interviewAnswer": "Use training data to fit parameters, validation data to make modeling choices, and test data only for final unbiased evaluation. Cross-validation estimates performance more robustly when data is limited.",
+  "keyPoints": [
+    "Never tune on test",
+    "Stratification",
+    "Group/time splits",
+    "Nested CV concept"
+  ],
+  "resources": [
+    "sklearn",
+    "google-mlcc",
+    "statquest",
+    "isl"
+  ],
+  "featured": false,
+  "why": "Validation strategy determines whether offline metrics are believable. Many real ML failures come from a wrong split rather than a weak model.",
+  "intuition": "Training data teaches the model. Validation data helps you choose the model. Test data estimates how the final chosen system generalizes. Cross-validation rotates the validation role across folds when data is limited.",
+  "deepDive": "Random K-fold CV assumes samples are exchangeable. Stratification preserves class proportions; grouped splits keep related entities together; time-series splits preserve chronology. Any preprocessing learned from data—scaling, imputation, feature selection—must be fit inside each training fold, ideally using a Pipeline. Nested CV separates hyperparameter search from performance estimation when unbiased model-selection estimates matter.",
+  "math": "K-fold estimate ≈ (1/K) Σ_k metric(model trained on all folds except k, evaluated on fold k)",
+  "workedExample": "If ten slices come from the same patient or 3D volume, randomly splitting slices leaks near-duplicates across train and validation. Split by patient/volume instead.",
+  "code": "from sklearn.model_selection import GroupKFold\ncv=GroupKFold(n_splits=5)\nfor tr,va in cv.split(X,y,groups=patient_id):\n    ...",
+  "commonMistakes": [
+    "Tuning hyperparameters on the test set.",
+    "Fitting scaling or imputation on the full dataset before splitting.",
+    "Using random CV for future forecasting or grouped entities."
+  ],
+  "followUps": [
+    "When would you use stratified CV?",
+    "What is nested cross-validation?",
+    "How should time-series validation differ?",
+    "Why use a scikit-learn Pipeline?"
+  ],
+  "production": "Match offline splits to how the model will face new data in production: future time, unseen customers, unseen devices, or unseen sites. A realistic split is more valuable than a prettier metric.",
+  "visual": {
+    "type": "flow",
+    "title": "K-fold cross-validation",
+    "items": [
+      "Fold 1 test",
+      "Fold 2 test",
+      "Fold 3 test",
+      "…",
+      "Aggregate scores"
+    ],
+    "caption": "Each fold becomes validation once while the others train; time-series and grouped data require specialized splitting.",
+    "accent": 2,
+    "orientation": "horizontal"
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

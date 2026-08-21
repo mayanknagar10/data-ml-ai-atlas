@@ -1,0 +1,95 @@
+{
+  "slug": "regression-discontinuity",
+  "title": "Regression Discontinuity",
+  "module": "causal",
+  "priority": "medium",
+  "roles": [
+    "ds",
+    "as"
+  ],
+  "interviewAnswer": "RDD exploits a treatment rule that changes at a cutoff. Units just above and below the threshold can be comparable if they cannot precisely manipulate the running variable and potential outcomes vary smoothly at the cutoff.",
+  "keyPoints": [
+    "Focus inference near cutoff.",
+    "Check manipulation and continuity.",
+    "Do not extrapolate local effects broadly without justification."
+  ],
+  "resources": [
+    "causal-mixtape"
+  ],
+  "featured": false,
+  "why": "Regression Discontinuity appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
+  "intuition": "Focus inference near cutoff.",
+  "deepDive": "RDD exploits a treatment rule that changes at a cutoff. Units just above and below the threshold can be comparable if they cannot precisely manipulate the running variable and potential outcomes vary smoothly at the cutoff. Check manipulation and continuity. Do not extrapolate local effects broadly without justification. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
+  "workedExample": "Estimate scholarship impact around an eligibility-score threshold.",
+  "commonMistakes": [
+    "Applying the method without checking its assumptions or data-generating process.",
+    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+  ],
+  "followUps": [
+    "What assumptions does Regression Discontinuity make?",
+    "How would you validate or debug Regression Discontinuity in practice?"
+  ],
+  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "visual": {
+    "type": "scatter",
+    "title": "Regression discontinuity",
+    "series": [
+      {
+        "label": "below cutoff",
+        "points": [
+          [
+            0.08,
+            0.32
+          ],
+          [
+            0.18,
+            0.35
+          ],
+          [
+            0.28,
+            0.39
+          ],
+          [
+            0.38,
+            0.43
+          ],
+          [
+            0.46,
+            0.45
+          ]
+        ]
+      },
+      {
+        "label": "above cutoff",
+        "points": [
+          [
+            0.54,
+            0.67
+          ],
+          [
+            0.64,
+            0.7
+          ],
+          [
+            0.74,
+            0.74
+          ],
+          [
+            0.84,
+            0.76
+          ],
+          [
+            0.92,
+            0.8
+          ]
+        ]
+      }
+    ],
+    "caption": "A discontinuity in treatment assignment at a cutoff can identify a local causal effect when units cannot precisely manipulate the running variable.",
+    "xLabel": "running variable",
+    "yLabel": "outcome"
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "slug": "collaborative-filtering",
+  "title": "User–User & Item–Item Collaborative Filtering",
+  "module": "recsys",
+  "priority": "high",
+  "roles": [
+    "ds",
+    "da"
+  ],
+  "interviewAnswer": "Collaborative filtering recommends based on interaction similarity rather than item metadata. Item-item methods often provide stable neighborhood recommendations; user-user methods can suffer with sparse histories.",
+  "keyPoints": [
+    "Similarity choice and normalization matter.",
+    "Cold start is a core limitation.",
+    "Implicit feedback needs confidence/weighting."
+  ],
+  "resources": [
+    "stanford-cs246"
+  ],
+  "featured": false,
+  "why": "User–User & Item–Item Collaborative Filtering appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
+  "intuition": "Similarity choice and normalization matter.",
+  "deepDive": "Collaborative filtering recommends based on interaction similarity rather than item metadata. Item-item methods often provide stable neighborhood recommendations; user-user methods can suffer with sparse histories. Cold start is a core limitation. Implicit feedback needs confidence/weighting. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
+  "workedExample": "Recommend products similar users co-consumed, or items frequently consumed by users who liked the current item.",
+  "commonMistakes": [
+    "Applying the method without checking its assumptions or data-generating process.",
+    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+  ],
+  "followUps": [
+    "What assumptions does User–User & Item–Item Collaborative Filtering make?",
+    "How would you validate or debug User–User & Item–Item Collaborative Filtering in practice?"
+  ],
+  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "editorial": {
+    "status": "summary"
+  }
+}

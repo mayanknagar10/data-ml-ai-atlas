@@ -1,0 +1,51 @@
+{
+  "slug": "hybrid-search",
+  "title": "Hybrid Lexical + Vector Retrieval",
+  "module": "ir",
+  "priority": "very-high",
+  "roles": [
+    "ds"
+  ],
+  "interviewAnswer": "Hybrid search combines lexical signals, which excel at exact terms and identifiers, with semantic vector similarity, which captures paraphrases. Scores can be normalized/fused or candidates reranked jointly.",
+  "keyPoints": [
+    "Lexical and dense methods fail differently.",
+    "Reciprocal rank fusion is a simple robust fusion.",
+    "Evaluate by query slices."
+  ],
+  "resources": [
+    "ir-book",
+    "faiss"
+  ],
+  "featured": true,
+  "why": "Hybrid Lexical + Vector Retrieval appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
+  "intuition": "Lexical and dense methods fail differently.",
+  "deepDive": "Hybrid search combines lexical signals, which excel at exact terms and identifiers, with semantic vector similarity, which captures paraphrases. Scores can be normalized/fused or candidates reranked jointly. Reciprocal rank fusion is a simple robust fusion. Evaluate by query slices. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
+  "workedExample": "Technical documentation search should match both an exact API symbol and semantically similar explanations.",
+  "commonMistakes": [
+    "Applying the method without checking its assumptions or data-generating process.",
+    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+  ],
+  "followUps": [
+    "What assumptions does Hybrid Lexical + Vector Retrieval make?",
+    "How would you validate or debug Hybrid Lexical + Vector Retrieval in practice?"
+  ],
+  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "visual": {
+    "type": "flow",
+    "title": "Hybrid retrieval",
+    "items": [
+      "Query",
+      "BM25 lexical branch",
+      "Vector semantic branch",
+      "Score fusion",
+      "Reranker",
+      "Results"
+    ],
+    "caption": "Hybrid search combines exact lexical signals with semantic similarity before final ranking.",
+    "accent": 3,
+    "orientation": "horizontal"
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

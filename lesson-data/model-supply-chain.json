@@ -1,0 +1,39 @@
+{
+  "slug": "model-supply-chain",
+  "title": "Model & Dependency Supply-Chain Security",
+  "module": "ai-safety",
+  "priority": "medium",
+  "roles": [
+    "mle",
+    "aie"
+  ],
+  "interviewAnswer": "Model artifacts, packages, containers and datasets are executable/trusted inputs to an AI system. I pin and scan dependencies, verify model provenance/checksums, avoid unsafe deserialization, use trusted registries and keep an SBOM where appropriate.",
+  "keyPoints": [
+    "provenance",
+    "dependency pinning",
+    "unsafe serialization",
+    "trusted registries"
+  ],
+  "resources": [
+    "owasp-llm",
+    "mitre-atlas",
+    "docker"
+  ],
+  "featured": false,
+  "why": "Loading an unknown checkpoint can be equivalent to running unknown code, and compromised dependencies can bypass every model-level safety control.",
+  "intuition": "Treat models like software binaries, not passive data files.",
+  "deepDive": "Pickle-based formats may execute code on load. Safer tensor formats, signatures/checksums, reproducible builds and image scanning reduce risk. Dataset poisoning is another supply-chain threat.",
+  "workedExample": "Downloading a community `.pt` checkpoint and calling `torch.load` can execute malicious pickle payloads; prefer trusted sources and safer formats when possible.",
+  "commonMistakes": [
+    "Assuming a model file cannot execute code.",
+    "Using floating dependency versions in production images."
+  ],
+  "followUps": [
+    "What is an SBOM?",
+    "How would you verify a model artifact?"
+  ],
+  "production": "CI/CD should scan dependencies/images, sign artifacts, restrict registry write access and keep provenance from training run to deployment.",
+  "editorial": {
+    "status": "summary"
+  }
+}

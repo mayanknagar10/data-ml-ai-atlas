@@ -1,0 +1,99 @@
+{
+  "slug": "attention",
+  "title": "Self-Attention: Q, K, V",
+  "module": "transformers",
+  "priority": "very-high",
+  "roles": [
+    "aie",
+    "mle",
+    "as"
+  ],
+  "interviewAnswer": "Self-attention lets each token build a context-dependent representation by comparing its query with other tokens’ keys and taking a weighted combination of their values.",
+  "keyPoints": [
+    "Scaled dot product",
+    "Softmax weights",
+    "Multi-head attention",
+    "Quadratic sequence cost"
+  ],
+  "resources": [
+    "stanford-cs224n",
+    "stanford-cs25",
+    "hf-llm",
+    "d2l",
+    "paper-attention",
+    "distill-attention",
+    "illustrated-transformer"
+  ],
+  "featured": true,
+  "why": "Attention is the central operation behind modern transformers and many multimodal/generative systems.",
+  "intuition": "Think of each token asking a question (query), advertising what it contains (key), and carrying information to share (value). Query–key similarity determines how much of each value is mixed into the output.",
+  "deepDive": "For matrices Q, K and V, scaled dot-product attention computes QKᵀ/√d, applies softmax row-wise, and multiplies by V. Multiple heads learn different projection subspaces. Causal language models additionally mask future positions.",
+  "math": "Attention(Q,K,V)=softmax(QKᵀ/√dₖ)V",
+  "code": "import torch\nscores = Q @ K.transpose(-2, -1) / (Q.size(-1) ** 0.5)\nweights = scores.softmax(dim=-1)\nout = weights @ V",
+  "commonMistakes": [
+    "Saying attention “finds the most important word” as if it were one fixed interpretation.",
+    "Forgetting the √d scaling or causal mask.",
+    "Assuming attention weights are guaranteed explanations."
+  ],
+  "followUps": [
+    "Why multi-head attention?",
+    "Why is attention O(n²) in sequence length?",
+    "What are cross-attention and self-attention?",
+    "What is KV caching?"
+  ],
+  "production": "Long contexts create memory/latency pressure; serving systems use KV caches, efficient attention kernels and sometimes alternative architectures.",
+  "workedExample": "In a sentence, the representation of “bank” can attend differently to “river” versus “loan”, producing context-dependent meaning.",
+  "lab": {
+    "goal": "Implement scaled dot-product self-attention with explicit tensor shapes.",
+    "language": "python",
+    "buildIt": "import torch, math\nB,T,D=2,4,8\nx=torch.randn(B,T,D); Wq=torch.randn(D,D); Wk=torch.randn(D,D); Wv=torch.randn(D,D)\nQ,K,V=x@Wq,x@Wk,x@Wv\nscores=Q@K.transpose(-2,-1)/math.sqrt(D)\nweights=scores.softmax(-1); out=weights@V\nprint(Q.shape,scores.shape,out.shape)\n",
+    "useIt": "from torch.nn.functional import scaled_dot_product_attention\nout2=scaled_dot_product_attention(Q,K,V)\nprint(out2.shape)\n",
+    "verifyIt": "assert torch.allclose(weights.sum(-1),torch.ones(B,T),atol=1e-5)\nassert out.shape==(B,T,D)\n"
+  },
+  "visual": {
+    "type": "matrix",
+    "title": "Self-attention weight map",
+    "rows": [
+      "token 1",
+      "token 2",
+      "token 3",
+      "token 4"
+    ],
+    "cols": [
+      "token 1",
+      "token 2",
+      "token 3",
+      "token 4"
+    ],
+    "cells": [
+      [
+        ".65",
+        ".15",
+        ".10",
+        ".10"
+      ],
+      [
+        ".12",
+        ".52",
+        ".24",
+        ".12"
+      ],
+      [
+        ".08",
+        ".22",
+        ".58",
+        ".12"
+      ],
+      [
+        ".10",
+        ".12",
+        ".18",
+        ".60"
+      ]
+    ],
+    "caption": "Each query token assigns a normalized weight distribution over key tokens; the weighted values form the output."
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

@@ -1,0 +1,44 @@
+{
+  "slug": "feature-importance",
+  "title": "Feature Importance & Explainability",
+  "module": "evaluation",
+  "priority": "high",
+  "roles": [
+    "ds",
+    "mle"
+  ],
+  "interviewAnswer": "Feature importance can mean different things: model-specific impurity scores, permutation importance, SHAP-style local/global explanations, or coefficients. Interpret with care when features are correlated.",
+  "keyPoints": [
+    "Global vs local",
+    "Correlation caveats",
+    "Permutation importance",
+    "Explanations are not causality"
+  ],
+  "resources": [
+    "sklearn",
+    "made-with-ml",
+    "statquest",
+    "google-mlcc"
+  ],
+  "featured": false,
+  "why": "Explainability questions test whether you know what a model used, what caused an outcome, and what an explanation method can legitimately claim.",
+  "intuition": "Feature importance asks how much predictions depend on a feature, but different methods answer different versions of that question. No importance score automatically proves causality.",
+  "deepDive": "Linear coefficients are model-specific and depend on scale and collinearity. Tree impurity importance can favor high-cardinality or frequently split features. Permutation importance measures performance degradation after breaking a feature association but becomes ambiguous with correlated features. SHAP-style methods allocate prediction differences according to a game-theoretic framework, but their interpretation depends on background and feature-dependence assumptions.",
+  "workedExample": "If two features are near-duplicates, permutation of one may show little importance because the other still supplies the same information. Concluding “feature A does not matter” would be misleading.",
+  "code": "from sklearn.inspection import permutation_importance\nr=permutation_importance(model,X_val,y_val,n_repeats=10,random_state=0)",
+  "commonMistakes": [
+    "Equating feature importance with causal effect.",
+    "Comparing raw linear coefficients across differently scaled features.",
+    "Ignoring correlated features when interpreting permutation or SHAP values."
+  ],
+  "followUps": [
+    "Global vs local explanations?",
+    "Why can impurity importance be biased?",
+    "What happens with correlated features?",
+    "How would you validate whether an explanation is useful to domain experts?"
+  ],
+  "production": "Explanations are useful for debugging, stakeholder review and monitoring unexpected feature dependence. They should be paired with model performance, data checks and domain knowledge rather than used as a safety guarantee.",
+  "editorial": {
+    "status": "summary"
+  }
+}

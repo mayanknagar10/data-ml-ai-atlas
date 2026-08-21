@@ -1,0 +1,42 @@
+{
+  "slug": "api-ml",
+  "title": "APIs around ML Models",
+  "module": "mlops",
+  "priority": "high",
+  "roles": [
+    "mle",
+    "aie"
+  ],
+  "interviewAnswer": "An API validates requests, invokes preprocessing and inference, then returns predictions or a job ID. Keep model logic separate from transport/UI so each layer can scale and evolve independently.",
+  "keyPoints": [
+    "Schema validation",
+    "Timeouts",
+    "Async jobs",
+    "Separation of concerns"
+  ],
+  "resources": [
+    "fsdl",
+    "made-with-ml",
+    "stanford-cs329s"
+  ],
+  "featured": false,
+  "why": "APIs are a common interface around online ML services and force you to think about schemas, validation, latency and failures.",
+  "intuition": "The API receives a request, validates it, runs or submits inference, and returns a stable response contract without exposing model internals.",
+  "deepDive": "Define versioned request/response schemas, authentication, size limits, timeouts and error codes. Load the model at process startup, not per request. Real-time inference should keep handlers short; long jobs should return a job ID and run asynchronously. Separate transport/API logic from preprocessing/model code to enable tests and alternative serving modes.",
+  "workedExample": "POST /predict accepts validated tabular features and returns probability + model_version. POST /reconstruct accepts a file, returns job_id, and the client polls /jobs/{id}.",
+  "commonMistakes": [
+    "Loading the model on every request.",
+    "Returning raw stack traces/internal details.",
+    "Using synchronous HTTP for multi-minute GPU jobs."
+  ],
+  "followUps": [
+    "REST vs async job?",
+    "How do you version an API?",
+    "What belongs in request validation?",
+    "How do you handle retries/idempotency?"
+  ],
+  "production": "Monitor request rate, p95/p99 latency, errors, payload sizes and model version. Add health/readiness endpoints and graceful shutdown for rolling deployments.",
+  "editorial": {
+    "status": "summary"
+  }
+}

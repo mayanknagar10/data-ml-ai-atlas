@@ -1,0 +1,44 @@
+{
+  "slug": "recall-at-k",
+  "title": "Recall@K & Ranking Evaluation",
+  "module": "recsys",
+  "priority": "high",
+  "roles": [
+    "mle",
+    "ds",
+    "da"
+  ],
+  "interviewAnswer": "Recall@K asks whether relevant items appear in the top K recommendations. It fits reviewer/recommender systems better than plain classification accuracy because users receive ranked candidates.",
+  "keyPoints": [
+    "Top-k ranking",
+    "Multiple relevant items",
+    "MRR/NDCG alternatives",
+    "Candidate set"
+  ],
+  "resources": [
+    "made-with-ml",
+    "stanford-cs329s",
+    "stanford-cs224w"
+  ],
+  "featured": false,
+  "why": "Ranking systems are judged by whether relevant items appear near the top, so Recall@K is often more meaningful than classification accuracy.",
+  "intuition": "For each query, look only at the first K recommendations and ask what fraction of the relevant items were recovered.",
+  "deepDive": "Recall@K ignores ordering within the top K; Precision@K penalizes irrelevant returned items; MRR emphasizes the rank of the first relevant result; nDCG handles graded relevance and position discounts. Metric choice depends on how many relevant items exist and what users actually inspect. Offline labels may be incomplete—unobserved does not always mean irrelevant.",
+  "math": "Recall@K = (# relevant items in top K)/(# relevant items)",
+  "workedExample": "If the true reviewer set contains 2 people and one appears in the top 10, Recall@10=0.5 for that PR. In a single-label formulation, the metric becomes whether the one known reviewer appears in top K.",
+  "commonMistakes": [
+    "Saying Recall@10=77% means 77% of the top 10 suggestions are correct.",
+    "Ignoring multiple relevant reviewers.",
+    "Comparing ranking metrics without matching candidate sets/label definitions."
+  ],
+  "followUps": [
+    "Precision@K vs Recall@K?",
+    "What is MRR?",
+    "Why nDCG?",
+    "How do incomplete labels affect offline evaluation?"
+  ],
+  "production": "Track ranking quality by query cohort and candidate availability; online acceptance/merge latency may be better business metrics than offline Recall@K alone.",
+  "editorial": {
+    "status": "summary"
+  }
+}

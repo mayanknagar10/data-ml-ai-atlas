@@ -25,7 +25,7 @@ This keeps the website and book aligned.
 ## Example
 
 ```json
-"visual": {
+"visuals": [{
   "type": "flow",
   "title": "Production ML lifecycle",
   "items": [
@@ -36,14 +36,15 @@ This keeps the website and book aligned.
     "Deploy",
     "Monitor"
   ],
-  "caption": "Production ML is a continuous system around the model, not only a training script."
-}
+  "caption": "Production ML is a continuous system around the model, not only a training script.",
+  "afterSection": "lifecycle"
+}]
 ```
 
 ## Visual rules
 
 1. Use a visual only when it makes a relationship, trade-off or process easier to understand.
-2. Prefer one strong visual over several decorative illustrations.
+2. Prefer one strong visual over several decorative illustrations, but use multiple visuals when they explain genuinely different relationships in a full chapter.
 3. Every visual needs a title and explanatory caption.
 4. Curves and bars that are not based on measured data must remain explicitly conceptual.
 5. Do not copy diagrams from papers, courses or blogs into the repository. Re-express the idea using an original Atlas diagram and link the original source in the lesson resources.
@@ -51,6 +52,7 @@ This keeps the website and book aligned.
 7. Check both light and dark themes.
 8. Check print/book rendering when adding a new visual type.
 9. `very-high` priority lessons are expected to have a visual unless the topic is genuinely non-visual.
+10. `afterSection` may reference a structured deep-section ID or a standard chapter anchor such as `intuition`, `formal-view`, `worked-examples`, or `production`.
 
 ## Design intent
 

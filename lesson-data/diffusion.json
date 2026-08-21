@@ -1,0 +1,66 @@
+{
+  "slug": "diffusion",
+  "title": "Diffusion Models",
+  "module": "genai",
+  "priority": "very-high",
+  "roles": [
+    "genai",
+    "aie",
+    "as"
+  ],
+  "interviewAnswer": "Diffusion models learn to reverse a progressive corruption process. During generation they start from noise and iteratively move toward a sample from the learned data distribution.",
+  "keyPoints": [
+    "Forward noising",
+    "Reverse process",
+    "Noise/velocity parameterization",
+    "Sampling cost"
+  ],
+  "resources": [
+    "mit-6s191",
+    "stanford-cs336",
+    "hf-diffusion",
+    "paper-ddpm"
+  ],
+  "featured": true,
+  "why": "Diffusion appears frequently in modern image generation and connects naturally to denoising, score/velocity prediction and latent models.",
+  "intuition": "Training creates noisy versions of real data and teaches the model how to move them toward clean data. At inference, start from noise and repeatedly apply the learned reverse dynamics.",
+  "deepDive": "Different formulations predict noise ε, clean data x₀, velocity v or a score. The forward corruption process is known, while the neural network approximates the reverse process. Latent diffusion runs this process in a compressed representation to reduce compute.",
+  "math": "One common forward form: xₜ = √ᾱₜ x₀ + √(1-ᾱₜ) ε,  ε~N(0,I)",
+  "code": "# Pseudocode\nfor x0 in data:\n    t = sample_timestep()\n    eps = randn_like(x0)\n    xt = add_noise(x0, eps, t)\n    pred = model(xt, t, condition)\n    loss = mse(pred, eps)",
+  "commonMistakes": [
+    "“Diffusion just removes Gaussian noise.” It learns conditional reverse dynamics across noise levels.",
+    "Assuming lower pixel MSE always means better generative quality."
+  ],
+  "followUps": [
+    "Diffusion vs GAN?",
+    "What is classifier-free guidance?",
+    "Why latent diffusion?",
+    "What is v-prediction?"
+  ],
+  "production": "Sampling latency can be significant because inference uses multiple model evaluations; distillation, better solvers and latent-space models reduce cost.",
+  "workedExample": "A conditioned reconstruction model can start from noise and use a compact semantic representation to guide the reverse process toward a compatible microstructure.",
+  "lab": {
+    "goal": "Train intuition with the forward noising equation and a tiny denoising target.",
+    "language": "python",
+    "buildIt": "import torch\nx0=torch.randn(8,3,32,32); eps=torch.randn_like(x0)\nalpha_bar=torch.tensor(.6)\nxt=alpha_bar.sqrt()*x0+(1-alpha_bar).sqrt()*eps\n# A diffusion network would receive (xt,t,condition) and predict eps/v/x0.\nprint(x0.std().item(),xt.std().item())\n",
+    "useIt": "def epsilon_loss(model, x0, t, alpha_bar):\n    eps=torch.randn_like(x0)\n    a=alpha_bar[t].view(-1,1,1,1)\n    xt=a.sqrt()*x0+(1-a).sqrt()*eps\n    return torch.nn.functional.mse_loss(model(xt,t),eps)\n",
+    "verifyIt": "assert xt.shape==x0.shape\nassert torch.isfinite(xt).all()\n"
+  },
+  "visual": {
+    "type": "flow",
+    "title": "Diffusion generation",
+    "items": [
+      "Data x₀",
+      "Add noise over time",
+      "Noisy xₜ",
+      "Learn reverse denoising",
+      "Generated sample"
+    ],
+    "caption": "Training learns the reverse of a gradual corruption process; sampling repeatedly removes noise from an initial random state.",
+    "accent": 2,
+    "orientation": "horizontal"
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

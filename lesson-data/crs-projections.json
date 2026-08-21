@@ -1,0 +1,41 @@
+{
+  "slug": "crs-projections",
+  "title": "Coordinate Reference Systems & Projections",
+  "module": "geospatial",
+  "priority": "high",
+  "roles": [
+    "ds",
+    "de",
+    "as"
+  ],
+  "interviewAnswer": "A CRS defines how coordinates map to Earth. Longitude/latitude is angular; projected CRSs map locations to a plane for meaningful distance/area calculations over a suitable region.",
+  "keyPoints": [
+    "CRS/EPSG",
+    "Geographic vs projected",
+    "Distance",
+    "Distortion"
+  ],
+  "resources": [
+    "geopandas-docs",
+    "geodata-science-book"
+  ],
+  "featured": false,
+  "why": "CRS mistakes can produce plausible-looking but numerically wrong spatial analysis.",
+  "intuition": "One degree of longitude is not the same ground distance everywhere.",
+  "deepDive": "Every map projection preserves some properties and distorts others; choose based on spatial extent and measurement needs.",
+  "math": "",
+  "code": "",
+  "commonMistakes": [
+    "Computing kilometer distances directly in degrees.",
+    "Assigning a CRS label instead of transforming coordinates."
+  ],
+  "followUps": [
+    "What is EPSG:4326?",
+    "Which projection for area?"
+  ],
+  "production": "Store CRS metadata and make transformations explicit/reproducible.",
+  "workedExample": "Before buffering points by 5 km, reproject EPSG:4326 coordinates to an appropriate projected CRS.",
+  "editorial": {
+    "status": "summary"
+  }
+}

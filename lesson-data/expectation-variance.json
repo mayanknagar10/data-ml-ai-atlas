@@ -1,0 +1,55 @@
+{
+  "slug": "expectation-variance",
+  "title": "Expectation, Variance & Covariance",
+  "module": "probability",
+  "priority": "very-high",
+  "roles": [
+    "ds",
+    "mle",
+    "as"
+  ],
+  "interviewAnswer": "Expectation is the long-run average of a random variable; variance measures spread around the mean; covariance measures how two variables vary together, with correlation providing a normalized version.",
+  "keyPoints": [
+    "Linearity of expectation",
+    "Variance units",
+    "Covariance sign",
+    "Correlation ≠ causation"
+  ],
+  "resources": [
+    "harvard-stat110",
+    "statquest"
+  ],
+  "featured": false,
+  "why": "Expectation, variance and covariance are foundational for losses, estimators, uncertainty, PCA, portfolio/risk reasoning, and the bias–variance trade-off.",
+  "intuition": "Expectation is the balance point or long-run average. Variance measures how far values typically spread around that center. Covariance asks whether two variables tend to move together; correlation rescales covariance to a unitless -1 to 1 range.",
+  "deepDive": "Linearity of expectation holds even without independence. Variance is measured in squared units, while standard deviation returns to the original units. Covariance depends on scale; correlation normalizes by both standard deviations. Zero covariance means no linear relationship but does not imply independence except under special distributional assumptions.",
+  "math": "E[aX+bY]=aE[X]+bE[Y]\nVar(X)=E[(X-E[X])²]=E[X²]-E[X]²\nCov(X,Y)=E[(X-E[X])(Y-E[Y])]\nCorr(X,Y)=Cov(X,Y)/(σ_X σ_Y)",
+  "workedExample": "If model error has mean near zero but very high variance, predictions are unbiased on average yet individually unreliable. Reporting only the mean error would hide this instability.",
+  "code": "import numpy as np\nx=np.array([1,2,3,4])\ny=np.array([2,4,5,8])\nprint(x.mean(), x.var(ddof=1))\nprint(np.cov(x,y,ddof=1)[0,1])\nprint(np.corrcoef(x,y)[0,1])",
+  "commonMistakes": [
+    "Saying correlation implies causation.",
+    "Forgetting that variance is in squared units.",
+    "Assuming zero correlation means independence."
+  ],
+  "followUps": [
+    "Why is covariance scale-dependent?",
+    "What is the difference between population and sample variance?",
+    "How does covariance connect to PCA?",
+    "When does zero covariance imply independence?"
+  ],
+  "production": "Use variance and covariance to understand feature redundancy, uncertainty, drift, and instability across cohorts. Correlations can change after deployment, so they should be monitored rather than treated as permanent properties.",
+  "visual": {
+    "type": "concept-map",
+    "title": "Expectation, Variance & Covariance",
+    "items": [
+      "Linearity of expectation",
+      "Variance units",
+      "Covariance sign",
+      "Correlation ≠ causation"
+    ],
+    "caption": "A compact concept map for the most important ideas in this lesson."
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

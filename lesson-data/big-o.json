@@ -1,0 +1,134 @@
+{
+  "slug": "big-o",
+  "title": "Big-O Time & Space Complexity",
+  "module": "dsa",
+  "priority": "high",
+  "roles": [
+    "ds",
+    "mle",
+    "de",
+    "aie"
+  ],
+  "interviewAnswer": "Big-O describes how runtime or memory grows with input size. I use it to compare algorithms asymptotically, while remembering constants, cache behavior and real input sizes still matter in practice.",
+  "keyPoints": [
+    "Know O(1), O(log n), O(n), O(n log n), O(n²).",
+    "Distinguish worst, average and amortized complexity.",
+    "Analyze both time and memory."
+  ],
+  "resources": [
+    "python-docs"
+  ],
+  "featured": false,
+  "why": "Big-O Time & Space Complexity appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
+  "intuition": "Know O(1), O(log n), O(n), O(n log n), O(n²).",
+  "deepDive": "Big-O describes how runtime or memory grows with input size. I use it to compare algorithms asymptotically, while remembering constants, cache behavior and real input sizes still matter in practice. Distinguish worst, average and amortized complexity. Analyze both time and memory. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
+  "workedExample": "Sorting ten million rows with an O(n log n) algorithm is usually viable; an accidental nested O(n²) comparison can become catastrophic.",
+  "commonMistakes": [
+    "Applying the method without checking its assumptions or data-generating process.",
+    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+  ],
+  "followUps": [
+    "What assumptions does Big-O Time & Space Complexity make?",
+    "How would you validate or debug Big-O Time & Space Complexity in practice?"
+  ],
+  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "visual": {
+    "type": "curve",
+    "title": "Growth rates as input size increases",
+    "series": [
+      {
+        "label": "O(log n)",
+        "points": [
+          [
+            0,
+            0.1
+          ],
+          [
+            0.2,
+            0.17
+          ],
+          [
+            0.4,
+            0.22
+          ],
+          [
+            0.6,
+            0.26
+          ],
+          [
+            0.8,
+            0.29
+          ],
+          [
+            1,
+            0.31
+          ]
+        ]
+      },
+      {
+        "label": "O(n)",
+        "points": [
+          [
+            0,
+            0.05
+          ],
+          [
+            0.2,
+            0.18
+          ],
+          [
+            0.4,
+            0.34
+          ],
+          [
+            0.6,
+            0.5
+          ],
+          [
+            0.8,
+            0.67
+          ],
+          [
+            1,
+            0.84
+          ]
+        ]
+      },
+      {
+        "label": "O(n²)",
+        "points": [
+          [
+            0,
+            0.02
+          ],
+          [
+            0.2,
+            0.05
+          ],
+          [
+            0.4,
+            0.16
+          ],
+          [
+            0.6,
+            0.36
+          ],
+          [
+            0.8,
+            0.64
+          ],
+          [
+            1,
+            0.98
+          ]
+        ]
+      }
+    ],
+    "caption": "Conceptual growth: asymptotic complexity matters as data size scales.",
+    "xLabel": "input size",
+    "yLabel": "relative work"
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

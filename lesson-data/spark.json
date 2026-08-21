@@ -1,0 +1,56 @@
+{
+  "slug": "spark",
+  "title": "Spark / PySpark",
+  "module": "data-eng",
+  "priority": "very-high",
+  "roles": [
+    "de",
+    "ds"
+  ],
+  "interviewAnswer": "Spark distributes transformations over partitions of large datasets. DataFrames and Spark SQL provide optimized execution while lazy evaluation lets Spark build an execution plan before running actions.",
+  "keyPoints": [
+    "Partitions",
+    "Lazy evaluation",
+    "Transformations/actions",
+    "Shuffle"
+  ],
+  "resources": [
+    "spark",
+    "confluent-kafka",
+    "flink"
+  ],
+  "featured": false,
+  "why": "Spark/PySpark is common in data engineering and ML pipelines because it provides distributed DataFrame/SQL processing across large datasets.",
+  "intuition": "Spark builds a logical plan from transformations and executes it lazily across partitions. It moves computation to distributed workers rather than loading all data into one Python process.",
+  "deepDive": "Transformations are lazy; actions trigger execution. Narrow transformations can operate partition-locally, while wide transformations require shuffles and are expensive. Spark SQL/DataFrames benefit from Catalyst optimization and Tungsten execution. Partition count, skew, joins, caching and serialization dominate performance. PySpark UDFs can cross Python/JVM boundaries and are often slower than built-in expressions.",
+  "workedExample": "A large join on a skewed customer_id can send huge data to one reducer. Salting, better partitioning or broadcast joins for small dimension tables can reduce the bottleneck.",
+  "commonMistakes": [
+    "Calling collect() on a dataset too large for the driver.",
+    "Using Python UDFs where built-in Spark SQL functions exist.",
+    "Caching everything without memory/cost reasoning."
+  ],
+  "followUps": [
+    "Transformation vs action?",
+    "What causes a shuffle?",
+    "Broadcast join?",
+    "How do you handle data skew?"
+  ],
+  "production": "Monitor stage/task time, shuffle size, executor memory/GC and skew. Partition output files sensibly to avoid both giant files and millions of tiny files.",
+  "visual": {
+    "type": "flow",
+    "title": "Spark execution",
+    "items": [
+      "DataFrame / RDD transformations",
+      "Logical plan",
+      "Stage / task scheduling",
+      "Executors",
+      "Result"
+    ],
+    "caption": "Spark builds a lazy computation plan and distributes stages/tasks across executors.",
+    "accent": 2,
+    "orientation": "horizontal"
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

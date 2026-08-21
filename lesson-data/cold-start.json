@@ -1,0 +1,37 @@
+{
+  "slug": "cold-start",
+  "title": "Cold Start in Recommender Systems",
+  "module": "recsys",
+  "priority": "high",
+  "roles": [
+    "ds",
+    "da"
+  ],
+  "interviewAnswer": "Cold start happens when new users/items lack interaction history. Content features, onboarding signals, exploration and popularity/context priors bridge the gap until collaborative signals accumulate.",
+  "keyPoints": [
+    "User and item cold start differ.",
+    "Explore to collect information.",
+    "Avoid trapping new items behind popularity bias."
+  ],
+  "resources": [
+    "stanford-cs246",
+    "faiss"
+  ],
+  "featured": false,
+  "why": "Cold Start in Recommender Systems is a recurring foundation across data science and machine learning because it affects both theoretical correctness and practical system behavior.",
+  "intuition": "User and item cold start differ.",
+  "deepDive": "Cold start happens when new users/items lack interaction history. Content features, onboarding signals, exploration and popularity/context priors bridge the gap until collaborative signals accumulate. Explore to collect information. Avoid trapping new items behind popularity bias. The interview-level skill is not merely recalling the definition: explain the assumptions, what diagnostic evidence you would inspect, and what alternative you would choose when those assumptions fail.",
+  "workedExample": "Recommend new articles using text embeddings before enough clicks exist for collaborative filtering.",
+  "commonMistakes": [
+    "Using the concept mechanically without checking assumptions or data semantics.",
+    "Reporting one metric/result without examining uncertainty, slices or failure modes."
+  ],
+  "followUps": [
+    "What assumptions or limitations does Cold Start in Recommender Systems have?",
+    "How would you validate Cold Start in Recommender Systems on a real dataset?"
+  ],
+  "production": "In production, make assumptions explicit, validate on representative slices, compare with a simple baseline and monitor the signals that can drift.",
+  "editorial": {
+    "status": "summary"
+  }
+}

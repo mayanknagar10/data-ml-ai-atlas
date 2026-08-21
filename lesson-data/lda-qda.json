@@ -1,0 +1,37 @@
+{
+  "slug": "lda-qda",
+  "title": "LDA & QDA",
+  "module": "ml",
+  "priority": "medium",
+  "roles": [
+    "ds",
+    "as"
+  ],
+  "interviewAnswer": "Linear and Quadratic Discriminant Analysis model class-conditional Gaussian distributions. LDA shares covariance across classes and yields linear boundaries; QDA allows class-specific covariance and quadratic boundaries.",
+  "keyPoints": [
+    "Generative classifiers model p(x|y) and priors.",
+    "LDA lower variance; QDA more flexible.",
+    "Covariance estimation can be unstable in high dimensions."
+  ],
+  "resources": [
+    "isl",
+    "stanford-stats202"
+  ],
+  "featured": false,
+  "why": "LDA & QDA is a recurring foundation across data science and machine learning because it affects both theoretical correctness and practical system behavior.",
+  "intuition": "Generative classifiers model p(x|y) and priors.",
+  "deepDive": "Linear and Quadratic Discriminant Analysis model class-conditional Gaussian distributions. LDA shares covariance across classes and yields linear boundaries; QDA allows class-specific covariance and quadratic boundaries. LDA lower variance; QDA more flexible. Covariance estimation can be unstable in high dimensions. The interview-level skill is not merely recalling the definition: explain the assumptions, what diagnostic evidence you would inspect, and what alternative you would choose when those assumptions fail.",
+  "workedExample": "Classify two well-separated Gaussian populations with LDA when a shared covariance is plausible.",
+  "commonMistakes": [
+    "Using the concept mechanically without checking assumptions or data semantics.",
+    "Reporting one metric/result without examining uncertainty, slices or failure modes."
+  ],
+  "followUps": [
+    "What assumptions or limitations does LDA & QDA have?",
+    "How would you validate LDA & QDA on a real dataset?"
+  ],
+  "production": "In production, make assumptions explicit, validate on representative slices, compare with a simple baseline and monitor the signals that can drift.",
+  "editorial": {
+    "status": "summary"
+  }
+}

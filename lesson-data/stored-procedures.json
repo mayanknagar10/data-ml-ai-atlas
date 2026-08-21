@@ -1,0 +1,43 @@
+{
+  "slug": "stored-procedures",
+  "title": "Stored Procedures & Data Pipelines",
+  "module": "sql",
+  "priority": "medium",
+  "roles": [
+    "de",
+    "ds",
+    "da"
+  ],
+  "interviewAnswer": "Stored procedures package database-side logic such as selection, joins and transformations. In data pipelines, orchestration tools can call these procedures and move their outputs to downstream stages.",
+  "keyPoints": [
+    "Database-side logic",
+    "Parameters",
+    "Transactions",
+    "Separation from orchestration"
+  ],
+  "resources": [
+    "postgres",
+    "made-with-ml"
+  ],
+  "featured": false,
+  "why": "Stored procedures appear in enterprise data systems and are relevant when explaining SQL-centric ETL experience.",
+  "intuition": "A stored procedure packages database-side SQL logic behind a callable name so applications or orchestrators can execute a consistent transformation close to the data.",
+  "deepDive": "Procedures can contain parameterized queries, branching, temporary tables, transactions and error handling. Benefits include centralized logic and reduced data movement; drawbacks include vendor coupling, harder versioning/testing and hidden business logic if poorly managed. Orchestrators such as ADF can call procedures as pipeline activities.",
+  "workedExample": "A new user story requires data from several tables. A procedure joins/filters them into the required shape; ADF triggers the procedure and moves the output to the next pipeline stage.",
+  "code": "-- conceptual\nCREATE PROCEDURE get_customer_features @as_of DATE AS\nSELECT ...\nFROM a JOIN b ON ...\nWHERE event_date <= @as_of;",
+  "commonMistakes": [
+    "Putting every business rule into opaque database procedures with no version control.",
+    "Building dynamic SQL unsafely from user input.",
+    "Confusing a stored procedure with the orchestration pipeline itself."
+  ],
+  "followUps": [
+    "Stored procedure vs view?",
+    "Why execute logic in the database?",
+    "How would ADF call a procedure?",
+    "How do you debug a failing pipeline activity?"
+  ],
+  "production": "Keep SQL/procedure definitions in source control, test with representative data, log parameters/run IDs and separate database logic from orchestration concerns.",
+  "editorial": {
+    "status": "summary"
+  }
+}

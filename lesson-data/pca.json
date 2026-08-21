@@ -1,0 +1,117 @@
+{
+  "slug": "pca",
+  "title": "PCA",
+  "module": "unsupervised",
+  "priority": "high",
+  "roles": [
+    "ds",
+    "mle",
+    "as"
+  ],
+  "interviewAnswer": "PCA finds orthogonal directions of maximum variance and projects data onto the leading components. It is useful for compression, visualization and removing correlated dimensions, but components are linear combinations of original features.",
+  "keyPoints": [
+    "Center data",
+    "Variance explained",
+    "SVD connection",
+    "Not supervised"
+  ],
+  "resources": [
+    "stanford-cs229",
+    "mit-linear-algebra",
+    "3b1b-linear-algebra",
+    "google-mlcc",
+    "isl"
+  ],
+  "featured": false,
+  "why": "PCA links covariance, eigen/SVD methods, dimensionality reduction and preprocessing trade-offs.",
+  "intuition": "Rotate the coordinate system so the first axis captures the greatest variance, the second captures the greatest remaining orthogonal variance, and so on.",
+  "deepDive": "Center data, then find eigenvectors of the covariance matrix or use SVD directly on the centered data. Principal components are orthogonal linear combinations ranked by explained variance. Scaling matters when features have different units. PCA preserves variance, not labels or semantic importance, so low-variance directions can still matter for prediction.",
+  "math": "Centered X = UΣVᵀ; principal directions are columns of V; explained variance ∝ singular_value²",
+  "workedExample": "For 100 highly correlated sensor features, PCA may reduce to 10 components covering most variance, improving visualization/storage but possibly reducing interpretability.",
+  "code": "from sklearn.pipeline import make_pipeline\nfrom sklearn.preprocessing import StandardScaler\nfrom sklearn.decomposition import PCA\nm=make_pipeline(StandardScaler(),PCA(n_components=.95))",
+  "commonMistakes": [
+    "Applying PCA without centering.",
+    "Always standardizing without considering whether physical scale is meaningful.",
+    "Assuming high explained variance guarantees good supervised performance."
+  ],
+  "followUps": [
+    "How does PCA relate to SVD?",
+    "Why are components orthogonal?",
+    "When should you standardize?",
+    "PCA vs autoencoder?"
+  ],
+  "production": "Persist the fitted centering/scaling/components with the model. Refit changes component meaning, so version transformations alongside downstream artifacts.",
+  "lab": {
+    "goal": "Derive PCA from covariance eigenvectors and compare with sklearn.",
+    "language": "python",
+    "buildIt": "import numpy as np\nrng=np.random.default_rng(2); x=rng.normal(size=300); X=np.c_[x,2*x+rng.normal(0,.2,300)]\nXc=X-X.mean(0); cov=Xc.T@Xc/(len(X)-1)\nvals,vecs=np.linalg.eigh(cov); order=np.argsort(vals)[::-1]\nW=vecs[:,order[:1]]; Z=Xc@W\nprint('variance ratio',vals[order[0]]/vals.sum())\n",
+    "useIt": "from sklearn.decomposition import PCA\np=PCA(n_components=1).fit(X)\nprint(p.explained_variance_ratio_)\n",
+    "verifyIt": "assert vals[order[0]]/vals.sum()>.95\n"
+  },
+  "visual": {
+    "type": "scatter",
+    "title": "PCA finds high-variance directions",
+    "series": [
+      {
+        "label": "data",
+        "points": [
+          [
+            0.12,
+            0.18
+          ],
+          [
+            0.2,
+            0.27
+          ],
+          [
+            0.3,
+            0.31
+          ],
+          [
+            0.38,
+            0.42
+          ],
+          [
+            0.48,
+            0.46
+          ],
+          [
+            0.57,
+            0.58
+          ],
+          [
+            0.67,
+            0.61
+          ],
+          [
+            0.76,
+            0.74
+          ],
+          [
+            0.87,
+            0.78
+          ]
+        ]
+      },
+      {
+        "label": "PC1",
+        "points": [
+          [
+            0.1,
+            0.16
+          ],
+          [
+            0.9,
+            0.82
+          ]
+        ]
+      }
+    ],
+    "caption": "The first principal component is the direction that captures the most variance in the data.",
+    "xLabel": "feature 1",
+    "yLabel": "feature 2"
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

@@ -1,0 +1,103 @@
+{
+  "slug": "orchestration",
+  "title": "Workflow Orchestration",
+  "module": "data-eng",
+  "priority": "high",
+  "roles": [
+    "de",
+    "mle"
+  ],
+  "interviewAnswer": "Orchestrators schedule and coordinate multi-step workflows, track dependencies, retries and failures, and separate workflow control from transformation logic.",
+  "keyPoints": [
+    "DAG",
+    "Retries",
+    "Idempotency",
+    "Observability"
+  ],
+  "resources": [
+    "made-with-ml",
+    "fsdl",
+    "confluent-kafka",
+    "flink"
+  ],
+  "featured": false,
+  "why": "Workflow orchestration coordinates dependencies, retries, schedules and observability across data/ML tasks.",
+  "intuition": "A pipeline is a graph of tasks with dependencies. The orchestrator decides when each task runs, retries failures and records status rather than embedding scheduling logic in scripts.",
+  "deepDive": "Orchestrators manage DAGs, parameters, retries, backfills, scheduling and metadata. Tasks should be idempotent so reruns are safe. Separate orchestration from business transformation code. Event-driven triggers fit some workloads; schedules fit others. Backfills require versioned code/data assumptions to avoid silently mixing old data with new logic.",
+  "workedExample": "An ADF/Airflow-like flow could extract source tables, run transformations, validate row counts, publish features and then trigger model training only when upstream tasks succeed.",
+  "commonMistakes": [
+    "Putting complex transformations directly into orchestration definitions.",
+    "Making tasks non-idempotent so retries duplicate data.",
+    "Using time-based dependencies instead of explicit data/task completion signals."
+  ],
+  "followUps": [
+    "What makes a task idempotent?",
+    "DAG vs streaming topology?",
+    "How do retries/backfills work?",
+    "Scheduler vs orchestrator?"
+  ],
+  "production": "Emit run IDs, lineage and task-level metrics; design retries, timeout and alert policies from failure modes rather than using defaults.",
+  "visual": {
+    "type": "network",
+    "title": "Workflow orchestration",
+    "nodes": [
+      {
+        "id": "a",
+        "label": "ingest",
+        "x": 0.15,
+        "y": 0.25
+      },
+      {
+        "id": "b",
+        "label": "validate",
+        "x": 0.42,
+        "y": 0.25
+      },
+      {
+        "id": "c",
+        "label": "transform",
+        "x": 0.68,
+        "y": 0.25
+      },
+      {
+        "id": "d",
+        "label": "train",
+        "x": 0.42,
+        "y": 0.72
+      },
+      {
+        "id": "e",
+        "label": "publish",
+        "x": 0.78,
+        "y": 0.72
+      }
+    ],
+    "edges": [
+      [
+        "a",
+        "b"
+      ],
+      [
+        "b",
+        "c"
+      ],
+      [
+        "b",
+        "d"
+      ],
+      [
+        "c",
+        "e"
+      ],
+      [
+        "d",
+        "e"
+      ]
+    ],
+    "caption": "Orchestrators encode dependencies, retries, schedules and observability across multi-step data/ML workflows.",
+    "directed": true
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

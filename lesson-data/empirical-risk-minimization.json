@@ -1,0 +1,41 @@
+{
+  "slug": "empirical-risk-minimization",
+  "title": "Empirical Risk Minimization",
+  "module": "learning-theory",
+  "priority": "high",
+  "roles": [
+    "ds",
+    "mle",
+    "as"
+  ],
+  "interviewAnswer": "ERM minimizes average training loss; generalization theory asks when low empirical risk also implies low expected risk on unseen data.",
+  "keyPoints": [
+    "Empirical risk",
+    "Population risk",
+    "Hypothesis class",
+    "Generalization gap"
+  ],
+  "resources": [
+    "stanford-cs229",
+    "stanford-stats315a"
+  ],
+  "featured": false,
+  "why": "ERM is the abstraction behind most supervised objectives.",
+  "intuition": "Training optimizes the sample you have, but deployment cares about an unknown population.",
+  "deepDive": "Population risk is an expectation over the data distribution; empirical risk replaces it with a sample average. Capacity, sample size and sampling assumptions affect the gap.",
+  "math": "",
+  "code": "",
+  "commonMistakes": [
+    "Equating training loss with true risk.",
+    "Assuming ERM guarantees a global optimum for nonconvex networks."
+  ],
+  "followUps": [
+    "What controls the generalization gap?",
+    "How does regularization modify ERM?"
+  ],
+  "production": "Validation must represent deployment; theory cannot fix a mismatched sampling process.",
+  "workedExample": "A deep tree can drive training risk near zero while test risk worsens.",
+  "editorial": {
+    "status": "summary"
+  }
+}

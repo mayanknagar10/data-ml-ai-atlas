@@ -1,0 +1,53 @@
+{
+  "slug": "rag-evaluation",
+  "title": "RAG Evaluation",
+  "module": "llm",
+  "priority": "very-high",
+  "roles": [
+    "aie"
+  ],
+  "interviewAnswer": "Evaluate retrieval and generation separately. Retrieval metrics ask whether relevant evidence was found; generation metrics assess faithfulness, relevance and task success. Human or domain evaluation remains important.",
+  "keyPoints": [
+    "Recall@k",
+    "Context precision",
+    "Faithfulness",
+    "End-to-end task success"
+  ],
+  "resources": [
+    "openai-cookbook",
+    "made-with-ml",
+    "hf-llm",
+    "langchain-academy"
+  ],
+  "featured": false,
+  "why": "RAG can fail in retrieval or generation, so one end-to-end “answer quality” score is insufficient for debugging.",
+  "intuition": "Ask two separate questions: did we retrieve the right evidence, and did the model use that evidence correctly?",
+  "deepDive": "Retrieval evaluation uses metrics such as Recall@K, Precision@K, MRR/nDCG depending on labels/ranking needs. Generation evaluation checks faithfulness/groundedness, answer correctness, relevance and citation support. Build a representative evaluation set with answerable and unanswerable queries. LLM-as-judge can scale evaluation but should be calibrated against human judgments and protected from reference leakage.",
+  "workedExample": "If the correct policy paragraph never appears in top-5 retrieval, prompting cannot fix the answer. If it is retrieved but the answer contradicts it, the generation/prompt/model stage is the problem.",
+  "commonMistakes": [
+    "Evaluating only final answer fluency.",
+    "Using the same LLM-generated synthetic questions as the only evaluation benchmark.",
+    "Treating an LLM judge as unquestionable ground truth."
+  ],
+  "followUps": [
+    "How do you evaluate retrieval?",
+    "What is faithfulness?",
+    "How do you evaluate unanswerable queries?",
+    "When is LLM-as-judge appropriate?"
+  ],
+  "production": "Maintain regression suites of real user queries, trace retrieved chunks and model outputs, monitor citation/grounding failures, and rerun evaluation when chunking, embeddings, prompts or models change.",
+  "visual": {
+    "type": "concept-map",
+    "title": "RAG Evaluation",
+    "items": [
+      "Recall@k",
+      "Context precision",
+      "Faithfulness",
+      "End-to-end task success"
+    ],
+    "caption": "A compact concept map for the most important ideas in this lesson."
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

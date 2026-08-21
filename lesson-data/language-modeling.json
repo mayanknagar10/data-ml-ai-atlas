@@ -1,0 +1,44 @@
+{
+  "slug": "language-modeling",
+  "title": "Language Modeling & Next-token Prediction",
+  "module": "nlp",
+  "priority": "high",
+  "roles": [
+    "aie",
+    "as"
+  ],
+  "interviewAnswer": "A causal language model estimates the probability of each next token conditioned on previous tokens and trains using cross-entropy over sequences. Generation repeatedly samples or selects from the predicted distribution.",
+  "keyPoints": [
+    "Autoregression",
+    "Cross-entropy",
+    "Teacher forcing intuition",
+    "Sampling"
+  ],
+  "resources": [
+    "stanford-cs336",
+    "hf-llm",
+    "stanford-cs224n"
+  ],
+  "featured": false,
+  "why": "Next-token prediction is the central training objective behind decoder-only LLMs and connects probabilities, cross-entropy, perplexity and inference.",
+  "intuition": "Given previous tokens, predict a probability distribution for the next token. Repeating this process autoregressively produces text.",
+  "deepDive": "Training uses teacher forcing: the model sees ground-truth previous tokens and minimizes token-level cross-entropy. The likelihood of a sequence factorizes as a product of conditional next-token probabilities. At inference, the model feeds generated tokens back into context and samples/decodes from logits. Exposure to broad data plus scale produces useful representations/behaviors, but the objective optimizes predictive likelihood—not truthfulness.",
+  "math": "p(x_1...x_T)=Π_t p(x_t | x_{<t})\nNLL = -Σ_t log p(x_t|x_{<t})\nPerplexity = exp(mean NLL per token)",
+  "workedExample": "If the correct next token gets probability 0.8, its loss is -log(0.8); if probability is 0.01, the loss is much larger.",
+  "code": "# CrossEntropyLoss over shifted logits/labels is the common training pattern\nloss = F.cross_entropy(logits[:, :-1].reshape(-1,V), ids[:,1:].reshape(-1))",
+  "commonMistakes": [
+    "Saying next-token training explicitly teaches factual truth or reasoning steps.",
+    "Confusing teacher forcing with autoregressive inference.",
+    "Comparing perplexity across incompatible tokenizers without caution."
+  ],
+  "followUps": [
+    "What is perplexity?",
+    "Why causal mask?",
+    "Teacher forcing?",
+    "Why can next-token prediction lead to broad capabilities?"
+  ],
+  "production": "Inference cost depends on context/prefill plus token-by-token decoding; KV cache avoids recomputing all prior attention states each step.",
+  "editorial": {
+    "status": "summary"
+  }
+}

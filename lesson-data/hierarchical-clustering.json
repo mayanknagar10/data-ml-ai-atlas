@@ -1,0 +1,113 @@
+{
+  "slug": "hierarchical-clustering",
+  "title": "Hierarchical Clustering",
+  "module": "unsupervised",
+  "priority": "high",
+  "roles": [
+    "ds",
+    "as"
+  ],
+  "interviewAnswer": "Hierarchical clustering repeatedly merges or splits clusters and produces a dendrogram. Linkage choice defines how inter-cluster distance is measured and can strongly change results.",
+  "keyPoints": [
+    "Agglomerative clustering is common.",
+    "Single/complete/average/Ward linkage behave differently.",
+    "Scaling features matters."
+  ],
+  "resources": [
+    "isl",
+    "stanford-stats202"
+  ],
+  "featured": false,
+  "why": "Hierarchical Clustering appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
+  "intuition": "Agglomerative clustering is common.",
+  "deepDive": "Hierarchical clustering repeatedly merges or splits clusters and produces a dendrogram. Linkage choice defines how inter-cluster distance is measured and can strongly change results. Single/complete/average/Ward linkage behave differently. Scaling features matters. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
+  "workedExample": "Cluster products by standardized usage profiles and inspect multiple cut levels in the dendrogram.",
+  "commonMistakes": [
+    "Applying the method without checking its assumptions or data-generating process.",
+    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+  ],
+  "followUps": [
+    "What assumptions does Hierarchical Clustering make?",
+    "How would you validate or debug Hierarchical Clustering in practice?"
+  ],
+  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "visual": {
+    "type": "network",
+    "title": "Hierarchical clustering dendrogram",
+    "nodes": [
+      {
+        "id": "a",
+        "label": "A",
+        "x": 0.12,
+        "y": 0.85
+      },
+      {
+        "id": "b",
+        "label": "B",
+        "x": 0.3,
+        "y": 0.85
+      },
+      {
+        "id": "c",
+        "label": "C",
+        "x": 0.58,
+        "y": 0.85
+      },
+      {
+        "id": "d",
+        "label": "D",
+        "x": 0.82,
+        "y": 0.85
+      },
+      {
+        "id": "ab",
+        "label": "A+B",
+        "x": 0.21,
+        "y": 0.52
+      },
+      {
+        "id": "cd",
+        "label": "C+D",
+        "x": 0.7,
+        "y": 0.44
+      },
+      {
+        "id": "all",
+        "label": "all",
+        "x": 0.46,
+        "y": 0.15
+      }
+    ],
+    "edges": [
+      [
+        "a",
+        "ab"
+      ],
+      [
+        "b",
+        "ab"
+      ],
+      [
+        "c",
+        "cd"
+      ],
+      [
+        "d",
+        "cd"
+      ],
+      [
+        "ab",
+        "all"
+      ],
+      [
+        "cd",
+        "all"
+      ]
+    ],
+    "caption": "A dendrogram records the sequence and distance at which clusters merge.",
+    "directed": false
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

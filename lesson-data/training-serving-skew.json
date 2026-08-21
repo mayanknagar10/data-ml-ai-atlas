@@ -1,0 +1,43 @@
+{
+  "slug": "training-serving-skew",
+  "title": "Training–Serving Skew",
+  "module": "mlops",
+  "priority": "high",
+  "roles": [
+    "mle",
+    "de",
+    "ds",
+    "aie"
+  ],
+  "interviewAnswer": "Training-serving skew occurs when feature or preprocessing semantics differ between offline training and live inference because of code, time, freshness or source differences.",
+  "keyPoints": [
+    "Code skew",
+    "Time skew",
+    "Data skew",
+    "Shared transformations"
+  ],
+  "resources": [
+    "feast",
+    "google-rules-ml",
+    "stanford-cs329s"
+  ],
+  "featured": false,
+  "why": "Skew can destroy live quality while offline evaluation still looks good.",
+  "intuition": "If training computes a feature in SQL and serving computes it differently in application code, model semantics diverge.",
+  "deepDive": "Prevent skew with shared definitions, point-in-time datasets, schema contracts and parity checks between offline and online values.",
+  "math": "",
+  "code": "",
+  "commonMistakes": [
+    "Calling any distribution shift training-serving skew.",
+    "Retraining without fixing the feature contract."
+  ],
+  "followUps": [
+    "How test offline/online parity?",
+    "How does point-in-time correctness help?"
+  ],
+  "production": "Continuously sample parity checks and treat feature definitions as versioned APIs.",
+  "workedExample": "A recommender trained with end-of-day popularity accidentally sees future clicks unavailable at request time.",
+  "editorial": {
+    "status": "summary"
+  }
+}

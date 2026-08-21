@@ -1,0 +1,68 @@
+{
+  "slug": "vqgan",
+  "title": "VQ-VAE / VQGAN & Vector Quantization",
+  "module": "genai",
+  "priority": "very-high",
+  "roles": [
+    "genai",
+    "cv",
+    "as"
+  ],
+  "interviewAnswer": "Vector quantization maps continuous encoder features to entries in a discrete codebook. VQGAN combines discrete compression with perceptual/adversarial objectives to improve reconstructed visual quality.",
+  "keyPoints": [
+    "Codebook",
+    "Commitment loss",
+    "Straight-through estimator",
+    "Dead codes"
+  ],
+  "resources": [
+    "mit-6s191",
+    "stanford-cs231n",
+    "stanford-cs336",
+    "paper-vqvae",
+    "paper-vqgan"
+  ],
+  "featured": false,
+  "why": "Vector quantization connects compression, discrete representations and generative modeling, and it is directly relevant to tokenizer/bottleneck-based microstructure work.",
+  "intuition": "The encoder produces continuous feature vectors, but the quantizer replaces each with the nearest learned codebook vector. The image is therefore represented by discrete code indices rather than full pixels/features.",
+  "deepDive": "VQ-VAE uses an encoder, discrete codebook and decoder with a commitment/codebook objective; straight-through estimation passes gradients around the non-differentiable nearest-neighbor lookup. VQGAN adds perceptual/adversarial training to improve high-frequency realism and enables stronger compression. Codebook collapse/dead codes are common issues, addressed with usage monitoring, EMA updates or resets.",
+  "math": "z_q(x)=e_k where k=argmin_j ||z_e(x)-e_j||₂\nTypical objective = reconstruction + codebook/commitment terms (+ perceptual/adversarial terms in VQGAN)",
+  "workedExample": "A 256×256 image compressed to a 16×16 grid uses 256 discrete positions. If the codebook has 1024 entries, each index can be represented with 10 bits before entropy coding, which makes bitrate reasoning possible.",
+  "code": "# conceptual nearest-code lookup\ndist=((z[...,None,:]-codebook)**2).sum(-1)\nidx=dist.argmin(-1)\nz_q=codebook[idx]",
+  "commonMistakes": [
+    "Calling quantization lossless compression.",
+    "Ignoring codebook utilization/dead codes.",
+    "Confusing the number of latent tokens with the actual number of bits required to encode them."
+  ],
+  "followUps": [
+    "Why straight-through estimation?",
+    "What is commitment loss?",
+    "How do you measure compression in bits?",
+    "VAE vs VQ-VAE vs VQGAN?"
+  ],
+  "production": "Track codebook version, utilization and bitrate as well as reconstruction metrics. Domain-specific tokenizers may outperform natural-image tokenizers when structural statistics differ.",
+  "lab": {
+    "goal": "Implement the core vector-quantization operation: map continuous latent vectors to nearest codebook entries.",
+    "language": "python",
+    "buildIt": "import numpy as np\nz=np.array([[.1,.9],[.8,.2],[.45,.55]])\ncodebook=np.array([[0.,1.],[1.,0.],[.5,.5]])\nd=((z[:,None,:]-codebook[None,:,:])**2).sum(-1)\nidx=d.argmin(1); quantized=codebook[idx]\nprint(idx,quantized)",
+    "useIt": "# Framework implementations add encoder/decoder training, commitment loss,\n# EMA or gradient-based codebook updates and a straight-through estimator.\nrecon_error=((z-quantized)**2).mean(); print(recon_error)",
+    "verifyIt": "assert idx.tolist()==[0,1,2]\n"
+  },
+  "visual": {
+    "type": "flow",
+    "title": "Vector-quantized autoencoder",
+    "items": [
+      "Image",
+      "Encoder",
+      "Nearest codebook vectors",
+      "Discrete latent grid",
+      "Decoder / GAN loss"
+    ],
+    "caption": "Vector quantization replaces continuous latents with discrete codebook entries; adversarial/perceptual losses improve visual fidelity.",
+    "accent": 2,
+    "orientation": "horizontal"
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

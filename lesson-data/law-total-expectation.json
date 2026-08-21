@@ -1,0 +1,36 @@
+{
+  "slug": "law-total-expectation",
+  "title": "Law of Total Probability & Total Expectation",
+  "module": "probability",
+  "priority": "medium",
+  "roles": [
+    "ds",
+    "as"
+  ],
+  "interviewAnswer": "Condition on useful groups, solve within each group, then average using group probabilities. These identities are powerful for mixture distributions, debugging aggregate metrics and Bayesian reasoning.",
+  "keyPoints": [
+    "P(A)=sum P(A|B)P(B).",
+    "E[X]=E[E[X|Y]].",
+    "Stratification can explain aggregate differences."
+  ],
+  "resources": [
+    "harvard-stat110"
+  ],
+  "featured": false,
+  "why": "Law of Total Probability & Total Expectation is a recurring foundation across data science and machine learning because it affects both theoretical correctness and practical system behavior.",
+  "intuition": "P(A)=sum P(A|B)P(B).",
+  "deepDive": "Condition on useful groups, solve within each group, then average using group probabilities. These identities are powerful for mixture distributions, debugging aggregate metrics and Bayesian reasoning. E[X]=E[E[X|Y]]. Stratification can explain aggregate differences. The interview-level skill is not merely recalling the definition: explain the assumptions, what diagnostic evidence you would inspect, and what alternative you would choose when those assumptions fail.",
+  "workedExample": "Overall conversion is a weighted average of device-specific conversion rates.",
+  "commonMistakes": [
+    "Using the concept mechanically without checking assumptions or data semantics.",
+    "Reporting one metric/result without examining uncertainty, slices or failure modes."
+  ],
+  "followUps": [
+    "What assumptions or limitations does Law of Total Probability & Total Expectation have?",
+    "How would you validate Law of Total Probability & Total Expectation on a real dataset?"
+  ],
+  "production": "In production, make assumptions explicit, validate on representative slices, compare with a simple baseline and monitor the signals that can drift.",
+  "editorial": {
+    "status": "summary"
+  }
+}

@@ -1,0 +1,37 @@
+{
+  "slug": "adaboost",
+  "title": "AdaBoost",
+  "module": "ml",
+  "priority": "medium",
+  "roles": [
+    "ds",
+    "as"
+  ],
+  "interviewAnswer": "AdaBoost sequentially focuses new weak learners on examples previous learners misclassified, then combines learners with performance-based weights. It illustrates boosting before gradient-boosted trees.",
+  "keyPoints": [
+    "Weak learners combine into strong ensemble.",
+    "Misclassified points receive more emphasis.",
+    "Sensitive to noisy labels/outliers in some settings."
+  ],
+  "resources": [
+    "isl",
+    "stanford-stats202"
+  ],
+  "featured": false,
+  "why": "AdaBoost is a recurring foundation across data science and machine learning because it affects both theoretical correctness and practical system behavior.",
+  "intuition": "Weak learners combine into strong ensemble.",
+  "deepDive": "AdaBoost sequentially focuses new weak learners on examples previous learners misclassified, then combines learners with performance-based weights. It illustrates boosting before gradient-boosted trees. Misclassified points receive more emphasis. Sensitive to noisy labels/outliers in some settings. The interview-level skill is not merely recalling the definition: explain the assumptions, what diagnostic evidence you would inspect, and what alternative you would choose when those assumptions fail.",
+  "workedExample": "Combine many decision stumps while increasing weight on examples the ensemble keeps missing.",
+  "commonMistakes": [
+    "Using the concept mechanically without checking assumptions or data semantics.",
+    "Reporting one metric/result without examining uncertainty, slices or failure modes."
+  ],
+  "followUps": [
+    "What assumptions or limitations does AdaBoost have?",
+    "How would you validate AdaBoost on a real dataset?"
+  ],
+  "production": "In production, make assumptions explicit, validate on representative slices, compare with a simple baseline and monitor the signals that can drift.",
+  "editorial": {
+    "status": "summary"
+  }
+}

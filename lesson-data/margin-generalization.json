@@ -1,0 +1,40 @@
+{
+  "slug": "margin-generalization",
+  "title": "Margins & Generalization",
+  "module": "learning-theory",
+  "priority": "medium",
+  "roles": [
+    "as",
+    "mle",
+    "ds"
+  ],
+  "interviewAnswer": "A classification margin measures separation from the decision boundary; large-margin methods such as SVMs prefer a wider buffer while allowing controlled violations in the soft-margin case.",
+  "keyPoints": [
+    "Geometric margin",
+    "Support vectors",
+    "Soft margin",
+    "Robustness intuition"
+  ],
+  "resources": [
+    "stanford-cs229"
+  ],
+  "featured": false,
+  "why": "Margins connect geometry, regularization and generalization.",
+  "intuition": "Two separators can classify training points correctly, but the one farther from the closest examples is less sensitive to small perturbations.",
+  "deepDive": "Hard-margin SVM maximizes geometric margin; soft-margin SVM trades violations against margin size through C.",
+  "math": "",
+  "code": "",
+  "commonMistakes": [
+    "Confusing weight magnitude with geometric margin.",
+    "Assuming margins solve overlapping/noisy labels automatically."
+  ],
+  "followUps": [
+    "Hard vs soft margin?",
+    "How do kernels change geometry?"
+  ],
+  "production": "Margin robustness does not replace shift/feature-quality monitoring.",
+  "workedExample": "For separable classes, support vectors determine the maximal-margin boundary.",
+  "editorial": {
+    "status": "summary"
+  }
+}

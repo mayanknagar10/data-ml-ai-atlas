@@ -1,0 +1,37 @@
+{
+  "slug": "multiple-seasonality",
+  "title": "Multiple & Complex Seasonalities",
+  "module": "time-series",
+  "priority": "medium",
+  "roles": [
+    "ds",
+    "da",
+    "as"
+  ],
+  "interviewAnswer": "Series such as hourly traffic can have daily, weekly and annual patterns. Models may use Fourier terms, dynamic harmonic regression, TBATS, boosted trees or neural approaches rather than a single seasonal period.",
+  "keyPoints": [
+    "Multiple periods need explicit representation.",
+    "Calendar effects differ from smooth seasonality.",
+    "Long seasonal periods make naive one-hot approaches expensive."
+  ],
+  "resources": [
+    "fpp3"
+  ],
+  "featured": false,
+  "why": "Multiple & Complex Seasonalities appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
+  "intuition": "Multiple periods need explicit representation.",
+  "deepDive": "Series such as hourly traffic can have daily, weekly and annual patterns. Models may use Fourier terms, dynamic harmonic regression, TBATS, boosted trees or neural approaches rather than a single seasonal period. Calendar effects differ from smooth seasonality. Long seasonal periods make naive one-hot approaches expensive. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
+  "workedExample": "Call-center volume has intraday and weekday patterns plus holiday effects.",
+  "commonMistakes": [
+    "Applying the method without checking its assumptions or data-generating process.",
+    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+  ],
+  "followUps": [
+    "What assumptions does Multiple & Complex Seasonalities make?",
+    "How would you validate or debug Multiple & Complex Seasonalities in practice?"
+  ],
+  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "editorial": {
+    "status": "summary"
+  }
+}

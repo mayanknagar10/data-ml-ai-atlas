@@ -1,0 +1,57 @@
+{
+  "slug": "design-image-service",
+  "title": "Design an Image Reconstruction Service",
+  "module": "system-design",
+  "priority": "high",
+  "roles": [
+    "mle",
+    "cv"
+  ],
+  "interviewAnswer": "For heavy image/3D inference, prefer asynchronous job submission: upload input, validate, enqueue work, run GPU inference, store outputs, expose job status, and monitor latency/failures/quality.",
+  "keyPoints": [
+    "Async jobs",
+    "Object storage",
+    "GPU worker",
+    "Result lifecycle"
+  ],
+  "resources": [
+    "fsdl",
+    "stanford-cs329s"
+  ],
+  "featured": false,
+  "why": "Image reconstruction system design tests how you turn a heavy research model into a reliable service with storage, GPU scheduling and asynchronous workflows.",
+  "intuition": "Separate upload/job orchestration from GPU inference. Long-running reconstruction should be a queued job with status/result storage, not a blocking request.",
+  "deepDive": "Validate input file/shape/version, store raw input in object storage, create a job record, queue work, run preprocessing+versioned model in a GPU worker/container, write outputs/quality metrics, update status and expose results. Add retries that are idempotent, resource limits, checkpoint/model cache, access control and lifecycle cleanup for huge 3D artifacts.",
+  "workedExample": "64³ volume upload → API returns job_id → GPU worker loads CycleGAN checkpoints → three-plane Stage1/interpolation/refinement/fusion → 1024³ raw result stored → UI shows completion/download path.",
+  "commonMistakes": [
+    "Keeping a 40-minute HTTP request open.",
+    "Passing multi-GB volume bytes repeatedly between services instead of object-storage references.",
+    "Not versioning the exact preprocessing/model pair."
+  ],
+  "followUps": [
+    "Batch vs real-time?",
+    "How do you scale GPU workers?",
+    "How do you handle failed jobs?",
+    "Where do checkpoints live?"
+  ],
+  "production": "Monitor queue wait, GPU utilization, stage timing, failure reasons, output quality and storage cost; use immutable job/model metadata for reproducibility.",
+  "visual": {
+    "type": "flow",
+    "title": "Image inference service",
+    "items": [
+      "Upload / request",
+      "Object storage",
+      "Job queue",
+      "GPU workers",
+      "Postprocess",
+      "Store result",
+      "Notify client"
+    ],
+    "caption": "Heavy image workloads often use asynchronous jobs instead of holding a synchronous request open.",
+    "accent": 3,
+    "orientation": "horizontal"
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

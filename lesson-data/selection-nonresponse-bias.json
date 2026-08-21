@@ -1,0 +1,46 @@
+{
+  "slug": "selection-nonresponse-bias",
+  "title": "Selection, Coverage & Nonresponse Bias",
+  "module": "stat-inference",
+  "priority": "very-high",
+  "roles": [
+    "ds"
+  ],
+  "interviewAnswer": "More data does not fix a systematically unrepresentative sample. Selection and nonresponse bias occur when inclusion/response is related to the outcome or variables of interest.",
+  "keyPoints": [
+    "Distinguish sampling variance from systematic bias.",
+    "Weighting can help only when selection is modeled with adequate information.",
+    "Instrumentation and eligibility define the population actually observed."
+  ],
+  "resources": [
+    "openintro-stats",
+    "stanford-stats60"
+  ],
+  "featured": true,
+  "why": "Selection, Coverage & Nonresponse Bias is a standard part of a broad data/ML curriculum because it changes how models are selected, evaluated or operated in real systems.",
+  "intuition": "Distinguish sampling variance from systematic bias.",
+  "deepDive": "More data does not fix a systematically unrepresentative sample. Selection and nonresponse bias occur when inclusion/response is related to the outcome or variables of interest. Weighting can help only when selection is modeled with adequate information. Instrumentation and eligibility define the population actually observed. A strong answer connects the formal idea to validation, data requirements and failure modes instead of treating the method as a recipe.",
+  "workedExample": "An opt-in survey of power users can produce extremely precise but biased estimates of overall satisfaction.",
+  "commonMistakes": [
+    "Choosing the technique without checking whether its assumptions match the problem.",
+    "Optimizing an offline metric without checking realistic validation slices or operational constraints."
+  ],
+  "followUps": [
+    "When would you not use Selection, Coverage & Nonresponse Bias?",
+    "How would you validate or tune Selection, Coverage & Nonresponse Bias?"
+  ],
+  "production": "In production, validate on realistic slices, track latency/cost when relevant, and monitor for distribution changes or failure modes that the offline metric can hide.",
+  "visual": {
+    "type": "concept-map",
+    "title": "Selection, Coverage & Nonresponse Bias",
+    "items": [
+      "Distinguish sampling variance from systematic bias.",
+      "Weighting can help only when selection is modeled with adequate information.",
+      "Instrumentation and eligibility define the population actually observed."
+    ],
+    "caption": "A compact concept map for the most important ideas in this lesson."
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

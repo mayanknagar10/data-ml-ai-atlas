@@ -9,7 +9,12 @@ python scripts/build.py
 python validate.py
 python scripts/check_labs.py
 python scripts/check_site.py
+python -m unittest discover -s tests -v
 node --check app.js
+node --check chapter-loader.js
+node --check chapter-reader.js
+node scripts/check_chapter_loader.js
+node scripts/check_chapter_reader.js
 ```
 
 The checks cover:
@@ -18,6 +23,11 @@ The checks cover:
 - unique lesson slugs
 - breadth guardrails for major disciplines
 - required deep-complete lesson fields
+- explanatory word-count thresholds and editorial-state rules
+- prerequisite references and dependency cycles
+- answered follow-ups, solved exercises and annotated sources
+- meaningful lab verification rather than print-only output
+- split lesson payload generation and lazy-loader behavior
 - resource schema and HTTPS URLs
 - runnable lab generation and Python syntax
 - visual schema and minimum visual coverage
@@ -56,13 +66,15 @@ All supported visual types were instantiated and checked for non-empty rendering
 
 Mobile QA was run at a 390px viewport. A horizontal-overflow issue caused by grid children and long code blocks was found and fixed with explicit `min-width: 0` constraints. The previous mobile behavior that hid all navigation links was also replaced by an accessible menu.
 
-## Current release metrics
+## Current migration baseline
 
-- 394 deep-complete lessons
+- 394 lessons total; editorial completeness is reported from explicit per-lesson status
 - 45 modules
 - 58 runnable labs
 - 222 original lesson visuals
 - 120 curated external resources
+
+The earlier release treated the presence of legacy summary fields as “deep complete.” The new contract does not. A lesson is counted as complete only when its structured chapter passes validation, and `verified` additionally records a review date and source annotations.
 
 ## Known boundary
 

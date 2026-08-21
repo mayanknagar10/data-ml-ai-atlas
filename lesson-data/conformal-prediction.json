@@ -1,0 +1,50 @@
+{
+  "slug": "conformal-prediction",
+  "title": "Conformal Prediction",
+  "module": "probabilistic-ml",
+  "priority": "high",
+  "roles": [
+    "ds",
+    "as",
+    "mle",
+    "aie"
+  ],
+  "interviewAnswer": "Conformal prediction wraps a predictive model to output sets or intervals with finite-sample marginal coverage under exchangeability; a calibration set determines the nonconformity-score quantile.",
+  "keyPoints": [
+    "Calibration split",
+    "Nonconformity score",
+    "Coverage",
+    "Model-agnostic"
+  ],
+  "resources": [
+    "conformal-intro",
+    "stanford-stats315a",
+    "probml-book"
+  ],
+  "featured": false,
+  "why": "Conformal prediction is a practical way to add rigorous uncertainty to black-box models.",
+  "intuition": "Instead of returning only a point estimate, return an interval calibrated to cover the target at a chosen long-run rate.",
+  "deepDive": "Split conformal trains a base model, scores held-out calibration errors, selects a finite-sample corrected quantile and expands future predictions by that score. The guarantee is marginal, not automatically conditional for every subgroup.",
+  "math": "",
+  "code": "",
+  "commonMistakes": [
+    "Saying each individual interval has a 90% probability guarantee after seeing x.",
+    "Using training examples improperly as calibration."
+  ],
+  "followUps": [
+    "What assumptions are needed?",
+    "Conditional vs marginal coverage?"
+  ],
+  "production": "Monitor empirical coverage under distribution shift and use the sets to drive abstention/fallback when appropriate.",
+  "workedExample": "Regression can use absolute calibration residuals to create prediction intervals around future predictions.",
+  "lab": {
+    "goal": "Build split-conformal regression intervals from held-out residuals.",
+    "language": "python",
+    "buildIt": "import numpy as np\nrng=np.random.default_rng(0)\nx=np.linspace(0,1,120); y=2*x+rng.normal(0,.15,len(x))\npred=2*x\ncal=np.arange(80,100); test=np.arange(100,120)\nscores=np.abs(y[cal]-pred[cal]); q=np.quantile(scores,.90,method=\"higher\")\nlo,hi=pred[test]-q,pred[test]+q\nprint(q,np.mean((y[test]>=lo)&(y[test]<=hi)))\n",
+    "useIt": "print(list(zip(lo[:3],hi[:3])))\n",
+    "verifyIt": "assert q>=0 and np.all(lo<=hi)\n"
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

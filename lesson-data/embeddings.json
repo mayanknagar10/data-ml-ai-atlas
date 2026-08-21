@@ -1,0 +1,97 @@
+{
+  "slug": "embeddings",
+  "title": "Embeddings",
+  "module": "nlp",
+  "priority": "very-high",
+  "roles": [
+    "aie",
+    "mle",
+    "ds",
+    "as"
+  ],
+  "interviewAnswer": "Embeddings map discrete objects such as words, products or code into dense vectors where geometry captures learned relationships. They support similarity search, retrieval and neural-network inputs.",
+  "keyPoints": [
+    "Dense vectors",
+    "Cosine similarity",
+    "Contextual vs static",
+    "Dimensionality"
+  ],
+  "resources": [
+    "stanford-cs224n",
+    "hf-llm",
+    "d2l"
+  ],
+  "featured": false,
+  "why": "Embeddings power semantic search, transformers, recommenders and graph/text systems. Interviewers expect both geometric intuition and awareness of retrieval limitations.",
+  "intuition": "An embedding maps an object—word, document, image, user, PR—into a vector so that useful relationships become geometric, often measured by cosine similarity or dot product.",
+  "deepDive": "Embeddings can be learned through supervised, self-supervised or contrastive objectives. Similarity reflects the training objective and domain, not universal semantic truth. Vector magnitude may carry information for dot-product retrieval; cosine normalizes it away. Retrieval systems need compatible query/document encoders, appropriate chunking and an index such as HNSW/IVF for scale.",
+  "math": "cos(x,y) = (x·y)/(||x|| ||y||)",
+  "workedExample": "CodeBERT maps PR text into vectors where semantically related software changes can be closer even when they do not share exact words, which is useful for reviewer recommendation.",
+  "code": "import numpy as np\ndef cosine(a,b):\n    return a@b/(np.linalg.norm(a)*np.linalg.norm(b))",
+  "commonMistakes": [
+    "Assuming nearest embedding means factually correct or causally related.",
+    "Mixing embeddings produced by incompatible models/spaces.",
+    "Using cosine and dot product interchangeably when vector norms differ."
+  ],
+  "followUps": [
+    "Cosine vs dot-product similarity?",
+    "How are embeddings trained?",
+    "What is an ANN index?",
+    "How do you evaluate embedding retrieval?"
+  ],
+  "production": "Track embedding model/version with the index. Re-embedding can be expensive, and model changes can make old vectors incompatible with new queries.",
+  "visual": {
+    "type": "scatter",
+    "title": "Embedding space",
+    "series": [
+      {
+        "label": "semantic group A",
+        "points": [
+          [
+            0.18,
+            0.22
+          ],
+          [
+            0.22,
+            0.28
+          ],
+          [
+            0.28,
+            0.24
+          ],
+          [
+            0.25,
+            0.34
+          ]
+        ]
+      },
+      {
+        "label": "semantic group B",
+        "points": [
+          [
+            0.67,
+            0.61
+          ],
+          [
+            0.72,
+            0.69
+          ],
+          [
+            0.78,
+            0.63
+          ],
+          [
+            0.74,
+            0.76
+          ]
+        ]
+      }
+    ],
+    "caption": "Embeddings place items with similar learned meaning near each other according to a training objective.",
+    "xLabel": "embedding dimension 1",
+    "yLabel": "embedding dimension 2"
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

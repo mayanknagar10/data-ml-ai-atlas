@@ -1,0 +1,95 @@
+{
+  "slug": "projections-least-squares",
+  "title": "Orthogonality, Projections & Least Squares",
+  "module": "math",
+  "priority": "high",
+  "roles": [
+    "ds",
+    "as"
+  ],
+  "interviewAnswer": "Least squares can be understood as projecting the target vector onto the column space of the design matrix; the residual is orthogonal to that space at the optimum.",
+  "keyPoints": [
+    "Projection geometry explains normal equations.",
+    "Rank deficiency makes solutions non-unique without additional choices.",
+    "QR/SVD are numerically preferable to explicit matrix inverse."
+  ],
+  "resources": [
+    "mit-linear-algebra"
+  ],
+  "featured": false,
+  "why": "Orthogonality, Projections & Least Squares is a recurring foundation across data science and machine learning because it affects both theoretical correctness and practical system behavior.",
+  "intuition": "Projection geometry explains normal equations.",
+  "deepDive": "Least squares can be understood as projecting the target vector onto the column space of the design matrix; the residual is orthogonal to that space at the optimum. Rank deficiency makes solutions non-unique without additional choices. QR/SVD are numerically preferable to explicit matrix inverse. The interview-level skill is not merely recalling the definition: explain the assumptions, what diagnostic evidence you would inspect, and what alternative you would choose when those assumptions fail.",
+  "workedExample": "Fit linear regression by projecting y onto the span of feature columns.",
+  "commonMistakes": [
+    "Using the concept mechanically without checking assumptions or data semantics.",
+    "Reporting one metric/result without examining uncertainty, slices or failure modes."
+  ],
+  "followUps": [
+    "What assumptions or limitations does Orthogonality, Projections & Least Squares have?",
+    "How would you validate Orthogonality, Projections & Least Squares on a real dataset?"
+  ],
+  "production": "In production, make assumptions explicit, validate on representative slices, compare with a simple baseline and monitor the signals that can drift.",
+  "visual": {
+    "type": "scatter",
+    "title": "Least-squares projection",
+    "series": [
+      {
+        "label": "observations",
+        "points": [
+          [
+            0.08,
+            0.2
+          ],
+          [
+            0.18,
+            0.29
+          ],
+          [
+            0.28,
+            0.31
+          ],
+          [
+            0.39,
+            0.46
+          ],
+          [
+            0.52,
+            0.5
+          ],
+          [
+            0.64,
+            0.63
+          ],
+          [
+            0.76,
+            0.69
+          ],
+          [
+            0.88,
+            0.82
+          ]
+        ]
+      },
+      {
+        "label": "fit",
+        "points": [
+          [
+            0.07,
+            0.18
+          ],
+          [
+            0.9,
+            0.84
+          ]
+        ]
+      }
+    ],
+    "caption": "Least squares chooses the line/subspace that minimizes squared residuals.",
+    "xLabel": "feature",
+    "yLabel": "target"
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

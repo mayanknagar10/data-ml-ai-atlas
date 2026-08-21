@@ -1,0 +1,63 @@
+{
+  "slug": "2d-vs-3d-cnn",
+  "title": "2D vs 3D CNNs",
+  "module": "cv",
+  "priority": "very-high",
+  "roles": [
+    "cv",
+    "mle",
+    "as"
+  ],
+  "interviewAnswer": "2D convolutions model height and width, while 3D convolutions also model depth and can learn cross-slice volumetric context directly. The trade-off is dramatically higher memory and compute.",
+  "keyPoints": [
+    "Volumetric consistency",
+    "Parameter/activation cost",
+    "Patch-based training",
+    "Use-case fit"
+  ],
+  "resources": [
+    "stanford-cs231n",
+    "mit-6s191"
+  ],
+  "featured": true,
+  "why": "This comes up whenever your data has volumetric or temporal structure and is especially relevant to medical/scientific imaging.",
+  "intuition": "A 2D kernel sees local height×width neighborhoods. A 3D kernel also moves through depth, so it can learn relationships between neighboring slices instead of treating them independently.",
+  "deepDive": "3D convolutions preserve volumetric context but activation memory grows quickly with depth and spatial resolution. For very large 3D volumes, common compromises are patches, anisotropic kernels, 2.5D multi-view models or hybrid architectures.",
+  "math": "2D kernel: kH×kW\n3D kernel: kD×kH×kW",
+  "code": "import torch.nn as nn\nconv2d = nn.Conv2d(1, 32, kernel_size=3, padding=1)\nconv3d = nn.Conv3d(1, 32, kernel_size=3, padding=1)",
+  "commonMistakes": [
+    "Saying a 3D CNN “directly creates 3D images” regardless of task—the architecture still needs a suitable input/output design.",
+    "Ignoring memory: 1024³ volumes are enormous."
+  ],
+  "followUps": [
+    "What is 2.5D?",
+    "How would you train on 1024³ volumes?",
+    "Why could plane-wise processing create inconsistency?"
+  ],
+  "production": "Benchmark memory, throughput and accuracy. Patch extraction, overlap/blending and distributed inference may be required for large volumes.",
+  "workedExample": "For CT, MRI or materials volumes, a 3D-aware model can improve cross-slice consistency but may require patch-based training because full-volume activations exceed practical GPU memory.",
+  "visual": {
+    "type": "compare",
+    "title": "2D vs 3D convolution",
+    "left": {
+      "title": "2D CNN",
+      "items": [
+        "Kernel over height × width",
+        "Efficient for images/slices",
+        "No direct volumetric context"
+      ]
+    },
+    "right": {
+      "title": "3D CNN",
+      "items": [
+        "Kernel over depth × height × width",
+        "Learns cross-slice context",
+        "Much higher memory/compute"
+      ]
+    },
+    "caption": "The right choice depends on whether the third dimension carries meaningful local structure and whether compute allows volumetric processing."
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

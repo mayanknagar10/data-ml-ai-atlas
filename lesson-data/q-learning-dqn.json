@@ -1,0 +1,62 @@
+{
+  "slug": "q-learning-dqn",
+  "title": "Q-learning & Deep Q-Networks",
+  "module": "rl",
+  "priority": "high",
+  "roles": [
+    "aie",
+    "mle",
+    "as"
+  ],
+  "interviewAnswer": "Q-learning learns the action-value function using the target r + γ max Q(s′,a′), so it can learn the greedy optimal policy from off-policy experience. DQN replaces a tabular Q-function with a neural network and stabilizes training using experience replay and a target network.",
+  "keyPoints": [
+    "off-policy TD learning",
+    "max-Q target",
+    "experience replay",
+    "target network"
+  ],
+  "resources": [
+    "stanford-cs234",
+    "hf-deep-rl",
+    "berkeley-cs285"
+  ],
+  "featured": true,
+  "why": "Q-learning is the cleanest bridge from classical RL to deep RL and exposes issues such as bootstrapping instability and correlated samples.",
+  "intuition": "Learn a score for every action: “if I take this action here, how much future reward should I expect?” Then act using the highest score.",
+  "deepDive": "Tabular Q-learning updates a state-action entry toward a bootstrapped target. DQN approximates Q with a neural network. Replay buffers break temporal correlations and reuse data; a slowly updated target network reduces moving-target instability. Modern variants address overestimation, prioritization and distributional returns.",
+  "math": "Q(s,a) ← Q(s,a)+α[r+γ max_{a′}Q(s′,a′)−Q(s,a)].",
+  "workedExample": "If Q(s,a)=4, reward=2, γ=.9, max next Q=5 and α=.1, target=6.5 and updated Q=4+.1×2.5=4.25.",
+  "commonMistakes": [
+    "Calling Q-learning on-policy.",
+    "Forgetting why DQN uses both replay and a target network."
+  ],
+  "followUps": [
+    "Why can max-Q be overestimated?",
+    "What is Double DQN?",
+    "Why is replay awkward for strongly non-stationary policies?"
+  ],
+  "production": "Track replay-data freshness, action coverage and safety constraints; offline or logged-policy mismatch can dominate model architecture.",
+  "lab": {
+    "goal": "Implement a tiny tabular Q-learning loop, then compare it with a compact library-style API.",
+    "language": "python",
+    "buildIt": "import random\nQ={(0,0):0.0,(0,1):0.0,(1,0):0.0,(1,1):0.0}\nalpha,gamma,eps=.2,.9,.2\ndef step(s,a):\n    # action 1 from state 0 reaches terminal reward; otherwise stay/zero\n    if s==0 and a==1: return 1,1.0,True\n    return 0,0.0,False\nfor episode in range(200):\n    s=0\n    for _ in range(5):\n        a=random.choice([0,1]) if random.random()<eps else max([0,1], key=lambda x:Q[(s,x)])\n        ns,r,done=step(s,a)\n        target=r if done else r+gamma*max(Q[(ns,0)],Q[(ns,1)])\n        Q[(s,a)]+=alpha*(target-Q[(s,a)])\n        s=ns\n        if done: break\nprint(Q)",
+    "useIt": "# In a real project, Gymnasium + Stable-Baselines3/CleanRL can manage environments,\n# replay and neural policies. Keep the same state/action/reward contract.\nbest_action=max([0,1], key=lambda a:Q[(0,a)])\nprint('greedy action:',best_action)",
+    "verifyIt": "assert Q[(0,1)] > Q[(0,0)]\nassert max([0,1], key=lambda a:Q[(0,a)]) == 1\n"
+  },
+  "visual": {
+    "type": "flow",
+    "title": "Q-learning update",
+    "items": [
+      "Observe transition (s,a,r,s′)",
+      "Estimate target r+γ max Q(s′,·)",
+      "Compare with Q(s,a)",
+      "Update parameters"
+    ],
+    "caption": "Q-learning is off-policy because the target uses the best next action regardless of the behavior action.",
+    "accent": 2,
+    "orientation": "horizontal"
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

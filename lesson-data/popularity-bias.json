@@ -1,0 +1,58 @@
+{
+  "slug": "popularity-bias",
+  "title": "Popularity Bias in Recommenders",
+  "module": "recsys",
+  "priority": "medium",
+  "roles": [
+    "mle",
+    "ds",
+    "da"
+  ],
+  "interviewAnswer": "Highly active/popular entities can dominate recommendations even when niche specialists are more relevant. Mitigation can include debiasing, re-ranking, diversity constraints or separating expertise from activity.",
+  "keyPoints": [
+    "Exposure bias",
+    "Hub problem",
+    "Re-ranking",
+    "Offline/online evaluation"
+  ],
+  "resources": [
+    "stanford-cs329s",
+    "stanford-cs224w"
+  ],
+  "featured": false,
+  "why": "Recommenders often over-recommend popular items/users because historical interactions are heavily skewed, reducing personalization and specialist discovery.",
+  "intuition": "If one maintainer reviews almost everything, the model can learn “recommend the maintainer” and score well without learning topic-specific expertise.",
+  "deepDive": "Bias comes from exposure and label imbalance: popular candidates have more training edges and more chances to be selected. Mitigations include candidate normalization, degree-aware features/losses, debiasing embeddings, diversity constraints and separating expertise from activity. Improvements should be validated against relevance, not just forced equal exposure.",
+  "workedExample": "Centroid subtraction can remove a generic “core team” direction so niche PR text surfaces specialists rather than the same high-degree maintainer every time.",
+  "commonMistakes": [
+    "Assuming popularity is always bad—high activity may be a valid reliability signal.",
+    "Forcing equal recommendation rates regardless of relevance.",
+    "Evaluating only aggregate Recall@K and missing long-tail quality."
+  ],
+  "followUps": [
+    "How would you measure popularity bias?",
+    "What is exposure bias?",
+    "How do you balance expertise and activity?",
+    "Could debiasing hurt accuracy?"
+  ],
+  "production": "Monitor recommendation concentration, long-tail coverage, acceptance and workload distribution. Provide business controls when activity/availability is operationally important.",
+  "visual": {
+    "type": "bars",
+    "title": "Popularity bias",
+    "labels": [
+      "head items",
+      "mid-tail",
+      "long-tail"
+    ],
+    "values": [
+      0.78,
+      0.17,
+      0.05
+    ],
+    "caption": "Interaction data is often dominated by popular items, which can cause recommenders to over-recommend the head unless corrected.",
+    "yLabel": "interaction share"
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

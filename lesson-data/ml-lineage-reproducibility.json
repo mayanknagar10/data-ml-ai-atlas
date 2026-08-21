@@ -1,0 +1,43 @@
+{
+  "slug": "ml-lineage-reproducibility",
+  "title": "Data, Model & Experiment Lineage",
+  "module": "mlops",
+  "priority": "high",
+  "roles": [
+    "mle",
+    "de",
+    "ds",
+    "aie"
+  ],
+  "interviewAnswer": "ML lineage records which data snapshot, feature definitions, code commit, configuration, environment and artifact produced a model version so it can be reproduced and audited.",
+  "keyPoints": [
+    "Data version",
+    "Code/config",
+    "Environment",
+    "Artifact provenance"
+  ],
+  "resources": [
+    "stanford-cs329s",
+    "made-with-ml",
+    "fsdl"
+  ],
+  "featured": false,
+  "why": "Without lineage, rollback and debugging become guesswork.",
+  "intuition": "A file named final_v7.pt is not enough to explain how it was created.",
+  "deepDive": "A reproducible run pins source commit, data/version identifiers, preprocessing schema, hyperparameters, environment and metrics. Exact floating-point reproducibility may still vary on GPU hardware.",
+  "math": "",
+  "code": "",
+  "commonMistakes": [
+    "Equating a random seed with complete reproducibility.",
+    "Versioning model weights but not data/preprocessing."
+  ],
+  "followUps": [
+    "What belongs in a model registry?",
+    "How do containers help?"
+  ],
+  "production": "Capture lineage automatically through pipelines and define retention for audit/rollback needs.",
+  "workedExample": "When v42 regresses, lineage lets you compare it with v41 rather than reconstruct history manually.",
+  "editorial": {
+    "status": "summary"
+  }
+}

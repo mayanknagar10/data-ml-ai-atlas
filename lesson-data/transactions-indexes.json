@@ -1,0 +1,55 @@
+{
+  "slug": "transactions-indexes",
+  "title": "Transactions & Indexes",
+  "module": "sql",
+  "priority": "medium",
+  "roles": [
+    "de",
+    "mle",
+    "da"
+  ],
+  "interviewAnswer": "Transactions group operations into an atomic unit with ACID guarantees. Indexes speed reads by maintaining an auxiliary search structure, but they consume storage and make writes more expensive.",
+  "keyPoints": [
+    "ACID",
+    "Commit/rollback",
+    "B-tree intuition",
+    "Read/write trade-off"
+  ],
+  "resources": [
+    "postgres"
+  ],
+  "featured": false,
+  "why": "Transactions protect correctness under concurrent updates; indexes trade storage/write cost for faster access. Both matter in ML/data applications with databases.",
+  "intuition": "A transaction groups changes so they behave as one logical unit. An index is an auxiliary search structure that helps find rows without scanning the whole table.",
+  "deepDive": "ACID: atomicity, consistency, isolation, durability. Isolation levels trade concurrency for protection against anomalies. B-tree indexes are common for equality/range queries; composite index column order matters. Indexes speed reads but consume storage and slow writes/maintenance. An index cannot rescue every query—low-selectivity filters or functions can still scan heavily.",
+  "workedExample": "A service that writes prediction + audit metadata should commit both together. An index on (customer_id, event_time) can accelerate recent-history lookup for one customer.",
+  "code": "BEGIN;\nUPDATE inventory SET qty=qty-1 WHERE sku='A';\nINSERT INTO audit_log(event) VALUES('reserve A');\nCOMMIT;\n\nCREATE INDEX idx_events_customer_time ON events(customer_id,event_time);",
+  "commonMistakes": [
+    "Adding indexes to every column.",
+    "Assuming transactions eliminate all concurrency anomalies at every isolation level.",
+    "Ignoring index order in composite indexes."
+  ],
+  "followUps": [
+    "What does ACID mean?",
+    "Clustered vs non-clustered concept?",
+    "When does an index hurt?",
+    "What is a deadlock?"
+  ],
+  "production": "Monitor slow queries, lock contention and write amplification. Schema/index changes need migration plans and load testing on realistic cardinalities.",
+  "visual": {
+    "type": "flow",
+    "title": "Indexed query path",
+    "items": [
+      "Query",
+      "Index lookup",
+      "Matching pages",
+      "Rows returned"
+    ],
+    "caption": "An index can reduce the amount of data scanned, at the cost of storage and write overhead.",
+    "accent": 1,
+    "orientation": "horizontal"
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

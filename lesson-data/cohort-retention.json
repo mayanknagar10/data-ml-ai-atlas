@@ -1,0 +1,72 @@
+{
+  "slug": "cohort-retention",
+  "title": "Cohort Retention Analysis",
+  "module": "experimentation",
+  "priority": "high",
+  "roles": [
+    "ds",
+    "da"
+  ],
+  "interviewAnswer": "Retention should compare users at the same age since cohort entry, not raw calendar activity. Cohort tables reveal whether product changes affect long-term engagement across acquisition periods.",
+  "keyPoints": [
+    "Define cohort entry event.",
+    "Choose retention event and time grain.",
+    "Account for right-censoring of recent cohorts."
+  ],
+  "resources": [
+    "berkeley-data100"
+  ],
+  "featured": false,
+  "why": "Cohort Retention Analysis appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
+  "intuition": "Define cohort entry event.",
+  "deepDive": "Retention should compare users at the same age since cohort entry, not raw calendar activity. Cohort tables reveal whether product changes affect long-term engagement across acquisition periods. Choose retention event and time grain. Account for right-censoring of recent cohorts. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
+  "workedExample": "Compare week-4 retention for signup cohorts rather than comparing total active users this month vs last month.",
+  "commonMistakes": [
+    "Applying the method without checking its assumptions or data-generating process.",
+    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+  ],
+  "followUps": [
+    "What assumptions does Cohort Retention Analysis make?",
+    "How would you validate or debug Cohort Retention Analysis in practice?"
+  ],
+  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "visual": {
+    "type": "matrix",
+    "title": "Retention cohort heatmap",
+    "rows": [
+      "Jan cohort",
+      "Feb cohort",
+      "Mar cohort"
+    ],
+    "cols": [
+      "M0",
+      "M1",
+      "M2",
+      "M3"
+    ],
+    "cells": [
+      [
+        "100%",
+        "62%",
+        "48%",
+        "39%"
+      ],
+      [
+        "100%",
+        "66%",
+        "51%",
+        "—"
+      ],
+      [
+        "100%",
+        "69%",
+        "—",
+        "—"
+      ]
+    ],
+    "caption": "Cohort analysis separates lifecycle behavior from calendar-time effects."
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

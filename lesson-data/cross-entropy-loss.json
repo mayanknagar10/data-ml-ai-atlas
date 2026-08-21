@@ -1,0 +1,40 @@
+{
+  "slug": "cross-entropy-loss",
+  "title": "Cross-Entropy & Log Loss",
+  "module": "info-theory",
+  "priority": "high",
+  "roles": [
+    "all"
+  ],
+  "interviewAnswer": "Cross-entropy evaluates a predicted probability distribution against the target. In classification it rewards high probability on the true class and heavily penalizes confident wrong predictions.",
+  "keyPoints": [
+    "Negative log-likelihood",
+    "Probabilistic classification",
+    "Logits + softmax",
+    "Calibration connection"
+  ],
+  "resources": [
+    "mit-info-theory",
+    "google-mlcc",
+    "stanford-cs229"
+  ],
+  "featured": false,
+  "why": "Cross-entropy is a core training objective in classification and language modeling.",
+  "intuition": "Predicting 0.9 for the correct class is mildly penalized; predicting 0.001 is punished strongly because -log(0.001) is large.",
+  "deepDive": "With one-hot targets, cross-entropy is the negative log probability assigned to the true class and corresponds to maximum likelihood for common probabilistic classifiers.",
+  "math": "CE(p,q)=-Σp(x)log q(x)",
+  "code": "",
+  "commonMistakes": [
+    "Calling cross-entropy an accuracy metric.",
+    "Applying softmax twice when a framework loss expects logits."
+  ],
+  "followUps": [
+    "Cross-entropy vs KL divergence?",
+    "Why train on logits?"
+  ],
+  "production": "Monitor calibration and downstream decision metrics in addition to cross-entropy.",
+  "workedExample": "True-class probability .9 gives loss ≈.105; probability .1 gives ≈2.303.",
+  "editorial": {
+    "status": "summary"
+  }
+}

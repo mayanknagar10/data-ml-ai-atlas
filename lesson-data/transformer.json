@@ -1,0 +1,60 @@
+{
+  "slug": "transformer",
+  "title": "Transformer Architecture",
+  "module": "transformers",
+  "priority": "very-high",
+  "roles": [
+    "aie",
+    "mle",
+    "as"
+  ],
+  "interviewAnswer": "Transformers combine attention, feed-forward networks, residual connections and normalization. Encoder-only, decoder-only and encoder-decoder variants serve different tasks.",
+  "keyPoints": [
+    "Attention block",
+    "MLP",
+    "Residual/LayerNorm",
+    "Causal mask"
+  ],
+  "resources": [
+    "stanford-cs224n",
+    "stanford-cs336",
+    "hf-llm",
+    "d2l",
+    "paper-attention",
+    "illustrated-transformer"
+  ],
+  "featured": false,
+  "why": "Transformers are central to modern NLP, vision and generative AI; you should be able to explain the block, not only self-attention.",
+  "intuition": "Each token first gathers context through attention, then independently passes through a feed-forward network. Residual connections and normalization stabilize deep stacks.",
+  "deepDive": "A transformer block typically contains multi-head attention, position-wise feed-forward layers, residual connections and normalization. Attention projects hidden states to Q/K/V, computes compatibility and mixes values. Multiple heads learn different subspaces. Encoders use bidirectional attention; autoregressive decoders apply causal masks. Positional information is required because plain attention has no inherent sequence order.",
+  "math": "Attention(Q,K,V)=softmax(QKᵀ/√d_k)V\nFFN(x)=W₂ φ(W₁x+b₁)+b₂",
+  "workedExample": "In a causal language model, token t can attend to positions ≤t but not future tokens; the causal mask enforces next-token prediction semantics.",
+  "code": "# PyTorch concept\nlayer = torch.nn.TransformerEncoderLayer(d_model=512,nhead=8,batch_first=True)",
+  "commonMistakes": [
+    "Explaining a transformer as “just attention” and omitting FFN/residual/norm.",
+    "Forgetting causal masking in decoder-only language models.",
+    "Saying attention gives order without positional information."
+  ],
+  "followUps": [
+    "Why divide by sqrt(d_k)?",
+    "Encoder vs decoder-only transformer?",
+    "What does multi-head attention buy?",
+    "Why LayerNorm instead of BatchNorm?"
+  ],
+  "production": "Transformer inference cost grows with sequence length; batching, KV cache, quantization and context management are major serving concerns.",
+  "visual": {
+    "type": "layers",
+    "title": "Transformer block",
+    "items": [
+      "Token embeddings + positions",
+      "Multi-head self-attention",
+      "Residual + normalization",
+      "Feed-forward network",
+      "Residual + normalization"
+    ],
+    "caption": "Transformer layers alternate attention-based context mixing with position-wise feed-forward computation."
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

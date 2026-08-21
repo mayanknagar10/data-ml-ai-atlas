@@ -1,0 +1,39 @@
+{
+  "slug": "bloom-filter",
+  "title": "Bloom Filters",
+  "module": "data-mining",
+  "priority": "medium",
+  "roles": [
+    "de",
+    "mle"
+  ],
+  "interviewAnswer": "A Bloom filter is a compact probabilistic set-membership structure: it can return false positives but not false negatives under normal insert/query use.",
+  "keyPoints": [
+    "Bit array",
+    "Multiple hashes",
+    "False positives",
+    "Memory efficiency"
+  ],
+  "resources": [
+    "stanford-cs246"
+  ],
+  "featured": false,
+  "why": "Bloom filters avoid expensive storage/cache lookups when a key definitely is absent.",
+  "intuition": "They answer “definitely not present” or “maybe present.”",
+  "deepDive": "Each inserted key sets k hash-selected bits; queries test those bits. Saturation raises false-positive probability.",
+  "math": "",
+  "code": "",
+  "commonMistakes": [
+    "Saying Bloom filters have false negatives by design.",
+    "Deleting from a standard Bloom filter without a counting variant."
+  ],
+  "followUps": [
+    "How do k and array size affect false positives?",
+    "Counting Bloom filter?"
+  ],
+  "production": "Size for expected cardinality and monitor saturation.",
+  "workedExample": "A storage engine can skip disk reads for keys the filter says are absent.",
+  "editorial": {
+    "status": "summary"
+  }
+}

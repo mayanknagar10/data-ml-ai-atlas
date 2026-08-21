@@ -1,0 +1,59 @@
+{
+  "slug": "parquet-columnar",
+  "title": "Columnar Storage, Parquet & Predicate Pushdown",
+  "module": "analytics-eng",
+  "priority": "high",
+  "roles": [
+    "de",
+    "ds",
+    "da"
+  ],
+  "interviewAnswer": "Columnar formats store values by column, enabling compression and selective scans for analytics. Parquet also stores metadata/statistics that engines can use for predicate pushdown and row-group pruning.",
+  "keyPoints": [
+    "Columnar is ideal for scans of a subset of columns.",
+    "Compression benefits from similar adjacent values.",
+    "File sizing/partitioning affect performance."
+  ],
+  "resources": [
+    "spark",
+    "duckdb"
+  ],
+  "featured": false,
+  "why": "Columnar Storage, Parquet & Predicate Pushdown is a recurring foundation across data science and machine learning because it affects both theoretical correctness and practical system behavior.",
+  "intuition": "Columnar is ideal for scans of a subset of columns.",
+  "deepDive": "Columnar formats store values by column, enabling compression and selective scans for analytics. Parquet also stores metadata/statistics that engines can use for predicate pushdown and row-group pruning. Compression benefits from similar adjacent values. File sizing/partitioning affect performance. The interview-level skill is not merely recalling the definition: explain the assumptions, what diagnostic evidence you would inspect, and what alternative you would choose when those assumptions fail.",
+  "workedExample": "Read only date, user_id and revenue columns from a multi-terabyte Parquet dataset rather than full rows.",
+  "commonMistakes": [
+    "Using the concept mechanically without checking assumptions or data semantics.",
+    "Reporting one metric/result without examining uncertainty, slices or failure modes."
+  ],
+  "followUps": [
+    "What assumptions or limitations does Columnar Storage, Parquet & Predicate Pushdown have?",
+    "How would you validate Columnar Storage, Parquet & Predicate Pushdown on a real dataset?"
+  ],
+  "production": "In production, make assumptions explicit, validate on representative slices, compare with a simple baseline and monitor the signals that can drift.",
+  "visual": {
+    "type": "compare",
+    "title": "Row vs column storage",
+    "left": {
+      "title": "Row-oriented",
+      "items": [
+        "Row 1: A B C",
+        "Row 2: A B C",
+        "Great for point writes"
+      ]
+    },
+    "right": {
+      "title": "Column-oriented",
+      "items": [
+        "Column A: A A",
+        "Column B: B B",
+        "Great for scans/aggregation"
+      ]
+    },
+    "caption": "Columnar formats improve analytical scans by reading only the fields needed."
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

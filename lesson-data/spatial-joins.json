@@ -1,0 +1,41 @@
+{
+  "slug": "spatial-joins",
+  "title": "Spatial Joins & Predicates",
+  "module": "geospatial",
+  "priority": "high",
+  "roles": [
+    "ds",
+    "de",
+    "as"
+  ],
+  "interviewAnswer": "A spatial join combines rows based on geometric relations such as within, contains, intersects or nearest instead of equality on a key.",
+  "keyPoints": [
+    "Point-in-polygon",
+    "Within/contains",
+    "Nearest",
+    "CRS alignment"
+  ],
+  "resources": [
+    "geopandas-docs",
+    "geodata-science-book"
+  ],
+  "featured": false,
+  "why": "Spatial joins are the geographic analogue of a core relational data operation.",
+  "intuition": "Infer a region from whether a customer point lies inside a polygon instead of requiring a region_id.",
+  "deepDive": "Predicates have different boundary semantics and can create one-to-many matches; distance joins require compatible coordinate systems.",
+  "math": "",
+  "code": "",
+  "commonMistakes": [
+    "Using intersects when within is required.",
+    "Ignoring duplicates or CRS mismatch."
+  ],
+  "followUps": [
+    "sjoin vs nearest?",
+    "How do indexes accelerate joins?"
+  ],
+  "production": "Validate geometry, CRS, cardinality and boundary rules before downstream aggregation.",
+  "workedExample": "Attach neighborhood demographics to store locations with a point-in-polygon join.",
+  "editorial": {
+    "status": "summary"
+  }
+}

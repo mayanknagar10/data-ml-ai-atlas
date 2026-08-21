@@ -1,0 +1,68 @@
+{
+  "slug": "azure-aws-map",
+  "title": "Cross-Cloud Mapping: AWS, Azure & GCP",
+  "module": "cloud",
+  "priority": "high",
+  "roles": [
+    "mle",
+    "de",
+    "ds"
+  ],
+  "interviewAnswer": "Map cloud services by responsibility rather than forcing exact equivalents. S3, Azure Blob Storage and Google Cloud Storage all provide object storage; ECR, ACR and Artifact Registry store images/artifacts; SageMaker, Azure Machine Learning and Vertex AI cover overlapping managed ML lifecycle capabilities, while container, workflow and observability services differ in boundaries and semantics.",
+  "keyPoints": [
+    "Map capabilities, not brand names",
+    "No exact one-to-one mapping",
+    "Storage/compute/orchestration/observability/IAM",
+    "Understand provider-specific semantics"
+  ],
+  "resources": [
+    "azure-ml",
+    "aws-ml",
+    "aws-sagemaker",
+    "gcp-vertex",
+    "docker"
+  ],
+  "featured": false,
+  "why": "Cross-cloud reasoning tests whether you understand architecture well enough to transfer skills without pretending service APIs or operational models are identical.",
+  "intuition": "Draw the architecture first using provider-neutral boxes—storage, registry, compute, workflow, serving, monitoring and identity—then annotate how each cloud could implement those boxes.",
+  "deepDive": "Typical conceptual mappings include S3 ↔ Azure Blob Storage ↔ Cloud Storage; ECR ↔ ACR ↔ Artifact Registry; SageMaker ↔ Azure Machine Learning ↔ Vertex AI for overlapping managed ML lifecycle tasks; CloudWatch ↔ Azure Monitor ↔ Cloud Monitoring for observability. Orchestration and serverless/container services do not map cleanly one-to-one: Glue/Step Functions, Data Factory, Dataflow/Workflows, ECS/EKS, AKS, GKE/Cloud Run and related services have different abstractions. Identity, network defaults, quotas, pricing and regional availability also differ.",
+  "workedExample": "A batch scoring workflow can be described generically as object storage → preprocessing job → versioned model inference → output storage → monitoring. On each cloud, choose services based on team skills, data location, GPU/runtime needs, orchestration complexity and governance rather than translating product names mechanically.",
+  "commonMistakes": [
+    "Saying AWS, Azure and GCP differ only by UI.",
+    "Claiming every service has one exact equivalent.",
+    "Listing product names without explaining what architectural responsibility each one satisfies."
+  ],
+  "followUps": [
+    "How would you map object storage and registries across the three clouds?",
+    "When would you choose managed ML versus Kubernetes?",
+    "What knowledge transfers across providers?",
+    "What does not transfer cleanly?"
+  ],
+  "production": "Keep data contracts, container interfaces and model metadata portable where useful, but learn the chosen cloud’s native identity, observability, networking, quota and managed-service behavior before operating production workloads.",
+  "visual": {
+    "type": "compare",
+    "title": "Azure ↔ AWS concept mapping",
+    "left": {
+      "title": "Azure",
+      "items": [
+        "Blob Storage",
+        "Data Factory",
+        "ACR",
+        "Azure Monitor"
+      ]
+    },
+    "right": {
+      "title": "AWS",
+      "items": [
+        "S3",
+        "Glue / orchestration services",
+        "ECR",
+        "CloudWatch"
+      ]
+    },
+    "caption": "Concepts transfer across clouds, while service APIs, IAM, networking and operational details differ."
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

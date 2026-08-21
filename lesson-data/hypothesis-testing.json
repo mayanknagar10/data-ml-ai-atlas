@@ -1,0 +1,93 @@
+{
+  "slug": "hypothesis-testing",
+  "title": "Hypothesis Testing & p-values",
+  "module": "stat-inference",
+  "priority": "very-high",
+  "roles": [
+    "ds",
+    "da",
+    "as"
+  ],
+  "interviewAnswer": "A p-value is the probability, assuming the null hypothesis and test assumptions are true, of seeing a result at least as extreme as the observed one. It is not the probability that the null hypothesis is true.",
+  "keyPoints": [
+    "Null/alternative",
+    "Test statistic",
+    "Type I/II errors",
+    "Statistical vs practical significance"
+  ],
+  "resources": [
+    "statquest",
+    "harvard-stat110"
+  ],
+  "featured": true,
+  "why": "Data Scientist interviews often test whether you can reason about experiments instead of mechanically running scipy.stats functions.",
+  "intuition": "Start by assuming there is no real effect (the null). Ask how surprising your observed result would be under that assumption. A small p-value means the observation would be unusual under the null—it does not directly tell you the probability that the null is false.",
+  "deepDive": "A hypothesis test requires a null/alternative, a test statistic, assumptions and a decision threshold. Type I error is a false positive; Type II is a false negative. Statistical significance is not necessarily business significance, which is why effect size and confidence intervals matter.",
+  "math": "p-value = P(test statistic at least as extreme as observed | H₀ and assumptions)",
+  "code": "from scipy import stats\n# Example: compare two independent sample means\na = [10, 11, 9, 12, 10]\nb = [13, 14, 12, 13, 15]\nstat, p = stats.ttest_ind(a, b, equal_var=False)\nprint(stat, p)",
+  "commonMistakes": [
+    "“p=0.03 means there is a 97% chance the alternative is true.” — incorrect.",
+    "Treating p<0.05 as automatically important.",
+    "Choosing the test after repeatedly looking at results."
+  ],
+  "followUps": [
+    "What is statistical power?",
+    "Type I vs Type II error?",
+    "When would you use a non-parametric test?",
+    "How does multiple testing change interpretation?"
+  ],
+  "production": "In product experimentation, predefine the primary metric, sample-size/power plan, stopping rule and guardrail metrics before observing the result.",
+  "workedExample": "A tiny conversion lift can be statistically significant with millions of users but economically irrelevant. Always report effect size and uncertainty.",
+  "lab": {
+    "goal": "Compute a simple two-sample mean test and connect the statistic to the null hypothesis.",
+    "language": "python",
+    "buildIt": "import math\na=[10,11,9,12,10,11]; b=[13,12,14,11,13,14]\ndef mean(x): return sum(x)/len(x)\ndef var(x):\n    m=mean(x); return sum((v-m)**2 for v in x)/(len(x)-1)\nse=math.sqrt(var(a)/len(a)+var(b)/len(b))\nt=(mean(b)-mean(a))/se\nprint('difference',mean(b)-mean(a),'t statistic',t)",
+    "useIt": "from scipy.stats import ttest_ind\nprint(ttest_ind(b,a,equal_var=False))",
+    "verifyIt": "assert mean(b)>mean(a)\nassert t>1\n"
+  },
+  "visual": {
+    "type": "curve",
+    "title": "Null distribution and rejection region",
+    "series": [
+      {
+        "label": "null density",
+        "points": [
+          [
+            0,
+            0.02
+          ],
+          [
+            0.18,
+            0.12
+          ],
+          [
+            0.35,
+            0.42
+          ],
+          [
+            0.5,
+            0.88
+          ],
+          [
+            0.65,
+            0.42
+          ],
+          [
+            0.82,
+            0.12
+          ],
+          [
+            1,
+            0.02
+          ]
+        ]
+      }
+    ],
+    "caption": "A p-value measures how extreme the observed statistic is under the null model; the rejection region lives in the tails.",
+    "xLabel": "test statistic",
+    "yLabel": "density"
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

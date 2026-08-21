@@ -1,0 +1,40 @@
+{
+  "slug": "perceptron-online-learning",
+  "title": "Perceptron & Online Learning",
+  "module": "ml",
+  "priority": "medium",
+  "roles": [
+    "ds",
+    "mle",
+    "as"
+  ],
+  "interviewAnswer": "The perceptron is an online linear classifier that updates weights only when an example is misclassified. Under linear separability it has a finite mistake bound tied to the margin.",
+  "keyPoints": [
+    "Online updates",
+    "Linear classifier",
+    "Mistake-driven learning",
+    "Margin"
+  ],
+  "resources": [
+    "stanford-cs229"
+  ],
+  "featured": false,
+  "why": "The perceptron is a simple foundation for online learning and linear decision rules.",
+  "intuition": "Process one example at a time: if the current separator is wrong, nudge it toward the correct class.",
+  "deepDive": "For labels ±1, update w←w+ηyx when y(w·x)≤0. The classical convergence theorem assumes separability; noisy data can cause ongoing updates.",
+  "math": "",
+  "code": "",
+  "commonMistakes": [
+    "Assuming convergence on nonseparable data.",
+    "Confusing perceptron probabilities with logistic regression."
+  ],
+  "followUps": [
+    "Perceptron vs logistic regression?",
+    "What is the mistake bound?"
+  ],
+  "production": "Online updates require drift handling, learning-rate/version controls and protection from bad/adversarial labels.",
+  "workedExample": "A streaming spam classifier can update after each newly labeled message rather than retraining from scratch.",
+  "editorial": {
+    "status": "summary"
+  }
+}

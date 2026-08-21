@@ -1,0 +1,118 @@
+{
+  "slug": "svm",
+  "title": "Support Vector Machines",
+  "module": "ml",
+  "priority": "high",
+  "roles": [
+    "ds",
+    "mle",
+    "as"
+  ],
+  "interviewAnswer": "An SVM finds a decision boundary with maximum margin. Kernel functions allow nonlinear boundaries by computing similarity in an implicit higher-dimensional feature space.",
+  "keyPoints": [
+    "Margin",
+    "Support vectors",
+    "C parameter",
+    "Kernel trick"
+  ],
+  "resources": [
+    "stanford-cs229",
+    "statquest",
+    "google-mlcc",
+    "isl"
+  ],
+  "featured": false,
+  "why": "SVMs test geometric reasoning, margins, kernels and regularization trade-offs.",
+  "intuition": "A linear SVM chooses a separating hyperplane with the widest margin to the closest training points. Only support vectors determine the boundary.",
+  "deepDive": "Soft-margin SVM allows violations controlled by C: large C penalizes mistakes strongly and can reduce margin; small C regularizes more. Kernel SVM uses similarity functions to represent nonlinear boundaries implicitly through the kernel trick. Feature scaling matters because distances/dot products drive the geometry. Kernel methods scale poorly to very large n.",
+  "math": "min 1/2||w||² + C Σ ξ_i subject to y_i(wᵀx_i+b) ≥ 1-ξ_i",
+  "workedExample": "An RBF SVM can model a curved decision boundary on a medium-size dataset, but on millions of rows gradient boosting or linear methods may be much more practical.",
+  "code": "from sklearn.svm import SVC\nm=SVC(kernel='rbf',C=1,gamma='scale',probability=True)\nm.fit(X_train,y_train)",
+  "commonMistakes": [
+    "Calling C the regularization strength in the same direction as lambda; larger C means weaker regularization.",
+    "Skipping feature scaling for distance-based kernels.",
+    "Assuming SVM probability outputs are native margins without calibration."
+  ],
+  "followUps": [
+    "What are support vectors?",
+    "What does C control?",
+    "What is the kernel trick?",
+    "Linear vs RBF SVM?"
+  ],
+  "production": "Kernel SVM training/inference can become expensive with many support vectors. Monitor scale and calibration if probabilities are needed.",
+  "visual": {
+    "type": "scatter",
+    "title": "Maximum-margin classifier",
+    "series": [
+      {
+        "label": "class A",
+        "points": [
+          [
+            0.12,
+            0.2
+          ],
+          [
+            0.18,
+            0.28
+          ],
+          [
+            0.24,
+            0.18
+          ],
+          [
+            0.3,
+            0.31
+          ],
+          [
+            0.35,
+            0.22
+          ]
+        ]
+      },
+      {
+        "label": "class B",
+        "points": [
+          [
+            0.63,
+            0.68
+          ],
+          [
+            0.7,
+            0.76
+          ],
+          [
+            0.76,
+            0.63
+          ],
+          [
+            0.83,
+            0.79
+          ],
+          [
+            0.88,
+            0.69
+          ]
+        ]
+      },
+      {
+        "label": "margin",
+        "points": [
+          [
+            0.3,
+            0.7
+          ],
+          [
+            0.7,
+            0.3
+          ]
+        ]
+      }
+    ],
+    "caption": "An SVM chooses a separating boundary with maximum margin; kernels allow nonlinear boundaries.",
+    "xLabel": "feature 1",
+    "yLabel": "feature 2"
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

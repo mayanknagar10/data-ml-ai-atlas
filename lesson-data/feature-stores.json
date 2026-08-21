@@ -1,0 +1,56 @@
+{
+  "slug": "feature-stores",
+  "title": "Feature Stores: Offline vs Online",
+  "module": "mlops",
+  "priority": "high",
+  "roles": [
+    "mle",
+    "de",
+    "ds",
+    "aie"
+  ],
+  "interviewAnswer": "A feature store manages reusable feature definitions and provides historical point-in-time-correct features for training plus fresh low-latency values for online inference.",
+  "keyPoints": [
+    "Offline store",
+    "Online store",
+    "Point-in-time joins",
+    "Materialization"
+  ],
+  "resources": [
+    "feast",
+    "stanford-cs329s",
+    "google-rules-ml"
+  ],
+  "featured": false,
+  "why": "Feature stores address consistency and reuse problems in real-time ML.",
+  "intuition": "Training needs historical values as they existed at prediction time; serving needs the freshest values quickly.",
+  "deepDive": "Feature definitions can feed offline analytical stores and online key-value stores; point-in-time retrieval prevents future leakage.",
+  "math": "",
+  "code": "",
+  "commonMistakes": [
+    "Calling a feature store just a feature database.",
+    "Joining current values into historical training rows."
+  ],
+  "followUps": [
+    "When is a feature store overkill?",
+    "Batch vs streaming features?"
+  ],
+  "production": "Use one when reuse, real-time freshness or training/serving consistency justifies the complexity.",
+  "workedExample": "A fraud model uses historical 30-day transaction counts in training and fresh counts at authorization time.",
+  "visual": {
+    "type": "flow",
+    "title": "Offline and online feature paths",
+    "items": [
+      "Feature definition",
+      "Batch / stream compute",
+      "Offline history",
+      "Online latest values",
+      "Training / serving"
+    ],
+    "caption": "A feature platform keeps semantics consistent while optimizing different access patterns.",
+    "orientation": "horizontal"
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

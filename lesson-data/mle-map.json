@@ -1,0 +1,46 @@
+{
+  "slug": "mle-map",
+  "title": "MLE vs MAP",
+  "module": "stat-inference",
+  "priority": "high",
+  "roles": [
+    "ds",
+    "mle",
+    "da",
+    "as"
+  ],
+  "interviewAnswer": "Maximum likelihood chooses parameters that make observed data most likely. MAP adds a prior and chooses the most probable parameters after combining prior and likelihood; many regularizers can be interpreted as MAP priors.",
+  "keyPoints": [
+    "Likelihood vs probability",
+    "Prior",
+    "Regularization link",
+    "Bayesian interpretation"
+  ],
+  "resources": [
+    "stanford-cs229",
+    "harvard-stat110",
+    "statquest"
+  ],
+  "featured": false,
+  "why": "MLE and MAP connect probability, optimization and regularization. They help explain why familiar losses such as cross-entropy and squared error arise from probabilistic assumptions.",
+  "intuition": "MLE asks which parameters make the observed data most plausible. MAP asks the same question but also incorporates what parameter values were plausible before seeing the data.",
+  "deepDive": "Given independent observations, MLE maximizes the likelihood or equivalently the log-likelihood. MAP maximizes log likelihood plus log prior. A Gaussian prior over weights produces an L2-style penalty; a Laplace prior produces an L1-style penalty. MLE and MAP return point estimates, unlike full Bayesian inference which maintains a posterior distribution.",
+  "math": "MLE: θ̂ = argmax_θ p(D|θ)\nMAP: θ̂ = argmax_θ p(D|θ)p(θ) = argmax [log p(D|θ)+log p(θ)]",
+  "workedExample": "Linear regression with Gaussian observation noise leads to minimizing squared error. Adding a zero-mean Gaussian prior on coefficients produces an L2-regularized objective, giving a MAP interpretation of ridge regression.",
+  "code": "# Negative log-likelihood + L2 prior (schematic)\nloss = data_negative_log_likelihood + lambda_ * (weights**2).sum()",
+  "commonMistakes": [
+    "Calling the likelihood a probability distribution over parameters.",
+    "Saying MAP is full Bayesian inference.",
+    "Assuming regularization always corresponds to the same prior regardless of formulation."
+  ],
+  "followUps": [
+    "Why do we maximize log-likelihood instead of likelihood?",
+    "How does ridge regression connect to a Gaussian prior?",
+    "What is the difference between MAP and posterior mean?",
+    "When does the prior matter less?"
+  ],
+  "production": "Probabilistic objectives make uncertainty assumptions explicit. If noise characteristics or class probabilities shift, likelihood-based training assumptions and calibration can become wrong.",
+  "editorial": {
+    "status": "summary"
+  }
+}

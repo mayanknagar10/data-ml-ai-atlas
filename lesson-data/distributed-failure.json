@@ -1,0 +1,47 @@
+{
+  "slug": "distributed-failure",
+  "title": "Retries, Idempotency & Exactly-once Semantics",
+  "module": "distributed",
+  "priority": "very-high",
+  "roles": [
+    "de",
+    "mle"
+  ],
+  "interviewAnswer": "Distributed operations fail partially. Retries are safe only when operations are idempotent or deduplicated. “Exactly once” usually means carefully defined processing/commit semantics rather than packets literally delivered once.",
+  "keyPoints": [
+    "At-least-once can duplicate effects.",
+    "Idempotency keys make retries safe.",
+    "Transactional sinks/checkpoints can coordinate processing."
+  ],
+  "resources": [
+    "flink",
+    "mit-6824"
+  ],
+  "featured": true,
+  "why": "Retries, Idempotency & Exactly-once Semantics appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
+  "intuition": "At-least-once can duplicate effects.",
+  "deepDive": "Distributed operations fail partially. Retries are safe only when operations are idempotent or deduplicated. “Exactly once” usually means carefully defined processing/commit semantics rather than packets literally delivered once. Idempotency keys make retries safe. Transactional sinks/checkpoints can coordinate processing. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
+  "workedExample": "A retried payment/event write must not create a second charge or duplicate aggregate.",
+  "commonMistakes": [
+    "Applying the method without checking its assumptions or data-generating process.",
+    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+  ],
+  "followUps": [
+    "What assumptions does Retries, Idempotency & Exactly-once Semantics make?",
+    "How would you validate or debug Retries, Idempotency & Exactly-once Semantics in practice?"
+  ],
+  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "visual": {
+    "type": "concept-map",
+    "title": "Retries, Idempotency & Exactly-once Semantics",
+    "items": [
+      "At-least-once can duplicate effects.",
+      "Idempotency keys make retries safe.",
+      "Transactional sinks/checkpoints can coordinate processing."
+    ],
+    "caption": "A compact concept map for the most important ideas in this lesson."
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

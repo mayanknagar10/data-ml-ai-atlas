@@ -1,0 +1,39 @@
+{
+  "slug": "model-compilation",
+  "title": "Model Compilation: torch.compile, ONNX & TensorRT",
+  "module": "performance",
+  "priority": "medium",
+  "roles": [
+    "mle",
+    "aie",
+    "cv"
+  ],
+  "interviewAnswer": "Model compilation captures/lowers computation into optimized kernels or runtimes. torch.compile optimizes PyTorch graphs; ONNX enables portable graph runtimes; TensorRT targets NVIDIA inference. I use them only after profiling and verifying numerical/shape compatibility.",
+  "keyPoints": [
+    "graph capture",
+    "kernel fusion",
+    "portable runtime",
+    "hardware-specific optimization"
+  ],
+  "resources": [
+    "pytorch-performance",
+    "tensorrt-performance"
+  ],
+  "featured": false,
+  "why": "Compilation can remove Python overhead and fuse operations, but dynamic control flow or unsupported ops can erase the benefit.",
+  "intuition": "Instead of executing many tiny operations one by one, a compiler sees a larger graph and can combine/reorder work for the target hardware.",
+  "deepDive": "Compilation has startup/warmup costs and can create graph breaks. Export formats may lose unsupported behaviors. Validate outputs across representative shapes and precision modes.",
+  "workedExample": "A fixed-shape vision service may gain substantially from TensorRT; a highly dynamic research model may spend more time compiling than it saves.",
+  "commonMistakes": [
+    "Benchmarking the first compiled call and calling it slow.",
+    "Assuming ONNX conversion guarantees identical behavior."
+  ],
+  "followUps": [
+    "What is a graph break?",
+    "When would you choose ONNX Runtime over TensorRT?"
+  ],
+  "production": "Precompile common shapes where possible, cache artifacts, and keep fallback paths for unsupported inputs.",
+  "editorial": {
+    "status": "summary"
+  }
+}

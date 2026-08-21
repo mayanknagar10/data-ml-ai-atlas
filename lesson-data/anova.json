@@ -1,0 +1,37 @@
+{
+  "slug": "anova",
+  "title": "ANOVA & Comparing Multiple Groups",
+  "module": "stat-inference",
+  "priority": "medium",
+  "roles": [
+    "ds",
+    "da",
+    "as"
+  ],
+  "interviewAnswer": "ANOVA tests whether group means differ more than expected from within-group variability under model assumptions. A significant omnibus test does not say which groups differ, so post-hoc comparisons require care.",
+  "keyPoints": [
+    "Between-group vs within-group variation.",
+    "Assumptions include independence and model-specific variance/error structure.",
+    "Post-hoc tests need multiplicity control."
+  ],
+  "resources": [
+    "stanford-stats200"
+  ],
+  "featured": false,
+  "why": "ANOVA & Comparing Multiple Groups appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
+  "intuition": "Between-group vs within-group variation.",
+  "deepDive": "ANOVA tests whether group means differ more than expected from within-group variability under model assumptions. A significant omnibus test does not say which groups differ, so post-hoc comparisons require care. Assumptions include independence and model-specific variance/error structure. Post-hoc tests need multiplicity control. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
+  "workedExample": "Compare average processing time across four deployment configurations before pairwise follow-ups.",
+  "commonMistakes": [
+    "Applying the method without checking its assumptions or data-generating process.",
+    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+  ],
+  "followUps": [
+    "What assumptions does ANOVA & Comparing Multiple Groups make?",
+    "How would you validate or debug ANOVA & Comparing Multiple Groups in practice?"
+  ],
+  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "editorial": {
+    "status": "summary"
+  }
+}

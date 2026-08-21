@@ -1,0 +1,170 @@
+{
+  "slug": "python-decorators",
+  "title": "Decorators & Context Managers",
+  "module": "python",
+  "priority": "medium",
+  "roles": [
+    "mle",
+    "aie"
+  ],
+  "interviewAnswer": "A decorator is a callable transformation applied when a function or class is defined; `@d` above `f` is essentially `f = d(f)`. A context manager implements enter and exit around a `with` block so setup and cleanup have one lexical scope, including exception paths. Good decorators preserve metadata with `functools.wraps` and keep behavior explicit. Good context managers release resources deterministically and suppress exceptions only by deliberate contract.",
+  "keyPoints": [
+    "Decoration transforms at definition time",
+    "Wrapper runs at call time",
+    "wraps preserves metadata",
+    "with guarantees an exit call",
+    "Composition order changes semantics"
+  ],
+  "resources": [
+    "python-functools",
+    "python-contextlib",
+    "python-data-model"
+  ],
+  "featured": false,
+  "why": "Cross-cutting concerns otherwise spread across every call site. A timing decorator can standardize latency measurement; a transaction context can make commit and rollback boundaries visible. Frameworks also rely on decorators for registration and dependency declarations. Because the syntax is compact, its behavior can become invisible. A retry decorator around a non-idempotent call may duplicate writes. A cache may retain user data. A context manager may catch an exception and return a truthy value, silently converting failure into success. Interviews use these features to test first-class functions, closures, protocols, and exception flow. Production engineering demands the additional question: what behavior is hidden, and can operators observe and reverse it?",
+  "intuition": "A decorator is a function-building function: it receives a callable and binds a replacement name. The replacement may call the original, but it does not have to. A context manager is a two-sided bracket: enter establishes an invariant, and exit restores or releases it. The block is inside the bracket even when it raises. Decorators change what a callable means across calls; context managers change the environment for one visible block. That distinction helps choose the clearer abstraction.",
+  "deepDive": "The full explanation is organized into the structured sections below.",
+  "workedExample": "Combine a metadata-preserving timing decorator with a context manager that records success or failure without suppressing the exception.",
+  "code": "from functools import wraps\nimport time\ndef timed(fn):\n @wraps(fn)\n def inner(*a,**kw):\n  t=time.perf_counter(); out=fn(*a,**kw)\n  print(fn.__name__,time.perf_counter()-t); return out\n return inner",
+  "commonMistakes": [
+    {
+      "mistake": "`@decorator` runs the wrapper only when the function is called.",
+      "correction": "The decorator expression and transformation run during definition; the returned wrapper usually runs later at invocation."
+    },
+    {
+      "mistake": "`functools.wraps` makes a decorator behaviorally transparent.",
+      "correction": "It preserves metadata and the wrapped link, but the wrapper can still change exceptions, results, concurrency, timing, or side effects."
+    },
+    {
+      "mistake": "A context manager always swallows exceptions after cleanup.",
+      "correction": "Exceptions propagate unless `__exit__` deliberately returns truthy or a generator-based manager catches and does not re-raise them."
+    }
+  ],
+  "followUps": [
+    {
+      "question": "In which order do stacked decorators execute?",
+      "answer": "They transform bottom-up and invoke from the outermost returned wrapper inward. Write `a(b(f))` to reason about the order."
+    },
+    {
+      "question": "Why is `ExitStack` useful?",
+      "answer": "It acquires a dynamic number of resources and registers callbacks as acquisition succeeds, then unwinds completed acquisitions in reverse order even when a later acquisition fails."
+    },
+    {
+      "question": "When can a retry decorator be unsafe?",
+      "answer": "When the operation has non-idempotent side effects, the error is permanent, attempt budgets compound across layers, or cancellation and deadlines are not propagated."
+    }
+  ],
+  "production": "Version and document decorator semantics because changing wrapper order can change authorization, caching, metrics, and retries without altering call sites. Bound and expose cache state, redact logged arguments, propagate trace and cancellation context, and separate logical-request metrics from attempt metrics. Keep resource scopes short, unwind partial acquisition, surface cleanup failures, and test rollback. Provide a kill switch or direct underlying callable for rollback where cross-cutting behavior can affect availability.",
+  "editorial": {
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "Decorators and context managers both add cross-cutting behavior around core code, but they solve different lifecycle problems. A decorator transforms a function or class at definition time, often returning a wrapper that performs work before and after a call. A context manager establishes a runtime context for a lexical block and guarantees an exit path for normal completion and exceptions. This chapter builds both mechanisms from ordinary Python objects, then covers function metadata, descriptors and methods, decorator factories, exception suppression, composition order, and resource ownership. These tools appear throughout data and AI systems in tracing, retry, caching, authorization, device or precision scopes, transactions, locks, and temporary configuration. They also create risk: a wrapper can change signatures, duplicate retries, hide failures, or capture sensitive arguments; a context manager can suppress an exception accidentally or hold a scarce resource while slow work runs. You will learn to keep transformations transparent, make cleanup deterministic, test success and failure paths, and decide when an explicit helper is more readable than syntax-level abstraction.",
+  "prerequisites": [
+    "python-data-structures",
+    "python-generators"
+  ],
+  "learningObjectives": [
+    "Trace decorator application and invocation, including factories, stacked order, closures, and method binding.",
+    "Implement class-based and generator-based context managers with correct cleanup and exception behavior.",
+    "Evaluate wrappers and resource scopes for metadata, observability, retry, security, and failure-semantics risks."
+  ],
+  "deepSections": [
+    {
+      "id": "decorator-mechanics",
+      "title": "Decorator evaluation, closures, and stacked order",
+      "body": "For `@decorator` followed by `def train(...):`, Python creates the function object, evaluates the decorator expression, calls the decorator with the function, and binds `train` to the returned object. A decorator factory such as `@retry(attempts=3)` is evaluated first; it returns the actual decorator. Configuration therefore belongs to one closure, the original function to another, and per-call arguments to the wrapper. Confusing these times can create shared mutable state or expensive work during module import.\n\nA wrapper typically accepts `*args, **kwargs`, performs behavior, and calls the wrapped function. That broad signature is convenient at runtime but can obscure inspection and static tooling. `functools.wraps` copies identifying attributes and establishes `__wrapped__`, allowing introspection to reach the original callable. It does not prove semantic transparency: a wrapper can still change return types, exception behavior, synchronization, or timing. Preserve type information with `ParamSpec` and `TypeVar` when a public typed decorator matters.\n\nStacked decorators apply bottom-up: `@a` above `@b` produces `a(b(function))`. Calls then enter `a`, enter `b`, call the function, exit `b`, and exit `a`. Order changes behavior. Caching outside authorization can expose results across callers if cache keys omit identity; retries outside metrics can count one logical request while metrics inside retries count attempts. Write the intended order as an explicit composition during design and test observable outcomes."
+    },
+    {
+      "id": "methods-descriptors",
+      "title": "Methods, descriptors, and class decoration",
+      "body": "Functions stored on a class participate in Python's descriptor protocol. Access through an instance creates a bound method that supplies the instance as the first argument. A decorator that returns a normal function preserves this common behavior; a callable wrapper object may need descriptor support to bind correctly. This is why a wrapper can work for a free function but fail as a method. Prefer function wrappers unless a class is justified, and test instance, class, and static methods separately.\n\n`classmethod`, `staticmethod`, and `property` are themselves descriptor-producing transformations. Their order relative to custom decorators matters because one layer may receive a descriptor rather than a plain callable. Class decorators receive the completed class and return the binding replacement. They are useful for registration or dataclass-like transformation, but metaclasses or explicit registration may be clearer when inheritance behavior is central.\n\nClosures retain referenced objects. A decorator-level dictionary used as a cache can keep arguments and results alive indefinitely. A lock captured once serializes every instance even if per-instance locking was intended. State may need bounded eviction, weak references, synchronization, or placement on an instance. Treat every stateful decorator as a small service: define keying, lifetime, concurrency, observability, and invalidation rather than hiding them behind `@cache` or a custom name."
+    },
+    {
+      "id": "context-protocol",
+      "title": "The context-manager protocol and exception flow",
+      "body": "The `with expression as target` statement evaluates the expression, calls its `__enter__`, binds the returned value, executes the body, and then calls `__exit__`. On normal completion, the exit arguments describe no exception. On failure they contain the exception type, value, and traceback. If `__exit__` returns a truthy value, the exception is suppressed; otherwise it propagates after cleanup. Suppression should be narrow and documented because an accidental `return True` can hide data corruption or failed writes.\n\nA class-based context manager makes state and protocol methods explicit. `contextlib.contextmanager` lets a generator express the same lifecycle: code before the single `yield` enters, the yielded value is bound, and `finally` code exits. The generator must yield exactly once. Catch only exceptions the manager is responsible for, and re-raise unexpected errors. `closing`, `suppress`, `nullcontext`, and redirection helpers cover common narrow patterns. `ExitStack` dynamically composes a variable number of managers and unwinds them in reverse acquisition order, which is safer than hand-built cleanup lists.\n\nAsynchronous context managers use `__aenter__`, `__aexit__`, and `async with` when setup or teardown must await. A synchronous manager should not block an event loop with slow network cleanup. Context management gives deterministic lexical cleanup; it does not automatically bound how long a block holds a connection, file, GPU context, temporary environment mutation, or lock."
+    },
+    {
+      "id": "cross-cutting-design",
+      "title": "Designing safe cross-cutting behavior",
+      "body": "Use a decorator when behavior should consistently follow a callable wherever it is invoked and the transformation remains understandable. Use a context manager when ownership has a visible begin and end. Use an ordinary helper when explicit calls communicate the control flow better. Retries, transactions, and caching often deserve named policy objects because their semantics are richer than a thin wrapper.\n\nRetries require an allowlist of transient failures, bounded attempts, backoff, jitter, time budgets, and idempotency. Timing requires a monotonic clock and must record exceptions as well as successes. Logging must redact secrets and avoid serializing full tensors or datasets. Authorization must run before cache lookup unless cache isolation is proven. A transaction manager must distinguish commit, rollback, cleanup failure, and nested transaction behavior. A temporary-configuration manager must restore the previous value even if setup partially fails.\n\nTests should inspect preserved name, documentation, signature, and `__wrapped__`; call with positional and keyword arguments; verify return and exception propagation; and exercise stacked order. For context managers, assert acquisition and release on success, body failure, and setup failure. Verify whether an intended exception is suppressed and that all other exceptions escape. Instrument wrappers so operators can distinguish original calls from attempts, cache hits, and cleanup failures."
+    }
+  ],
+  "math": "If decorators a and b wrap f, `@a` above `@b` gives g = a(b(f)); invocation follows a_enter → b_enter → f → b_exit → a_exit. For a retry policy with at most k attempts, worst-case call count is k, so non-idempotent side effects can be multiplied by k unless an idempotency mechanism prevents duplication.",
+  "workedExamples": [
+    {
+      "title": "Instrument a training step without changing its failure contract",
+      "setup": "A training function needs latency metrics, and a temporary mixed-precision scope must restore state after success or failure.",
+      "walkthrough": "The timing wrapper uses `perf_counter`, calls the function once, emits duration in a `finally` block, and uses `wraps` so tooling sees the original metadata. The precision context captures the previous state, enables the requested state, then restores the captured value in `finally`. Tests confirm the function's result and exception identity are unchanged, metadata is preserved, restoration happens after an exception, and wrapper stacking records one logical call rather than silently counting retry attempts.",
+      "conclusion": "Instrumentation can be transparent only after its return, exception, metadata, state-restoration, and composition contracts are tested."
+    }
+  ],
+  "exercises": [
+    {
+      "difficulty": "recall",
+      "prompt": "Expand two stacked decorators into an assignment and state call order.",
+      "solution": "`@a` above `@b` becomes `f = a(b(f))`; a call enters a's wrapper, then b's, then f, and returns outward in reverse."
+    },
+    {
+      "difficulty": "application",
+      "prompt": "Design tests for a transaction context manager.",
+      "solution": "Test enter success, commit on normal completion, rollback and propagation on body error, release after both paths, partial setup failure, nested behavior, and cleanup failure policy."
+    },
+    {
+      "difficulty": "diagnosis",
+      "prompt": "A decorated instance method receives no `self`. What mechanism likely broke?",
+      "solution": "A callable wrapper object replaced a function without implementing descriptor binding. Return a function wrapper or implement `__get__` correctly, then test instance access."
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "python-functools",
+      "contribution": "Defines wraps, wrapped metadata, caching utilities, dispatch, and the standard behavior referenced in decorator design."
+    },
+    {
+      "resource": "python-contextlib",
+      "contribution": "Defines generator-based managers, ExitStack, suppression utilities, and synchronous/asynchronous context composition."
+    },
+    {
+      "resource": "python-data-model",
+      "contribution": "Provides descriptor binding and context-manager protocol semantics used to explain methods and exception flow."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "flow",
+      "title": "Stacked decorator call order",
+      "items": [
+        "Outer wrapper enters",
+        "Inner wrapper enters",
+        "Function runs",
+        "Inner wrapper exits",
+        "Outer wrapper exits"
+      ],
+      "caption": "Transformation is bottom-up, while runtime calls enter the outermost returned wrapper first.",
+      "afterSection": "decorator-mechanics"
+    },
+    {
+      "type": "flow",
+      "title": "Context-manager lifecycle",
+      "items": [
+        "Acquire",
+        "Bind enter value",
+        "Run block",
+        "Commit or handle error",
+        "Release"
+      ],
+      "caption": "Exit runs for normal completion and body exceptions after a successful enter; suppression is an explicit decision.",
+      "afterSection": "context-protocol"
+    }
+  ],
+  "lab": {
+    "goal": "Build transparent timing and resource-scope utilities and verify metadata, order, cleanup, and exception propagation.",
+    "language": "python",
+    "buildIt": "from functools import wraps\nfrom time import perf_counter\n\ndef timed(record):\n    def decorate(fn):\n        @wraps(fn)\n        def wrapper(*args, **kwargs):\n            start = perf_counter()\n            try:\n                return fn(*args, **kwargs)\n            finally:\n                record.append((fn.__name__, perf_counter() - start))\n        return wrapper\n    return decorate",
+    "useIt": "from contextlib import contextmanager\n\n@contextmanager\ndef temporary(mapping, key, value):\n    missing = object()\n    old = mapping.get(key, missing)\n    mapping[key] = value\n    try:\n        yield\n    finally:\n        if old is missing:\n            mapping.pop(key, None)\n        else:\n            mapping[key] = old",
+    "verifyIt": "events = []\n@timed(events)\ndef add(a, b=0):\n    'add values'\n    return a + b\nassert add(2, b=3) == 5\nassert add.__name__ == 'add' and add.__doc__ == 'add values'\nstate = {'mode': 'safe'}\ntry:\n    with temporary(state, 'mode', 'fast'):\n        assert state['mode'] == 'fast'\n        raise RuntimeError('boom')\nexcept RuntimeError:\n    pass\nassert state == {'mode': 'safe'}\nassert events and events[0][0] == 'add'",
+    "shipIt": "Add structured metrics, redaction, attempt versus request identifiers, bounded policy state, cancellation propagation, and failure-path integration tests before applying wrappers broadly."
+  }
+}

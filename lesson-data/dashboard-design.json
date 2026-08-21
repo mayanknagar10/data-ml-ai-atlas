@@ -1,0 +1,37 @@
+{
+  "slug": "dashboard-design",
+  "title": "Dashboard & BI Design",
+  "module": "eda-viz",
+  "priority": "high",
+  "roles": [
+    "da",
+    "ds"
+  ],
+  "interviewAnswer": "A good dashboard starts from decisions and questions, not chart availability. Use stable metric definitions, clear filters/time windows, meaningful comparisons and enough context to distinguish signal from normal variation.",
+  "keyPoints": [
+    "One screen should have a clear decision purpose.",
+    "Show denominators, time grain and targets/baselines.",
+    "Avoid mixing metric definitions across pages."
+  ],
+  "resources": [
+    "fundamentals-dataviz",
+    "berkeley-data100"
+  ],
+  "featured": false,
+  "why": "Dashboard & BI Design is a standard part of a broad data/ML curriculum because it changes how models are selected, evaluated or operated in real systems.",
+  "intuition": "One screen should have a clear decision purpose.",
+  "deepDive": "A good dashboard starts from decisions and questions, not chart availability. Use stable metric definitions, clear filters/time windows, meaningful comparisons and enough context to distinguish signal from normal variation. Show denominators, time grain and targets/baselines. Avoid mixing metric definitions across pages. A strong answer connects the formal idea to validation, data requirements and failure modes instead of treating the method as a recipe.",
+  "workedExample": "An operations dashboard shows current failure rate, historical baseline, target, affected segments and alert threshold—not twenty unrelated charts.",
+  "commonMistakes": [
+    "Choosing the technique without checking whether its assumptions match the problem.",
+    "Optimizing an offline metric without checking realistic validation slices or operational constraints."
+  ],
+  "followUps": [
+    "When would you not use Dashboard & BI Design?",
+    "How would you validate or tune Dashboard & BI Design?"
+  ],
+  "production": "In production, validate on realistic slices, track latency/cost when relevant, and monitor for distribution changes or failure modes that the offline metric can hide.",
+  "editorial": {
+    "status": "summary"
+  }
+}

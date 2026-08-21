@@ -8,22 +8,30 @@ A learner should be able to use every lesson in three modes:
 - **Understanding mode:** explain the intuition and formal details without memorizing buzzwords.
 - **Engineering mode:** implement, debug, deploy or reason about the concept in a real system.
 
-## Deep-complete lesson contract
+## Full-chapter lesson contract
 
-Every lesson must contain:
+Every `chapter-complete` or `verified` lesson must contain:
 
-1. `interviewAnswer` — concise answer suitable for speaking
-2. `keyPoints` — memory anchors
-3. `why` — why an interviewer/engineer should care
-4. `intuition` — plain-language mental model
-5. `deepDive` — first-principles technical explanation
-6. `workedExample` — concrete scenario or calculation
-7. `commonMistakes` — at least two realistic misconceptions
-8. `followUps` — at least two likely interviewer follow-ups
-9. `production` — engineering/system consequence
-10. curated `resources`
+1. `description` — a 150–300 word orientation: scope, payoff and boundaries
+2. `prerequisites` — lesson slugs that form an acyclic dependency graph
+3. `learningObjectives` — at least three observable outcomes
+4. `interviewAnswer` and `keyPoints` — a speakable answer plus memory anchors
+5. `why` and `intuition` — motivation followed by a faithful mental model
+6. `deepSections` — titled, stable-ID sections containing the main first-principles explanation
+7. `math` when useful, with notation and assumptions defined separately from code
+8. `workedExamples` — at least one concrete scenario, derivation or trace
+9. a `lab` when implementation materially exposes the mechanism
+10. `commonMistakes` — misconception/correction objects, not unsupported warnings
+11. `followUps` — at least two question/answer objects
+12. `production` — reliability, monitoring, rollback, cost, security and failure behavior where relevant
+13. `exercises` — at least three prompts with solutions, spanning recall, application and diagnosis
+14. `sourceNotes` — an annotation explaining what each cited source contributes
+15. `visuals` when a diagram materially improves understanding
+16. `editorial` — one of `summary`, `draft`, `chapter-complete`, or `verified`
 
-Add `math` and inline `code` when they improve understanding. They are not mandatory filler.
+Chapter prose normally targets 1,500–3,000 explanatory words. Validation rejects a complete chapter below 1,200 words and warns between 1,200 and 1,499. Code, metadata and resource titles do not inflate this count. A `verified` chapter also requires a `verifiedOn` date and at least two annotated sources. Add math and code only when they improve understanding; they are not mandatory filler.
+
+Legacy singular fields remain readable during migration, but they do not satisfy the full-chapter contract. Editorial status is assigned deliberately; the build never promotes it from word count.
 
 ## Runnable code-lab standard
 

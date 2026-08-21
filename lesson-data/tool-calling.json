@@ -1,0 +1,63 @@
+{
+  "slug": "tool-calling",
+  "title": "Tool / Function Calling",
+  "module": "llm",
+  "priority": "very-high",
+  "roles": [
+    "aie"
+  ],
+  "interviewAnswer": "Tool calling lets the model choose structured actions while deterministic code performs calculations, database access or external operations. The model orchestrates; the tool remains the source of truth for precise operations.",
+  "keyPoints": [
+    "Schema",
+    "Tool selection",
+    "Validation",
+    "Error handling"
+  ],
+  "resources": [
+    "openai-cookbook",
+    "hf-agents",
+    "hf-llm",
+    "langchain-academy"
+  ],
+  "featured": false,
+  "why": "Tool calling is how LLM systems interact reliably with calculators, databases, APIs and deterministic business logic instead of hallucinating actions or numbers.",
+  "intuition": "The model does not execute arbitrary code by itself. It selects a named tool and produces structured arguments; the application validates and executes the tool, then returns the result to the model.",
+  "deepDive": "Define narrow tool schemas, validate types/ranges, authenticate separately from the model, enforce permission boundaries and treat tool outputs as untrusted external data. The control loop can be one-shot or agentic. Use deterministic tools for calculations, state changes and source-of-truth retrieval. Add idempotency for side effects and require confirmation for high-impact actions.",
+  "workedExample": "For a supply-chain copilot, the LLM calls a forecast/reorder function that returns numbers from a deterministic model; it then explains those values rather than inventing them.",
+  "commonMistakes": [
+    "Letting the model directly perform sensitive actions without application-side authorization.",
+    "Using free-form text arguments instead of validated schemas.",
+    "Calling an LLM for deterministic arithmetic the tool can compute exactly."
+  ],
+  "followUps": [
+    "Tool calling vs RAG?",
+    "How do you prevent unsafe side effects?",
+    "What if the model calls the wrong tool?",
+    "How do you evaluate tool-use accuracy?"
+  ],
+  "production": "Log tool choice, arguments, result, latency and errors. Add retries/timeouts, permission checks, idempotency keys and human confirmation where consequences matter.",
+  "lab": {
+    "goal": "Treat tool calling as structured input validation, not free-form execution.",
+    "language": "python",
+    "buildIt": "TOOLS={'weather':{'required':{'city':str}},'add':{'required':{'a':float,'b':float}}}\ndef validate(call):\n    spec=TOOLS.get(call.get('name'))\n    if not spec: raise ValueError('unknown tool')\n    for k,t in spec['required'].items():\n        if k not in call.get('args',{}): raise ValueError('missing '+k)\n        if not isinstance(call['args'][k],t): raise TypeError(k)\n    return True\n",
+    "useIt": "call={'name':'weather','args':{'city':'Hamburg'}}\nprint(validate(call))",
+    "verifyIt": "try: validate({'name':'weather','args':{}})\nexcept ValueError: pass\nelse: raise AssertionError('schema check failed')\n"
+  },
+  "visual": {
+    "type": "flow",
+    "title": "Tool calling",
+    "items": [
+      "User request",
+      "LLM decides tool + arguments",
+      "Deterministic tool executes",
+      "Tool result",
+      "LLM response"
+    ],
+    "caption": "The LLM orchestrates; deterministic systems remain responsible for calculations, database access or side effects.",
+    "accent": 2,
+    "orientation": "horizontal"
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

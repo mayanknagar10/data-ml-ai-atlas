@@ -1,0 +1,68 @@
+{
+  "slug": "vit",
+  "title": "Vision Transformers",
+  "module": "cv",
+  "priority": "high",
+  "roles": [
+    "cv",
+    "aie",
+    "as"
+  ],
+  "interviewAnswer": "A ViT splits an image into patches, embeds them as tokens, adds positional information and applies transformer blocks. Attention gives global interactions, while CNNs have stronger built-in locality.",
+  "keyPoints": [
+    "Patch embedding",
+    "Position",
+    "Self-attention",
+    "Data/compute considerations"
+  ],
+  "resources": [
+    "stanford-cs231n",
+    "stanford-cs25",
+    "mit-6s191",
+    "d2l"
+  ],
+  "featured": false,
+  "why": "Vision Transformers are common in modern vision and directly relevant to ViT-based tokenizers/embeddings.",
+  "intuition": "Split an image into patches, turn each patch into a token embedding, add positional information, then process the token sequence with transformer blocks.",
+  "deepDive": "A patch embedding is often a strided convolution/linear projection. Self-attention gives global token interaction early, unlike CNN locality. ViTs usually need strong pretraining/data/regularization because they have weaker built-in image priors. CLS tokens or pooled tokens can summarize the image; dense tasks reshape/upsample token features.",
+  "math": "Number of tokens ≈ (H/P)(W/P) (+ optional CLS); attention cost scales O(N²) in token count.",
+  "workedExample": "For 224×224 images with 16×16 patches, there are 14×14=196 patch tokens before optional special tokens.",
+  "code": "# patch projection concept\npatch=nn.Conv2d(3,768,kernel_size=16,stride=16)  # B,768,14,14",
+  "commonMistakes": [
+    "Saying ViTs inherently know patch order without positional information.",
+    "Assuming attention is cheaper than CNNs at high resolution.",
+    "Treating CLS as mandatory for every vision task."
+  ],
+  "followUps": [
+    "CNN vs ViT?",
+    "Why patch size matters?",
+    "What does CLS token do?",
+    "How does attention cost scale?"
+  ],
+  "production": "Resolution changes token count quadratically, affecting memory/latency. Preserve patching/normalization and consider efficient attention or hierarchical ViTs for large images.",
+  "lab": {
+    "goal": "Patchify a tiny image and inspect the token sequence a Vision Transformer would receive.",
+    "language": "python",
+    "buildIt": "import numpy as np\nimg=np.arange(8*8).reshape(8,8)\npatch=4\ntokens=[]\nfor r in range(0,8,patch):\n    for c in range(0,8,patch): tokens.append(img[r:r+patch,c:c+patch].reshape(-1))\ntokens=np.stack(tokens)\nprint(tokens.shape)  # 4 patches x 16 pixels\n",
+    "useIt": "# A real ViT linearly projects each flattened patch to hidden_dim, adds\n# positional information, then applies Transformer encoder blocks.\nhidden_dim=32\nW=np.random.randn(tokens.shape[1],hidden_dim)\nemb=tokens@W\nprint(emb.shape)",
+    "verifyIt": "assert tokens.shape==(4,16)\nassert emb.shape==(4,32)\n",
+    "shipIt": "Turn patchification into a reusable preprocessing test: assert expected patch counts and embedding shapes for every supported image size, and fail early when an input cannot be partitioned as configured."
+  },
+  "visual": {
+    "type": "flow",
+    "title": "Vision Transformer",
+    "items": [
+      "Image",
+      "Patchify",
+      "Patch embeddings + positions",
+      "Transformer blocks",
+      "Head"
+    ],
+    "caption": "ViT turns image patches into a token sequence and uses global self-attention instead of convolutional filters.",
+    "accent": 2,
+    "orientation": "horizontal"
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

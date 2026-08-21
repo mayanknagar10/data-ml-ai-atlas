@@ -1,0 +1,109 @@
+{
+  "slug": "gan",
+  "title": "GAN Fundamentals",
+  "module": "genai",
+  "priority": "very-high",
+  "roles": [
+    "genai",
+    "cv",
+    "as"
+  ],
+  "interviewAnswer": "A GAN trains a generator to fool a discriminator while the discriminator learns to distinguish real from generated samples. This adversarial game can produce sharp images but may be unstable.",
+  "keyPoints": [
+    "Generator/discriminator",
+    "Adversarial loss",
+    "Mode collapse",
+    "Training balance"
+  ],
+  "resources": [
+    "mit-6s191",
+    "stanford-cs231n",
+    "stanford-cs336",
+    "deep-learning-book"
+  ],
+  "featured": false,
+  "why": "GAN fundamentals are needed to explain CycleGAN/VQGAN and to compare adversarial training with diffusion/flow matching.",
+  "intuition": "The generator tries to create samples that look real; the discriminator tries to tell real from generated. Training improves both in a game rather than optimizing one fixed supervised target.",
+  "deepDive": "The original minimax GAN objective can suffer from saturated gradients and unstable dynamics because generator/discriminator objectives change together. Variants such as non-saturating loss, Wasserstein objectives, gradient penalty, spectral normalization and architectural constraints improve behavior. Mode collapse occurs when the generator covers only part of the data distribution.",
+  "math": "min_G max_D E_x[log D(x)] + E_z[log(1-D(G(z)))]",
+  "workedExample": "If a generator produces only one realistic-looking grain pattern regardless of noise input, the discriminator may be fooled locally but diversity is poor—classic mode collapse.",
+  "code": "# training alternates conceptually:\n# 1) update D on real and detached fake samples\n# 2) update G so D scores generated samples as real",
+  "commonMistakes": [
+    "Saying GAN loss values alone directly measure image quality.",
+    "Training G and D without controlling detach/update boundaries.",
+    "Assuming adversarial realism guarantees semantic or physical correctness."
+  ],
+  "followUps": [
+    "What is mode collapse?",
+    "Why are GANs unstable?",
+    "WGAN-GP intuition?",
+    "GAN vs diffusion?"
+  ],
+  "production": "GAN inference can be fast, but training reproducibility and validation are difficult. Store checkpoints/metrics and evaluate diversity plus task-specific correctness, not only discriminator loss.",
+  "lab": {
+    "goal": "See the two-player GAN objective with a minimal discriminator score and generator target.",
+    "language": "python",
+    "buildIt": "import math\ndef sigmoid(x): return 1/(1+math.exp(-x))\nreal_logit=2.0; fake_logit=-1.0\nD_real,D_fake=sigmoid(real_logit),sigmoid(fake_logit)\nd_loss=-(math.log(D_real)+math.log(1-D_fake))\ng_loss=-math.log(D_fake)\nprint(D_real,D_fake,d_loss,g_loss)",
+    "useIt": "# In PyTorch, use BCEWithLogitsLoss rather than applying sigmoid manually.\nimport torch\nloss=torch.nn.BCEWithLogitsLoss()(torch.tensor([fake_logit]),torch.ones(1))\nprint(loss.item())",
+    "verifyIt": "assert D_real>D_fake\nassert g_loss>0\n"
+  },
+  "visual": {
+    "type": "network",
+    "title": "GAN training game",
+    "nodes": [
+      {
+        "id": "z",
+        "label": "noise z",
+        "x": 0.12,
+        "y": 0.3
+      },
+      {
+        "id": "g",
+        "label": "Generator",
+        "x": 0.38,
+        "y": 0.3
+      },
+      {
+        "id": "fake",
+        "label": "fake sample",
+        "x": 0.62,
+        "y": 0.3
+      },
+      {
+        "id": "real",
+        "label": "real sample",
+        "x": 0.38,
+        "y": 0.75
+      },
+      {
+        "id": "d",
+        "label": "Discriminator",
+        "x": 0.78,
+        "y": 0.58
+      }
+    ],
+    "edges": [
+      [
+        "z",
+        "g"
+      ],
+      [
+        "g",
+        "fake"
+      ],
+      [
+        "fake",
+        "d"
+      ],
+      [
+        "real",
+        "d"
+      ]
+    ],
+    "caption": "The generator learns to fool the discriminator while the discriminator learns to distinguish generated from real samples.",
+    "directed": true
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

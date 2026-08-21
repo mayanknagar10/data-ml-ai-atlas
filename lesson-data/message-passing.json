@@ -1,0 +1,56 @@
+{
+  "slug": "message-passing",
+  "title": "Message Passing in GNNs",
+  "module": "graph",
+  "priority": "high",
+  "roles": [
+    "mle",
+    "as"
+  ],
+  "interviewAnswer": "GNN layers aggregate information from neighbors and combine it with the current node representation. Repeating layers expands the receptive field over graph hops.",
+  "keyPoints": [
+    "Aggregate",
+    "Update",
+    "Permutation invariance",
+    "Oversmoothing"
+  ],
+  "resources": [
+    "stanford-cs229",
+    "stanford-cs329s",
+    "stanford-cs224w"
+  ],
+  "featured": false,
+  "why": "Message passing is the core abstraction behind many GNNs and explains how local graph structure becomes learned node representations.",
+  "intuition": "Each node receives summaries from neighbors, combines them with its own state, and repeats this for several layers so information travels multiple hops.",
+  "deepDive": "A generic layer computes messages from neighbors, aggregates them with a permutation-invariant function such as sum/mean/max, then updates the node representation. After k layers, a node typically depends on k-hop neighborhoods. Too many layers can lead to over-smoothing or over-squashing; high-degree neighborhoods may require sampling.",
+  "math": "m_v = AGG_{u∈N(v)} M(h_v,h_u,e_uv); h_v' = U(h_v,m_v)",
+  "workedExample": "In reviewer recommendation, a developer embedding can incorporate the PRs they reviewed; another layer can indirectly incorporate relationships from nearby developers/PRs.",
+  "commonMistakes": [
+    "Thinking neighbor order should affect a permutation-invariant graph aggregator.",
+    "Adding many layers without considering oversmoothing.",
+    "Ignoring edge features/types when they carry semantics."
+  ],
+  "followUps": [
+    "What is over-smoothing?",
+    "Why must aggregation be permutation invariant?",
+    "How many hops does k layers see?",
+    "What is neighbor sampling?"
+  ],
+  "production": "Bound neighborhood expansion for memory/latency and monitor degree skew; giant hubs can dominate compute and representation quality.",
+  "visual": {
+    "type": "flow",
+    "title": "GNN message passing",
+    "items": [
+      "Neighbor features",
+      "Aggregate messages",
+      "Combine with self state",
+      "Updated node embedding"
+    ],
+    "caption": "GNN layers repeatedly aggregate information from local neighborhoods.",
+    "accent": 1,
+    "orientation": "horizontal"
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

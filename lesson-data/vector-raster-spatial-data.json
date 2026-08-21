@@ -1,0 +1,64 @@
+{
+  "slug": "vector-raster-spatial-data",
+  "title": "Vector vs Raster Spatial Data",
+  "module": "geospatial",
+  "priority": "high",
+  "roles": [
+    "ds",
+    "de",
+    "as"
+  ],
+  "interviewAnswer": "Vector data represents discrete geometry as points, lines and polygons; raster data represents space as a grid of cells. The correct representation depends on the phenomenon and operations.",
+  "keyPoints": [
+    "Points/lines/polygons",
+    "Raster grids",
+    "Resolution",
+    "Geometry attributes"
+  ],
+  "resources": [
+    "geopandas-docs",
+    "geodata-science-book"
+  ],
+  "featured": false,
+  "why": "Spatial representation determines storage, joins, visualization and modeling choices.",
+  "intuition": "Roads and administrative boundaries are naturally vector; satellite imagery and elevation are naturally raster.",
+  "deepDive": "Vector analysis uses geometry/topology; raster analysis uses aligned grids. Converting between them can lose detail or introduce resolution assumptions.",
+  "math": "",
+  "code": "",
+  "commonMistakes": [
+    "Treating longitude/latitude as ordinary Euclidean x/y.",
+    "Assuming higher raster resolution always means higher information quality."
+  ],
+  "followUps": [
+    "When would you rasterize polygons?",
+    "How do vector indexes work?"
+  ],
+  "production": "Choose formats/resolution based on query, model and scale.",
+  "workedExample": "Store shops as points and land cover as raster, then aggregate nearby raster cells around each shop.",
+  "visual": {
+    "type": "compare",
+    "title": "Vector and raster representations",
+    "left": {
+      "title": "Vector",
+      "items": [
+        "Points",
+        "Lines",
+        "Polygons",
+        "Discrete objects"
+      ]
+    },
+    "right": {
+      "title": "Raster",
+      "items": [
+        "Regular grid",
+        "Cell values",
+        "Continuous surfaces",
+        "Resolution dependent"
+      ]
+    },
+    "caption": "The representation changes which spatial operations are natural and efficient."
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

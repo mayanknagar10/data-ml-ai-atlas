@@ -1,0 +1,93 @@
+{
+  "slug": "gat",
+  "title": "Graph Attention Networks (GAT)",
+  "module": "graph",
+  "priority": "medium",
+  "roles": [
+    "ds",
+    "as",
+    "mle"
+  ],
+  "interviewAnswer": "GAT learns attention weights over neighbors so different neighbors contribute differently instead of using fixed aggregation weights.",
+  "keyPoints": [
+    "Attention is local over graph neighbors.",
+    "Multi-head attention can stabilize/expand representations.",
+    "More flexible aggregation costs compute."
+  ],
+  "resources": [
+    "stanford-cs224w"
+  ],
+  "featured": false,
+  "why": "Graph Attention Networks (GAT) is a standard part of a broad data/ML curriculum because it changes how models are selected, evaluated or operated in real systems.",
+  "intuition": "Attention is local over graph neighbors.",
+  "deepDive": "GAT learns attention weights over neighbors so different neighbors contribute differently instead of using fixed aggregation weights. Multi-head attention can stabilize/expand representations. More flexible aggregation costs compute. A strong answer connects the formal idea to validation, data requirements and failure modes instead of treating the method as a recipe.",
+  "workedExample": "In a fraud graph, learn to emphasize suspicious transaction neighbors more than benign high-degree neighbors.",
+  "commonMistakes": [
+    "Choosing the technique without checking whether its assumptions match the problem.",
+    "Optimizing an offline metric without checking realistic validation slices or operational constraints."
+  ],
+  "followUps": [
+    "When would you not use Graph Attention Networks (GAT)?",
+    "How would you validate or tune Graph Attention Networks (GAT)?"
+  ],
+  "production": "In production, validate on realistic slices, track latency/cost when relevant, and monitor for distribution changes or failure modes that the offline metric can hide.",
+  "visual": {
+    "type": "network",
+    "title": "Graph attention",
+    "nodes": [
+      {
+        "id": "c",
+        "label": "center node",
+        "x": 0.5,
+        "y": 0.5
+      },
+      {
+        "id": "a",
+        "label": "neighbor A · high weight",
+        "x": 0.18,
+        "y": 0.22
+      },
+      {
+        "id": "b",
+        "label": "neighbor B · low weight",
+        "x": 0.82,
+        "y": 0.25
+      },
+      {
+        "id": "d",
+        "label": "neighbor C · medium weight",
+        "x": 0.24,
+        "y": 0.8
+      },
+      {
+        "id": "e",
+        "label": "neighbor D · high weight",
+        "x": 0.8,
+        "y": 0.76
+      }
+    ],
+    "edges": [
+      [
+        "a",
+        "c"
+      ],
+      [
+        "b",
+        "c"
+      ],
+      [
+        "d",
+        "c"
+      ],
+      [
+        "e",
+        "c"
+      ]
+    ],
+    "caption": "GAT learns attention weights over neighbors instead of treating every connected neighbor equally.",
+    "directed": true
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

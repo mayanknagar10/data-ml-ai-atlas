@@ -1,0 +1,40 @@
+{
+  "slug": "count-min-sketch",
+  "title": "Count-Min Sketch & Heavy Hitters",
+  "module": "data-mining",
+  "priority": "medium",
+  "roles": [
+    "de",
+    "ds",
+    "mle"
+  ],
+  "interviewAnswer": "Count-Min Sketch approximates frequencies in streams with multiple hash tables; queries take the minimum counter and overestimate nonnegative frequencies within probabilistic error bounds.",
+  "keyPoints": [
+    "Streaming counts",
+    "Sublinear memory",
+    "Collisions",
+    "Heavy hitters"
+  ],
+  "resources": [
+    "stanford-cs246"
+  ],
+  "featured": false,
+  "why": "Sketches estimate large-stream frequencies without storing every key.",
+  "intuition": "Several compressed counters see each event; the minimum reduces collision inflation.",
+  "deepDive": "Width controls additive error and depth controls failure probability.",
+  "math": "",
+  "code": "",
+  "commonMistakes": [
+    "Treating estimates as exact.",
+    "Using the basic sketch for arbitrary negative updates."
+  ],
+  "followUps": [
+    "How do you recover heavy-hitter keys?",
+    "Count-Min vs hash map?"
+  ],
+  "production": "Use when approximate counts are acceptable and throughput/memory dominate exactness.",
+  "workedExample": "Telemetry can estimate popular URLs across billions of requests in bounded memory.",
+  "editorial": {
+    "status": "summary"
+  }
+}

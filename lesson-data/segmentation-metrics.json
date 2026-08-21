@@ -1,0 +1,60 @@
+{
+  "slug": "segmentation-metrics",
+  "title": "Segmentation Metrics: IoU, Dice & Pixel Accuracy",
+  "module": "cv",
+  "priority": "high",
+  "roles": [
+    "cv",
+    "as"
+  ],
+  "interviewAnswer": "Pixel accuracy can be misleading when background dominates. IoU and Dice emphasize overlap between predicted and true masks; per-class metrics reveal minority-structure performance.",
+  "keyPoints": [
+    "Dice is closely related to F1 on pixels.",
+    "IoU penalizes union disagreement.",
+    "Boundary metrics can matter for thin structures."
+  ],
+  "resources": [
+    "stanford-cs231n",
+    "pytorch"
+  ],
+  "featured": false,
+  "why": "Segmentation Metrics: IoU, Dice & Pixel Accuracy is a standard part of a broad data/ML curriculum because it changes how models are selected, evaluated or operated in real systems.",
+  "intuition": "Dice is closely related to F1 on pixels.",
+  "deepDive": "Pixel accuracy can be misleading when background dominates. IoU and Dice emphasize overlap between predicted and true masks; per-class metrics reveal minority-structure performance. IoU penalizes union disagreement. Boundary metrics can matter for thin structures. A strong answer connects the formal idea to validation, data requirements and failure modes instead of treating the method as a recipe.",
+  "workedExample": "A model predicting mostly background may achieve high pixel accuracy but terrible crack/lesion IoU.",
+  "commonMistakes": [
+    "Choosing the technique without checking whether its assumptions match the problem.",
+    "Optimizing an offline metric without checking realistic validation slices or operational constraints."
+  ],
+  "followUps": [
+    "When would you not use Segmentation Metrics: IoU, Dice & Pixel Accuracy?",
+    "How would you validate or tune Segmentation Metrics: IoU, Dice & Pixel Accuracy?"
+  ],
+  "production": "In production, validate on realistic slices, track latency/cost when relevant, and monitor for distribution changes or failure modes that the offline metric can hide.",
+  "visual": {
+    "type": "matrix",
+    "title": "Segmentation overlap",
+    "rows": [
+      "Predicted foreground",
+      "Predicted background"
+    ],
+    "cols": [
+      "True foreground",
+      "True background"
+    ],
+    "cells": [
+      [
+        "intersection",
+        "false positive"
+      ],
+      [
+        "false negative",
+        "background"
+      ]
+    ],
+    "caption": "IoU and Dice summarize overlap between predicted and true masks; class imbalance often makes plain accuracy unhelpful."
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

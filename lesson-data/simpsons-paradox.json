@@ -1,0 +1,57 @@
+{
+  "slug": "simpsons-paradox",
+  "title": "Simpson’s Paradox & Aggregation Bias",
+  "module": "eda-viz",
+  "priority": "high",
+  "roles": [
+    "ds",
+    "da",
+    "as"
+  ],
+  "interviewAnswer": "A trend can reverse after stratifying by a confounding/grouping variable because aggregate weights differ. Always inspect important segments before interpreting an overall association.",
+  "keyPoints": [
+    "Aggregate rates are weighted averages.",
+    "Different group composition can reverse comparisons.",
+    "Causal conclusions need more than stratification alone."
+  ],
+  "resources": [
+    "openintro-stats",
+    "harvard-causal-diagrams"
+  ],
+  "featured": false,
+  "why": "Simpson’s Paradox & Aggregation Bias is a standard part of a broad data/ML curriculum because it changes how models are selected, evaluated or operated in real systems.",
+  "intuition": "Aggregate rates are weighted averages.",
+  "deepDive": "A trend can reverse after stratifying by a confounding/grouping variable because aggregate weights differ. Always inspect important segments before interpreting an overall association. Different group composition can reverse comparisons. Causal conclusions need more than stratification alone. A strong answer connects the formal idea to validation, data requirements and failure modes instead of treating the method as a recipe.",
+  "workedExample": "Treatment A wins overall because it is used more often on easy cases, but loses within both easy and hard cases.",
+  "commonMistakes": [
+    "Choosing the technique without checking whether its assumptions match the problem.",
+    "Optimizing an offline metric without checking realistic validation slices or operational constraints."
+  ],
+  "followUps": [
+    "When would you not use Simpson’s Paradox & Aggregation Bias?",
+    "How would you validate or tune Simpson’s Paradox & Aggregation Bias?"
+  ],
+  "production": "In production, validate on realistic slices, track latency/cost when relevant, and monitor for distribution changes or failure modes that the offline metric can hide.",
+  "visual": {
+    "type": "compare",
+    "title": "Simpson’s paradox",
+    "left": {
+      "title": "Aggregated view",
+      "items": [
+        "Overall trend: A > B",
+        "Can be driven by group mix"
+      ]
+    },
+    "right": {
+      "title": "Within groups",
+      "items": [
+        "Group 1: B > A",
+        "Group 2: B > A"
+      ]
+    },
+    "caption": "Aggregation can reverse relationships when a lurking variable changes the composition of groups."
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

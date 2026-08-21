@@ -1,0 +1,46 @@
+{
+  "slug": "metric-design",
+  "title": "Metric Design: North Star, Driver & Guardrail Metrics",
+  "module": "experimentation",
+  "priority": "very-high",
+  "roles": [
+    "ds",
+    "da"
+  ],
+  "interviewAnswer": "Good metrics reflect user/business value, respond to meaningful product changes, and resist gaming. Pair primary outcomes with driver diagnostics and guardrails for harmful side effects.",
+  "keyPoints": [
+    "Define denominator and attribution precisely.",
+    "Avoid proxy metrics that are easy to move but disconnected from value.",
+    "Use guardrails for latency, quality, safety or churn."
+  ],
+  "resources": [
+    "microsoft-experimentation"
+  ],
+  "featured": true,
+  "why": "Metric Design: North Star, Driver & Guardrail Metrics appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
+  "intuition": "Define denominator and attribution precisely.",
+  "deepDive": "Good metrics reflect user/business value, respond to meaningful product changes, and resist gaming. Pair primary outcomes with driver diagnostics and guardrails for harmful side effects. Avoid proxy metrics that are easy to move but disconnected from value. Use guardrails for latency, quality, safety or churn. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
+  "workedExample": "For search ranking, clicks may be a driver metric while successful task completion is closer to value and latency is a guardrail.",
+  "commonMistakes": [
+    "Applying the method without checking its assumptions or data-generating process.",
+    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+  ],
+  "followUps": [
+    "What assumptions does Metric Design: North Star, Driver & Guardrail Metrics make?",
+    "How would you validate or debug Metric Design: North Star, Driver & Guardrail Metrics in practice?"
+  ],
+  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "visual": {
+    "type": "concept-map",
+    "title": "Metric Design: North Star, Driver & Guardrail Metrics",
+    "items": [
+      "Define denominator and attribution precisely.",
+      "Avoid proxy metrics that are easy to move but disconnected from value.",
+      "Use guardrails for latency, quality, safety or churn."
+    ],
+    "caption": "A compact concept map for the most important ideas in this lesson."
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

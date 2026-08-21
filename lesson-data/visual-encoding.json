@@ -1,0 +1,56 @@
+{
+  "slug": "visual-encoding",
+  "title": "Choosing the Right Statistical Visualization",
+  "module": "eda-viz",
+  "priority": "high",
+  "roles": [
+    "ds",
+    "da"
+  ],
+  "interviewAnswer": "Choose charts based on the question: distributions, comparisons, relationships, composition or change over time. Favor position and length over harder-to-compare encodings and avoid decorative choices that distort magnitude.",
+  "keyPoints": [
+    "Histogram/ECDF for distributions.",
+    "Scatter for numeric relationships.",
+    "Bars for categorical comparisons.",
+    "Lines for ordered time."
+  ],
+  "resources": [
+    "fundamentals-dataviz",
+    "berkeley-data100"
+  ],
+  "featured": false,
+  "why": "Choosing the Right Statistical Visualization appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
+  "intuition": "Histogram/ECDF for distributions.",
+  "deepDive": "Choose charts based on the question: distributions, comparisons, relationships, composition or change over time. Favor position and length over harder-to-compare encodings and avoid decorative choices that distort magnitude. Scatter for numeric relationships. Bars for categorical comparisons. Lines for ordered time. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
+  "workedExample": "Use an ECDF to compare latency distributions when tail behavior matters more than a single average.",
+  "commonMistakes": [
+    "Applying the method without checking its assumptions or data-generating process.",
+    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+  ],
+  "followUps": [
+    "What assumptions does Choosing the Right Statistical Visualization make?",
+    "How would you validate or debug Choosing the Right Statistical Visualization in practice?"
+  ],
+  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "visual": {
+    "type": "bars",
+    "title": "Match mark to question",
+    "labels": [
+      "position",
+      "length",
+      "angle",
+      "area"
+    ],
+    "values": [
+      1,
+      0.82,
+      0.55,
+      0.4
+    ],
+    "caption": "Position and length are usually easier to compare accurately than angle or area; choose encodings to match the analytical task.",
+    "yLabel": "relative perceptual accuracy"
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

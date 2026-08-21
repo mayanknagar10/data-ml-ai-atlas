@@ -1,0 +1,56 @@
+{
+  "slug": "probability-basics",
+  "title": "Conditional Probability & Bayes Rule",
+  "module": "probability",
+  "priority": "very-high",
+  "roles": [
+    "ds",
+    "mle",
+    "aie",
+    "as"
+  ],
+  "interviewAnswer": "Conditional probability updates the probability of an event given evidence. Bayes rule reverses a conditional using prior probability and likelihood, and underlies probabilistic inference and many classifiers.",
+  "keyPoints": [
+    "P(A|B)",
+    "Prior/likelihood/posterior",
+    "Base rates",
+    "Independence"
+  ],
+  "resources": [
+    "harvard-stat110",
+    "statquest"
+  ],
+  "featured": false,
+  "why": "Conditional probability is the language of updating beliefs from evidence. It appears in Bayesian reasoning, diagnostic tests, anomaly detection, Naive Bayes, calibration, and any interview question where base rates matter.",
+  "intuition": "Think of probability as shrinking the universe of possible outcomes after observing evidence. P(A|B) asks: among the cases where B happened, how often did A happen? Bayes rule lets you reverse the direction when P(B|A) is easier to reason about than P(A|B).",
+  "deepDive": "Bayes rule combines a prior belief P(A) with the likelihood of evidence P(B|A), then normalizes by P(B). The base-rate term matters: even a highly accurate detector can have poor positive predictive value when the event is extremely rare. Independence means P(A,B)=P(A)P(B); conditional independence can hold even when marginal independence does not, which is why graphical models and Naive Bayes can be useful simplifications.",
+  "math": "P(A|B) = P(A ∩ B) / P(B)\nBayes: P(A|B) = P(B|A) P(A) / P(B)\nTotal probability: P(B)=Σ_i P(B|A_i)P(A_i)",
+  "workedExample": "Suppose a defect occurs in 1% of parts. A detector catches 95% of defects and falsely flags 5% of good parts. Among flagged parts, the probability of a true defect is far below 95% because the 99% non-defect base rate dominates. This is the classic base-rate lesson.",
+  "code": "# Bayes update for a binary diagnostic test\nprior = 0.01\nsensitivity = 0.95\nfalse_positive = 0.05\nposterior = sensitivity*prior / (sensitivity*prior + false_positive*(1-prior))\nprint(round(posterior, 3))",
+  "commonMistakes": [
+    "Ignoring the base rate and equating sensitivity with P(defect | positive).",
+    "Confusing independence with mutual exclusivity.",
+    "Treating conditional probabilities as symmetric: P(A|B) is not generally P(B|A)."
+  ],
+  "followUps": [
+    "What is the difference between independence and conditional independence?",
+    "Why can a good classifier have low precision on rare events?",
+    "How does Naive Bayes use conditional independence?",
+    "What is a prior and when should it matter?"
+  ],
+  "production": "For rare-event systems such as fraud, failures, or safety alerts, calibration and base rates directly determine alert quality. Thresholds should be chosen using posterior risk and operational costs, not accuracy alone.",
+  "visual": {
+    "type": "concept-map",
+    "title": "Probability building blocks",
+    "items": [
+      "events",
+      "sample space",
+      "conditional probability",
+      "Bayes rule"
+    ],
+    "caption": "Concept map for quick revision."
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

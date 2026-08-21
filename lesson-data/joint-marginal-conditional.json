@@ -1,0 +1,37 @@
+{
+  "slug": "joint-marginal-conditional",
+  "title": "Joint, Marginal & Conditional Distributions",
+  "module": "probability",
+  "priority": "high",
+  "roles": [
+    "ds",
+    "as"
+  ],
+  "interviewAnswer": "A joint distribution describes variables together; marginalization sums/integrates out variables; conditioning updates the distribution given observed information.",
+  "keyPoints": [
+    "Marginalize unwanted variables.",
+    "Conditional distributions depend on evidence.",
+    "Bayes rule reverses conditioning."
+  ],
+  "resources": [
+    "harvard-stat110",
+    "stanford-stats60"
+  ],
+  "featured": false,
+  "why": "Joint, Marginal & Conditional Distributions is a recurring foundation across data science and machine learning because it affects both theoretical correctness and practical system behavior.",
+  "intuition": "Marginalize unwanted variables.",
+  "deepDive": "A joint distribution describes variables together; marginalization sums/integrates out variables; conditioning updates the distribution given observed information. Conditional distributions depend on evidence. Bayes rule reverses conditioning. The interview-level skill is not merely recalling the definition: explain the assumptions, what diagnostic evidence you would inspect, and what alternative you would choose when those assumptions fail.",
+  "workedExample": "From a joint table of device and conversion, derive device marginal rates and P(conversion|device).",
+  "commonMistakes": [
+    "Using the concept mechanically without checking assumptions or data semantics.",
+    "Reporting one metric/result without examining uncertainty, slices or failure modes."
+  ],
+  "followUps": [
+    "What assumptions or limitations does Joint, Marginal & Conditional Distributions have?",
+    "How would you validate Joint, Marginal & Conditional Distributions on a real dataset?"
+  ],
+  "production": "In production, make assumptions explicit, validate on representative slices, compare with a simple baseline and monitor the signals that can drift.",
+  "editorial": {
+    "status": "summary"
+  }
+}

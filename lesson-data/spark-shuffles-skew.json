@@ -1,0 +1,36 @@
+{
+  "slug": "spark-shuffles-skew",
+  "title": "Spark Shuffles, Partitions & Data Skew",
+  "module": "distributed",
+  "priority": "high",
+  "roles": [
+    "de",
+    "mle"
+  ],
+  "interviewAnswer": "Spark operations such as joins/groupBy can trigger shuffles that move data across workers. Poor partitioning or skewed keys create stragglers, spills and high network cost.",
+  "keyPoints": [
+    "Wide vs narrow transformations.",
+    "Broadcast small dimensions when appropriate.",
+    "Salt/skew handling can spread hot keys."
+  ],
+  "resources": [
+    "spark"
+  ],
+  "featured": false,
+  "why": "Spark Shuffles, Partitions & Data Skew is a recurring foundation across data science and machine learning because it affects both theoretical correctness and practical system behavior.",
+  "intuition": "Wide vs narrow transformations.",
+  "deepDive": "Spark operations such as joins/groupBy can trigger shuffles that move data across workers. Poor partitioning or skewed keys create stragglers, spills and high network cost. Broadcast small dimensions when appropriate. Salt/skew handling can spread hot keys. The interview-level skill is not merely recalling the definition: explain the assumptions, what diagnostic evidence you would inspect, and what alternative you would choose when those assumptions fail.",
+  "workedExample": "A join on a dominant “unknown” customer key sends huge data to one partition and stalls the job.",
+  "commonMistakes": [
+    "Using the concept mechanically without checking assumptions or data semantics.",
+    "Reporting one metric/result without examining uncertainty, slices or failure modes."
+  ],
+  "followUps": [
+    "What assumptions or limitations does Spark Shuffles, Partitions & Data Skew have?",
+    "How would you validate Spark Shuffles, Partitions & Data Skew on a real dataset?"
+  ],
+  "production": "In production, make assumptions explicit, validate on representative slices, compare with a simple baseline and monitor the signals that can drift.",
+  "editorial": {
+    "status": "summary"
+  }
+}

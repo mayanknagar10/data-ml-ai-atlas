@@ -1,0 +1,40 @@
+{
+  "slug": "spatial-autocorrelation",
+  "title": "Spatial Autocorrelation & Moran’s I",
+  "module": "geospatial",
+  "priority": "medium",
+  "roles": [
+    "ds",
+    "as"
+  ],
+  "interviewAnswer": "Spatial autocorrelation asks whether nearby observations are more similar than expected. Moran’s I is a common global measure; local indicators identify spatial clusters/outliers.",
+  "keyPoints": [
+    "Spatial weights",
+    "Moran’s I",
+    "LISA",
+    "Dependence"
+  ],
+  "resources": [
+    "pysal",
+    "geodata-science-book"
+  ],
+  "featured": false,
+  "why": "Geography often violates the independence assumption behind ordinary statistics.",
+  "intuition": "Nearby house prices or disease rates often move together.",
+  "deepDive": "A spatial weights matrix defines neighborhood structure; Moran’s I compares neighboring deviations with overall variance and commonly uses permutation inference.",
+  "math": "",
+  "code": "",
+  "commonMistakes": [
+    "Calling visual clustering statistically significant.",
+    "Choosing weights after seeing the desired result."
+  ],
+  "followUps": [
+    "Global vs local Moran?",
+    "Effect on regression?"
+  ],
+  "production": "Define neighborhoods from domain logic and account for spatial dependence in inference/validation.",
+  "workedExample": "A high-high cluster can identify adjacent regions with consistently elevated values.",
+  "editorial": {
+    "status": "summary"
+  }
+}

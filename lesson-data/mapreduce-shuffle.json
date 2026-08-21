@@ -1,0 +1,51 @@
+{
+  "slug": "mapreduce-shuffle",
+  "title": "MapReduce, Shuffle & Distributed Aggregation",
+  "module": "distributed",
+  "priority": "high",
+  "roles": [
+    "de",
+    "ds"
+  ],
+  "interviewAnswer": "MapReduce partitions map work, groups intermediate keys through a shuffle, then reduces grouped values. Modern engines generalize this DAG model, but shuffle remains a major network/disk cost.",
+  "keyPoints": [
+    "Map is embarrassingly parallel; shuffle is expensive.",
+    "Partitioning and skew dominate performance.",
+    "Combiners/pre-aggregation can reduce traffic."
+  ],
+  "resources": [
+    "stanford-cs246",
+    "spark"
+  ],
+  "featured": false,
+  "why": "MapReduce, Shuffle & Distributed Aggregation appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
+  "intuition": "Map is embarrassingly parallel; shuffle is expensive.",
+  "deepDive": "MapReduce partitions map work, groups intermediate keys through a shuffle, then reduces grouped values. Modern engines generalize this DAG model, but shuffle remains a major network/disk cost. Partitioning and skew dominate performance. Combiners/pre-aggregation can reduce traffic. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
+  "workedExample": "Compute counts by key across terabytes: local maps emit counts, shuffle groups keys, reducers sum them.",
+  "commonMistakes": [
+    "Applying the method without checking its assumptions or data-generating process.",
+    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+  ],
+  "followUps": [
+    "What assumptions does MapReduce, Shuffle & Distributed Aggregation make?",
+    "How would you validate or debug MapReduce, Shuffle & Distributed Aggregation in practice?"
+  ],
+  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "visual": {
+    "type": "flow",
+    "title": "MapReduce",
+    "items": [
+      "Input partitions",
+      "Map",
+      "Shuffle / group by key",
+      "Reduce",
+      "Output"
+    ],
+    "caption": "The shuffle is the expensive network step that moves records so equal keys meet at the same reducer.",
+    "accent": 2,
+    "orientation": "horizontal"
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

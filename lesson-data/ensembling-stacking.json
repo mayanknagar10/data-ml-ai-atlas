@@ -1,0 +1,36 @@
+{
+  "slug": "ensembling-stacking",
+  "title": "Bagging, Blending & Stacking",
+  "module": "ml",
+  "priority": "high",
+  "roles": [
+    "ds"
+  ],
+  "interviewAnswer": "Ensembling combines diverse models to reduce error. Bagging averages models trained on resampled data; stacking learns a meta-model from out-of-fold predictions; blending uses a held-out set.",
+  "keyPoints": [
+    "Diversity between base models matters.",
+    "Stacking needs leakage-safe out-of-fold predictions.",
+    "Complex ensembles cost latency/maintenance."
+  ],
+  "resources": [
+    "isl",
+    "sklearn"
+  ],
+  "featured": false,
+  "why": "Bagging, Blending & Stacking is a standard part of a broad data/ML curriculum because it changes how models are selected, evaluated or operated in real systems.",
+  "intuition": "Diversity between base models matters.",
+  "deepDive": "Ensembling combines diverse models to reduce error. Bagging averages models trained on resampled data; stacking learns a meta-model from out-of-fold predictions; blending uses a held-out set. Stacking needs leakage-safe out-of-fold predictions. Complex ensembles cost latency/maintenance. A strong answer connects the formal idea to validation, data requirements and failure modes instead of treating the method as a recipe.",
+  "workedExample": "Stack a linear model and gradient-boosted trees using out-of-fold predictions as meta-features.",
+  "commonMistakes": [
+    "Choosing the technique without checking whether its assumptions match the problem.",
+    "Optimizing an offline metric without checking realistic validation slices or operational constraints."
+  ],
+  "followUps": [
+    "When would you not use Bagging, Blending & Stacking?",
+    "How would you validate or tune Bagging, Blending & Stacking?"
+  ],
+  "production": "In production, validate on realistic slices, track latency/cost when relevant, and monitor for distribution changes or failure modes that the offline metric can hide.",
+  "editorial": {
+    "status": "summary"
+  }
+}

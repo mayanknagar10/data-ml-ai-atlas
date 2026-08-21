@@ -1,0 +1,96 @@
+{
+  "slug": "roc-pr",
+  "title": "ROC-AUC vs PR-AUC",
+  "module": "evaluation",
+  "priority": "high",
+  "roles": [
+    "ds",
+    "mle"
+  ],
+  "interviewAnswer": "ROC-AUC measures ranking across true-positive and false-positive rates. PR-AUC focuses on precision/recall and is often more informative when the positive class is rare and practically important.",
+  "keyPoints": [
+    "Class imbalance",
+    "Ranking metric",
+    "Threshold-independent summary",
+    "Inspect operating point too"
+  ],
+  "resources": [
+    "sklearn",
+    "statquest",
+    "google-mlcc",
+    "google-mlcc-exercises"
+  ],
+  "featured": false,
+  "why": "ROC-AUC and PR-AUC are common interview traps because both summarize ranking across thresholds but behave very differently under class imbalance.",
+  "intuition": "ROC asks how well positives rank above negatives while comparing true-positive and false-positive rates. Precision–recall focuses directly on how many positive predictions are useful and how many real positives are found.",
+  "deepDive": "ROC-AUC is the probability interpretation that a randomly chosen positive tends to receive a higher score than a randomly chosen negative. With very rare positives, a low false-positive rate can still mean many false alarms, so ROC can look strong while precision is poor. PR curves expose that operational reality. Neither metric chooses the deployment threshold; inspect the operating point and business costs.",
+  "math": "TPR = TP/(TP+FN)\nFPR = FP/(FP+TN)\nPrecision = TP/(TP+FP)\nRecall = TP/(TP+FN)",
+  "workedExample": "If failures are 1% of cases, a model can have a small FPR yet still generate more false positives than true positives because negatives are so numerous. PR-AUC will reflect this more directly than ROC-AUC.",
+  "code": "from sklearn.metrics import roc_auc_score, average_precision_score\nprint(roc_auc_score(y_true, scores))\nprint(average_precision_score(y_true, scores))",
+  "commonMistakes": [
+    "Saying PR-AUC is always better than ROC-AUC.",
+    "Using AUC as if it were the performance at the chosen production threshold.",
+    "Comparing PR-AUC across datasets with very different prevalences without context."
+  ],
+  "followUps": [
+    "Why can ROC-AUC look good on imbalanced data?",
+    "How do you choose a threshold after looking at the curve?",
+    "What is average precision?",
+    "What happens to precision when prevalence changes?"
+  ],
+  "production": "Use the metric that reflects the operational objective, then select a threshold under explicit recall/precision, capacity or cost constraints. Monitor prevalence because it changes precision even if ranking quality is unchanged.",
+  "visual": {
+    "type": "curve",
+    "title": "ROC and precision–recall views",
+    "series": [
+      {
+        "label": "ROC-like",
+        "points": [
+          [
+            0,
+            0
+          ],
+          [
+            0.08,
+            0.45
+          ],
+          [
+            0.18,
+            0.65
+          ],
+          [
+            0.35,
+            0.8
+          ],
+          [
+            0.6,
+            0.91
+          ],
+          [
+            1,
+            1
+          ]
+        ]
+      },
+      {
+        "label": "random baseline",
+        "points": [
+          [
+            0,
+            0
+          ],
+          [
+            1,
+            1
+          ]
+        ]
+      }
+    ],
+    "caption": "ROC plots TPR vs FPR across thresholds. For rare positives, precision–recall curves often make the useful trade-off more visible.",
+    "xLabel": "false positive rate",
+    "yLabel": "true positive rate"
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

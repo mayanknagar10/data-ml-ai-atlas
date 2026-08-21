@@ -1,0 +1,38 @@
+{
+  "slug": "distributed-training",
+  "title": "Distributed Training: Data & Model Parallelism",
+  "module": "performance",
+  "priority": "high",
+  "roles": [
+    "mle",
+    "aie"
+  ],
+  "interviewAnswer": "Data parallelism replicates the model and splits batches across workers, synchronizing gradients. Model/tensor/pipeline parallelism splits the model when it no longer fits on one device. The right strategy depends on memory, communication cost and model size.",
+  "keyPoints": [
+    "DDP",
+    "all-reduce",
+    "tensor/model parallel",
+    "pipeline parallel"
+  ],
+  "resources": [
+    "pytorch-performance",
+    "pytorch"
+  ],
+  "featured": false,
+  "why": "Large training jobs can waste most of their budget on communication or idle accelerators if parallelism is chosen poorly.",
+  "intuition": "Data parallelism gives each GPU a copy of the book and different pages to study; model parallelism gives each GPU different chapters of one huge book.",
+  "deepDive": "DistributedDataParallel synchronizes gradients efficiently but global batch size changes optimization dynamics. Sharding optimizer states/parameters reduces memory. Interconnect bandwidth and topology matter almost as much as FLOPs.",
+  "workedExample": "Four GPUs with batch 32 each create global batch 128. If you scale from one GPU, learning rate/scheduler behavior may need re-tuning.",
+  "commonMistakes": [
+    "Assuming adding GPUs gives linear speedup.",
+    "Forgetting that larger global batch size changes optimization."
+  ],
+  "followUps": [
+    "DDP vs FSDP?",
+    "When do you need tensor parallelism?"
+  ],
+  "production": "Benchmark scaling efficiency and checkpoint/restart behavior; distributed jobs need fault tolerance and reproducible shard/state handling.",
+  "editorial": {
+    "status": "summary"
+  }
+}

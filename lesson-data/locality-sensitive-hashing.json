@@ -1,0 +1,41 @@
+{
+  "slug": "locality-sensitive-hashing",
+  "title": "Locality-Sensitive Hashing (LSH)",
+  "module": "data-mining",
+  "priority": "high",
+  "roles": [
+    "de",
+    "mle",
+    "ds",
+    "as"
+  ],
+  "interviewAnswer": "LSH intentionally hashes similar items into the same buckets with high probability, reducing candidates for approximate similarity or nearest-neighbor search.",
+  "keyPoints": [
+    "Approximate search",
+    "Hash family",
+    "Candidate generation",
+    "Recall-speed trade-off"
+  ],
+  "resources": [
+    "stanford-cs246"
+  ],
+  "featured": false,
+  "why": "LSH explains scalable approximate search before modern graph indexes such as HNSW.",
+  "intuition": "Normal hashing separates inputs; LSH wants similar inputs to collide.",
+  "deepDive": "Different LSH families match different similarity measures; banding/concatenation tunes collision probability.",
+  "math": "",
+  "code": "",
+  "commonMistakes": [
+    "Assuming exact nearest-neighbor guarantees.",
+    "Using a hash family for the wrong metric."
+  ],
+  "followUps": [
+    "LSH vs HNSW?",
+    "How do bands affect recall?"
+  ],
+  "production": "Benchmark recall, latency and memory together.",
+  "workedExample": "Near-duplicate documents can be bucketed by MinHash signatures before exact checking.",
+  "editorial": {
+    "status": "summary"
+  }
+}

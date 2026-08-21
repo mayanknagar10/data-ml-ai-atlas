@@ -1,0 +1,67 @@
+{
+  "slug": "funnels",
+  "title": "Funnels & Conversion Analysis",
+  "module": "experimentation",
+  "priority": "high",
+  "roles": [
+    "ds",
+    "da"
+  ],
+  "interviewAnswer": "A funnel measures progression through ordered steps. The main analytical challenge is defining eligibility, step ordering, time windows and denominators consistently rather than simply computing percentages.",
+  "keyPoints": [
+    "Define entry cohort.",
+    "Use consistent conversion windows.",
+    "Segment to locate where drop-off changes."
+  ],
+  "resources": [
+    "berkeley-data100"
+  ],
+  "featured": false,
+  "why": "Funnels & Conversion Analysis appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
+  "intuition": "Define entry cohort.",
+  "deepDive": "A funnel measures progression through ordered steps. The main analytical challenge is defining eligibility, step ordering, time windows and denominators consistently rather than simply computing percentages. Use consistent conversion windows. Segment to locate where drop-off changes. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
+  "workedExample": "Signup → onboarding → first action → paid conversion, measured within 14 days of signup.",
+  "commonMistakes": [
+    "Applying the method without checking its assumptions or data-generating process.",
+    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+  ],
+  "followUps": [
+    "What assumptions does Funnels & Conversion Analysis make?",
+    "How would you validate or debug Funnels & Conversion Analysis in practice?"
+  ],
+  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "lab": {
+    "goal": "Compute a simple event funnel with explicit user-level denominators.",
+    "language": "python",
+    "buildIt": "import pandas as pd\nevents=pd.DataFrame({'user':[1,1,1,2,2,3,3],'event':['visit','signup','purchase','visit','signup','visit','signup']})\nsteps=['visit','signup','purchase']\nusers={s:set(events.loc[events.event==s,'user']) for s in steps}\ncounts=[len(users[steps[0]])]\nbase=users[steps[0]]\nfor s in steps[1:]:\n    base=base & users[s]\n    counts.append(len(base))\nprint(dict(zip(steps,counts)))",
+    "useIt": "summary=pd.Series(dict(zip(steps,counts)),name='users')\nprint(summary)",
+    "shipIt": "Production funnels need event contracts, idempotent logging, time windows, bot/test-user filtering and metric definitions versioned with dashboards.",
+    "verifyIt": "assert counts == sorted(counts, reverse=True)"
+  },
+  "visual": {
+    "type": "funnel",
+    "title": "Product funnel",
+    "items": [
+      {
+        "label": "Visit",
+        "value": 100
+      },
+      {
+        "label": "Signup",
+        "value": 62
+      },
+      {
+        "label": "Activation",
+        "value": 38
+      },
+      {
+        "label": "Purchase",
+        "value": 17
+      }
+    ],
+    "caption": "Funnels show where users drop between sequential product stages; each transition needs a clearly defined denominator."
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

@@ -1,0 +1,124 @@
+{
+  "slug": "dbscan",
+  "title": "DBSCAN & Density-based Clustering",
+  "module": "unsupervised",
+  "priority": "high",
+  "roles": [
+    "ds",
+    "as"
+  ],
+  "interviewAnswer": "DBSCAN defines clusters as dense regions connected through neighborhoods, can identify noise points, and does not require a fixed number of clusters. It struggles when cluster densities vary strongly.",
+  "keyPoints": [
+    "eps and min_samples define density.",
+    "Scaling/distance choice matters.",
+    "Can find non-spherical clusters."
+  ],
+  "resources": [
+    "sklearn"
+  ],
+  "featured": false,
+  "why": "DBSCAN & Density-based Clustering appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
+  "intuition": "eps and min_samples define density.",
+  "deepDive": "DBSCAN defines clusters as dense regions connected through neighborhoods, can identify noise points, and does not require a fixed number of clusters. It struggles when cluster densities vary strongly. Scaling/distance choice matters. Can find non-spherical clusters. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
+  "workedExample": "Detect spatial event clusters while labeling isolated coordinates as noise.",
+  "commonMistakes": [
+    "Applying the method without checking its assumptions or data-generating process.",
+    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+  ],
+  "followUps": [
+    "What assumptions does DBSCAN & Density-based Clustering make?",
+    "How would you validate or debug DBSCAN & Density-based Clustering in practice?"
+  ],
+  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "lab": {
+    "goal": "Recover density-based clusters and noise points.",
+    "language": "python",
+    "buildIt": "from sklearn.datasets import make_moons\nX,_=make_moons(n_samples=400,noise=.06,random_state=0)\n",
+    "useIt": "from sklearn.cluster import DBSCAN\nfrom sklearn.preprocessing import StandardScaler\nZ=StandardScaler().fit_transform(X)\nlabels=DBSCAN(eps=.25,min_samples=6).fit_predict(Z)\nprint('clusters',set(labels),'noise',(labels==-1).sum())\n",
+    "verifyIt": "assert len(set(labels)-{-1}) >= 2\n",
+    "shipIt": "Scale features consistently and tune eps/min_samples against domain meaning; do not treat noise labels as automatically fraudulent or wrong."
+  },
+  "visual": {
+    "type": "scatter",
+    "title": "Density-based clustering",
+    "series": [
+      {
+        "label": "dense cluster",
+        "points": [
+          [
+            0.15,
+            0.18
+          ],
+          [
+            0.18,
+            0.24
+          ],
+          [
+            0.22,
+            0.2
+          ],
+          [
+            0.26,
+            0.26
+          ],
+          [
+            0.2,
+            0.31
+          ],
+          [
+            0.3,
+            0.22
+          ]
+        ]
+      },
+      {
+        "label": "dense cluster",
+        "points": [
+          [
+            0.64,
+            0.65
+          ],
+          [
+            0.69,
+            0.72
+          ],
+          [
+            0.75,
+            0.68
+          ],
+          [
+            0.79,
+            0.74
+          ],
+          [
+            0.72,
+            0.8
+          ],
+          [
+            0.82,
+            0.67
+          ]
+        ]
+      },
+      {
+        "label": "noise",
+        "points": [
+          [
+            0.48,
+            0.24
+          ],
+          [
+            0.91,
+            0.38
+          ]
+        ]
+      }
+    ],
+    "caption": "DBSCAN identifies dense connected regions and labels isolated points as noise without requiring k in advance.",
+    "xLabel": "feature 1",
+    "yLabel": "feature 2"
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

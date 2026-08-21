@@ -1,0 +1,40 @@
+{
+  "slug": "minhash-jaccard",
+  "title": "MinHash & Jaccard Similarity",
+  "module": "data-mining",
+  "priority": "medium",
+  "roles": [
+    "de",
+    "ds",
+    "mle"
+  ],
+  "interviewAnswer": "MinHash creates compact signatures whose collision probability equals Jaccard similarity, allowing approximate set similarity at scale.",
+  "keyPoints": [
+    "Set similarity",
+    "Signatures",
+    "Collision probability",
+    "Near duplicates"
+  ],
+  "resources": [
+    "stanford-cs246"
+  ],
+  "featured": false,
+  "why": "MinHash is foundational for web-scale duplicate detection and sparse-set similarity.",
+  "intuition": "Keep a small randomized signature instead of repeatedly intersecting huge sets.",
+  "deepDive": "Under a random permutation, the probability that two sets share the same minimum element equals their Jaccard similarity.",
+  "math": "",
+  "code": "",
+  "commonMistakes": [
+    "Confusing MinHash with cryptographic hashing.",
+    "Using it for arbitrary Euclidean distance."
+  ],
+  "followUps": [
+    "How does MinHash connect to LSH?",
+    "How many hashes are enough?"
+  ],
+  "production": "Choose signature size by memory/accuracy requirements and validate candidate recall.",
+  "workedExample": "Document shingles can use MinHash to detect near-duplicate pages.",
+  "editorial": {
+    "status": "summary"
+  }
+}

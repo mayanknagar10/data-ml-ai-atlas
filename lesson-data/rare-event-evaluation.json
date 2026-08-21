@@ -1,0 +1,46 @@
+{
+  "slug": "rare-event-evaluation",
+  "title": "Rare-event Evaluation & Alert Thresholds",
+  "module": "anomaly",
+  "priority": "very-high",
+  "roles": [
+    "ds"
+  ],
+  "interviewAnswer": "For rare events, accuracy is usually misleading. Evaluate precision/recall, PR-AUC, recall at alert budget, expected cost and time-to-detection; choose thresholds based on operational capacity and error costs.",
+  "keyPoints": [
+    "Base rate determines achievable precision.",
+    "Threshold should reflect cost/capacity.",
+    "Time leakage is common in fraud/anomaly evaluation."
+  ],
+  "resources": [
+    "sklearn",
+    "google-rules-ml"
+  ],
+  "featured": true,
+  "why": "Rare-event Evaluation & Alert Thresholds appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
+  "intuition": "Base rate determines achievable precision.",
+  "deepDive": "For rare events, accuracy is usually misleading. Evaluate precision/recall, PR-AUC, recall at alert budget, expected cost and time-to-detection; choose thresholds based on operational capacity and error costs. Threshold should reflect cost/capacity. Time leakage is common in fraud/anomaly evaluation. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
+  "workedExample": "If analysts can review 500 alerts/day, optimize recall among the top 500 rather than generic 0.5-threshold accuracy.",
+  "commonMistakes": [
+    "Applying the method without checking its assumptions or data-generating process.",
+    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+  ],
+  "followUps": [
+    "What assumptions does Rare-event Evaluation & Alert Thresholds make?",
+    "How would you validate or debug Rare-event Evaluation & Alert Thresholds in practice?"
+  ],
+  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "visual": {
+    "type": "concept-map",
+    "title": "Rare-event Evaluation & Alert Thresholds",
+    "items": [
+      "Base rate determines achievable precision.",
+      "Threshold should reflect cost/capacity.",
+      "Time leakage is common in fraud/anomaly evaluation."
+    ],
+    "caption": "A compact concept map for the most important ideas in this lesson."
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

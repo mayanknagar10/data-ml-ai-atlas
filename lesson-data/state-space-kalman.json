@@ -1,0 +1,52 @@
+{
+  "slug": "state-space-kalman",
+  "title": "State-Space Models & Kalman Filtering",
+  "module": "time-series",
+  "priority": "medium",
+  "roles": [
+    "ds",
+    "da",
+    "as"
+  ],
+  "interviewAnswer": "State-space models represent an evolving hidden state and an observation process. The Kalman filter recursively updates Gaussian linear state estimates as new observations arrive, enabling smoothing, missing-data handling and online forecasting.",
+  "keyPoints": [
+    "Separate latent state dynamics from observation noise.",
+    "Filter = current state using data so far; smoother uses future data too.",
+    "Many forecasting models have state-space forms."
+  ],
+  "resources": [
+    "statsmodels-tsa",
+    "fpp3"
+  ],
+  "featured": false,
+  "why": "State-Space Models & Kalman Filtering appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
+  "intuition": "Separate latent state dynamics from observation noise.",
+  "deepDive": "State-space models represent an evolving hidden state and an observation process. The Kalman filter recursively updates Gaussian linear state estimates as new observations arrive, enabling smoothing, missing-data handling and online forecasting. Filter = current state using data so far; smoother uses future data too. Many forecasting models have state-space forms. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
+  "workedExample": "Track a slowly changing sensor level despite noisy observations.",
+  "commonMistakes": [
+    "Applying the method without checking its assumptions or data-generating process.",
+    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+  ],
+  "followUps": [
+    "What assumptions does State-Space Models & Kalman Filtering make?",
+    "How would you validate or debug State-Space Models & Kalman Filtering in practice?"
+  ],
+  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "visual": {
+    "type": "flow",
+    "title": "Kalman filter cycle",
+    "items": [
+      "Prior state",
+      "Predict",
+      "Observe measurement",
+      "Update posterior",
+      "Next step"
+    ],
+    "caption": "State-space models separate latent dynamics from noisy observations; Kalman filtering alternates prediction and correction.",
+    "accent": 2,
+    "orientation": "horizontal"
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

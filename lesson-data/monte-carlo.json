@@ -1,0 +1,58 @@
+{
+  "slug": "monte-carlo",
+  "title": "Monte Carlo Simulation",
+  "module": "probability",
+  "priority": "high",
+  "roles": [
+    "ds",
+    "as"
+  ],
+  "interviewAnswer": "Monte Carlo approximates expectations or probabilities with repeated random samples. Error typically shrinks with the square root of sample count, so simulation is flexible but can be computationally expensive.",
+  "keyPoints": [
+    "Use simulation when analytic calculation is hard.",
+    "Random seeds improve reproducibility, not statistical validity.",
+    "Variance reduction can improve efficiency."
+  ],
+  "resources": [
+    "harvard-stat110",
+    "numpy"
+  ],
+  "featured": false,
+  "why": "Monte Carlo Simulation is a recurring foundation across data science and machine learning because it affects both theoretical correctness and practical system behavior.",
+  "intuition": "Use simulation when analytic calculation is hard.",
+  "deepDive": "Monte Carlo approximates expectations or probabilities with repeated random samples. Error typically shrinks with the square root of sample count, so simulation is flexible but can be computationally expensive. Random seeds improve reproducibility, not statistical validity. Variance reduction can improve efficiency. The interview-level skill is not merely recalling the definition: explain the assumptions, what diagnostic evidence you would inspect, and what alternative you would choose when those assumptions fail.",
+  "workedExample": "Estimate probability a capacity system overloads by simulating uncertain daily demand.",
+  "commonMistakes": [
+    "Using the concept mechanically without checking assumptions or data semantics.",
+    "Reporting one metric/result without examining uncertainty, slices or failure modes."
+  ],
+  "followUps": [
+    "What assumptions or limitations does Monte Carlo Simulation have?",
+    "How would you validate Monte Carlo Simulation on a real dataset?"
+  ],
+  "production": "In production, make assumptions explicit, validate on representative slices, compare with a simple baseline and monitor the signals that can drift.",
+  "lab": {
+    "goal": "Estimate a probability with Monte Carlo simulation.",
+    "language": "python",
+    "buildIt": "import numpy as np\nrng=np.random.default_rng(0)\nn=200_000\nx=rng.random((n,2))\ninside=(x[:,0]**2+x[:,1]**2)<=1\npi_hat=4*inside.mean()\nprint(pi_hat)\n",
+    "useIt": "batches=inside.reshape(200,-1).mean(axis=1)*4\nprint('SE',batches.std(ddof=1)/np.sqrt(len(batches)))\n",
+    "verifyIt": "assert abs(pi_hat-np.pi)<0.03\n",
+    "shipIt": "Use deterministic seeds for tests, but in production report Monte Carlo error and ensure simulated distributions reflect the decision problem."
+  },
+  "visual": {
+    "type": "flow",
+    "title": "Monte Carlo estimation",
+    "items": [
+      "Sample random inputs",
+      "Evaluate quantity",
+      "Repeat many times",
+      "Average / quantify uncertainty"
+    ],
+    "caption": "Simulation replaces an intractable expectation with repeated random sampling.",
+    "accent": 2,
+    "orientation": "horizontal"
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

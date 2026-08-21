@@ -1,0 +1,55 @@
+{
+  "slug": "design-forecast-platform",
+  "title": "Design a Forecasting Platform",
+  "module": "system-design",
+  "priority": "high",
+  "roles": [
+    "ds",
+    "mle",
+    "de"
+  ],
+  "interviewAnswer": "A forecasting platform must ingest time-indexed data, define cutoffs/horizons, construct leakage-safe features, run rolling backtests, train/version models, generate probabilistic forecasts and monitor bias/accuracy by segment.",
+  "keyPoints": [
+    "Forecast origin/horizon are first-class metadata.",
+    "Backtest and production feature pipelines must match.",
+    "Support fallback baselines."
+  ],
+  "resources": [
+    "fpp3",
+    "nixtla",
+    "google-rules-ml"
+  ],
+  "featured": false,
+  "why": "Design a Forecasting Platform appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
+  "intuition": "Forecast origin/horizon are first-class metadata.",
+  "deepDive": "A forecasting platform must ingest time-indexed data, define cutoffs/horizons, construct leakage-safe features, run rolling backtests, train/version models, generate probabilistic forecasts and monitor bias/accuracy by segment. Backtest and production feature pipelines must match. Support fallback baselines. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
+  "workedExample": "Nightly demand forecasts for thousands of SKUs with holiday/weather drivers and reconciliation across product hierarchy.",
+  "commonMistakes": [
+    "Applying the method without checking its assumptions or data-generating process.",
+    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+  ],
+  "followUps": [
+    "What assumptions does Design a Forecasting Platform make?",
+    "How would you validate or debug Design a Forecasting Platform in practice?"
+  ],
+  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "visual": {
+    "type": "flow",
+    "title": "Forecasting platform",
+    "items": [
+      "Historical data",
+      "Feature/calendar layer",
+      "Backtesting",
+      "Model registry",
+      "Batch forecasts",
+      "Reconciliation",
+      "Monitoring"
+    ],
+    "caption": "A forecasting platform must manage backtests, horizons, hierarchies and recurring retraining across many series.",
+    "accent": 3,
+    "orientation": "horizontal"
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

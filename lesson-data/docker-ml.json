@@ -1,0 +1,55 @@
+{
+  "slug": "docker-ml",
+  "title": "Dockerizing an ML Inference Service",
+  "module": "cloud",
+  "priority": "very-high",
+  "roles": [
+    "mle",
+    "aie"
+  ],
+  "interviewAnswer": "Package preprocessing, inference code and dependencies in an image. The model checkpoint can be baked into the image for simplicity or loaded from object storage/volume when versioning and image size matter.",
+  "keyPoints": [
+    "Checkpoint strategy",
+    "Entrypoint",
+    "GPU runtime",
+    "Health checks"
+  ],
+  "resources": [
+    "docker",
+    "fsdl",
+    "aws-sagemaker",
+    "azure-ml"
+  ],
+  "featured": false,
+  "why": "Containerizing inference is a practical bridge from notebooks to reproducible deployment and is frequently expected in ML engineering interviews.",
+  "intuition": "Docker packages code, runtime libraries and system dependencies into an immutable image. A container is a running instance of that image; model artifacts can be baked in or mounted/downloaded at runtime.",
+  "deepDive": "Use a small trusted base image, pin dependencies, separate build/runtime stages, run as non-root, expose a clear entrypoint and keep secrets outside the image. Large/changing checkpoints are often stored in object/model storage and fetched by version; small fixed models can be copied into the image for simplicity. GPU containers require compatible host drivers/runtime, while CUDA libraries can live inside the image.",
+  "workedExample": "Inference image contains Python, PyTorch, preprocessing code and API entrypoint; at startup it downloads model v12 from object storage, loads it once, then serves requests.",
+  "code": "FROM python:3.12-slim\nWORKDIR /app\nCOPY requirements.txt .\nRUN pip install --no-cache-dir -r requirements.txt\nCOPY src/ src/\nCMD [\"python\",\"-m\",\"src.server\"]",
+  "commonMistakes": [
+    "Storing passwords/API keys in the Dockerfile.",
+    "Re-downloading the model on every request instead of startup/cached load.",
+    "Assuming a Docker image includes a GPU driver independent of the host runtime."
+  ],
+  "followUps": [
+    "Image vs container?",
+    "Should the checkpoint be inside the image?",
+    "How do you persist data?",
+    "How would this run on AWS?"
+  ],
+  "production": "Push immutable tagged images to a registry, scan them, deploy by digest/version, emit health/metrics endpoints and keep model version separately traceable for rollback.",
+  "visual": {
+    "type": "concept-map",
+    "title": "Dockerizing an ML Inference Service",
+    "items": [
+      "Checkpoint strategy",
+      "Entrypoint",
+      "GPU runtime",
+      "Health checks"
+    ],
+    "caption": "A compact concept map for the most important ideas in this lesson."
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

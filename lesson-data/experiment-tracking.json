@@ -1,0 +1,42 @@
+{
+  "slug": "experiment-tracking",
+  "title": "Experiment Tracking",
+  "module": "mlops",
+  "priority": "high",
+  "roles": [
+    "mle",
+    "ds"
+  ],
+  "interviewAnswer": "Track code version, data version, hyperparameters, environment, metrics and artifacts so experiments can be reproduced and compared. A checkpoint without its context is not a reproducible experiment.",
+  "keyPoints": [
+    "Runs",
+    "Artifacts",
+    "Config",
+    "Data version"
+  ],
+  "resources": [
+    "made-with-ml",
+    "fsdl",
+    "stanford-cs329s"
+  ],
+  "featured": false,
+  "why": "Experiment tracking makes model development reproducible and comparable instead of relying on notebook memory.",
+  "intuition": "Every run should record what code/data/config produced which metrics and artifacts so you can reproduce a result and compare changes fairly.",
+  "deepDive": "Track parameters/hyperparameters, code commit, data/version/split, environment, metrics over time, artifacts/checkpoints and notes. A run tracker is not the same as a model registry: tracking documents experiments; the registry governs candidate/approved model versions. Avoid logging secrets or huge raw datasets directly.",
+  "workedExample": "Two diffusion runs with the same architecture but different bottleneck size should be comparable by config, seed/data version, PSNR/domain metrics, checkpoint and GPU/runtime metadata.",
+  "commonMistakes": [
+    "Logging only the final accuracy.",
+    "Comparing runs trained on different data splits without noting it.",
+    "Treating experiment names as sufficient versioning."
+  ],
+  "followUps": [
+    "Experiment tracker vs model registry?",
+    "What metadata do you log?",
+    "How do you reproduce a run?",
+    "How do you track datasets?"
+  ],
+  "production": "Link approved model versions back to their exact training runs and artifacts; this supports audits, rollback and post-incident analysis.",
+  "editorial": {
+    "status": "summary"
+  }
+}

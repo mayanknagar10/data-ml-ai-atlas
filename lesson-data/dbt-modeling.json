@@ -1,0 +1,37 @@
+{
+  "slug": "dbt-modeling",
+  "title": "dbt: Transformation-as-Code",
+  "module": "analytics-eng",
+  "priority": "high",
+  "roles": [
+    "de",
+    "ds",
+    "da"
+  ],
+  "interviewAnswer": "dbt manages SQL transformations as versioned models with dependencies, tests, documentation and incremental strategies inside the warehouse. It separates data transformation logic from extraction/loading infrastructure.",
+  "keyPoints": [
+    "Models form a DAG.",
+    "Tests protect assumptions such as uniqueness/not-null.",
+    "Incremental models need correct update keys/windows."
+  ],
+  "resources": [
+    "dbt-docs"
+  ],
+  "featured": false,
+  "why": "dbt: Transformation-as-Code appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
+  "intuition": "Models form a DAG.",
+  "deepDive": "dbt manages SQL transformations as versioned models with dependencies, tests, documentation and incremental strategies inside the warehouse. It separates data transformation logic from extraction/loading infrastructure. Tests protect assumptions such as uniqueness/not-null. Incremental models need correct update keys/windows. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
+  "workedExample": "Transform raw events into tested session and daily-metric models with lineage.",
+  "commonMistakes": [
+    "Applying the method without checking its assumptions or data-generating process.",
+    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+  ],
+  "followUps": [
+    "What assumptions does dbt: Transformation-as-Code make?",
+    "How would you validate or debug dbt: Transformation-as-Code in practice?"
+  ],
+  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "editorial": {
+    "status": "summary"
+  }
+}

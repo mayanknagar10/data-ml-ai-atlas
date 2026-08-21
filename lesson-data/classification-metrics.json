@@ -1,0 +1,75 @@
+{
+  "slug": "classification-metrics",
+  "title": "Precision, Recall & F1",
+  "module": "evaluation",
+  "priority": "very-high",
+  "roles": [
+    "all"
+  ],
+  "interviewAnswer": "Precision asks: of predicted positives, how many were correct? Recall asks: of actual positives, how many did we find? F1 is the harmonic mean and is useful when both matter, but the right metric depends on error costs.",
+  "keyPoints": [
+    "Confusion matrix",
+    "False positive vs false negative cost",
+    "Threshold dependence",
+    "Macro/micro averaging"
+  ],
+  "resources": [
+    "google-mlcc",
+    "statquest",
+    "sklearn",
+    "isl",
+    "google-mlcc-exercises"
+  ],
+  "featured": true,
+  "why": "Precision/recall questions appear constantly in interviews because real systems rarely value false positives and false negatives equally.",
+  "intuition": "For a “failure” detector, recall asks “of all actual failures, how many did we catch?” Precision asks “of all alerts, how many were truly failures?”",
+  "deepDive": "Accuracy can look excellent on imbalanced data while the model detects nothing useful. Precision and recall change with the decision threshold. F1 summarizes both using a harmonic mean, but should not replace explicit thinking about business costs.",
+  "math": "Precision = TP/(TP+FP)\nRecall = TP/(TP+FN)\nF1 = 2·Precision·Recall/(Precision+Recall)",
+  "code": "from sklearn.metrics import precision_score, recall_score, f1_score\ny_true = [1,1,1,0,0,0,0,0]\ny_pred = [1,1,0,1,0,0,0,0]\nprint(precision_score(y_true, y_pred))\nprint(recall_score(y_true, y_pred))\nprint(f1_score(y_true, y_pred))",
+  "commonMistakes": [
+    "Choosing accuracy for a 1% positive class without checking class balance.",
+    "Saying “recall is true positives” without defining its denominator.",
+    "Selecting the threshold solely because precision and recall cross."
+  ],
+  "followUps": [
+    "When is PR-AUC preferable to ROC-AUC?",
+    "How would you choose the threshold?",
+    "Macro vs micro F1?",
+    "How do class weights affect training?"
+  ],
+  "production": "Monitor the metric at the operating threshold and across important slices. If labels arrive late, separate immediate system monitoring from delayed model-quality monitoring.",
+  "workedExample": "For safety-critical failure detection, require a minimum recall first, then maximize precision among thresholds meeting that safety constraint.",
+  "lab": {
+    "goal": "Compute the confusion matrix metrics manually and with sklearn.",
+    "language": "python",
+    "buildIt": "y=[1,1,1,0,0,0]; pred=[1,0,1,1,0,0]\ntp=sum(a==1 and b==1 for a,b in zip(y,pred)); fn=sum(a==1 and b==0 for a,b in zip(y,pred))\nfp=sum(a==0 and b==1 for a,b in zip(y,pred))\nprecision=tp/(tp+fp); recall=tp/(tp+fn); f1=2*precision*recall/(precision+recall)\nprint(tp,fp,fn,precision,recall,f1)\n",
+    "useIt": "from sklearn.metrics import classification_report\nprint(classification_report(y,pred,digits=3))\n",
+    "verifyIt": "assert round(precision,3)==.667 and round(recall,3)==.667\n"
+  },
+  "visual": {
+    "type": "matrix",
+    "title": "Confusion matrix",
+    "rows": [
+      "Predicted +",
+      "Predicted −"
+    ],
+    "cols": [
+      "Actual +",
+      "Actual −"
+    ],
+    "cells": [
+      [
+        "TP",
+        "FP"
+      ],
+      [
+        "FN",
+        "TN"
+      ]
+    ],
+    "caption": "Precision focuses on positive predictions; recall focuses on actual positives. The matrix makes the error types explicit."
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

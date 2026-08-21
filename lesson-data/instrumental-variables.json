@@ -1,0 +1,36 @@
+{
+  "slug": "instrumental-variables",
+  "title": "Instrumental Variables",
+  "module": "causal",
+  "priority": "medium",
+  "roles": [
+    "ds",
+    "as"
+  ],
+  "interviewAnswer": "An instrumental variable affects treatment, is independent of unmeasured outcome causes under assumptions, and affects the outcome only through treatment. IV can identify causal effects when confounding remains, but valid instruments are hard to justify.",
+  "keyPoints": [
+    "Relevance, independence and exclusion restriction.",
+    "Weak instruments create unstable estimates.",
+    "Often estimates a local effect for compliers."
+  ],
+  "resources": [
+    "causal-mixtape"
+  ],
+  "featured": false,
+  "why": "Instrumental Variables appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
+  "intuition": "Relevance, independence and exclusion restriction.",
+  "deepDive": "An instrumental variable affects treatment, is independent of unmeasured outcome causes under assumptions, and affects the outcome only through treatment. IV can identify causal effects when confounding remains, but valid instruments are hard to justify. Weak instruments create unstable estimates. Often estimates a local effect for compliers. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
+  "workedExample": "Use randomized encouragement as an instrument for actual program participation when not everyone complies.",
+  "commonMistakes": [
+    "Applying the method without checking its assumptions or data-generating process.",
+    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+  ],
+  "followUps": [
+    "What assumptions does Instrumental Variables make?",
+    "How would you validate or debug Instrumental Variables in practice?"
+  ],
+  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "editorial": {
+    "status": "summary"
+  }
+}

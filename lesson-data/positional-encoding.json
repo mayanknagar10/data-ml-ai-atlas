@@ -1,0 +1,56 @@
+{
+  "slug": "positional-encoding",
+  "title": "Positional Information",
+  "module": "transformers",
+  "priority": "medium",
+  "roles": [
+    "aie",
+    "as"
+  ],
+  "interviewAnswer": "Attention itself is permutation-invariant, so transformers need positional information. Systems may use learned embeddings, sinusoidal encodings or relative/rotary approaches such as RoPE.",
+  "keyPoints": [
+    "Order information",
+    "Absolute vs relative",
+    "RoPE intuition",
+    "Context length"
+  ],
+  "resources": [
+    "stanford-cs224n",
+    "stanford-cs336",
+    "hf-llm"
+  ],
+  "featured": false,
+  "why": "Attention alone is permutation-equivariant, so transformers need a way to represent order or relative position.",
+  "intuition": "Without position information, the same set of token embeddings in a different order would look equivalent to pure self-attention.",
+  "deepDive": "Absolute learned/sinusoidal embeddings add a position vector to each token. Relative position methods encode pairwise distance; rotary positional embeddings (RoPE) rotate query/key dimensions based on position and support relative-phase behavior. Position methods affect length extrapolation and long-context performance.",
+  "math": "Sinusoidal PE uses sin/cos at different frequencies; RoPE applies position-dependent rotations to Q/K pairs.",
+  "workedExample": "“dog bites man” and “man bites dog” contain the same words but different order; position information lets attention distinguish them.",
+  "commonMistakes": [
+    "Saying attention inherently knows sequence order.",
+    "Treating all positional encodings as interchangeable for arbitrary context extension.",
+    "Changing maximum context without checking positional-training limits."
+  ],
+  "followUps": [
+    "Absolute vs relative position?",
+    "What is RoPE?",
+    "Why sin/cos?",
+    "How does long-context extension interact with position encodings?"
+  ],
+  "production": "Long-context serving must respect the model’s positional method/training range; naive extension can degrade quality even if memory allows more tokens.",
+  "visual": {
+    "type": "flow",
+    "title": "Position information",
+    "items": [
+      "Token embeddings",
+      "Add / encode position",
+      "Self-attention",
+      "Position-aware representation"
+    ],
+    "caption": "Attention alone is permutation-invariant; positional information tells the model where tokens occur in the sequence.",
+    "accent": 1,
+    "orientation": "horizontal"
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

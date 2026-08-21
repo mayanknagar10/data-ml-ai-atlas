@@ -1,0 +1,41 @@
+{
+  "slug": "mixture-of-experts",
+  "title": "Mixture-of-Experts Transformers",
+  "module": "transformers",
+  "priority": "medium",
+  "roles": [
+    "aie",
+    "mle",
+    "as"
+  ],
+  "interviewAnswer": "MoE layers route each token to a small subset of expert feed-forward networks, increasing total model capacity without activating all parameters per token.",
+  "keyPoints": [
+    "Sparse routing",
+    "Experts",
+    "Load balancing",
+    "Communication cost"
+  ],
+  "resources": [
+    "stanford-cs336",
+    "stanford-cs25"
+  ],
+  "featured": false,
+  "why": "MoE explains how some large models scale capacity more cheaply than dense models.",
+  "intuition": "A router sends each token to only a few specialized sub-networks.",
+  "deepDive": "Top-k routing reduces arithmetic but introduces load-balancing, expert-capacity and distributed communication problems.",
+  "math": "",
+  "code": "",
+  "commonMistakes": [
+    "Assuming all MoE parameters run for every token.",
+    "Ignoring communication/load balance."
+  ],
+  "followUps": [
+    "Dense vs MoE inference cost?",
+    "What is expert collapse?"
+  ],
+  "production": "MoE can become network-bound; topology and routing balance are system-design concerns.",
+  "workedExample": "Different token types may statistically route to different experts, though expert semantics are not guaranteed.",
+  "editorial": {
+    "status": "summary"
+  }
+}

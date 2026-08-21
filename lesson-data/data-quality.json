@@ -1,0 +1,44 @@
+{
+  "slug": "data-quality",
+  "title": "Data Quality & Schema Evolution",
+  "module": "data-eng",
+  "priority": "high",
+  "roles": [
+    "de",
+    "mle"
+  ],
+  "interviewAnswer": "Production pipelines should validate schema, ranges, null rates, uniqueness and business constraints. Schema changes need explicit compatibility and migration strategies rather than silent breakage.",
+  "keyPoints": [
+    "Schema contracts",
+    "Freshness",
+    "Completeness",
+    "Backward compatibility"
+  ],
+  "resources": [
+    "made-with-ml",
+    "confluent-kafka",
+    "flink",
+    "spark",
+    "google-rules-ml"
+  ],
+  "featured": false,
+  "why": "Models depend on upstream data contracts; schema or distribution failures can break predictions even when model code is unchanged.",
+  "intuition": "Data quality means the data is structurally valid and semantically plausible for the intended use: correct schema, ranges, completeness, uniqueness and freshness.",
+  "deepDive": "Schema evolution includes added/removed columns, type changes and semantic changes that a schema alone may not detect. Define expectations for null rate, uniqueness, ranges, category sets, row counts and freshness. Some changes are backward compatible; others require coordinated producer/consumer rollout. Data validation should occur at ingestion and before training/inference.",
+  "workedExample": "If a temperature column changes from Celsius to Fahrenheit while keeping the same numeric type/name, schema validation passes but semantic distribution checks should flag the shift.",
+  "commonMistakes": [
+    "Equating “parses successfully” with high-quality data.",
+    "Rejecting every new category/schema addition without compatibility rules.",
+    "Monitoring model performance but not upstream freshness/null rates."
+  ],
+  "followUps": [
+    "Schema drift vs data drift?",
+    "How handle a new categorical value?",
+    "What checks would you add?",
+    "How do you roll out schema changes safely?"
+  ],
+  "production": "Use contracts, lineage, freshness SLOs, quarantine for bad batches and alerts that identify the upstream source before downstream models fail.",
+  "editorial": {
+    "status": "summary"
+  }
+}

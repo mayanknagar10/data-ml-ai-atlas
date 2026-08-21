@@ -1,0 +1,55 @@
+{
+  "slug": "gan-vs-diffusion",
+  "title": "GAN vs Diffusion vs Flow Matching",
+  "module": "genai",
+  "priority": "very-high",
+  "roles": [
+    "genai",
+    "aie",
+    "as"
+  ],
+  "interviewAnswer": "GANs use adversarial training and usually sample in one/few passes; diffusion learns a reverse corruption process; flow matching learns a transport velocity field. Compare them by stability, sample quality/diversity, inference speed and controllability—not by a single winner.",
+  "keyPoints": [
+    "Training objective",
+    "Sampling procedure",
+    "Stability",
+    "Latency"
+  ],
+  "resources": [
+    "mit-6s191",
+    "stanford-cs336",
+    "hf-diffusion",
+    "paper-flow-matching"
+  ],
+  "featured": true,
+  "why": "Modern GenAI interviews often ask you to compare model families based on objective, sampling, diversity, stability and controllability rather than declaring one universally best.",
+  "intuition": "GANs learn through a discriminator game, diffusion learns to reverse corruption, and flow matching learns a continuous velocity field transporting noise to data.",
+  "deepDive": "GANs often provide fast one-pass generation but can be unstable and mode-collapse. Diffusion uses a known corruption path and iterative denoising; training is generally stable but sampling may require many network evaluations. Flow matching trains a vector field along chosen probability paths and generates by integrating an ODE; path/solver choices influence efficiency. Architecture and training paradigm are separate: a DiT-like transformer can be used with diffusion or flow-matching objectives.",
+  "workedExample": "For interactive low-latency image generation, a GAN can be attractive if quality/diversity are sufficient. For high-fidelity controllable generation, diffusion/flow models may be easier to train and condition but cost more inference compute.",
+  "commonMistakes": [
+    "Saying MMDiT and flow matching are the same concept.",
+    "Assuming diffusion never has mode-coverage issues or GANs are obsolete.",
+    "Comparing generation speed without fixing hardware, steps and resolution."
+  ],
+  "followUps": [
+    "Why is diffusion sampling slower?",
+    "What does flow matching predict?",
+    "Can a transformer be used in both diffusion and flow matching?",
+    "When would you choose a GAN today?"
+  ],
+  "production": "Choose the family from latency, controllability, data, hardware and quality constraints. Profile end-to-end serving cost rather than comparing model families abstractly.",
+  "visual": {
+    "type": "concept-map",
+    "title": "GAN vs Diffusion vs Flow Matching",
+    "items": [
+      "Training objective",
+      "Sampling procedure",
+      "Stability",
+      "Latency"
+    ],
+    "caption": "A compact concept map for the most important ideas in this lesson."
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

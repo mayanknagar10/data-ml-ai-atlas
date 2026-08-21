@@ -1,0 +1,49 @@
+{
+  "slug": "policy-gradients",
+  "title": "Policy Gradients",
+  "module": "rl",
+  "priority": "high",
+  "roles": [
+    "aie",
+    "mle",
+    "as"
+  ],
+  "interviewAnswer": "Policy-gradient methods optimize policy parameters directly. REINFORCE increases the log-probability of actions that produced high return and decreases it for poor return. This handles stochastic and continuous policies naturally, but raw Monte Carlo gradients can have high variance.",
+  "keyPoints": [
+    "direct policy optimization",
+    "log-probability trick",
+    "return-weighted gradient",
+    "high variance"
+  ],
+  "resources": [
+    "berkeley-cs285",
+    "hf-deep-rl",
+    "openai-spinning-up"
+  ],
+  "featured": false,
+  "why": "Policy gradients underpin actor-critic methods and PPO, which are important in control and LLM alignment contexts.",
+  "intuition": "If an action was followed by a surprisingly good outcome, make that action a little more likely next time in similar states.",
+  "deepDive": "The policy-gradient theorem gives an expectation of ∇ log π(a|s) weighted by return or advantage. A baseline can reduce variance without changing the expected gradient. Actor-critic methods replace full-episode Monte Carlo return with a learned critic/advantage estimate.",
+  "math": "∇J(θ)=E[∇θ log πθ(a|s) · A(s,a)].",
+  "workedExample": "A two-action softmax policy receives reward +1 after action A and −1 after B. REINFORCE nudges logits to increase P(A) and decrease P(B).",
+  "commonMistakes": [
+    "Saying policy gradients require a differentiable environment; they differentiate the policy probability, not environment dynamics.",
+    "Ignoring variance and the role of baselines/critics."
+  ],
+  "followUps": [
+    "Why subtract a baseline?",
+    "Policy gradient vs Q-learning?",
+    "What is an advantage function?"
+  ],
+  "production": "Reward normalization, stable batching, reproducible rollouts and policy constraints matter as much as the gradient formula.",
+  "lab": {
+    "goal": "Implement REINFORCE for a two-armed stochastic bandit with a softmax policy.",
+    "language": "python",
+    "buildIt": "import math, random\nlogits=[0.0,0.0]; lr=.05\ndef probs():\n    e=[math.exp(x) for x in logits]; z=sum(e); return [x/z for x in e]\nfor _ in range(2000):\n    p=probs(); a=0 if random.random()<p[0] else 1\n    reward=(1.0 if random.random() < (0.75 if a==0 else 0.25) else 0.0)\n    # grad log softmax: 1[a=j] - p_j\n    for j in (0,1): logits[j]+=lr*reward*((1 if a==j else 0)-p[j])\nprint(probs())",
+    "useIt": "p=probs(); chosen=max(range(2),key=lambda i:p[i]); print('best arm',chosen,'prob',p[chosen])",
+    "verifyIt": "assert probs()[0] > .8\n"
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

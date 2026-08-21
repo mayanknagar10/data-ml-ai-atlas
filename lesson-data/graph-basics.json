@@ -1,0 +1,108 @@
+{
+  "slug": "graph-basics",
+  "title": "Graph ML Fundamentals",
+  "module": "graph",
+  "priority": "high",
+  "roles": [
+    "mle",
+    "ds",
+    "as"
+  ],
+  "interviewAnswer": "A graph represents entities as nodes and relationships as edges. ML on graphs combines node/edge features with graph structure to predict node labels, links, graph properties or rankings.",
+  "keyPoints": [
+    "Nodes/edges",
+    "Directed vs undirected",
+    "Heterogeneous graphs",
+    "Tasks"
+  ],
+  "resources": [
+    "stanford-cs229",
+    "stanford-cs329s",
+    "stanford-cs224w"
+  ],
+  "featured": false,
+  "why": "Graph ML starts with representing entities and relationships explicitly; interviews expect you to know nodes, edges, direction, heterogeneity and graph-specific leakage.",
+  "intuition": "A graph stores objects as nodes and relationships as edges. Features live on nodes/edges, while topology itself provides information that ordinary tabular models may miss.",
+  "deepDive": "Graphs may be directed/undirected, weighted, homogeneous or heterogeneous with multiple node/edge types. Degree, neighborhoods, paths and connected components describe structure. Adjacency matrices/lists encode connectivity. In ML, splits require care: edges/nodes from the future can leak information, and message passing can indirectly expose validation/test structure depending on the setup.",
+  "math": "Adjacency A_ij=1 (or weight) when an edge connects i→j. Degree d_i=Σ_j A_ij for a simple directed-out degree.",
+  "workedExample": "A developer–PR graph has two node types and “authored”/“reviewed” edges. The same PR text alone misses historical reviewer relationships that graph structure captures.",
+  "commonMistakes": [
+    "Treating graph rows as independent samples.",
+    "Ignoring edge direction/type.",
+    "Randomly splitting temporal interaction graphs without leakage analysis."
+  ],
+  "followUps": [
+    "Homogeneous vs heterogeneous graph?",
+    "Directed vs undirected?",
+    "What is node degree?",
+    "How do you split graph data?"
+  ],
+  "production": "Graph freshness, edge timestamps and entity resolution matter as much as the GNN. Build reproducible snapshot logic for training and online updates.",
+  "visual": {
+    "type": "network",
+    "title": "Graph representation",
+    "nodes": [
+      {
+        "id": "a",
+        "label": "A",
+        "x": 0.2,
+        "y": 0.25
+      },
+      {
+        "id": "b",
+        "label": "B",
+        "x": 0.52,
+        "y": 0.18
+      },
+      {
+        "id": "c",
+        "label": "C",
+        "x": 0.78,
+        "y": 0.43
+      },
+      {
+        "id": "d",
+        "label": "D",
+        "x": 0.56,
+        "y": 0.76
+      },
+      {
+        "id": "e",
+        "label": "E",
+        "x": 0.2,
+        "y": 0.68
+      }
+    ],
+    "edges": [
+      [
+        "a",
+        "b"
+      ],
+      [
+        "b",
+        "c"
+      ],
+      [
+        "c",
+        "d"
+      ],
+      [
+        "d",
+        "e"
+      ],
+      [
+        "e",
+        "a"
+      ],
+      [
+        "b",
+        "d"
+      ]
+    ],
+    "caption": "Graphs represent entities as nodes and relationships as edges; node/edge features add attributes.",
+    "directed": false
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

@@ -1,0 +1,60 @@
+{
+  "slug": "design-rag",
+  "title": "Design an Internal RAG Assistant",
+  "module": "system-design",
+  "priority": "very-high",
+  "roles": [
+    "aie",
+    "mle"
+  ],
+  "interviewAnswer": "Define document sources and permissions, ingestion/chunking, embeddings and indexes, retrieval/reranking, prompt construction, citations, evaluation, latency/cost and monitoring. Security boundaries matter as much as answer quality.",
+  "keyPoints": [
+    "ACL-aware retrieval",
+    "Freshness",
+    "Reranking",
+    "Evaluation"
+  ],
+  "resources": [
+    "openai-cookbook",
+    "langchain-academy",
+    "stanford-cs329s",
+    "fsdl",
+    "paper-rag"
+  ],
+  "featured": false,
+  "why": "RAG system design combines document ingestion, retrieval, LLM behavior, evaluation, security and production architecture—ideal for AI engineering interviews.",
+  "intuition": "Keep the source of truth outside the model. Retrieve only relevant evidence at query time, then ask the LLM to answer from that evidence with provenance.",
+  "deepDive": "Clarify users, data sensitivity, freshness, query latency and citation requirements. Offline path: connectors → parsing → chunking → metadata → embeddings → vector/lexical indexes. Online path: auth → query transformation → retrieval/filtering → optional reranking → context assembly → generation → citations. Evaluate retrieval separately from generation. Add access-control filtering before context reaches the model.",
+  "workedExample": "Internal engineering assistant: ingest approved PDFs/wiki pages, preserve document permissions in metadata, hybrid retrieve top-30, rerank to top-5, generate an answer with source citations, and refuse when evidence is insufficient.",
+  "commonMistakes": [
+    "Retrieving documents a user is not authorized to see.",
+    "Assuming bigger context always improves answers.",
+    "Evaluating only final prose quality and not retrieval recall."
+  ],
+  "followUps": [
+    "How do you choose chunk size?",
+    "Dense vs hybrid retrieval?",
+    "How do you enforce document permissions?",
+    "How do you evaluate hallucinations?"
+  ],
+  "production": "Version ingestion/chunking/embedding configs, support incremental refresh/deletion, cache carefully, trace every retrieval/generation step, and define fallback behavior when retrieval confidence is low.",
+  "visual": {
+    "type": "flow",
+    "title": "Production RAG",
+    "items": [
+      "Documents",
+      "Parse/chunk/embed",
+      "Index",
+      "Retrieve",
+      "Rerank",
+      "Prompt LLM",
+      "Citations + monitoring"
+    ],
+    "caption": "A production RAG system needs ingestion, retrieval quality, security and evaluation—not just an LLM call.",
+    "accent": 3,
+    "orientation": "horizontal"
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

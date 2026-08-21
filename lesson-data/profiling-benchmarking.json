@@ -1,0 +1,54 @@
+{
+  "slug": "profiling-benchmarking",
+  "title": "Profiling & Benchmarking ML Systems",
+  "module": "performance",
+  "priority": "very-high",
+  "roles": [
+    "mle",
+    "aie",
+    "cv"
+  ],
+  "interviewAnswer": "I optimize only after measuring. I separate data loading, preprocessing, host-to-device transfer, model execution and postprocessing; warm up GPU kernels, synchronize correctly, and report latency distributions plus throughput rather than one timing number.",
+  "keyPoints": [
+    "profile first",
+    "warmup",
+    "GPU synchronization",
+    "p50/p95/p99 + throughput"
+  ],
+  "resources": [
+    "pytorch-performance",
+    "tensorrt-performance",
+    "fsdl"
+  ],
+  "featured": true,
+  "why": "“The model is slow” can actually mean disk I/O, tokenization, CPU transforms or queueing. Bad benchmarks lead to expensive optimizations that change nothing.",
+  "intuition": "Treat latency like a budget with line items. Measure each stage before deciding whether to change the model or infrastructure.",
+  "deepDive": "GPU work is asynchronous, so naive wall-clock measurements can be misleading. Benchmark representative batch sizes and input shapes after warmup. Throughput and latency often trade off; p95/p99 expose tail behavior that averages hide.",
+  "workedExample": "If a 200 ms request spends 130 ms decoding an image, 50 ms in the model and 20 ms elsewhere, TensorRT on the model cannot deliver a 5× end-to-end speedup.",
+  "commonMistakes": [
+    "Timing one GPU inference without warmup/synchronization.",
+    "Optimizing FLOPs while ignoring data loading and serialization."
+  ],
+  "followUps": [
+    "How do throughput and latency conflict?",
+    "What would you profile in a RAG pipeline?"
+  ],
+  "production": "Production performance tests should run in CI/load tests on representative hardware and track regressions by model/version.",
+  "visual": {
+    "type": "flow",
+    "title": "Performance workflow",
+    "items": [
+      "Define metric/SLO",
+      "Profile end-to-end",
+      "Find bottleneck",
+      "Optimize one thing",
+      "Re-measure"
+    ],
+    "caption": "Optimization begins with measurement; otherwise teams often speed up the wrong component.",
+    "accent": 1,
+    "orientation": "horizontal"
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

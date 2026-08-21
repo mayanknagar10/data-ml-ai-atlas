@@ -1,0 +1,114 @@
+{
+  "slug": "drift",
+  "title": "Data Drift vs Concept Drift",
+  "module": "mlops",
+  "priority": "high",
+  "roles": [
+    "mle",
+    "ds"
+  ],
+  "interviewAnswer": "Data drift means the input distribution changes; concept drift means the relationship between inputs and target changes. Drift detection is a signal to investigate—not automatic proof that retraining is needed.",
+  "keyPoints": [
+    "Covariate shift",
+    "Target relationship",
+    "Monitoring windows",
+    "Retraining decision"
+  ],
+  "resources": [
+    "stanford-cs329s",
+    "made-with-ml",
+    "fsdl",
+    "google-rules-ml"
+  ],
+  "featured": false,
+  "why": "Drift questions test whether you can distinguish changes in inputs from changes in the relationship between inputs and outcomes.",
+  "intuition": "Data drift means the input distribution changed. Concept drift means the mapping P(y|x) changed, so even familiar inputs may now require different predictions.",
+  "deepDive": "Covariate/data drift can be detected without labels using distribution comparisons, but it does not automatically imply accuracy loss. Concept/model-performance drift requires labels or strong proxies and can lag in availability. Prior/label shift changes class prevalence. Retraining should be triggered by impact and validated, not every statistical difference.",
+  "workedExample": "Seasonal customer features shift every December (data drift) while the same fraud rules still work. A new attack pattern that changes which transactions are fraudulent is concept drift.",
+  "commonMistakes": [
+    "Calling any metric drop “data drift.”",
+    "Automatically retraining whenever a feature distribution changes slightly.",
+    "Ignoring changes in label prevalence/calibration."
+  ],
+  "followUps": [
+    "How detect drift without labels?",
+    "Data vs concept drift?",
+    "When should you retrain?",
+    "What is label/prior shift?"
+  ],
+  "production": "Monitor feature distributions, missingness and model outputs continuously; join delayed ground truth when available and gate retraining with offline evaluation/approval.",
+  "visual": {
+    "type": "curve",
+    "title": "Distribution drift",
+    "series": [
+      {
+        "label": "training",
+        "points": [
+          [
+            0,
+            0.02
+          ],
+          [
+            0.2,
+            0.12
+          ],
+          [
+            0.4,
+            0.48
+          ],
+          [
+            0.5,
+            0.7
+          ],
+          [
+            0.6,
+            0.48
+          ],
+          [
+            0.8,
+            0.12
+          ],
+          [
+            1,
+            0.02
+          ]
+        ]
+      },
+      {
+        "label": "production",
+        "points": [
+          [
+            0,
+            0.01
+          ],
+          [
+            0.25,
+            0.06
+          ],
+          [
+            0.5,
+            0.28
+          ],
+          [
+            0.68,
+            0.7
+          ],
+          [
+            0.82,
+            0.38
+          ],
+          [
+            1,
+            0.08
+          ]
+        ]
+      }
+    ],
+    "caption": "Drift means production inputs/predictions differ from the reference distribution; it does not automatically imply worse model quality.",
+    "xLabel": "feature value",
+    "yLabel": "density"
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

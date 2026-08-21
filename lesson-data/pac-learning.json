@@ -1,0 +1,40 @@
+{
+  "slug": "pac-learning",
+  "title": "PAC Learning Intuition",
+  "module": "learning-theory",
+  "priority": "medium",
+  "roles": [
+    "as",
+    "mle",
+    "ds"
+  ],
+  "interviewAnswer": "PAC learning formalizes whether enough samples let a learner find, with high probability, a hypothesis whose true error is approximately small.",
+  "keyPoints": [
+    "ε accuracy",
+    "δ confidence",
+    "Sample complexity",
+    "Learnability"
+  ],
+  "resources": [
+    "stanford-cs229"
+  ],
+  "featured": false,
+  "why": "PAC provides a clean vocabulary for learnability and sample complexity.",
+  "intuition": "The question is how much data is needed so a learned model is likely to be good enough, not whether it can be perfect.",
+  "deepDive": "Bounds connect hypothesis complexity, desired error ε, confidence δ and sample size. Classical bounds can be loose but reveal qualitative dependencies.",
+  "math": "",
+  "code": "",
+  "commonMistakes": [
+    "Treating PAC bounds as exact data calculators.",
+    "Ignoring IID-like assumptions."
+  ],
+  "followUps": [
+    "Realizable vs agnostic PAC?",
+    "How does VC dimension enter?"
+  ],
+  "production": "Use theory for intuition and empirical validation for actual deployment decisions.",
+  "workedExample": "A simpler class may need fewer samples to control generalization but can have more approximation bias.",
+  "editorial": {
+    "status": "summary"
+  }
+}

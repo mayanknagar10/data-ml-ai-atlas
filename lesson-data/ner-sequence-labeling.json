@@ -1,0 +1,36 @@
+{
+  "slug": "ner-sequence-labeling",
+  "title": "Named Entity Recognition & Sequence Labeling",
+  "module": "nlp",
+  "priority": "medium",
+  "roles": [
+    "ds",
+    "as"
+  ],
+  "interviewAnswer": "NER assigns labels such as person, organization or product to token spans. Classical CRF/BiLSTM systems model label dependencies; modern transformers fine-tune contextual token representations.",
+  "keyPoints": [
+    "BIO/BILOU labeling conventions.",
+    "Span-level F1 is more meaningful than token accuracy.",
+    "Domain-specific entities require domain data."
+  ],
+  "resources": [
+    "stanford-cs224n"
+  ],
+  "featured": false,
+  "why": "Named Entity Recognition & Sequence Labeling is a recurring foundation across data science and machine learning because it affects both theoretical correctness and practical system behavior.",
+  "intuition": "BIO/BILOU labeling conventions.",
+  "deepDive": "NER assigns labels such as person, organization or product to token spans. Classical CRF/BiLSTM systems model label dependencies; modern transformers fine-tune contextual token representations. Span-level F1 is more meaningful than token accuracy. Domain-specific entities require domain data. The interview-level skill is not merely recalling the definition: explain the assumptions, what diagnostic evidence you would inspect, and what alternative you would choose when those assumptions fail.",
+  "workedExample": "Extract component names and error codes from maintenance tickets.",
+  "commonMistakes": [
+    "Using the concept mechanically without checking assumptions or data semantics.",
+    "Reporting one metric/result without examining uncertainty, slices or failure modes."
+  ],
+  "followUps": [
+    "What assumptions or limitations does Named Entity Recognition & Sequence Labeling have?",
+    "How would you validate Named Entity Recognition & Sequence Labeling on a real dataset?"
+  ],
+  "production": "In production, make assumptions explicit, validate on representative slices, compare with a simple baseline and monitor the signals that can drift.",
+  "editorial": {
+    "status": "summary"
+  }
+}

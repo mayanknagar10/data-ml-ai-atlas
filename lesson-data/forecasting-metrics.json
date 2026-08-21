@@ -1,0 +1,53 @@
+{
+  "slug": "forecasting-metrics",
+  "title": "Forecasting Metrics & Baselines",
+  "module": "time-series",
+  "priority": "very-high",
+  "roles": [
+    "ds",
+    "mle",
+    "da",
+    "as"
+  ],
+  "interviewAnswer": "For forecasts I choose metrics based on business cost and scale. MAE is easy to interpret, RMSE emphasizes large misses, MAPE can break near zero, and scaled metrics like MASE help compare across series. I always compare against naive and seasonal-naive baselines.",
+  "keyPoints": [
+    "MAE/RMSE",
+    "MAPE caveat",
+    "MASE",
+    "naive baseline"
+  ],
+  "resources": [
+    "fpp3",
+    "fpppy",
+    "statquest"
+  ],
+  "featured": false,
+  "why": "A sophisticated model that cannot beat “use last week” is not delivering value. Metric choice can also reverse which model appears best.",
+  "intuition": "Metrics are lenses: RMSE zooms in on big errors, MAE treats errors linearly, percentage metrics normalize by scale but become unstable around zero.",
+  "deepDive": "For multiple SKUs with very different scales, MASE or weighted business metrics can be more meaningful than raw MAE. Quantile/pinball loss is useful when under-forecast and over-forecast costs differ.",
+  "workedExample": "Suppose two models have MAE 8 and 9, but the second avoids rare 100-unit stockout misses. A business-weighted metric may prefer the second even though MAE does not.",
+  "commonMistakes": [
+    "Using MAPE when actuals can be zero.",
+    "Reporting one aggregate metric that hides catastrophic errors on critical products."
+  ],
+  "followUps": [
+    "When would you use pinball loss?",
+    "What baseline would you use for seasonal demand?"
+  ],
+  "production": "Production dashboards should track overall accuracy, segment-level accuracy, bias, service-level impact and baseline-relative improvement.",
+  "math": "MASE = MAE(model) / MAE(naive in-sample one-step forecast).",
+  "visual": {
+    "type": "concept-map",
+    "title": "Forecasting Metrics & Baselines",
+    "items": [
+      "MAE/RMSE",
+      "MAPE caveat",
+      "MASE",
+      "naive baseline"
+    ],
+    "caption": "A compact concept map for the most important ideas in this lesson."
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

@@ -1,0 +1,46 @@
+{
+  "slug": "recsys-baselines",
+  "title": "Recommender Baselines & Problem Formulation",
+  "module": "recsys",
+  "priority": "very-high",
+  "roles": [
+    "ds",
+    "da"
+  ],
+  "interviewAnswer": "Start with popularity, recency and simple content/history baselines. Define whether the task is rating prediction, top-N ranking, next-item prediction or candidate generation because metrics and data construction differ.",
+  "keyPoints": [
+    "Implicit and explicit feedback differ.",
+    "Negative samples are usually unobserved, not true dislikes.",
+    "Temporal splits better reflect recommendation deployment."
+  ],
+  "resources": [
+    "stanford-cs246"
+  ],
+  "featured": true,
+  "why": "Recommender Baselines & Problem Formulation appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
+  "intuition": "Implicit and explicit feedback differ.",
+  "deepDive": "Start with popularity, recency and simple content/history baselines. Define whether the task is rating prediction, top-N ranking, next-item prediction or candidate generation because metrics and data construction differ. Negative samples are usually unobserved, not true dislikes. Temporal splits better reflect recommendation deployment. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
+  "workedExample": "Compare a personalized model with most-popular-by-category and recently-popular baselines.",
+  "commonMistakes": [
+    "Applying the method without checking its assumptions or data-generating process.",
+    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+  ],
+  "followUps": [
+    "What assumptions does Recommender Baselines & Problem Formulation make?",
+    "How would you validate or debug Recommender Baselines & Problem Formulation in practice?"
+  ],
+  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "visual": {
+    "type": "concept-map",
+    "title": "Recommender Baselines & Problem Formulation",
+    "items": [
+      "Implicit and explicit feedback differ.",
+      "Negative samples are usually unobserved, not true dislikes.",
+      "Temporal splits better reflect recommendation deployment."
+    ],
+    "caption": "A compact concept map for the most important ideas in this lesson."
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

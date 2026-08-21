@@ -1,0 +1,36 @@
+{
+  "slug": "implicit-feedback",
+  "title": "Implicit Feedback & Negative Sampling",
+  "module": "recsys",
+  "priority": "high",
+  "roles": [
+    "ds",
+    "da"
+  ],
+  "interviewAnswer": "Clicks, views and purchases indicate exposure and preference imperfectly. Unobserved items are not necessarily negatives, so training often samples negatives or uses exposure-aware weighting.",
+  "keyPoints": [
+    "Exposure bias affects labels.",
+    "Different actions imply different strengths.",
+    "Sampling distribution changes learning."
+  ],
+  "resources": [
+    "stanford-cs246"
+  ],
+  "featured": false,
+  "why": "Implicit Feedback & Negative Sampling appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
+  "intuition": "Exposure bias affects labels.",
+  "deepDive": "Clicks, views and purchases indicate exposure and preference imperfectly. Unobserved items are not necessarily negatives, so training often samples negatives or uses exposure-aware weighting. Different actions imply different strengths. Sampling distribution changes learning. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
+  "workedExample": "Treat purchases as strong positives, clicks as weaker signals and sample from exposed-but-not-clicked items more carefully than random catalog negatives.",
+  "commonMistakes": [
+    "Applying the method without checking its assumptions or data-generating process.",
+    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+  ],
+  "followUps": [
+    "What assumptions does Implicit Feedback & Negative Sampling make?",
+    "How would you validate or debug Implicit Feedback & Negative Sampling in practice?"
+  ],
+  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "editorial": {
+    "status": "summary"
+  }
+}

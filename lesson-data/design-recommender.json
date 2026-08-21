@@ -1,0 +1,56 @@
+{
+  "slug": "design-recommender",
+  "title": "Design a Recommendation System",
+  "module": "system-design",
+  "priority": "high",
+  "roles": [
+    "mle",
+    "ds"
+  ],
+  "interviewAnswer": "Clarify candidate generation, ranking objective, feedback signals, cold start, popularity bias and top-k evaluation. Often use a two-stage architecture: fast candidate retrieval followed by richer ranking.",
+  "keyPoints": [
+    "Candidate generation",
+    "Ranking",
+    "Cold start",
+    "Bias/feedback loops"
+  ],
+  "resources": [
+    "stanford-cs329s",
+    "fsdl"
+  ],
+  "featured": false,
+  "why": "Recommender design questions combine candidate generation, ranking, feedback, bias, latency and business constraints.",
+  "intuition": "First narrow millions of possibilities to a manageable candidate set, then rank candidates with richer features, then apply business/safety constraints.",
+  "deepDive": "Clarify users/items/relevance and online latency. Offline path builds interaction/features/embeddings and trains candidate/ranking models. Online path fetches user/query context, generates candidates, ranks, filters unavailable/ineligible items and returns top-K. Handle cold start with content/popularity/rules. Evaluate Recall@K/nDCG offline and user/business outcomes online; account for exposure bias and feedback loops.",
+  "workedExample": "A content platform can retrieve a few thousand candidates using collaborative/content embeddings, rank them with richer user-item-context features, apply eligibility/diversity constraints and return the top-K results.",
+  "commonMistakes": [
+    "Designing only one giant scoring model without candidate generation.",
+    "Treating missing interactions as true dislikes.",
+    "Ignoring availability/workload or popularity feedback loops."
+  ],
+  "followUps": [
+    "How do you handle cold start?",
+    "Candidate generation vs ranking?",
+    "What online metrics matter?",
+    "How do you avoid popularity bias?"
+  ],
+  "production": "Log impressions, rankings and outcomes; refresh features/graph, monitor concentration and latency, and retain rule-based fallback candidates if the model is unavailable.",
+  "visual": {
+    "type": "flow",
+    "title": "Recommender system",
+    "items": [
+      "Events / catalog",
+      "Feature & embedding pipelines",
+      "Candidate retrieval",
+      "Ranking",
+      "Business rules",
+      "Serve + log feedback"
+    ],
+    "caption": "A production recommender separates candidate generation from richer ranking and closes the loop with interaction feedback.",
+    "accent": 3,
+    "orientation": "horizontal"
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

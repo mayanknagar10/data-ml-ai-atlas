@@ -1,0 +1,65 @@
+{
+  "slug": "graphsage",
+  "title": "GraphSAGE",
+  "module": "graph",
+  "priority": "very-high",
+  "roles": [
+    "mle",
+    "as"
+  ],
+  "interviewAnswer": "GraphSAGE learns aggregation functions that combine sampled neighbor features, enabling inductive embeddings for nodes that were not present during training.",
+  "keyPoints": [
+    "Inductive learning",
+    "Neighbor sampling",
+    "Aggregation",
+    "New nodes"
+  ],
+  "resources": [
+    "stanford-cs229",
+    "stanford-cs329s",
+    "stanford-cs224w",
+    "paper-graphsage"
+  ],
+  "featured": false,
+  "why": "GraphSAGE is a key inductive GNN architecture and directly supports reviewer/recommendation systems where new nodes appear over time.",
+  "intuition": "Instead of learning one embedding per node, GraphSAGE learns how to combine a node’s features with sampled neighbor features. That learned aggregator can be applied to unseen nodes.",
+  "deepDive": "At each layer, sample/aggregate neighbor representations and combine them with the node’s current representation, often followed by nonlinear transformation/normalization. Mean, pooling and LSTM-style aggregators are possible. Sampling makes training scalable on large graphs, while inductive parameter sharing allows embeddings for new nodes if their features/neighborhood are available.",
+  "math": "h_v^(k)=σ(W^(k) · CONCAT(h_v^(k-1), AGG({h_u^(k-1):u∈N(v)})))",
+  "workedExample": "For a new PR, its CodeBERT features plus learned transformations/graph context can place it near developers with relevant historical expertise without retraining a free embedding for that exact PR node.",
+  "code": "# Conceptual PyG layer\nfrom torch_geometric.nn import SAGEConv\nconv=SAGEConv(in_channels=768,out_channels=768)",
+  "commonMistakes": [
+    "Saying GraphSAGE requires every test node to exist during training.",
+    "Ignoring neighbor-sampling bias/variance.",
+    "Confusing graph structure with text similarity alone."
+  ],
+  "followUps": [
+    "GraphSAGE vs GCN?",
+    "Why is GraphSAGE inductive?",
+    "How do you handle no-neighbor cold-start nodes?",
+    "How do you use it for link prediction?"
+  ],
+  "production": "Refresh graph edges/features incrementally, bound neighbor sampling for latency, monitor cold-start quality and separate candidate generation from final ranking/business constraints.",
+  "lab": {
+    "goal": "Implement one GraphSAGE-style neighbor aggregation step with mean aggregation.",
+    "language": "python",
+    "buildIt": "import numpy as np\nX=np.array([[1.,0.],[0.,1.],[1.,1.]])\nneighbors={0:[1,2],1:[0],2:[0]}\nout=[]\nfor i in range(len(X)):\n    agg=X[neighbors[i]].mean(0)\n    out.append(np.concatenate([X[i],agg]))\nout=np.stack(out)\nprint(out)",
+    "useIt": "W=np.array([[1.,0.],[0.,1.],[.5,0.],[0.,.5]])\nH=np.maximum(0,out@W); print(H)",
+    "verifyIt": "assert out.shape==(3,4)\nassert H.shape==(3,2)\n"
+  },
+  "visual": {
+    "type": "flow",
+    "title": "GraphSAGE",
+    "items": [
+      "Sample neighbors",
+      "Aggregate neighbor features",
+      "Combine with node features",
+      "New embedding"
+    ],
+    "caption": "GraphSAGE is inductive because the aggregation function can embed previously unseen nodes from features and neighborhoods.",
+    "accent": 1,
+    "orientation": "horizontal"
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

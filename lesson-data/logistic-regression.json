@@ -1,0 +1,95 @@
+{
+  "slug": "logistic-regression",
+  "title": "Logistic Regression",
+  "module": "regression-glm",
+  "priority": "very-high",
+  "roles": [
+    "ds",
+    "mle",
+    "as"
+  ],
+  "interviewAnswer": "Logistic regression models log-odds as a linear function of features and maps them through a sigmoid to a probability. Training usually minimizes log loss rather than MSE.",
+  "keyPoints": [
+    "Sigmoid",
+    "Log odds",
+    "Decision threshold",
+    "Regularization"
+  ],
+  "resources": [
+    "stanford-cs229",
+    "google-mlcc",
+    "statquest",
+    "isl"
+  ],
+  "featured": true,
+  "why": "It is one of the best interview algorithms because it combines linear models, probability, classification, loss functions and interpretability.",
+  "intuition": "The model computes a linear score and passes it through a sigmoid so the output lies between 0 and 1. A threshold then converts probability into a class.",
+  "deepDive": "Logistic regression models log-odds linearly. It is typically trained with binary cross-entropy / negative log likelihood. Coefficients describe additive changes in log-odds per unit feature change, conditional on the other features.",
+  "math": "p(y=1|x)=σ(wᵀx+b),  σ(z)=1/(1+e⁻ᶻ)\nlog(p/(1-p)) = wᵀx+b",
+  "code": "from sklearn.linear_model import LogisticRegression\nmodel = LogisticRegression(class_weight='balanced')\nmodel.fit(X_train, y_train)\nproba = model.predict_proba(X_val)[:,1]",
+  "commonMistakes": [
+    "Calling it a regression model because of the name without explaining classification.",
+    "Assuming 0.5 is always the right threshold.",
+    "Interpreting coefficients causally."
+  ],
+  "followUps": [
+    "Why use log loss instead of MSE?",
+    "What does regularization do?",
+    "How do you handle nonlinearity?",
+    "How do coefficients map to odds ratios?"
+  ],
+  "production": "It is often a superb baseline because it trains fast, is easy to calibrate/interpret and exposes whether more complex models are truly necessary.",
+  "workedExample": "In rare-failure prediction, fit probabilities, evaluate PR metrics and choose a threshold from the false-negative/false-positive cost rather than default 0.5.",
+  "lab": {
+    "goal": "Build binary logistic regression and verify probabilities/decision boundary.",
+    "language": "python",
+    "buildIt": "import numpy as np\nrng=np.random.default_rng(1)\nX=rng.normal(size=(300,2)); y=(X[:,0]+.7*X[:,1]>0).astype(float)\nXb=np.c_[np.ones(len(X)),X]; w=np.zeros(3)\ndef sigmoid(z): return 1/(1+np.exp(-z))\nfor _ in range(2000):\n    p=sigmoid(Xb@w)\n    w-=0.1*(Xb.T@(p-y)/len(y))\nprint('accuracy',((sigmoid(Xb@w)>=.5)==y).mean())\n",
+    "useIt": "from sklearn.linear_model import LogisticRegression\nm=LogisticRegression().fit(X,y)\nprint(m.score(X,y),m.predict_proba(X[:3]))\n",
+    "verifyIt": "p=sigmoid(Xb@w)\nassert np.all((0<=p)&(p<=1))\nassert ((p>=.5)==y).mean()>.9\n"
+  },
+  "visual": {
+    "type": "curve",
+    "title": "Logistic decision function",
+    "series": [
+      {
+        "label": "P(y=1|x)",
+        "points": [
+          [
+            0,
+            0.03
+          ],
+          [
+            0.18,
+            0.07
+          ],
+          [
+            0.35,
+            0.2
+          ],
+          [
+            0.5,
+            0.5
+          ],
+          [
+            0.65,
+            0.8
+          ],
+          [
+            0.82,
+            0.93
+          ],
+          [
+            1,
+            0.97
+          ]
+        ]
+      }
+    ],
+    "caption": "Logistic regression maps a linear score through the sigmoid to obtain a probability between 0 and 1.",
+    "xLabel": "linear score",
+    "yLabel": "probability"
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

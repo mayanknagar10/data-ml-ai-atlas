@@ -1,0 +1,51 @@
+{
+  "slug": "two-stage-ranking",
+  "title": "Candidate Generation vs Ranking",
+  "module": "recsys",
+  "priority": "very-high",
+  "roles": [
+    "ds",
+    "da"
+  ],
+  "interviewAnswer": "Large recommenders usually use a fast high-recall candidate stage followed by a richer ranking model. Candidate generation narrows millions of items; ranking uses more expensive features on hundreds/thousands.",
+  "keyPoints": [
+    "Optimize candidate recall separately.",
+    "Ranking can incorporate context/business constraints.",
+    "Training-serving feature consistency matters."
+  ],
+  "resources": [
+    "stanford-cs246",
+    "faiss"
+  ],
+  "featured": true,
+  "why": "Candidate Generation vs Ranking appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
+  "intuition": "Optimize candidate recall separately.",
+  "deepDive": "Large recommenders usually use a fast high-recall candidate stage followed by a richer ranking model. Candidate generation narrows millions of items; ranking uses more expensive features on hundreds/thousands. Ranking can incorporate context/business constraints. Training-serving feature consistency matters. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
+  "workedExample": "ANN retrieval finds 1000 candidate videos; a ranking model scores them using user, item and context features.",
+  "commonMistakes": [
+    "Applying the method without checking its assumptions or data-generating process.",
+    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+  ],
+  "followUps": [
+    "What assumptions does Candidate Generation vs Ranking make?",
+    "How would you validate or debug Candidate Generation vs Ranking in practice?"
+  ],
+  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "visual": {
+    "type": "flow",
+    "title": "Two-stage recommender",
+    "items": [
+      "Millions of candidates",
+      "Fast retrieval",
+      "Hundreds of candidates",
+      "Rich ranking model",
+      "Top results"
+    ],
+    "caption": "Retrieval optimizes recall under strict latency; ranking spends more compute on a small candidate set.",
+    "accent": 2,
+    "orientation": "horizontal"
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

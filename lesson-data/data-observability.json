@@ -1,0 +1,48 @@
+{
+  "slug": "data-observability",
+  "title": "Data Observability: Freshness, Volume, Schema & Distribution",
+  "module": "data-eng",
+  "priority": "very-high",
+  "roles": [
+    "de",
+    "ds",
+    "mle"
+  ],
+  "interviewAnswer": "Data observability monitors pipeline outputs beyond job success: freshness, volume, schema, nulls, distribution and lineage. A pipeline can be green while silently producing wrong data.",
+  "keyPoints": [
+    "Operational success != semantic correctness.",
+    "Baseline distributions and contracts catch silent shifts.",
+    "Route alerts to owners with context/lineage."
+  ],
+  "resources": [
+    "dbt-docs",
+    "google-sre"
+  ],
+  "featured": true,
+  "why": "Data Observability: Freshness, Volume, Schema & Distribution is a standard part of a broad data/ML curriculum because it changes how models are selected, evaluated or operated in real systems.",
+  "intuition": "Operational success != semantic correctness.",
+  "deepDive": "Data observability monitors pipeline outputs beyond job success: freshness, volume, schema, nulls, distribution and lineage. A pipeline can be green while silently producing wrong data. Baseline distributions and contracts catch silent shifts. Route alerts to owners with context/lineage. A strong answer connects the formal idea to validation, data requirements and failure modes instead of treating the method as a recipe.",
+  "workedExample": "An ETL job succeeds but daily row count drops 80% because an upstream filter changed.",
+  "commonMistakes": [
+    "Choosing the technique without checking whether its assumptions match the problem.",
+    "Optimizing an offline metric without checking realistic validation slices or operational constraints."
+  ],
+  "followUps": [
+    "When would you not use Data Observability: Freshness, Volume, Schema & Distribution?",
+    "How would you validate or tune Data Observability: Freshness, Volume, Schema & Distribution?"
+  ],
+  "production": "In production, validate on realistic slices, track latency/cost when relevant, and monitor for distribution changes or failure modes that the offline metric can hide.",
+  "visual": {
+    "type": "concept-map",
+    "title": "Data Observability: Freshness, Volume, Schema & Distribution",
+    "items": [
+      "Operational success != semantic correctness.",
+      "Baseline distributions and contracts catch silent shifts.",
+      "Route alerts to owners with context/lineage."
+    ],
+    "caption": "A compact concept map for the most important ideas in this lesson."
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

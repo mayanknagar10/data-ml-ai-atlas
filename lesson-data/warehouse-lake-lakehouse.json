@@ -1,0 +1,48 @@
+{
+  "slug": "warehouse-lake-lakehouse",
+  "title": "Warehouse vs Data Lake vs Lakehouse",
+  "module": "analytics-eng",
+  "priority": "high",
+  "roles": [
+    "de",
+    "ds",
+    "da"
+  ],
+  "interviewAnswer": "Warehouses emphasize managed structured analytics; data lakes store flexible files/objects; lakehouse approaches add table metadata, transactions and governance over object storage. The right choice depends on workload and organizational needs.",
+  "keyPoints": [
+    "Avoid architecture-by-buzzword.",
+    "Table formats add schema/evolution/transaction semantics.",
+    "Compute-storage separation changes scaling/cost."
+  ],
+  "resources": [
+    "spark",
+    "dbt-docs"
+  ],
+  "featured": false,
+  "why": "Warehouse vs Data Lake vs Lakehouse is a recurring foundation across data science and machine learning because it affects both theoretical correctness and practical system behavior.",
+  "intuition": "Avoid architecture-by-buzzword.",
+  "deepDive": "Warehouses emphasize managed structured analytics; data lakes store flexible files/objects; lakehouse approaches add table metadata, transactions and governance over object storage. The right choice depends on workload and organizational needs. Table formats add schema/evolution/transaction semantics. Compute-storage separation changes scaling/cost. The interview-level skill is not merely recalling the definition: explain the assumptions, what diagnostic evidence you would inspect, and what alternative you would choose when those assumptions fail.",
+  "workedExample": "Raw logs land in object storage while curated analytical tables expose reliable schemas for BI and ML.",
+  "commonMistakes": [
+    "Using the concept mechanically without checking assumptions or data semantics.",
+    "Reporting one metric/result without examining uncertainty, slices or failure modes."
+  ],
+  "followUps": [
+    "What assumptions or limitations does Warehouse vs Data Lake vs Lakehouse have?",
+    "How would you validate Warehouse vs Data Lake vs Lakehouse on a real dataset?"
+  ],
+  "production": "In production, make assumptions explicit, validate on representative slices, compare with a simple baseline and monitor the signals that can drift.",
+  "visual": {
+    "type": "layers",
+    "title": "Data platform spectrum",
+    "items": [
+      "Data lake · flexible/raw",
+      "Lakehouse · open tables + governance",
+      "Warehouse · managed analytics"
+    ],
+    "caption": "The architectural choice balances flexibility, governance, latency and workload patterns."
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

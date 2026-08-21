@@ -1,0 +1,68 @@
+{
+  "slug": "gradient-boosting",
+  "title": "Gradient Boosting / XGBoost Intuition",
+  "module": "ml",
+  "priority": "very-high",
+  "roles": [
+    "ds",
+    "mle",
+    "as"
+  ],
+  "interviewAnswer": "Boosting builds weak learners sequentially so each new learner focuses on correcting the current ensemble’s errors. Modern gradient-boosted trees are often excellent baselines for tabular data.",
+  "keyPoints": [
+    "Sequential vs bagging",
+    "Learning rate",
+    "Tree depth",
+    "Regularization"
+  ],
+  "resources": [
+    "sklearn",
+    "statquest",
+    "stanford-cs229",
+    "google-mlcc",
+    "isl"
+  ],
+  "featured": false,
+  "why": "Gradient boosting/XGBoost is one of the strongest default families for structured tabular data and a frequent Data Scientist interview topic.",
+  "intuition": "Instead of building independent trees and averaging them, boosting builds trees sequentially. Each new tree focuses on correcting the errors made by the current ensemble.",
+  "deepDive": "Gradient boosting views training as functional gradient descent: fit a weak learner to the negative gradient/residual of the loss, then add it with a learning-rate shrinkage factor. XGBoost adds regularization, efficient split finding, missing-value handling and second-order information. Key trade-offs include number of trees, depth, learning rate, subsampling and column sampling.",
+  "math": "F_m(x)=F_{m-1}(x)+η h_m(x), where h_m approximates the negative loss gradient",
+  "workedExample": "For tabular churn data, a shallow boosted-tree ensemble can capture nonlinear thresholds and interactions while remaining easier to train than a deep neural network on modest data.",
+  "code": "from sklearn.ensemble import HistGradientBoostingClassifier\nm=HistGradientBoostingClassifier(learning_rate=.05,max_iter=300,max_leaf_nodes=31)\nm.fit(X_train,y_train)",
+  "commonMistakes": [
+    "Calling boosting the same as bagging.",
+    "Increasing trees/depth without reducing learning rate or validating.",
+    "Using test data for early stopping or hyperparameter tuning."
+  ],
+  "followUps": [
+    "Random forest vs gradient boosting?",
+    "What does learning rate do?",
+    "Why can shallow trees work well?",
+    "How does XGBoost handle missing values?"
+  ],
+  "production": "Boosted trees are often excellent low-latency tabular models. Track feature schema, calibration and threshold behavior; retraining must reproduce categorical/preprocessing logic.",
+  "lab": {
+    "goal": "Train a gradient-boosted tree baseline.",
+    "language": "python",
+    "buildIt": "from sklearn.datasets import make_classification\nfrom sklearn.model_selection import train_test_split\nX,y=make_classification(n_samples=1000,n_features=15,n_informative=7,random_state=1)\nXtr,Xte,ytr,yte=train_test_split(X,y,test_size=.25,random_state=1,stratify=y)\n",
+    "useIt": "from sklearn.ensemble import HistGradientBoostingClassifier\nfrom sklearn.metrics import roc_auc_score\nm=HistGradientBoostingClassifier(max_iter=150,learning_rate=.08,max_leaf_nodes=31,random_state=1).fit(Xtr,ytr)\nauc=roc_auc_score(yte,m.predict_proba(Xte)[:,1])\nprint(auc)\n",
+    "verifyIt": "assert auc>0.8\n",
+    "shipIt": "Treat boosted trees as a strong tabular baseline; tune depth/learning rate/iterations together and monitor latency, calibration and feature availability."
+  },
+  "visual": {
+    "type": "flow",
+    "title": "Gradient boosting",
+    "items": [
+      "Start simple model",
+      "Fit next learner to residual/gradient signal",
+      "Add learner",
+      "Repeat"
+    ],
+    "caption": "Boosting builds a strong model sequentially by correcting errors made by the current ensemble.",
+    "accent": 1,
+    "orientation": "horizontal"
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

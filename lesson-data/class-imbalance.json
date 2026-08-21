@@ -1,0 +1,58 @@
+{
+  "slug": "class-imbalance",
+  "title": "Class Imbalance",
+  "module": "evaluation",
+  "priority": "very-high",
+  "roles": [
+    "ds",
+    "mle"
+  ],
+  "interviewAnswer": "For rare positives, accuracy can be meaningless. Use metrics aligned with the positive-class cost, consider class weights or resampling, preserve representative validation data, and tune the decision threshold.",
+  "keyPoints": [
+    "Weighted loss",
+    "Oversampling",
+    "PR curve",
+    "Threshold tuning"
+  ],
+  "resources": [
+    "sklearn",
+    "statquest",
+    "google-mlcc"
+  ],
+  "featured": false,
+  "why": "Rare-event classification is common in safety, fraud, defects and failures. Accuracy can be almost useless, so you must reason about both training and evaluation.",
+  "intuition": "If only 1% of examples are positive, predicting “negative” for everything gives 99% accuracy while finding zero positives. The metric and threshold must reflect which mistakes matter.",
+  "deepDive": "Start with representative validation/test data and metrics such as precision, recall, PR-AUC and cost-sensitive utility. During training, class weights change the loss contribution; oversampling increases minority exposure; undersampling reduces majority volume but discards information. Synthetic sampling can help in some tabular settings but may create unrealistic examples. Threshold tuning is separate from model training and should use validation data.",
+  "math": "Weighted BCE = -[w₊ y log p + w₋(1-y)log(1-p)]",
+  "workedExample": "For fastening failure detection with 3% failures, if missing a failure is much worse than a false alarm, define a minimum recall requirement first and then find the highest precision achievable above that recall.",
+  "code": "from sklearn.linear_model import LogisticRegression\nmodel=LogisticRegression(class_weight='balanced')\nmodel.fit(X_train,y_train)\n# tune threshold on validation scores, not test data",
+  "commonMistakes": [
+    "Reporting accuracy as the main metric for a rare positive class.",
+    "Oversampling before the train/test split, creating duplicate leakage.",
+    "Assuming a 0.5 threshold is automatically optimal."
+  ],
+  "followUps": [
+    "Class weights vs oversampling?",
+    "When would you use PR-AUC?",
+    "How do you choose the deployment threshold?",
+    "How does prevalence shift affect precision?"
+  ],
+  "production": "Alert capacity is often a hard constraint. Choose thresholds using review capacity, false-negative cost and current prevalence, and recalibrate when base rates change.",
+  "visual": {
+    "type": "bars",
+    "title": "Accuracy can mislead on imbalanced data",
+    "labels": [
+      "majority",
+      "minority"
+    ],
+    "values": [
+      0.97,
+      0.03
+    ],
+    "caption": "A model that predicts only the majority class can look accurate while completely failing on the rare class.",
+    "yLabel": "class share"
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

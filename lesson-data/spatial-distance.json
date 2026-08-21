@@ -1,0 +1,41 @@
+{
+  "slug": "spatial-distance",
+  "title": "Geodesic Distance & Spatial kNN",
+  "module": "geospatial",
+  "priority": "medium",
+  "roles": [
+    "ds",
+    "de",
+    "as"
+  ],
+  "interviewAnswer": "Global spatial distance should respect Earth geometry or use an appropriate projection; raw Euclidean distance on latitude/longitude can be misleading.",
+  "keyPoints": [
+    "Geodesic/Haversine",
+    "Projected distance",
+    "Spatial kNN",
+    "Business distance"
+  ],
+  "resources": [
+    "geopandas-docs",
+    "geodata-science-book"
+  ],
+  "featured": false,
+  "why": "Distance choices affect clustering, nearest-neighbor features, logistics and service areas.",
+  "intuition": "One degree longitude represents different distances at different latitudes.",
+  "deepDive": "For regional work, a suitable projection often makes planar distance practical; global work needs geodesic formulas or libraries.",
+  "math": "",
+  "code": "",
+  "commonMistakes": [
+    "Using Euclidean distance on lon/lat globally.",
+    "Ignoring road/travel-time distance when it is the real objective."
+  ],
+  "followUps": [
+    "Geodesic vs routing distance?",
+    "How would you accelerate spatial kNN?"
+  ],
+  "production": "Use the metric that matches the physical/business process.",
+  "workedExample": "Choose the closest warehouse by projected/geodesic distance rather than raw degree difference.",
+  "editorial": {
+    "status": "summary"
+  }
+}

@@ -1,0 +1,50 @@
+{
+  "slug": "mcmc",
+  "title": "MCMC & Posterior Sampling",
+  "module": "bayesian",
+  "priority": "medium",
+  "roles": [
+    "ds",
+    "as"
+  ],
+  "interviewAnswer": "MCMC constructs a Markov chain whose stationary distribution is the posterior, letting us approximate expectations when closed-form inference is unavailable. Diagnostics are essential because samples can be correlated or chains may not mix.",
+  "keyPoints": [
+    "Burn-in/warmup is not a substitute for convergence diagnostics.",
+    "Check multiple chains, R-hat and effective sample size.",
+    "Posterior samples enable arbitrary derived quantities."
+  ],
+  "resources": [
+    "pymc",
+    "think-bayes"
+  ],
+  "featured": false,
+  "why": "MCMC & Posterior Sampling appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
+  "intuition": "Burn-in/warmup is not a substitute for convergence diagnostics.",
+  "deepDive": "MCMC constructs a Markov chain whose stationary distribution is the posterior, letting us approximate expectations when closed-form inference is unavailable. Diagnostics are essential because samples can be correlated or chains may not mix. Check multiple chains, R-hat and effective sample size. Posterior samples enable arbitrary derived quantities. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
+  "workedExample": "Fit a hierarchical conversion model and use posterior draws to estimate probability one segment outperforms another.",
+  "commonMistakes": [
+    "Applying the method without checking its assumptions or data-generating process.",
+    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+  ],
+  "followUps": [
+    "What assumptions does MCMC & Posterior Sampling make?",
+    "How would you validate or debug MCMC & Posterior Sampling in practice?"
+  ],
+  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "visual": {
+    "type": "flow",
+    "title": "MCMC sampling",
+    "items": [
+      "Start state",
+      "Propose move",
+      "Accept / reject",
+      "Approximate posterior"
+    ],
+    "caption": "A Markov chain is constructed so that its long-run samples follow the target posterior distribution.",
+    "accent": 2,
+    "orientation": "horizontal"
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

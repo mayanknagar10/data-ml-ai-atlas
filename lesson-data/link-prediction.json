@@ -1,0 +1,51 @@
+{
+  "slug": "link-prediction",
+  "title": "Link Prediction",
+  "module": "graph",
+  "priority": "high",
+  "roles": [
+    "mle",
+    "ds",
+    "as"
+  ],
+  "interviewAnswer": "Link prediction scores whether an edge should exist between two nodes. Candidate node embeddings are combined with a scoring function and trained against positive and negative edges.",
+  "keyPoints": [
+    "Negative sampling",
+    "Dot product/MLP scores",
+    "Temporal split",
+    "Ranking metrics"
+  ],
+  "resources": [
+    "stanford-cs229",
+    "stanford-cs329s",
+    "stanford-cs224w"
+  ],
+  "featured": false,
+  "why": "Link prediction is a natural formulation for reviewer recommendation, social connections and knowledge-graph completion.",
+  "intuition": "Learn node representations, then score whether a pair of nodes should have an edge. Training uses observed positive edges plus sampled negative pairs.",
+  "deepDive": "Scores can be dot products, bilinear functions or neural decoders over node embeddings. Negative sampling matters because the number of non-edges is enormous and random negatives may be too easy. Temporal splits are important when predicting future links. Ranking evaluation often fits better than binary accuracy because the real task is choosing top candidates.",
+  "math": "s(u,v)=h_uᵀh_v (simple dot-product decoder); p(edge)=σ(s)",
+  "workedExample": "For each PR, historical reviewer edges are positives. Candidate developers not reviewing that PR can be negatives, but avoid sampling impossible/inactive reviewers that make training unrealistically easy.",
+  "commonMistakes": [
+    "Treating every missing edge as a true negative.",
+    "Using random train/test edges when future recommendation is the goal.",
+    "Evaluating only AUC when production returns top-K candidates."
+  ],
+  "followUps": [
+    "How do you sample negatives?",
+    "Dot-product vs MLP decoder?",
+    "Why chronological split?",
+    "How does cold start affect link prediction?"
+  ],
+  "production": "Candidate generation, eligibility/availability filters and ranking constraints often sit around the learned link score. Log impressions/acceptance for online evaluation.",
+  "lab": {
+    "goal": "Score candidate graph links with embedding similarity and evaluate whether a true edge ranks highly.",
+    "language": "python",
+    "buildIt": "import numpy as np\npr=np.array([1.,.2])\nreviewers=np.array([[.9,.1],[0.,1.],[.5,.5],[-1.,0.]])\nscores=reviewers@pr\nrank=np.argsort(-scores)\nprint(rank,scores[rank])",
+    "useIt": "true_reviewer=0; k=2\nrecall_at_k=float(true_reviewer in rank[:k]); print('Recall@2',recall_at_k)",
+    "verifyIt": "assert rank[0]==0\nassert recall_at_k==1.0\n"
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

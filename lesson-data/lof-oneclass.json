@@ -1,0 +1,35 @@
+{
+  "slug": "lof-oneclass",
+  "title": "Local Outlier Factor & One-Class SVM",
+  "module": "anomaly",
+  "priority": "medium",
+  "roles": [
+    "ds"
+  ],
+  "interviewAnswer": "LOF compares local density with neighbors, while One-Class SVM learns a boundary around normal data. LOF captures local anomalies; One-Class SVM can be sensitive to scaling and hyperparameters.",
+  "keyPoints": [
+    "Novelty vs outlier-detection modes differ.",
+    "Local methods struggle in high dimensions.",
+    "Thresholds should be calibrated to alert capacity."
+  ],
+  "resources": [
+    "sklearn-outlier"
+  ],
+  "featured": false,
+  "why": "Local Outlier Factor & One-Class SVM appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
+  "intuition": "Novelty vs outlier-detection modes differ.",
+  "deepDive": "LOF compares local density with neighbors, while One-Class SVM learns a boundary around normal data. LOF captures local anomalies; One-Class SVM can be sensitive to scaling and hyperparameters. Local methods struggle in high dimensions. Thresholds should be calibrated to alert capacity. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
+  "workedExample": "Flag a transaction unusual relative to similar customer behavior even if globally common.",
+  "commonMistakes": [
+    "Applying the method without checking its assumptions or data-generating process.",
+    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+  ],
+  "followUps": [
+    "What assumptions does Local Outlier Factor & One-Class SVM make?",
+    "How would you validate or debug Local Outlier Factor & One-Class SVM in practice?"
+  ],
+  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "editorial": {
+    "status": "summary"
+  }
+}

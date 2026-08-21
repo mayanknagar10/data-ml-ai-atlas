@@ -1,0 +1,35 @@
+{
+  "slug": "hash-tables",
+  "title": "Hash Tables, Sets & Dictionaries",
+  "module": "dsa",
+  "priority": "high",
+  "roles": [
+    "all"
+  ],
+  "interviewAnswer": "Hash tables provide average O(1) insert and lookup by mapping keys to buckets; collisions are resolved internally. They are fundamental for joins, deduplication, counting and caches.",
+  "keyPoints": [
+    "Average O(1), worst-case can degrade.",
+    "Hashability and collision handling matter.",
+    "Sets are useful for membership and uniqueness."
+  ],
+  "resources": [
+    "python-docs"
+  ],
+  "featured": false,
+  "why": "Hash Tables, Sets & Dictionaries appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
+  "intuition": "Average O(1), worst-case can degrade.",
+  "deepDive": "Hash tables provide average O(1) insert and lookup by mapping keys to buckets; collisions are resolved internally. They are fundamental for joins, deduplication, counting and caches. Hashability and collision handling matter. Sets are useful for membership and uniqueness. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
+  "workedExample": "Count event frequencies with a dictionary instead of repeatedly scanning a list.",
+  "commonMistakes": [
+    "Applying the method without checking its assumptions or data-generating process.",
+    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+  ],
+  "followUps": [
+    "What assumptions does Hash Tables, Sets & Dictionaries make?",
+    "How would you validate or debug Hash Tables, Sets & Dictionaries in practice?"
+  ],
+  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "editorial": {
+    "status": "summary"
+  }
+}

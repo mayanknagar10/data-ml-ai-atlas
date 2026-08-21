@@ -1,0 +1,44 @@
+{
+  "slug": "naive-bayes",
+  "title": "Naive Bayes",
+  "module": "ml",
+  "priority": "medium",
+  "roles": [
+    "ds",
+    "as"
+  ],
+  "interviewAnswer": "Naive Bayes applies Bayes rule while assuming features are conditionally independent given the class. Despite the strong assumption, it can work surprisingly well for text and sparse features.",
+  "keyPoints": [
+    "Conditional independence",
+    "Gaussian/Multinomial variants",
+    "Smoothing",
+    "Fast baseline"
+  ],
+  "resources": [
+    "stanford-cs229",
+    "statquest",
+    "google-mlcc"
+  ],
+  "featured": false,
+  "why": "Naive Bayes connects Bayes rule, conditional independence and simple high-dimensional classifiers.",
+  "intuition": "Estimate how likely each feature is under each class, multiply those pieces with the class prior, and choose the class with the largest posterior score.",
+  "deepDive": "The “naive” assumption is conditional independence of features given the class. Despite being unrealistic, it can work well when likelihood ratios still rank classes effectively, especially for text. Gaussian, Multinomial and Bernoulli variants use different feature likelihoods. Computation uses log probabilities to avoid underflow and turn products into sums.",
+  "math": "P(y|x) ∝ P(y) Π_j P(x_j|y)\nlog score = log P(y)+Σ_j log P(x_j|y)",
+  "workedExample": "Multinomial Naive Bayes can classify documents from token counts because word evidence combines efficiently even with thousands of sparse features.",
+  "code": "from sklearn.naive_bayes import MultinomialNB\nm=MultinomialNB(alpha=1.0).fit(X_counts,y)",
+  "commonMistakes": [
+    "Saying features must be marginally independent.",
+    "Multiplying tiny probabilities directly instead of using logs.",
+    "Choosing Gaussian NB for arbitrary count data without modeling logic."
+  ],
+  "followUps": [
+    "Why can Naive Bayes work despite the independence assumption?",
+    "Gaussian vs Multinomial NB?",
+    "What does smoothing do?",
+    "How do priors affect predictions?"
+  ],
+  "production": "Naive Bayes is fast and useful as a sparse baseline; calibration and distribution shift should still be checked.",
+  "editorial": {
+    "status": "summary"
+  }
+}

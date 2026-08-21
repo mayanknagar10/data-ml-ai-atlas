@@ -1,0 +1,42 @@
+{
+  "slug": "super-resolution",
+  "title": "Super-resolution & Reconstruction",
+  "module": "cv",
+  "priority": "high",
+  "roles": [
+    "cv",
+    "mle",
+    "as"
+  ],
+  "interviewAnswer": "Super-resolution infers a higher-resolution signal from limited observations. The central tension is recovering detail without hallucinating unsupported structure, so downstream/domain validation is often essential.",
+  "keyPoints": [
+    "Paired vs unpaired data",
+    "Pixel vs perceptual objectives",
+    "Hallucination risk",
+    "2D/3D consistency"
+  ],
+  "resources": [
+    "stanford-cs231n",
+    "mit-6s191"
+  ],
+  "featured": false,
+  "why": "Super-resolution/reconstruction interviews test whether you distinguish resolution enhancement, hallucination risk, paired/unpaired data and task-specific validation.",
+  "intuition": "The model maps a low-information input to a higher-resolution output. Because multiple high-resolution images can correspond to one low-resolution input, the problem is inherently ambiguous.",
+  "deepDive": "Classical interpolation is deterministic and smooth but cannot invent missing high-frequency content. Supervised SR learns from aligned LR/HR pairs with pixel/perceptual/adversarial losses. Generative SR can create realistic texture but may hallucinate details. Scientific reconstruction therefore needs downstream structural/physical validation. 3D SR adds volumetric consistency and heavy compute constraints.",
+  "workedExample": "A GAN can make SEM-like texture visually sharp while altering pore boundaries; PSNR/perceptual metrics alone cannot prove porosity correctness.",
+  "commonMistakes": [
+    "Equating visually sharp output with ground-truth recovery.",
+    "Calling interpolation learned super-resolution.",
+    "Ignoring whether LR/HR pairs are aligned."
+  ],
+  "followUps": [
+    "Pixel loss vs perceptual loss?",
+    "Why can GAN SR lower PSNR?",
+    "How do you validate scientific SR?",
+    "2D slice vs 3D model?"
+  ],
+  "production": "Choose output acceptance metrics tied to downstream use, version preprocessing/scale factors, and use batch/GPU jobs for large 3D outputs.",
+  "editorial": {
+    "status": "summary"
+  }
+}

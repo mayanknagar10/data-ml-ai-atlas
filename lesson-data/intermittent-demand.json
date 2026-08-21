@@ -1,0 +1,38 @@
+{
+  "slug": "intermittent-demand",
+  "title": "Intermittent Demand Forecasting",
+  "module": "time-series",
+  "priority": "medium",
+  "roles": [
+    "ds",
+    "da",
+    "as"
+  ],
+  "interviewAnswer": "Intermittent demand contains many zeros with irregular positive events. Standard smooth forecasts can be biased; Croston-style methods separately model demand size and inter-arrival intervals.",
+  "keyPoints": [
+    "Zeros can be structural, not missing.",
+    "Evaluate with business-relevant inventory metrics.",
+    "Aggregate level can change intermittency."
+  ],
+  "resources": [
+    "fpp3",
+    "nixtla"
+  ],
+  "featured": false,
+  "why": "Intermittent Demand Forecasting appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
+  "intuition": "Zeros can be structural, not missing.",
+  "deepDive": "Intermittent demand contains many zeros with irregular positive events. Standard smooth forecasts can be biased; Croston-style methods separately model demand size and inter-arrival intervals. Evaluate with business-relevant inventory metrics. Aggregate level can change intermittency. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
+  "workedExample": "Forecast spare-part demand where most days have zero orders and occasional bursts occur.",
+  "commonMistakes": [
+    "Applying the method without checking its assumptions or data-generating process.",
+    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+  ],
+  "followUps": [
+    "What assumptions does Intermittent Demand Forecasting make?",
+    "How would you validate or debug Intermittent Demand Forecasting in practice?"
+  ],
+  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "editorial": {
+    "status": "summary"
+  }
+}

@@ -1,0 +1,55 @@
+{
+  "slug": "kubernetes-basics",
+  "title": "Kubernetes for ML Services",
+  "module": "cloud",
+  "priority": "medium",
+  "roles": [
+    "mle",
+    "aie"
+  ],
+  "interviewAnswer": "Kubernetes schedules containers across a cluster and provides deployments, services, scaling and rolling updates. Use it when operational complexity and scale justify the platform overhead.",
+  "keyPoints": [
+    "Pod",
+    "Deployment",
+    "Service",
+    "Autoscaling"
+  ],
+  "resources": [
+    "kubernetes",
+    "docker",
+    "aws-sagemaker",
+    "azure-ml"
+  ],
+  "featured": false,
+  "why": "Kubernetes matters when ML services need replicated deployment, scheduling, service discovery and controlled rollouts across clusters.",
+  "intuition": "You declare the desired state—such as three replicas of an inference container—and Kubernetes continuously tries to make the cluster match it.",
+  "deepDive": "Pods are the basic scheduling unit; Deployments manage stateless replicas/rollouts; Services provide stable networking; ConfigMaps/Secrets inject config; persistent volumes handle durable storage. Readiness controls traffic; liveness detects stuck processes. GPU workloads require node/device scheduling. Kubernetes adds significant operational complexity and is unnecessary for every project.",
+  "workedExample": "An inference Deployment runs three API pods behind a Service; a readiness probe prevents a pod receiving traffic until the model checkpoint is loaded.",
+  "code": "# concept: Deployment -> ReplicaSet -> Pods; Service routes to ready Pods",
+  "commonMistakes": [
+    "Calling a container and pod the same thing.",
+    "Using liveness checks that restart healthy but slow model-loading pods.",
+    "Choosing Kubernetes for a single simple batch job without need."
+  ],
+  "followUps": [
+    "Pod vs Deployment?",
+    "Service vs Ingress?",
+    "Readiness vs liveness?",
+    "How do GPUs get scheduled?"
+  ],
+  "production": "Define resource requests/limits, autoscaling signals, disruption/rollout policies and model warmup behavior; managed container services may be simpler when cluster control is unnecessary.",
+  "visual": {
+    "type": "layers",
+    "title": "Kubernetes abstraction",
+    "items": [
+      "Deployment",
+      "ReplicaSet / Pods",
+      "Service",
+      "Ingress / client traffic"
+    ],
+    "caption": "Kubernetes keeps desired replicas running and exposes them through stable service networking."
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

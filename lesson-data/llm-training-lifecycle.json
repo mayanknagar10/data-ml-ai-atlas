@@ -1,0 +1,42 @@
+{
+  "slug": "llm-training-lifecycle",
+  "title": "LLM Training Lifecycle: Pretraining → SFT → Preference Tuning",
+  "module": "transformers",
+  "priority": "high",
+  "roles": [
+    "aie",
+    "mle",
+    "as"
+  ],
+  "interviewAnswer": "Modern LLM development commonly starts with next-token pretraining, then supervised instruction fine-tuning, and may add preference optimization such as RLHF or DPO. Each stage serves a different purpose.",
+  "keyPoints": [
+    "Pretraining",
+    "SFT",
+    "Preference data",
+    "Alignment/evaluation"
+  ],
+  "resources": [
+    "stanford-cs336",
+    "hf-llm",
+    "stanford-cs25"
+  ],
+  "featured": false,
+  "why": "This prevents mixing up pretraining, fine-tuning and alignment.",
+  "intuition": "Pretraining learns broad language structure; SFT teaches task formats; preference tuning shifts behavior toward preferred outputs.",
+  "deepDive": "Pretraining uses broad corpora and next-token likelihood; SFT uses curated prompt-response examples; preference stages optimize rankings/rewards.",
+  "math": "",
+  "code": "",
+  "commonMistakes": [
+    "Calling LoRA a training objective.",
+    "Assuming preference tuning reliably adds factual knowledge."
+  ],
+  "followUps": [
+    "SFT vs continued pretraining?",
+    "RLHF vs DPO?"
+  ],
+  "production": "Dataset provenance and regression evaluation matter at every stage.",
+  "workedExample": "A base model may autocomplete text, while an SFT model follows instructions more reliably.",
+  "editorial": {
+    "status": "summary"
+  }
+}

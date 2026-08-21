@@ -1,0 +1,36 @@
+{
+  "slug": "shap-permutation",
+  "title": "Permutation Importance, PDP & SHAP",
+  "module": "evaluation",
+  "priority": "high",
+  "roles": [
+    "ds"
+  ],
+  "interviewAnswer": "Interpretability tools answer different questions: permutation importance measures performance drop when a feature is disrupted; PDP shows average predicted response; SHAP attributes prediction differences under a chosen background/assumption framework.",
+  "keyPoints": [
+    "Importance is not causality.",
+    "Correlated features complicate attribution.",
+    "Global and local explanations differ."
+  ],
+  "resources": [
+    "sklearn",
+    "isl"
+  ],
+  "featured": false,
+  "why": "Permutation Importance, PDP & SHAP is a standard part of a broad data/ML curriculum because it changes how models are selected, evaluated or operated in real systems.",
+  "intuition": "Importance is not causality.",
+  "deepDive": "Interpretability tools answer different questions: permutation importance measures performance drop when a feature is disrupted; PDP shows average predicted response; SHAP attributes prediction differences under a chosen background/assumption framework. Correlated features complicate attribution. Global and local explanations differ. A strong answer connects the formal idea to validation, data requirements and failure modes instead of treating the method as a recipe.",
+  "workedExample": "Use permutation importance to find useful features, then SHAP for individual high-risk decisions—but state that neither proves causal impact.",
+  "commonMistakes": [
+    "Choosing the technique without checking whether its assumptions match the problem.",
+    "Optimizing an offline metric without checking realistic validation slices or operational constraints."
+  ],
+  "followUps": [
+    "When would you not use Permutation Importance, PDP & SHAP?",
+    "How would you validate or tune Permutation Importance, PDP & SHAP?"
+  ],
+  "production": "In production, validate on realistic slices, track latency/cost when relevant, and monitor for distribution changes or failure modes that the offline metric can hide.",
+  "editorial": {
+    "status": "summary"
+  }
+}

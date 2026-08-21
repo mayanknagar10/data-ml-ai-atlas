@@ -1,0 +1,36 @@
+{
+  "slug": "sampling-design",
+  "title": "Sampling Design: Random, Stratified & Cluster Sampling",
+  "module": "stat-inference",
+  "priority": "high",
+  "roles": [
+    "ds"
+  ],
+  "interviewAnswer": "Sampling design determines which population the data represents. Simple random sampling gives each unit equal probability; stratification samples within known groups; cluster sampling selects groups and can increase correlation/variance.",
+  "keyPoints": [
+    "Sampling mechanism affects both bias and standard error.",
+    "Stratification can improve precision for important subgroups.",
+    "Clustered samples need clustered uncertainty."
+  ],
+  "resources": [
+    "openintro-stats",
+    "stanford-stats60"
+  ],
+  "featured": false,
+  "why": "Sampling Design: Random, Stratified & Cluster Sampling is a standard part of a broad data/ML curriculum because it changes how models are selected, evaluated or operated in real systems.",
+  "intuition": "Sampling mechanism affects both bias and standard error.",
+  "deepDive": "Sampling design determines which population the data represents. Simple random sampling gives each unit equal probability; stratification samples within known groups; cluster sampling selects groups and can increase correlation/variance. Stratification can improve precision for important subgroups. Clustered samples need clustered uncertainty. A strong answer connects the formal idea to validation, data requirements and failure modes instead of treating the method as a recipe.",
+  "workedExample": "Estimate customer satisfaction by stratifying across regions rather than letting the largest region dominate a convenience sample.",
+  "commonMistakes": [
+    "Choosing the technique without checking whether its assumptions match the problem.",
+    "Optimizing an offline metric without checking realistic validation slices or operational constraints."
+  ],
+  "followUps": [
+    "When would you not use Sampling Design: Random, Stratified & Cluster Sampling?",
+    "How would you validate or tune Sampling Design: Random, Stratified & Cluster Sampling?"
+  ],
+  "production": "In production, validate on realistic slices, track latency/cost when relevant, and monitor for distribution changes or failure modes that the offline metric can hide.",
+  "editorial": {
+    "status": "summary"
+  }
+}

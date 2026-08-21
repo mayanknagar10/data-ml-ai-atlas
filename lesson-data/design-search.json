@@ -1,0 +1,54 @@
+{
+  "slug": "design-search",
+  "title": "Design a Search / Retrieval System",
+  "module": "system-design",
+  "priority": "high",
+  "roles": [
+    "mle",
+    "aie",
+    "ds"
+  ],
+  "interviewAnswer": "A search system typically has document ingestion/indexing, query understanding, first-stage lexical/vector retrieval, optional reranking, caching and offline/online evaluation. The design should state latency, freshness and relevance objectives.",
+  "keyPoints": [
+    "Index update strategy.",
+    "Candidate recall vs reranking precision.",
+    "Hybrid exact/semantic retrieval.",
+    "Query/log privacy."
+  ],
+  "resources": [
+    "ir-book",
+    "faiss"
+  ],
+  "featured": false,
+  "why": "Design a Search / Retrieval System appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
+  "intuition": "Index update strategy.",
+  "deepDive": "A search system typically has document ingestion/indexing, query understanding, first-stage lexical/vector retrieval, optional reranking, caching and offline/online evaluation. The design should state latency, freshness and relevance objectives. Candidate recall vs reranking precision. Hybrid exact/semantic retrieval. Query/log privacy. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
+  "workedExample": "Technical documentation search using BM25 + ANN candidates followed by cross-encoder reranking.",
+  "commonMistakes": [
+    "Applying the method without checking its assumptions or data-generating process.",
+    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+  ],
+  "followUps": [
+    "What assumptions does Design a Search / Retrieval System make?",
+    "How would you validate or debug Design a Search / Retrieval System in practice?"
+  ],
+  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "visual": {
+    "type": "flow",
+    "title": "Search system",
+    "items": [
+      "Indexing pipeline",
+      "Lexical + vector indexes",
+      "Query understanding",
+      "Candidate retrieval",
+      "Reranking",
+      "Results + feedback"
+    ],
+    "caption": "Search blends offline indexing with low-latency retrieval/ranking and logs feedback for evaluation.",
+    "accent": 3,
+    "orientation": "horizontal"
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

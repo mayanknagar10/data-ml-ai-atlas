@@ -1,0 +1,42 @@
+{
+  "slug": "cross-attention",
+  "title": "Cross-Attention",
+  "module": "transformers",
+  "priority": "high",
+  "roles": [
+    "aie",
+    "mle",
+    "as"
+  ],
+  "interviewAnswer": "Cross-attention uses queries from one sequence and keys/values from another, letting one representation retrieve information from a different encoder or modality.",
+  "keyPoints": [
+    "Different Q vs K/V source",
+    "Encoder-decoder",
+    "Multimodal conditioning",
+    "Diffusion conditioning"
+  ],
+  "resources": [
+    "stanford-cs224n",
+    "stanford-cs25",
+    "hf-llm"
+  ],
+  "featured": false,
+  "why": "Cross-attention is fundamental to encoder-decoder, multimodal and conditioned generative systems.",
+  "intuition": "The decoder asks questions while another representation supplies keys and values.",
+  "deepDive": "The same scaled dot-product operation is used, but Q and K/V come from different tensors/sequences.",
+  "math": "",
+  "code": "",
+  "commonMistakes": [
+    "Calling every attention block self-attention.",
+    "Ignoring Q/K/V sequence-shape differences."
+  ],
+  "followUps": [
+    "Cross-attention vs concatenation?",
+    "Where does diffusion use it?"
+  ],
+  "production": "Long conditioning contexts can dominate memory/latency; profile them.",
+  "workedExample": "Image latents can query text embeddings in text-conditioned generation.",
+  "editorial": {
+    "status": "summary"
+  }
+}

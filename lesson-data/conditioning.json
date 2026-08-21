@@ -1,0 +1,91 @@
+{
+  "slug": "conditioning",
+  "title": "Conditioning & Classifier-Free Guidance",
+  "module": "genai",
+  "priority": "high",
+  "roles": [
+    "genai",
+    "aie",
+    "as"
+  ],
+  "interviewAnswer": "Conditioning provides control information such as text, labels, embeddings or structural inputs. Classifier-free guidance combines conditioned and unconditioned predictions to strengthen adherence to the condition.",
+  "keyPoints": [
+    "Cross-attention",
+    "Condition signal",
+    "Guidance scale",
+    "Fidelity/diversity trade-off"
+  ],
+  "resources": [
+    "mit-6s191",
+    "stanford-cs25",
+    "stanford-cs336",
+    "hf-diffusion"
+  ],
+  "featured": false,
+  "why": "Conditioning is how generative models become controllable rather than producing arbitrary samples.",
+  "intuition": "Give the generative model extra information—text, labels, image features, edges, compressed tokens—so the denoising/flow trajectory is guided toward outputs consistent with that signal.",
+  "deepDive": "Conditioning can enter by concatenation, adaptive normalization, cross-attention, added residual branches or timestep/pooled embeddings. Classifier-free guidance trains conditional and dropped-condition cases, then combines conditional/unconditional predictions at inference to strengthen adherence. Higher guidance can improve prompt/condition alignment but reduce diversity or create artifacts.",
+  "math": "CFG example: ε_guided = ε_uncond + s(ε_cond - ε_uncond)",
+  "workedExample": "A compressed microstructure latent can condition the decoder so generated grains follow input structure, while a Canny ControlNet condition preserves boundaries.",
+  "commonMistakes": [
+    "Calling all conditioning “prompting.”",
+    "Assuming stronger guidance always improves quality.",
+    "Using conditioning signals that leak target information during training but are unavailable at inference."
+  ],
+  "followUps": [
+    "Cross-attention vs ControlNet conditioning?",
+    "What is classifier-free guidance?",
+    "Why drop conditions during training?",
+    "How do you evaluate controllability?"
+  ],
+  "production": "Validate condition availability/quality at serving time, expose guidance controls safely, and monitor whether users can induce out-of-distribution conditions.",
+  "visual": {
+    "type": "network",
+    "title": "Conditional generation",
+    "nodes": [
+      {
+        "id": "c",
+        "label": "conditioning signal",
+        "x": 0.2,
+        "y": 0.22
+      },
+      {
+        "id": "n",
+        "label": "noise / latent",
+        "x": 0.2,
+        "y": 0.72
+      },
+      {
+        "id": "m",
+        "label": "generative model",
+        "x": 0.55,
+        "y": 0.48
+      },
+      {
+        "id": "o",
+        "label": "controlled output",
+        "x": 0.86,
+        "y": 0.48
+      }
+    ],
+    "edges": [
+      [
+        "c",
+        "m"
+      ],
+      [
+        "n",
+        "m"
+      ],
+      [
+        "m",
+        "o"
+      ]
+    ],
+    "caption": "Conditioning steers generation using text, labels, images, structural signals or learned embeddings.",
+    "directed": true
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

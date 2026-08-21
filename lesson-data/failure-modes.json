@@ -1,0 +1,42 @@
+{
+  "slug": "failure-modes",
+  "title": "Failure Modes & Graceful Degradation",
+  "module": "system-design",
+  "priority": "high",
+  "roles": [
+    "mle",
+    "aie"
+  ],
+  "interviewAnswer": "Design what happens when the model, dependency or input fails: validate early, use timeouts/retries carefully, support fallback behavior, isolate failures and keep enough observability to diagnose them.",
+  "keyPoints": [
+    "Timeouts",
+    "Retries/idempotency",
+    "Fallback",
+    "Circuit-breaker intuition"
+  ],
+  "resources": [
+    "stanford-cs329s",
+    "fsdl",
+    "google-rules-ml"
+  ],
+  "featured": false,
+  "why": "Strong system-design answers explicitly describe what breaks and how the service degrades safely instead of assuming every dependency is always available.",
+  "intuition": "For each dependency, ask: what if it is slow, unavailable, stale or wrong? Define timeouts, retries, fallback and whether the user should receive a partial result or a clear failure.",
+  "deepDive": "Classify failures: bad input, upstream data unavailable, model load/inference error, dependency timeout, resource exhaustion, partial writes, stale features, model-quality regression. Retries need exponential backoff/jitter and idempotency. Circuit breakers prevent cascading overload. Graceful degradation may use cached results, simpler models/rules or asynchronous queueing. Critical systems should fail safe rather than silently guess.",
+  "workedExample": "If an LLM provider times out, a planning copilot can still return deterministic forecast numbers with a plain template instead of failing the whole request or hallucinating a cached explanation.",
+  "commonMistakes": [
+    "Retrying every failure immediately and causing retry storms.",
+    "Using stale/cached output without labeling freshness.",
+    "Having no fallback for model-registry/object-storage outages at startup."
+  ],
+  "followUps": [
+    "What should be retried?",
+    "What is idempotency?",
+    "What is a circuit breaker?",
+    "How do you fail safely in a safety-critical model?"
+  ],
+  "production": "Document dependency SLOs, set timeouts/budgets, add chaos/failure tests, monitor fallback rate and ensure alerts distinguish degraded-but-serving from healthy behavior.",
+  "editorial": {
+    "status": "summary"
+  }
+}

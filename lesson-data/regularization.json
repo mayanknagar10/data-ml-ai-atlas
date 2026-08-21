@@ -1,0 +1,46 @@
+{
+  "slug": "regularization",
+  "title": "Dropout, Weight Decay & Early Stopping",
+  "module": "dl",
+  "priority": "high",
+  "roles": [
+    "mle",
+    "aie",
+    "as"
+  ],
+  "interviewAnswer": "These techniques reduce overfitting in different ways: dropout injects stochastic feature removal, weight decay penalizes large parameters, and early stopping limits training when validation stops improving.",
+  "keyPoints": [
+    "Train vs eval mode",
+    "L2/weight-decay nuance",
+    "Patience",
+    "Use validation metrics"
+  ],
+  "resources": [
+    "mit-6s191",
+    "pytorch",
+    "3b1b-neural",
+    "deep-learning-book"
+  ],
+  "featured": false,
+  "why": "Regularization questions test whether you can control generalization rather than only minimize training loss.",
+  "intuition": "Regularization deliberately makes fitting harder or noisier so the model cannot memorize every training detail and is pushed toward simpler, more robust behavior.",
+  "deepDive": "Weight decay penalizes large weights; dropout randomly zeros activations during training; data augmentation expands invariances; early stopping limits optimization once validation stops improving. They address different failure modes and can interact. In modern networks, decoupled weight decay (AdamW) is often preferable to naive L2 with adaptive optimizers. Regularization strength should be selected on validation data.",
+  "math": "L_total = L_data + λ||w||² (L2-style)\nDropout: h̃ = mask⊙h/(1-p) during training",
+  "workedExample": "If training accuracy reaches 100% while validation stalls, first check leakage/split, then consider augmentation, weight decay, dropout or smaller capacity—not simply train longer.",
+  "code": "opt=torch.optim.AdamW(model.parameters(),lr=3e-4,weight_decay=1e-2)\nlayer=nn.Dropout(p=.2)",
+  "commonMistakes": [
+    "Treating every generalization problem as “add dropout.”",
+    "Using validation/test interchangeably for early stopping.",
+    "Assuming L2 and AdamW weight decay are identical in adaptive optimization."
+  ],
+  "followUps": [
+    "Dropout train vs eval behavior?",
+    "What is early stopping patience?",
+    "L1 vs L2?",
+    "Why can augmentation regularize?"
+  ],
+  "production": "Store the best validation checkpoint and exact preprocessing/augmentation config. Training-serving mismatch in dropout or normalization mode can destroy performance.",
+  "editorial": {
+    "status": "summary"
+  }
+}

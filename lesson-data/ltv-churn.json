@@ -1,0 +1,37 @@
+{
+  "slug": "ltv-churn",
+  "title": "Churn, Lifetime Value & Unit Economics",
+  "module": "experimentation",
+  "priority": "high",
+  "roles": [
+    "ds",
+    "da"
+  ],
+  "interviewAnswer": "Churn and LTV metrics require explicit definitions of active, retained, revenue horizon and censoring. Predictive accuracy is secondary if the metric definition does not match the decision.",
+  "keyPoints": [
+    "Logo vs revenue churn differ.",
+    "LTV can be historical or predictive.",
+    "Censoring and acquisition costs matter."
+  ],
+  "resources": [
+    "berkeley-data100",
+    "lifelines"
+  ],
+  "featured": false,
+  "why": "Churn, Lifetime Value & Unit Economics appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
+  "intuition": "Logo vs revenue churn differ.",
+  "deepDive": "Churn and LTV metrics require explicit definitions of active, retained, revenue horizon and censoring. Predictive accuracy is secondary if the metric definition does not match the decision. LTV can be historical or predictive. Censoring and acquisition costs matter. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
+  "workedExample": "Use contribution-margin LTV rather than gross revenue if the decision is how much to spend acquiring a customer.",
+  "commonMistakes": [
+    "Applying the method without checking its assumptions or data-generating process.",
+    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+  ],
+  "followUps": [
+    "What assumptions does Churn, Lifetime Value & Unit Economics make?",
+    "How would you validate or debug Churn, Lifetime Value & Unit Economics in practice?"
+  ],
+  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "editorial": {
+    "status": "summary"
+  }
+}

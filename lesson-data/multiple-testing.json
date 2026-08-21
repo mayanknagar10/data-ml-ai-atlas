@@ -1,0 +1,53 @@
+{
+  "slug": "multiple-testing",
+  "title": "Multiple Testing & False Discovery Rate",
+  "module": "stat-inference",
+  "priority": "very-high",
+  "roles": [
+    "ds",
+    "da",
+    "as"
+  ],
+  "interviewAnswer": "When many hypotheses are tested, false positives accumulate. Family-wise methods such as Bonferroni control any false positive; FDR methods such as Benjamini–Hochberg control the expected proportion among discoveries.",
+  "keyPoints": [
+    "More tests → more opportunities for false positives.",
+    "FWER and FDR are different guarantees.",
+    "Pre-register primary metrics when possible."
+  ],
+  "resources": [
+    "stanford-stats200"
+  ],
+  "featured": true,
+  "why": "Multiple Testing & False Discovery Rate appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
+  "intuition": "More tests → more opportunities for false positives.",
+  "deepDive": "When many hypotheses are tested, false positives accumulate. Family-wise methods such as Bonferroni control any false positive; FDR methods such as Benjamini–Hochberg control the expected proportion among discoveries. FWER and FDR are different guarantees. Pre-register primary metrics when possible. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
+  "workedExample": "Testing 100 product metrics at 5% individually will produce apparent wins by chance even if nothing changed.",
+  "commonMistakes": [
+    "Applying the method without checking its assumptions or data-generating process.",
+    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+  ],
+  "followUps": [
+    "What assumptions does Multiple Testing & False Discovery Rate make?",
+    "How would you validate or debug Multiple Testing & False Discovery Rate in practice?"
+  ],
+  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "visual": {
+    "type": "bars",
+    "title": "Why multiple testing matters",
+    "labels": [
+      "1 test",
+      "10 tests",
+      "100 tests"
+    ],
+    "values": [
+      0.05,
+      0.4,
+      0.994
+    ],
+    "caption": "With many independent tests, the chance of at least one false positive rises quickly if per-test α is unchanged.",
+    "yLabel": "P(any false positive)"
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

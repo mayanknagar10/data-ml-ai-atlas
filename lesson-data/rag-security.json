@@ -1,0 +1,50 @@
+{
+  "slug": "rag-security",
+  "title": "RAG Security & Access Control",
+  "module": "ai-safety",
+  "priority": "high",
+  "roles": [
+    "aie",
+    "mle"
+  ],
+  "interviewAnswer": "RAG security requires authorization-aware ingestion and retrieval, not only good prompts. I preserve document permissions as metadata, filter before retrieval, isolate tenants, sanitize untrusted content and test for indirect prompt injection and data exfiltration.",
+  "keyPoints": [
+    "ACL-aware retrieval",
+    "tenant isolation",
+    "indirect injection",
+    "source provenance"
+  ],
+  "resources": [
+    "owasp-llm",
+    "mitre-atlas"
+  ],
+  "featured": false,
+  "why": "RAG can turn a safe LLM into a data-leak system if retrieval ignores who is allowed to see each document.",
+  "intuition": "The model should never receive a chunk the current user was not authorized to retrieve in the first place.",
+  "deepDive": "Index-time metadata should retain ownership/ACL information. Query-time filters must be enforced server-side. Source documents should be treated as untrusted content; generated answers should preserve citations/provenance for review.",
+  "workedExample": "A finance employee asks about HR salaries. Even if the semantic search finds salary documents, ACL filtering must remove them before ranking/context construction.",
+  "commonMistakes": [
+    "Relying on “do not reveal secrets” prompts after unauthorized retrieval.",
+    "Sharing one vector namespace across tenants without enforced metadata filters."
+  ],
+  "followUps": [
+    "Can embeddings leak information?",
+    "Where should authorization happen in RAG?"
+  ],
+  "production": "Add security regression tests with adversarial documents and cross-tenant queries; audit retrieval events separately from LLM generations.",
+  "visual": {
+    "type": "layers",
+    "title": "RAG security layers",
+    "items": [
+      "Document ingestion controls",
+      "Access-aware retrieval",
+      "Prompt/content isolation",
+      "Tool authorization",
+      "Output filtering + audit"
+    ],
+    "caption": "RAG security spans ingestion, retrieval permissions, model context and downstream actions."
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

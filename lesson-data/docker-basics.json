@@ -1,0 +1,56 @@
+{
+  "slug": "docker-basics",
+  "title": "Docker Images & Containers",
+  "module": "cloud",
+  "priority": "very-high",
+  "roles": [
+    "mle",
+    "aie",
+    "de"
+  ],
+  "interviewAnswer": "A Docker image is an immutable package containing application code, runtime and dependencies; a container is a running instance of that image. Containers make the inference environment portable and reproducible.",
+  "keyPoints": [
+    "Image vs container",
+    "Dockerfile",
+    "Layers",
+    "Volumes/networking"
+  ],
+  "resources": [
+    "docker",
+    "aws-sagemaker",
+    "azure-ml"
+  ],
+  "featured": true,
+  "why": "Docker is ubiquitous in ML deployment because reproducible environments are often as important as model files.",
+  "intuition": "An image is the packaged recipe/filesystem. A container is one running instance. Multiple containers can run from the same image with different commands or configuration.",
+  "deepDive": "Docker images are built in layers from a Dockerfile. Containers add a writable runtime layer. External volumes persist data beyond container lifetime; networks connect services. Keep secrets and mutable model artifacts outside the image when appropriate.",
+  "math": "Conceptual: image + runtime configuration → container",
+  "code": "# Dockerfile\nFROM python:3.12-slim\nWORKDIR /app\nCOPY requirements.txt .\nRUN pip install --no-cache-dir -r requirements.txt\nCOPY . .\nCMD [\"python\", \"serve.py\"]",
+  "commonMistakes": [
+    "Using “image” and “container” interchangeably.",
+    "Storing secrets inside the image.",
+    "Assuming one component must always have a unique image—multiple services can reuse an image."
+  ],
+  "followUps": [
+    "Where should a model checkpoint live?",
+    "Docker Compose vs Kubernetes?",
+    "How do GPU containers work?",
+    "What is a registry?"
+  ],
+  "production": "Pin dependencies, run as a non-root user where possible, keep images small, add health checks and publish to a registry such as ECR/ACR for cloud deployment.",
+  "workedExample": "A Flask inference API and a background worker can use the same base image but run as separate containers with different startup commands.",
+  "visual": {
+    "type": "layers",
+    "title": "Docker image to container",
+    "items": [
+      "Dockerfile",
+      "Immutable image",
+      "Container runtime",
+      "Running process"
+    ],
+    "caption": "An image packages filesystem + metadata; a container is a running instance of that image."
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

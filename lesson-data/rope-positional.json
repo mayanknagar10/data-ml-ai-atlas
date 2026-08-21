@@ -1,0 +1,42 @@
+{
+  "slug": "rope-positional",
+  "title": "RoPE & Modern Positional Encoding",
+  "module": "transformers",
+  "priority": "medium",
+  "roles": [
+    "aie",
+    "mle",
+    "as"
+  ],
+  "interviewAnswer": "RoPE rotates query/key feature pairs according to token position so relative position affects attention scores without simply adding a fixed position vector.",
+  "keyPoints": [
+    "Rotary embeddings",
+    "Relative position",
+    "Q/K rotation",
+    "Context extension"
+  ],
+  "resources": [
+    "stanford-cs336",
+    "hf-llm",
+    "stanford-cs25"
+  ],
+  "featured": false,
+  "why": "Many modern LLMs use rotary or related positional mechanisms.",
+  "intuition": "Position changes the orientation of Q/K vectors, so dot products encode relative offsets.",
+  "deepDive": "RoPE applies frequency-dependent rotations; context-extension tricks rescale frequencies but can change quality.",
+  "math": "",
+  "code": "",
+  "commonMistakes": [
+    "Saying RoPE is one-hot absolute position.",
+    "Assuming arbitrary context extension is free."
+  ],
+  "followUps": [
+    "RoPE vs ALiBi?",
+    "Why Q/K rather than V?"
+  ],
+  "production": "Benchmark long-context quality as well as maximum length and memory.",
+  "workedExample": "Identical tokens at different positions interact differently because their Q/K rotations differ.",
+  "editorial": {
+    "status": "summary"
+  }
+}

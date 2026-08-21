@@ -1,0 +1,37 @@
+{
+  "slug": "self-supervised-vision",
+  "title": "Self-supervised & Contrastive Visual Representation Learning",
+  "module": "cv",
+  "priority": "medium",
+  "roles": [
+    "cv",
+    "as"
+  ],
+  "interviewAnswer": "Self-supervised vision learns representations from unlabeled images using objectives such as contrastive agreement or masked reconstruction, then transfers them to downstream tasks.",
+  "keyPoints": [
+    "Positive-pair construction encodes invariances.",
+    "Large diverse pretraining data can reduce label needs.",
+    "Linear-probe vs fine-tune evaluate representation quality differently."
+  ],
+  "resources": [
+    "stanford-cs231n",
+    "clip-paper"
+  ],
+  "featured": false,
+  "why": "Self-supervised & Contrastive Visual Representation Learning is a standard part of a broad data/ML curriculum because it changes how models are selected, evaluated or operated in real systems.",
+  "intuition": "Positive-pair construction encodes invariances.",
+  "deepDive": "Self-supervised vision learns representations from unlabeled images using objectives such as contrastive agreement or masked reconstruction, then transfers them to downstream tasks. Large diverse pretraining data can reduce label needs. Linear-probe vs fine-tune evaluate representation quality differently. A strong answer connects the formal idea to validation, data requirements and failure modes instead of treating the method as a recipe.",
+  "workedExample": "Pretrain on millions of unlabeled factory images, then fine-tune with a small labeled defect set.",
+  "commonMistakes": [
+    "Choosing the technique without checking whether its assumptions match the problem.",
+    "Optimizing an offline metric without checking realistic validation slices or operational constraints."
+  ],
+  "followUps": [
+    "When would you not use Self-supervised & Contrastive Visual Representation Learning?",
+    "How would you validate or tune Self-supervised & Contrastive Visual Representation Learning?"
+  ],
+  "production": "In production, validate on realistic slices, track latency/cost when relevant, and monitor for distribution changes or failure modes that the offline metric can hide.",
+  "editorial": {
+    "status": "summary"
+  }
+}

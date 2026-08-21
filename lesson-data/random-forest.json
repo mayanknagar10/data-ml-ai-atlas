@@ -1,0 +1,67 @@
+{
+  "slug": "random-forest",
+  "title": "Random Forest",
+  "module": "ml",
+  "priority": "high",
+  "roles": [
+    "ds",
+    "mle",
+    "as"
+  ],
+  "interviewAnswer": "Random forests reduce tree variance by training many trees on bootstrapped samples and random feature subsets, then averaging or voting their predictions.",
+  "keyPoints": [
+    "Bagging",
+    "Feature randomness",
+    "OOB intuition",
+    "Bias/variance"
+  ],
+  "resources": [
+    "sklearn",
+    "statquest",
+    "stanford-cs229",
+    "google-mlcc",
+    "isl"
+  ],
+  "featured": false,
+  "why": "Random forests are robust tabular baselines and illustrate how bagging reduces variance.",
+  "intuition": "Train many decision trees on different bootstrap samples and random feature subsets, then average/vote. Individual trees are unstable; averaging makes the ensemble more stable.",
+  "deepDive": "Bootstrap sampling decorrelates training data, and random feature selection decorrelates trees further. Averaging reduces variance when errors are not perfectly correlated. Out-of-bag samples can estimate performance. Forests capture nonlinear interactions with modest preprocessing but can be large/slow and less interpretable than a single tree.",
+  "math": "Regression forest: ŷ(x)=1/T Σ_t h_t(x); classification averages probabilities/votes.",
+  "workedExample": "On mixed tabular sensor/product data, a forest can establish a strong nonlinear baseline before investing in neural networks.",
+  "code": "from sklearn.ensemble import RandomForestClassifier\nm=RandomForestClassifier(n_estimators=500,max_features='sqrt',n_jobs=-1,random_state=0)\nm.fit(X_train,y_train)",
+  "commonMistakes": [
+    "Saying bagging and boosting are the same.",
+    "Assuming more trees overfit like a single deeper tree; usually variance stabilizes though cost rises.",
+    "Using impurity importance without caveats."
+  ],
+  "followUps": [
+    "Why random feature subsets?",
+    "Out-of-bag error?",
+    "Random forest vs XGBoost?",
+    "How does bagging reduce variance?"
+  ],
+  "production": "Forests are simple to serve but model size can be large. Validate preprocessing/category handling and benchmark latency/memory against boosting/linear alternatives.",
+  "lab": {
+    "goal": "Train and validate a Random Forest classifier.",
+    "language": "python",
+    "buildIt": "from sklearn.datasets import make_classification\nfrom sklearn.model_selection import train_test_split\nX,y=make_classification(n_samples=800,n_features=12,n_informative=5,random_state=0)\nXtr,Xte,ytr,yte=train_test_split(X,y,test_size=.25,random_state=0,stratify=y)\n",
+    "useIt": "from sklearn.ensemble import RandomForestClassifier\nfrom sklearn.metrics import roc_auc_score\nm=RandomForestClassifier(n_estimators=200,min_samples_leaf=3,random_state=0,n_jobs=-1).fit(Xtr,ytr)\np=m.predict_proba(Xte)[:,1]\nauc=roc_auc_score(yte,p)\nprint(auc)\n",
+    "verifyIt": "assert auc>0.8\n",
+    "shipIt": "Version features and forest hyperparameters; monitor score calibration and feature/data drift rather than relying only on training feature importance."
+  },
+  "visual": {
+    "type": "flow",
+    "title": "Random forest",
+    "items": [
+      "Bootstrap datasets",
+      "Train many randomized trees",
+      "Aggregate predictions"
+    ],
+    "caption": "Bagging and feature randomness reduce variance relative to a single deep tree.",
+    "accent": 1,
+    "orientation": "horizontal"
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

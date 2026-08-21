@@ -1,0 +1,40 @@
+{
+  "slug": "factor-analysis",
+  "title": "Factor Analysis",
+  "module": "unsupervised",
+  "priority": "medium",
+  "roles": [
+    "ds",
+    "as"
+  ],
+  "interviewAnswer": "Factor analysis models observed variables as linear combinations of a smaller number of latent factors plus variable-specific noise, focusing on shared covariance structure.",
+  "keyPoints": [
+    "Latent factors",
+    "Shared covariance",
+    "Specific noise",
+    "Probabilistic model"
+  ],
+  "resources": [
+    "stanford-cs229",
+    "probml-book"
+  ],
+  "featured": false,
+  "why": "Factor analysis is a classic latent-variable model distinct from PCA.",
+  "intuition": "Several measured variables may move together because of a smaller hidden cause, while each retains its own measurement noise.",
+  "deepDive": "The model x=Λz+ε assumes latent factors z and diagonal/specific noise ε; maximum-likelihood or Bayesian methods estimate loadings and uncertainty.",
+  "math": "",
+  "code": "",
+  "commonMistakes": [
+    "Calling factor analysis identical to PCA.",
+    "Interpreting rotated factors as uniquely determined truths."
+  ],
+  "followUps": [
+    "Factor analysis vs PCA?",
+    "What is factor rotation?"
+  ],
+  "production": "Use domain interpretation and stability checks; latent factors can be non-identifiable up to rotations/signs.",
+  "workedExample": "Survey questions about similar behaviors may load on a small number of latent traits.",
+  "editorial": {
+    "status": "summary"
+  }
+}

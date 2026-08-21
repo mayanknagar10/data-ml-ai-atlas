@@ -1,0 +1,55 @@
+{
+  "slug": "hyperparameter-tuning",
+  "title": "Grid, Random & Bayesian Hyperparameter Search",
+  "module": "evaluation",
+  "priority": "very-high",
+  "roles": [
+    "ds",
+    "mle"
+  ],
+  "interviewAnswer": "Hyperparameter tuning searches settings not learned directly by model fitting. Random search is often more efficient than exhaustive grids in high-dimensional spaces; Bayesian optimization helps when evaluations are expensive.",
+  "keyPoints": [
+    "Tune using validation/CV, never the final test set.",
+    "Search spaces matter more than search algorithm in many cases.",
+    "Parallelism and early stopping can reduce cost."
+  ],
+  "resources": [
+    "sklearn",
+    "stanford-cs229"
+  ],
+  "featured": true,
+  "why": "Grid, Random & Bayesian Hyperparameter Search is a standard part of a broad data/ML curriculum because it changes how models are selected, evaluated or operated in real systems.",
+  "intuition": "Tune using validation/CV, never the final test set.",
+  "deepDive": "Hyperparameter tuning searches settings not learned directly by model fitting. Random search is often more efficient than exhaustive grids in high-dimensional spaces; Bayesian optimization helps when evaluations are expensive. Search spaces matter more than search algorithm in many cases. Parallelism and early stopping can reduce cost. A strong answer connects the formal idea to validation, data requirements and failure modes instead of treating the method as a recipe.",
+  "workedExample": "Tune learning rate, depth and regularization with random search and keep the test set untouched until final selection.",
+  "commonMistakes": [
+    "Choosing the technique without checking whether its assumptions match the problem.",
+    "Optimizing an offline metric without checking realistic validation slices or operational constraints."
+  ],
+  "followUps": [
+    "When would you not use Grid, Random & Bayesian Hyperparameter Search?",
+    "How would you validate or tune Grid, Random & Bayesian Hyperparameter Search?"
+  ],
+  "production": "In production, validate on realistic slices, track latency/cost when relevant, and monitor for distribution changes or failure modes that the offline metric can hide.",
+  "lab": {
+    "goal": "Tune a model without touching the test set.",
+    "language": "python",
+    "buildIt": "from sklearn.datasets import make_classification\nfrom sklearn.model_selection import train_test_split\nX,y=make_classification(n_samples=700,n_features=10,n_informative=5,random_state=0)\nXtr,Xte,ytr,yte=train_test_split(X,y,test_size=.2,random_state=0,stratify=y)\n",
+    "useIt": "from sklearn.model_selection import GridSearchCV\nfrom sklearn.ensemble import RandomForestClassifier\ngs=GridSearchCV(RandomForestClassifier(random_state=0),{'max_depth':[3,6,None],'min_samples_leaf':[1,5,15]},cv=4,scoring='roc_auc').fit(Xtr,ytr)\nprint(gs.best_params_,gs.best_score_,gs.score(Xte,yte))\n",
+    "verifyIt": "assert gs.best_estimator_ is not None\n",
+    "shipIt": "Log the search space, folds, metric and winning configuration; keep the final test set isolated and cap tuning cost with sensible priors/search spaces."
+  },
+  "visual": {
+    "type": "concept-map",
+    "title": "Grid, Random & Bayesian Hyperparameter Search",
+    "items": [
+      "Tune using validation/CV, never the final test set.",
+      "Search spaces matter more than search algorithm in many cases.",
+      "Parallelism and early stopping can reduce cost."
+    ],
+    "caption": "A compact concept map for the most important ideas in this lesson."
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

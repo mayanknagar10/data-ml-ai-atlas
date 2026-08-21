@@ -1,0 +1,61 @@
+{
+  "slug": "system-design-framework",
+  "title": "ML System Design Interview Framework",
+  "module": "system-design",
+  "priority": "very-high",
+  "roles": [
+    "mle",
+    "aie",
+    "ds"
+  ],
+  "interviewAnswer": "Start with product requirements and constraints, then define data, labels, metrics, baseline, training pipeline, serving path, storage, scale, monitoring, failure modes and iteration loop. Architecture should follow requirements—not precede them.",
+  "keyPoints": [
+    "Requirements first",
+    "Offline + online metrics",
+    "Training vs serving",
+    "Reliability/cost"
+  ],
+  "resources": [
+    "stanford-cs329s",
+    "fsdl",
+    "google-rules-ml"
+  ],
+  "featured": true,
+  "why": "System-design interviews reward structured trade-off thinking. A brilliant model choice cannot rescue an architecture that ignores requirements or data reality.",
+  "intuition": "Start by asking what users need and what failure costs. Then work backward from the serving requirement into data, model, training and operational components.",
+  "deepDive": "A reliable sequence is: clarify functional/non-functional requirements → define success metrics → understand data/labels → baseline/model → training pipeline → serving path → storage/interfaces → scale/cost → monitoring/retraining → privacy/security → failure modes. Explicitly separate online and offline paths.",
+  "math": "Useful back-of-envelope math: QPS × payload size → bandwidth; model latency × concurrency → compute; data/day → storage; batch size ↔ throughput/latency.",
+  "code": "# Interview whiteboard checklist\nrequirements()\ndata_and_labels()\noffline_metrics()\ntraining_pipeline()\nserving_path()\nscale_and_cost()\nmonitoring_and_feedback()\nfailures_and_security()",
+  "commonMistakes": [
+    "Jumping directly to “use Kafka/Kubernetes/SageMaker” before requirements.",
+    "Ignoring label availability and feedback loops.",
+    "No operational metric or failure plan."
+  ],
+  "followUps": [
+    "How would this change at 100× traffic?",
+    "What if labels arrive a month later?",
+    "How do you prevent training-serving skew?",
+    "What is the cheapest simpler version?"
+  ],
+  "production": "Prefer the simplest architecture that meets SLOs. Every added queue, feature store or cluster creates operational cost and new failure modes.",
+  "workedExample": "For a heavy reconstruction model, requirements may immediately imply async jobs, object storage and GPU workers instead of a synchronous REST prediction.",
+  "visual": {
+    "type": "flow",
+    "title": "ML system design sequence",
+    "items": [
+      "Requirements",
+      "Data + labels",
+      "Offline metrics",
+      "Training pipeline",
+      "Serving path",
+      "Scale + cost",
+      "Monitoring + feedback"
+    ],
+    "caption": "Architecture should follow product requirements, constraints and failure costs—not precede them.",
+    "accent": 2,
+    "orientation": "horizontal"
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

@@ -1,0 +1,82 @@
+{
+  "slug": "seq2seq-attention",
+  "title": "Seq2Seq & Encoder–Decoder Attention",
+  "module": "nlp",
+  "priority": "medium",
+  "roles": [
+    "ds",
+    "as"
+  ],
+  "interviewAnswer": "Encoder–decoder models map one sequence to another. Attention lets the decoder dynamically focus on encoder states instead of compressing the entire input into one fixed vector, paving the way for transformers.",
+  "keyPoints": [
+    "Teacher forcing is common during training.",
+    "Exposure bias can appear at generation time.",
+    "Attention alignment improves long sequences."
+  ],
+  "resources": [
+    "stanford-cs224n"
+  ],
+  "featured": false,
+  "why": "Seq2Seq & Encoder–Decoder Attention appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
+  "intuition": "Teacher forcing is common during training.",
+  "deepDive": "Encoder–decoder models map one sequence to another. Attention lets the decoder dynamically focus on encoder states instead of compressing the entire input into one fixed vector, paving the way for transformers. Exposure bias can appear at generation time. Attention alignment improves long sequences. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
+  "workedExample": "Translate a sentence by attending to relevant source words at each generated target token.",
+  "commonMistakes": [
+    "Applying the method without checking its assumptions or data-generating process.",
+    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+  ],
+  "followUps": [
+    "What assumptions does Seq2Seq & Encoder–Decoder Attention make?",
+    "How would you validate or debug Seq2Seq & Encoder–Decoder Attention in practice?"
+  ],
+  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "visual": {
+    "type": "network",
+    "title": "Encoder–decoder attention",
+    "nodes": [
+      {
+        "id": "e1",
+        "label": "enc 1",
+        "x": 0.18,
+        "y": 0.22
+      },
+      {
+        "id": "e2",
+        "label": "enc 2",
+        "x": 0.38,
+        "y": 0.22
+      },
+      {
+        "id": "e3",
+        "label": "enc 3",
+        "x": 0.58,
+        "y": 0.22
+      },
+      {
+        "id": "d",
+        "label": "decoder step",
+        "x": 0.5,
+        "y": 0.72
+      }
+    ],
+    "edges": [
+      [
+        "e1",
+        "d"
+      ],
+      [
+        "e2",
+        "d"
+      ],
+      [
+        "e3",
+        "d"
+      ]
+    ],
+    "caption": "Attention lets each decoder step combine encoder states with data-dependent weights instead of relying on one fixed context vector.",
+    "directed": true
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

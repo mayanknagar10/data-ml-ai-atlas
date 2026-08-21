@@ -1,0 +1,36 @@
+{
+  "slug": "text-to-speech",
+  "title": "Text-to-Speech Pipeline",
+  "module": "speech",
+  "priority": "medium",
+  "roles": [
+    "ds",
+    "as"
+  ],
+  "interviewAnswer": "Modern TTS maps text/phonetic representations to acoustic features or latent speech and then uses a vocoder/decoder to synthesize waveform audio. Quality involves intelligibility, naturalness, speaker/style control and latency.",
+  "keyPoints": [
+    "Text normalization/phonemes affect pronunciation.",
+    "Acoustic model and vocoder are distinct conceptual stages.",
+    "Evaluate with human listening plus objective diagnostics."
+  ],
+  "resources": [
+    "stanford-cs224s"
+  ],
+  "featured": false,
+  "why": "Text-to-Speech Pipeline is a recurring foundation across data science and machine learning because it affects both theoretical correctness and practical system behavior.",
+  "intuition": "Text normalization/phonemes affect pronunciation.",
+  "deepDive": "Modern TTS maps text/phonetic representations to acoustic features or latent speech and then uses a vocoder/decoder to synthesize waveform audio. Quality involves intelligibility, naturalness, speaker/style control and latency. Acoustic model and vocoder are distinct conceptual stages. Evaluate with human listening plus objective diagnostics. The interview-level skill is not merely recalling the definition: explain the assumptions, what diagnostic evidence you would inspect, and what alternative you would choose when those assumptions fail.",
+  "workedExample": "Generate spoken navigation instructions while preserving names/numbers with appropriate text normalization.",
+  "commonMistakes": [
+    "Using the concept mechanically without checking assumptions or data semantics.",
+    "Reporting one metric/result without examining uncertainty, slices or failure modes."
+  ],
+  "followUps": [
+    "What assumptions or limitations does Text-to-Speech Pipeline have?",
+    "How would you validate Text-to-Speech Pipeline on a real dataset?"
+  ],
+  "production": "In production, make assumptions explicit, validate on representative slices, compare with a simple baseline and monitor the signals that can drift.",
+  "editorial": {
+    "status": "summary"
+  }
+}

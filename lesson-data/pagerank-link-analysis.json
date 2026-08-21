@@ -1,0 +1,42 @@
+{
+  "slug": "pagerank-link-analysis",
+  "title": "PageRank & Link Analysis",
+  "module": "data-mining",
+  "priority": "medium",
+  "roles": [
+    "ds",
+    "de",
+    "as",
+    "mle"
+  ],
+  "interviewAnswer": "PageRank scores nodes by the stationary distribution of a random walk with teleportation: links from important nodes contribute more than raw in-degree alone.",
+  "keyPoints": [
+    "Random walk",
+    "Stationary distribution",
+    "Teleportation",
+    "Power iteration"
+  ],
+  "resources": [
+    "stanford-cs246",
+    "stanford-cs224w"
+  ],
+  "featured": false,
+  "why": "PageRank is a foundational web/graph-mining algorithm and distributed iterative-computation example.",
+  "intuition": "An endorsement from an important page should count more than one from an isolated page.",
+  "deepDive": "Teleportation prevents sinks and makes the chain well-behaved under standard conditions; repeated sparse matrix-vector multiplication converges to rank scores.",
+  "math": "",
+  "code": "",
+  "commonMistakes": [
+    "Equating PageRank with in-degree.",
+    "Omitting teleportation/sink handling."
+  ],
+  "followUps": [
+    "PageRank vs HITS?",
+    "How does damping affect ranking?"
+  ],
+  "production": "Large graphs require sparse/distributed iteration and resistance to adversarial link manipulation.",
+  "workedExample": "Citation networks can use PageRank-like centrality to rank influential nodes.",
+  "editorial": {
+    "status": "summary"
+  }
+}

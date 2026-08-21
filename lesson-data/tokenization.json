@@ -1,0 +1,56 @@
+{
+  "slug": "tokenization",
+  "title": "Tokenization",
+  "module": "nlp",
+  "priority": "high",
+  "roles": [
+    "aie",
+    "as"
+  ],
+  "interviewAnswer": "Tokenization converts text into a sequence of discrete token IDs. Subword methods balance vocabulary size and sequence length and must match the model’s training tokenizer exactly.",
+  "keyPoints": [
+    "BPE/WordPiece intuition",
+    "Special tokens",
+    "Unknown words",
+    "Tokenizer-model coupling"
+  ],
+  "resources": [
+    "stanford-cs224n",
+    "stanford-cs336",
+    "hf-llm"
+  ],
+  "featured": false,
+  "why": "Tokenization defines the units language models operate on and directly affects context length, multilingual/code behavior and cost.",
+  "intuition": "A tokenizer converts raw text into integer token IDs from a finite vocabulary. Modern subword tokenizers balance whole-word efficiency with the ability to represent unseen words.",
+  "deepDive": "BPE/WordPiece/Unigram learn subword vocabularies from corpora. The same visible string can tokenize differently across models. Token count—not character/word count—drives context usage and inference cost. Special tokens encode boundaries/control signals. Byte-level schemes guarantee coverage but may use more tokens for some languages/domains.",
+  "workedExample": "A rare technical identifier may split into many subword tokens, consuming context and potentially weakening semantic representation compared with common words.",
+  "code": "tokens=tokenizer(\"microstructure reconstruction\", return_tensors=\"pt\")\nprint(tokens.input_ids)",
+  "commonMistakes": [
+    "Assuming one token equals one word.",
+    "Using a tokenizer from a different model than the embedding/LLM weights.",
+    "Hard-coding character limits when the real constraint is tokens."
+  ],
+  "followUps": [
+    "BPE intuition?",
+    "Why special tokens?",
+    "Why tokenization differs by language?",
+    "How does token count affect cost?"
+  ],
+  "production": "Estimate/request limits in tokens, version tokenizer with the model, and handle truncation/chunking explicitly.",
+  "visual": {
+    "type": "flow",
+    "title": "Tokenization",
+    "items": [
+      "Raw text",
+      "Tokenizer",
+      "Token IDs",
+      "Embedding lookup"
+    ],
+    "caption": "Tokenization converts text into discrete units that map to model vocabulary IDs.",
+    "accent": 1,
+    "orientation": "horizontal"
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

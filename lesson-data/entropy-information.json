@@ -1,0 +1,55 @@
+{
+  "slug": "entropy-information",
+  "title": "Entropy & Information Content",
+  "module": "info-theory",
+  "priority": "high",
+  "roles": [
+    "all"
+  ],
+  "interviewAnswer": "Entropy measures average uncertainty in a distribution: concentrated distributions have low entropy; balanced, unpredictable distributions have higher entropy.",
+  "keyPoints": [
+    "Self-information",
+    "Shannon entropy",
+    "Uncertainty",
+    "Compression connection"
+  ],
+  "resources": [
+    "mit-info-theory",
+    "harvard-stat110"
+  ],
+  "featured": false,
+  "why": "Entropy is the language behind cross-entropy, decision trees, compression and language-model uncertainty.",
+  "intuition": "A fair coin is harder to predict than a coin that is heads 99% of the time, so it carries more uncertainty per observation.",
+  "deepDive": "For a discrete variable, entropy is expected negative log-probability. The logarithm makes information from independent events additive. Differential entropy for continuous variables has different interpretation and can be negative.",
+  "math": "H(X)=-Σp(x)log p(x)",
+  "code": "",
+  "commonMistakes": [
+    "Treating entropy as variance.",
+    "Assuming continuous differential entropy behaves exactly like discrete entropy."
+  ],
+  "followUps": [
+    "Why use a logarithm?",
+    "How is entropy related to compression?"
+  ],
+  "production": "Use entropy as an uncertainty summary, but operational decisions still need calibrated probabilities and task costs.",
+  "workedExample": "A fair binary variable has 1 bit of entropy; a 99/1 variable has much less.",
+  "visual": {
+    "type": "bars",
+    "title": "Entropy rises with uncertainty",
+    "labels": [
+      "Predictable",
+      "Mixed",
+      "Balanced"
+    ],
+    "values": [
+      0.12,
+      0.65,
+      1.0
+    ],
+    "caption": "Entropy is highest when outcomes are balanced and falls as one outcome becomes predictable.",
+    "yLabel": "relative entropy"
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

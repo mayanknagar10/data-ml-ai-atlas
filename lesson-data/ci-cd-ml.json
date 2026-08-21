@@ -1,0 +1,56 @@
+{
+  "slug": "ci-cd-ml",
+  "title": "CI/CD for ML",
+  "module": "mlops",
+  "priority": "high",
+  "roles": [
+    "mle"
+  ],
+  "interviewAnswer": "CI validates code, data contracts and model tests on change; CD automates safe packaging and deployment after gates. ML adds artifact/data/model validation beyond normal software tests.",
+  "keyPoints": [
+    "Unit/integration tests",
+    "Model quality gate",
+    "Container build",
+    "Deployment automation"
+  ],
+  "resources": [
+    "made-with-ml",
+    "fsdl",
+    "stanford-cs329s",
+    "google-rules-ml"
+  ],
+  "featured": false,
+  "why": "ML CI/CD extends software testing with data, model and deployment validation.",
+  "intuition": "CI checks that a change is safe to merge; CD packages and promotes an artifact through environments under explicit quality gates.",
+  "deepDive": "CI can run lint/unit/integration/schema tests plus lightweight model smoke/regression tests. Heavier training may run separately with artifacts registered after evaluation. CD builds immutable containers/models, deploys to staging, runs health/contract/eval checks, then promotes using canary/blue-green. Data changes and model retraining can occur independently of code changes, so lineage matters.",
+  "workedExample": "A PR changes preprocessing: CI tests feature schema and golden examples. After merge, a training pipeline produces model v14, evaluation gates pass, container+model are deployed to staging and then canary production.",
+  "commonMistakes": [
+    "Retraining a huge model on every code commit.",
+    "Deploying “latest” mutable images.",
+    "Having software tests but no data/model regression gates."
+  ],
+  "followUps": [
+    "What belongs in CI?",
+    "How does ML CD differ from normal software?",
+    "How do you promote a model?",
+    "How do you handle data-only changes?"
+  ],
+  "production": "Use immutable versions, reproducible builds, environment promotion, approval/eval gates and rollback automation tied to model+preprocessing lineage.",
+  "visual": {
+    "type": "flow",
+    "title": "CI/CD for ML",
+    "items": [
+      "Code/data/model change",
+      "Tests + validation",
+      "Build artifact",
+      "Deploy safely",
+      "Monitor"
+    ],
+    "caption": "ML delivery pipelines must validate both software correctness and data/model behavior.",
+    "accent": 2,
+    "orientation": "horizontal"
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

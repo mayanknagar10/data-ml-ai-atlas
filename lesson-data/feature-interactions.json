@@ -1,0 +1,36 @@
+{
+  "slug": "feature-interactions",
+  "title": "Interactions & Domain Feature Engineering",
+  "module": "evaluation",
+  "priority": "high",
+  "roles": [
+    "ds"
+  ],
+  "interviewAnswer": "Feature engineering can expose known structure—ratios, interactions, lags, log transforms or domain aggregations—especially for simpler models. Every feature must be available at prediction time.",
+  "keyPoints": [
+    "Interactions encode conditional effects.",
+    "Transform skewed multiplicative scales carefully.",
+    "Availability/leakage beats cleverness."
+  ],
+  "resources": [
+    "isl",
+    "google-mlcc"
+  ],
+  "featured": false,
+  "why": "Interactions & Domain Feature Engineering is a recurring foundation across data science and machine learning because it affects both theoretical correctness and practical system behavior.",
+  "intuition": "Interactions encode conditional effects.",
+  "deepDive": "Feature engineering can expose known structure—ratios, interactions, lags, log transforms or domain aggregations—especially for simpler models. Every feature must be available at prediction time. Transform skewed multiplicative scales carefully. Availability/leakage beats cleverness. The interview-level skill is not merely recalling the definition: explain the assumptions, what diagnostic evidence you would inspect, and what alternative you would choose when those assumptions fail.",
+  "workedExample": "For pricing, include price per unit and price×customer-segment interactions rather than raw price alone.",
+  "commonMistakes": [
+    "Using the concept mechanically without checking assumptions or data semantics.",
+    "Reporting one metric/result without examining uncertainty, slices or failure modes."
+  ],
+  "followUps": [
+    "What assumptions or limitations does Interactions & Domain Feature Engineering have?",
+    "How would you validate Interactions & Domain Feature Engineering on a real dataset?"
+  ],
+  "production": "In production, make assumptions explicit, validate on representative slices, compare with a simple baseline and monitor the signals that can drift.",
+  "editorial": {
+    "status": "summary"
+  }
+}

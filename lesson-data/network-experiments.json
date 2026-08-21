@@ -1,0 +1,38 @@
+{
+  "slug": "network-experiments",
+  "title": "Interference & Network Effects in Experiments",
+  "module": "experimentation",
+  "priority": "medium",
+  "roles": [
+    "ds",
+    "da",
+    "as"
+  ],
+  "interviewAnswer": "Standard A/B inference assumes one unit’s treatment does not change another unit’s outcome. Social, marketplace and collaborative products violate this through interference, requiring cluster designs or specialized estimands.",
+  "keyPoints": [
+    "SUTVA/no-interference can fail.",
+    "Cluster randomization reduces contamination but changes power.",
+    "Marketplace two-sided effects complicate interpretation."
+  ],
+  "resources": [
+    "microsoft-experimentation",
+    "causal-mixtape"
+  ],
+  "featured": false,
+  "why": "Interference & Network Effects in Experiments is a standard part of a broad data/ML curriculum because it changes how models are selected, evaluated or operated in real systems.",
+  "intuition": "SUTVA/no-interference can fail.",
+  "deepDive": "Standard A/B inference assumes one unit’s treatment does not change another unit’s outcome. Social, marketplace and collaborative products violate this through interference, requiring cluster designs or specialized estimands. Cluster randomization reduces contamination but changes power. Marketplace two-sided effects complicate interpretation. A strong answer connects the formal idea to validation, data requirements and failure modes instead of treating the method as a recipe.",
+  "workedExample": "Changing seller ranking affects buyers and competing sellers, so user-level independent randomization may contaminate control.",
+  "commonMistakes": [
+    "Choosing the technique without checking whether its assumptions match the problem.",
+    "Optimizing an offline metric without checking realistic validation slices or operational constraints."
+  ],
+  "followUps": [
+    "When would you not use Interference & Network Effects in Experiments?",
+    "How would you validate or tune Interference & Network Effects in Experiments?"
+  ],
+  "production": "In production, validate on realistic slices, track latency/cost when relevant, and monitor for distribution changes or failure modes that the offline metric can hide.",
+  "editorial": {
+    "status": "summary"
+  }
+}

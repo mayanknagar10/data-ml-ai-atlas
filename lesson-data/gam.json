@@ -1,0 +1,37 @@
+{
+  "slug": "gam",
+  "title": "Generalized Additive Models (GAMs)",
+  "module": "regression-glm",
+  "priority": "high",
+  "roles": [
+    "ds",
+    "as"
+  ],
+  "interviewAnswer": "GAMs add flexible smooth functions of individual predictors while retaining an additive, interpretable structure. They are useful when relationships are nonlinear but black-box complexity is unnecessary.",
+  "keyPoints": [
+    "Additivity is interpretable but limits interactions unless added explicitly.",
+    "Smoothness must be controlled.",
+    "Works with generalized response families."
+  ],
+  "resources": [
+    "isl",
+    "stanford-stats202"
+  ],
+  "featured": false,
+  "why": "Generalized Additive Models (GAMs) appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
+  "intuition": "Additivity is interpretable but limits interactions unless added explicitly.",
+  "deepDive": "GAMs add flexible smooth functions of individual predictors while retaining an additive, interpretable structure. They are useful when relationships are nonlinear but black-box complexity is unnecessary. Smoothness must be controlled. Works with generalized response families. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
+  "workedExample": "Model conversion probability as smooth functions of price and tenure plus categorical device effects.",
+  "commonMistakes": [
+    "Applying the method without checking its assumptions or data-generating process.",
+    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+  ],
+  "followUps": [
+    "What assumptions does Generalized Additive Models (GAMs) make?",
+    "How would you validate or debug Generalized Additive Models (GAMs) in practice?"
+  ],
+  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "editorial": {
+    "status": "summary"
+  }
+}

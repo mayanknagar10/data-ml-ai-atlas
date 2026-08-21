@@ -1,0 +1,44 @@
+{
+  "slug": "perplexity",
+  "title": "Perplexity",
+  "module": "info-theory",
+  "priority": "medium",
+  "roles": [
+    "aie",
+    "mle",
+    "as",
+    "ds"
+  ],
+  "interviewAnswer": "Perplexity is the exponential of average negative log-likelihood. Lower is better on the same data/tokenization, but perplexity is not directly comparable across different tokenizers.",
+  "keyPoints": [
+    "Exponentiated NLL",
+    "Language modeling",
+    "Tokenizer dependence",
+    "Intrinsic metric"
+  ],
+  "resources": [
+    "stanford-cs224n",
+    "stanford-cs336",
+    "hf-llm",
+    "mit-info-theory"
+  ],
+  "featured": false,
+  "why": "Perplexity links sequence-model evaluation to information theory.",
+  "intuition": "It loosely represents the model’s effective uncertainty over next-token choices.",
+  "deepDive": "With natural logs, perplexity=exp(mean NLL). Tokenization changes sequence length and token probabilities, so cross-tokenizer comparisons can mislead.",
+  "math": "",
+  "code": "",
+  "commonMistakes": [
+    "Treating perplexity as human preference.",
+    "Comparing across tokenizers without care."
+  ],
+  "followUps": [
+    "Bits-per-character?",
+    "Why can lower perplexity fail downstream?"
+  ],
+  "production": "Use task, safety, latency and cost metrics alongside perplexity.",
+  "workedExample": "Two models using the same tokenizer can be compared on held-out perplexity; byte- and word-level perplexity should not be compared naively.",
+  "editorial": {
+    "status": "summary"
+  }
+}

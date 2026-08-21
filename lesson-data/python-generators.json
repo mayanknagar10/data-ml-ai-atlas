@@ -1,0 +1,175 @@
+{
+  "slug": "python-generators",
+  "title": "Iterators & Generators",
+  "module": "python",
+  "priority": "medium",
+  "roles": [
+    "mle",
+    "aie"
+  ],
+  "interviewAnswer": "An iterable can produce an iterator; an iterator owns traversal state and implements `__next__`, raising `StopIteration` when exhausted. A generator function is convenient syntax for building an iterator: calling it returns a generator object, and each `yield` suspends the frame until the next request. Generators support streaming and bounded-memory composition, but they are normally one-pass and lazy errors occur during consumption rather than construction.",
+  "keyPoints": [
+    "Iterable creates an iterator",
+    "Iterator owns state",
+    "yield suspends a frame",
+    "Laziness changes timing",
+    "One pass requires explicit ownership"
+  ],
+  "resources": [
+    "python-data-model",
+    "python-docs"
+  ],
+  "featured": false,
+  "why": "Data and ML systems repeatedly cross boundaries where eager materialization is too expensive: reading compressed records, decoding images, paginating APIs, generating training batches, or streaming model outputs. The iteration protocol provides a common pull-based interface for these cases. Correctness failures are subtle because construction can succeed while work later fails during consumption. A generator may be accidentally exhausted during logging, consumed twice by two downstream stages, or leave a file or cursor open when a caller stops early. Interviews probe iterables and generators because a strong answer connects language protocol, memory behavior, timing, and cleanup rather than saying only that `yield` saves memory.",
+  "intuition": "Think of an iterator as a paused computation with one public request: give me the next item. The consumer pulls; the producer runs only far enough to answer and then pauses. A list is a completed shipment, while a generator is a production line. The line can keep working with a small in-process inventory, but the factory and its inputs remain active until production finishes or closes. This model explains why a generator is lazy, why it is usually one-pass, why errors appear when `next` is called, and why early termination needs deliberate cleanup.",
+  "deepDive": "The full explanation is organized into the structured sections below.",
+  "workedExample": "Stream validated records into complete and final partial batches while keeping only one batch in memory.",
+  "code": "def batches(items, size):\n    batch=[]\n    for x in items:\n        batch.append(x)\n        if len(batch)==size:\n            yield batch; batch=[]\n    if batch: yield batch",
+  "commonMistakes": [
+    {
+      "mistake": "A generator stores no data and always uses constant memory.",
+      "correction": "Its suspended frame retains locals, and downstream operations may buffer or materialize. State is bounded only when every pipeline stage has a proven bound."
+    },
+    {
+      "mistake": "An iterable and iterator are the same thing.",
+      "correction": "An iterable can usually create fresh iterators; an iterator owns an active traversal and is normally single-use."
+    },
+    {
+      "mistake": "Code in a generator runs when the function is called.",
+      "correction": "Calling creates the generator object. Most body code, validation, I/O, and exceptions occur when consumption begins."
+    }
+  ],
+  "followUps": [
+    {
+      "question": "Why can `itertools.tee` consume substantial memory?",
+      "answer": "It must buffer values already consumed by the faster branch but not yet consumed by the slower branch. The buffer grows with the distance between consumers."
+    },
+    {
+      "question": "When is a list better than a generator?",
+      "answer": "Use a list when the result is small, must be traversed repeatedly, needs indexing or length, or when eager validation and resource release make the boundary clearer."
+    },
+    {
+      "question": "What does `yield from` add beyond a small loop?",
+      "answer": "It delegates the complete generator protocol, forwarding values, send/throw/close behavior, and capturing the subgenerator's return value."
+    }
+  ],
+  "production": "Specify replayability, ordering, resource ownership, cancellation, retry, and partial-result semantics for streaming interfaces. Keep database cursors, files, and HTTP responses open only across a clearly scoped consumption block. Bound every queue or accumulator, monitor processed counts and iterator age, and test early termination. For training pipelines, make sharding, shuffle buffers, random seeds, and epoch boundaries explicit; a Python generator alone does not provide distributed determinism or recovery.",
+  "editorial": {
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "Iterators and generators are Python's protocol for producing values one at a time. They let callers consume a sequence without requiring the producer to materialize every result first, which is valuable for large files, database pages, preprocessing pipelines, and streams. This chapter separates an iterable—the object that can create an iterator—from an iterator—the stateful object that returns the next value. It then explains how generator functions suspend at `yield`, how one-pass consumption changes correctness, how `yield from` delegates, and how cleanup and exceptions behave. Laziness is not automatically faster and it does not make an unbounded computation safe by itself: the surrounding pipeline can still buffer, retain references, repeat expensive work, or hold a resource open. You will learn to design a small iterator, batch a stream without losing records, test exhaustion and edge cases, and decide when a concrete list is clearer. The central skill is reasoning about ownership and timing: who advances the iterator, when work happens, how errors surface, and which resource remains live while iteration is suspended.",
+  "prerequisites": [
+    "python-data-structures"
+  ],
+  "learningObjectives": [
+    "Distinguish iterable, iterator, generator function, and generator object using the Python iteration protocol.",
+    "Trace suspension, resumption, exhaustion, exception propagation, and delegation through a generator pipeline.",
+    "Build and verify a bounded-memory batching iterator while identifying retention and cleanup failure modes."
+  ],
+  "deepSections": [
+    {
+      "id": "iteration-protocol",
+      "title": "The iterable and iterator protocols",
+      "body": "`iter(obj)` asks an iterable for an iterator, normally through `obj.__iter__()`. `next(iterator)` calls `iterator.__next__()`. A successful call returns one value; exhaustion is signaled by raising `StopIteration`, not by returning a special sentinel that might also be valid data. A container such as a list is iterable and can create independent iterator objects. An iterator is also iterable: its `__iter__` method conventionally returns itself, because it already represents one active traversal.\n\nThis distinction predicts behavior. Two calls to `iter(a_list)` can traverse independently. Two names referring to the same iterator share one cursor and divide the values between them. `for` loops, comprehensions, `sum`, `list`, `any`, `zip`, and many library functions consume this protocol. A custom iterator normally separates reusable configuration in the iterable from mutable cursor state in the iterator. Returning `self` from a reusable container's `__iter__` can accidentally make nested iteration interfere.\n\nAn iterator's contract includes exhaustion stability in practical code: after `StopIteration`, future `next` calls should remain exhausted. Consumers should not catch broad exceptions and reinterpret them as normal exhaustion. Empty input, partial consumption, and repeated `iter` calls are essential tests because they reveal whether ownership and state are designed correctly."
+    },
+    {
+      "id": "generator-state",
+      "title": "Generator functions, suspension, and control flow",
+      "body": "A function containing `yield` is a generator function. Calling it creates a generator object without executing the body to completion. The first `next` starts execution; reaching `yield value` returns that value and suspends the frame, preserving local variables, instruction position, and active exception-handling state. The next request resumes immediately after that yield. Falling off the end or executing `return` exhausts the generator.\n\nThis is state-machine behavior expressed with ordinary-looking code. A batching generator can retain one partial batch between calls. A tree traversal can retain its stack in suspended frames. The convenience does not eliminate state; it makes the state implicit in the frame. That can complicate debugging if the generator captures a large object, mutable external variable, open transaction, or lock. Inspect data flow and lifecycle exactly as you would for an explicit stateful object.\n\nGenerators can receive values with `send`, receive exceptions with `throw`, and be terminated with `close`, which raises `GeneratorExit` inside the frame. These features enable coroutines but are rarely needed for straightforward data iteration. Prefer a simple pull interface until bidirectional control is genuinely required. Never yield from a `finally` block during close. Keep cleanup in `finally` or, more clearly, place resource ownership outside the generator in a context manager."
+    },
+    {
+      "id": "delegation-composition",
+      "title": "Delegation and pipeline composition",
+      "body": "`yield from subiterator` delegates iteration rather than spelling `for item in subiterator: yield item`. It forwards values and also handles the full generator protocol, including sent values, thrown exceptions, close, and the subgenerator's return value. For simple flattening, the important benefit is that the code states delegation directly. Recursive traversals and staged parsers often become clearer when each function owns one layer and delegates the next.\n\nGenerator expressions compose naturally: `valid = (parse(line) for line in lines if line.strip())`. Each stage is lazy, so backpressure is implicit in a synchronous pull pipeline: downstream work requests the next item only when ready. That does not provide distributed-stream backpressure, parallelism, checkpointing, or replay. A slow operation still blocks the caller. An async iterator extends the idea for asynchronous waits, but it is a distinct protocol using `__aiter__`, `__anext__`, and `async for`.\n\nComposition can hide repeated work. Iterating the same generator twice does not recompute; the second pass sees only what remains. Recreating a generator expression may recompute expensive parsing. `itertools.tee` supplies independent-looking iterators by buffering values needed by the slower consumer, so memory can grow with their distance. State whether the source is replayable, regenerate it deliberately, or materialize at a boundary when multiple passes are part of the algorithm."
+    },
+    {
+      "id": "memory-cleanup",
+      "title": "Memory, resources, and failure timing",
+      "body": "A generator reduces peak memory only when every stage keeps bounded state. Calling `list(generator)` materializes the output. Sorting generally needs all values. Grouping an unbounded stream in a dictionary still grows without bound. A closure or suspended local can retain a large array even if only small values are yielded. Measure allocations across the complete pipeline rather than comparing one generator object with one list object.\n\nLaziness moves computation and failures to iteration time. Validation performed inside the generator does not run when the generator is created. If a service returns a generator and then closes the database session, consumption later fails. If a caller reads only the first few values, code after the last reached yield may never run unless the generator is explicitly closed or finalized. Deterministic resource cleanup belongs in a `with` statement whose scope covers consumption, or in an object with an explicit close lifecycle.\n\nGenerators are useful across API boundaries only when the consumption contract is clear. Document whether the iterator is single-use, whether order is stable, what exceptions can occur mid-stream, whether partial results are meaningful, and who closes it. Add cancellation and timeout behavior for network-backed sources. For retryable pagination, distinguish retrying one page from restarting the entire one-pass traversal, because replay can duplicate already emitted records."
+    }
+  ],
+  "math": "If a source contains n items and batching retains at most b items, the batching layer uses O(b) auxiliary space rather than O(n). Total processing remains O(n) plus the work performed per item. This bound fails when a downstream stage materializes, sorts, tees with a lagging consumer, or accumulates unbounded keyed state.",
+  "workedExamples": [
+    {
+      "title": "Batch a one-pass event source without losing the tail",
+      "setup": "An API client yields events page by page. Training accepts batches of at most 128 events, and the final incomplete batch must be processed exactly once.",
+      "walkthrough": "The batching generator owns one list. It appends each validated event and yields the list when its size reaches the limit, then replaces the list rather than mutating the yielded object. After source exhaustion it yields a non-empty tail. Tests flatten the batches and compare them with the input, assert every batch size is within the bound, cover empty input, and demonstrate that the returned generator is exhausted after one pass. If the API can fail between pages, the source layer owns retries and resume tokens; the batching layer should not silently replay previously emitted events.",
+      "conclusion": "The design has bounded batching state and explicit one-pass semantics, but end-to-end recovery still depends on checkpointing at the source or sink boundary."
+    }
+  ],
+  "exercises": [
+    {
+      "difficulty": "recall",
+      "prompt": "Explain why `iter([1, 2]) is iter([1, 2])` is not a useful independence test and state what should be tested instead.",
+      "solution": "Those are two different list objects. Store one list, call `iter` twice, and confirm the two iterator objects advance independently while yielding equal values."
+    },
+    {
+      "difficulty": "application",
+      "prompt": "Write the invariants for a batching generator with maximum size b.",
+      "solution": "Every input appears once and in order; every emitted batch has 1 through b items; empty input emits nothing; the concatenated batches equal the input; auxiliary batch state never exceeds b."
+    },
+    {
+      "difficulty": "diagnosis",
+      "prompt": "A generator reading a file works in one function but fails with 'I/O operation on closed file' after being returned. Why?",
+      "solution": "The function returned a lazy computation from inside a `with open(...)` block. The file closed before the caller consumed it. Consume within the context or expose a context-managed iterator whose lifetime includes iteration."
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "python-data-model",
+      "contribution": "Defines iterator, generator, suspension, exhaustion, and context-manager protocol behavior used in the formal explanation."
+    },
+    {
+      "resource": "python-docs",
+      "contribution": "Provides canonical tutorial examples and standard-library composition patterns, including itertools behavior."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "flow",
+      "title": "Pull-based generator lifecycle",
+      "items": [
+        "Create",
+        "Request next",
+        "Run to yield",
+        "Suspend frame",
+        "Resume or exhaust"
+      ],
+      "caption": "A generator runs only far enough to produce the next value, retaining frame state between requests.",
+      "afterSection": "generator-state"
+    },
+    {
+      "type": "compare",
+      "title": "Eager and lazy result boundaries",
+      "left": {
+        "title": "List",
+        "items": [
+          "Work happens now",
+          "Reusable traversal",
+          "Length and indexing",
+          "Retains all results"
+        ]
+      },
+      "right": {
+        "title": "Generator",
+        "items": [
+          "Work happens on demand",
+          "Normally one pass",
+          "Errors can be delayed",
+          "Retains suspended state"
+        ]
+      },
+      "caption": "Laziness changes timing and ownership; it is not an unconditional performance guarantee.",
+      "afterSection": "memory-cleanup"
+    }
+  ],
+  "lab": {
+    "goal": "Build a bounded batching generator, use itertools for composition, and verify ordering, tail handling, and one-pass exhaustion.",
+    "language": "python",
+    "buildIt": "def batches(items, size):\n    if size <= 0:\n        raise ValueError('size must be positive')\n    batch = []\n    for item in items:\n        batch.append(item)\n        if len(batch) == size:\n            yield batch\n            batch = []\n    if batch:\n        yield batch",
+    "useIt": "from itertools import chain, islice\nsource = (n * n for n in range(10))\nfirst_three = list(islice(source, 3))\nrest = list(source)\nrebuilt = list(chain(first_three, rest))",
+    "verifyIt": "data = list(range(10))\nout = list(batches(iter(data), 3))\nassert [len(x) for x in out] == [3, 3, 3, 1]\nassert [x for batch in out for x in batch] == data\nassert list(batches([], 3)) == []\ng = batches(data, 4)\nlist(g)\nassert list(g) == []",
+    "shipIt": "Wrap network or database iteration with explicit ownership, timeouts, resume tokens, bounded buffers, processed-count metrics, and tests for early cancellation and partial failure."
+  }
+}

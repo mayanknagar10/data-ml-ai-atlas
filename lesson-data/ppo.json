@@ -1,0 +1,56 @@
+{
+  "slug": "ppo",
+  "title": "PPO & Stable Policy Optimization",
+  "module": "rl",
+  "priority": "high",
+  "roles": [
+    "aie",
+    "mle",
+    "as"
+  ],
+  "interviewAnswer": "PPO is an on-policy actor-critic algorithm that limits how aggressively the policy changes. It uses a probability-ratio objective with clipping, so updates that move too far from the data-collecting policy stop receiving extra benefit. That usually makes policy optimization more stable and practical.",
+  "keyPoints": [
+    "on-policy",
+    "probability ratio",
+    "clipped surrogate objective",
+    "KL / entropy monitoring"
+  ],
+  "resources": [
+    "berkeley-cs285",
+    "hf-deep-rl",
+    "openai-spinning-up"
+  ],
+  "featured": false,
+  "why": "PPO is a common reference point in robotics/control and historically important in RLHF pipelines.",
+  "intuition": "Improve the policy, but put a speed limit on each update so one noisy batch cannot completely rewrite behavior.",
+  "deepDive": "PPO forms r_t(θ)=πθ(a|s)/π_old(a|s), multiplies it by an advantage estimate, and clips the ratio to [1−ε,1+ε]. The minimum of clipped and unclipped objectives discourages overly large beneficial-looking updates. Implementations also use value loss, entropy bonuses, minibatch epochs and often KL-based early stopping.",
+  "math": "L_clip=E[min(r_t A_t, clip(r_t,1−ε,1+ε)A_t)].",
+  "workedExample": "With ε=.2, an action probability ratio of 1.6 is clipped to 1.2 for positive advantage, so the optimizer cannot keep claiming additional objective gain from that extreme change.",
+  "commonMistakes": [
+    "Calling PPO off-policy because it reuses a rollout for several minibatch epochs.",
+    "Thinking clipping mathematically guarantees a hard KL bound."
+  ],
+  "followUps": [
+    "Why is PPO on-policy?",
+    "What is the role of entropy bonus?",
+    "PPO vs DPO in LLM alignment?"
+  ],
+  "production": "Track KL divergence, clipping fraction, entropy, value fit and reward hacking; stable optimization does not guarantee a good reward specification.",
+  "visual": {
+    "type": "flow",
+    "title": "PPO update",
+    "items": [
+      "Collect rollout",
+      "Estimate advantages",
+      "Compute policy ratio",
+      "Clip large policy changes",
+      "Optimize surrogate objective"
+    ],
+    "caption": "PPO limits destructive policy updates with a clipped objective while remaining relatively simple to implement.",
+    "accent": 2,
+    "orientation": "horizontal"
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

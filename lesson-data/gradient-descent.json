@@ -1,0 +1,100 @@
+{
+  "slug": "gradient-descent",
+  "title": "Gradient Descent & Learning Rate",
+  "module": "math",
+  "priority": "very-high",
+  "roles": [
+    "all",
+    "as"
+  ],
+  "interviewAnswer": "Gradient descent updates parameters in the negative-gradient direction. Too large a learning rate can overshoot or diverge; too small a rate makes optimization painfully slow.",
+  "keyPoints": [
+    "Batch/SGD/mini-batch",
+    "Learning rate",
+    "Momentum",
+    "Schedulers"
+  ],
+  "resources": [
+    "stanford-cs229",
+    "mit-6s191",
+    "statquest",
+    "mit-linear-algebra",
+    "d2l",
+    "google-mlcc-exercises"
+  ],
+  "featured": true,
+  "why": "Learning rate and optimization behavior are among the most common practical ML/DL interview topics because they directly determine whether training converges.",
+  "intuition": "Gradient descent repeatedly asks: which local direction increases the loss fastest? Then it takes a step in the opposite direction. The learning rate controls how large that step is.",
+  "deepDive": "Batch gradient descent uses all samples per update; stochastic/mini-batch methods use noisy gradient estimates that are cheaper and can help exploration. A learning rate that is too high can oscillate or diverge; too low wastes compute and can stall. Schedules, warmup, momentum and adaptive optimizers modify the effective step over time. Non-convex deep networks do not guarantee reaching a global minimum.",
+  "math": "θ_{t+1}=θ_t - η_t g_t, where g_t estimates ∇L(θ_t)",
+  "workedExample": "If training loss jumps wildly and becomes NaN after a few steps, first lower the learning rate and inspect gradient norms before changing the architecture.",
+  "code": "optimizer=torch.optim.SGD(model.parameters(), lr=1e-2, momentum=.9)\nfor x,y in loader:\n    optimizer.zero_grad(); loss=criterion(model(x),y)\n    loss.backward(); optimizer.step()",
+  "commonMistakes": [
+    "Assuming a smaller learning rate is always safer or better.",
+    "Changing many hyperparameters before checking the learning-rate curve.",
+    "Forgetting optimizer.zero_grad() in PyTorch training loops."
+  ],
+  "followUps": [
+    "What happens if learning rate is too high?",
+    "Why use mini-batches?",
+    "What does momentum do?",
+    "Why use learning-rate warmup?"
+  ],
+  "production": "Training pipelines should log learning rate, loss and gradient/parameter health with checkpoints so failed runs are diagnosable and resumable.",
+  "lab": {
+    "goal": "See how learning rate changes convergence on a simple quadratic.",
+    "language": "python",
+    "buildIt": "def optimize(lr,steps=30):\n    x=8.0; hist=[]\n    for _ in range(steps):\n        grad=2*(x-3)          # d/dx (x-3)^2\n        x-=lr*grad; hist.append(x)\n    return x,hist\nfor lr in [0.05,0.4,1.1]:\n    print(lr,optimize(lr)[0])\n",
+    "useIt": "import torch\nx=torch.tensor(8.0,requires_grad=True)\nopt=torch.optim.SGD([x],lr=.1)\nfor _ in range(30):\n    opt.zero_grad(); loss=(x-3)**2; loss.backward(); opt.step()\nprint(x.item())\n",
+    "verifyIt": "assert abs(optimize(.1,60)[0]-3)<1e-4\n"
+  },
+  "visual": {
+    "type": "curve",
+    "title": "Optimization trajectory",
+    "series": [
+      {
+        "label": "loss",
+        "points": [
+          [
+            0,
+            0.92
+          ],
+          [
+            0.12,
+            0.7
+          ],
+          [
+            0.25,
+            0.54
+          ],
+          [
+            0.4,
+            0.4
+          ],
+          [
+            0.55,
+            0.31
+          ],
+          [
+            0.72,
+            0.24
+          ],
+          [
+            0.88,
+            0.21
+          ],
+          [
+            1,
+            0.2
+          ]
+        ]
+      }
+    ],
+    "caption": "A good learning rate reduces loss steadily; too large can oscillate or diverge.",
+    "xLabel": "training step",
+    "yLabel": "loss"
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

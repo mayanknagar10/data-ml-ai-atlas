@@ -1,0 +1,40 @@
+{
+  "slug": "association-rules",
+  "title": "Frequent Itemsets & Association Rules",
+  "module": "data-mining",
+  "priority": "medium",
+  "roles": [
+    "ds",
+    "de",
+    "as"
+  ],
+  "interviewAnswer": "Association-rule mining finds frequent item combinations and rules A→B. Support measures frequency, confidence estimates P(B|A), and lift compares the rule with B’s baseline rate.",
+  "keyPoints": [
+    "Support",
+    "Confidence",
+    "Lift",
+    "Apriori pruning"
+  ],
+  "resources": [
+    "stanford-cs246"
+  ],
+  "featured": false,
+  "why": "This is a classic data-mining pattern for market baskets and co-occurrence.",
+  "intuition": "Bread and butter appearing together is only interesting if the co-occurrence is frequent and stronger than what item popularity alone predicts.",
+  "deepDive": "Apriori uses downward closure: if an itemset is frequent, its subsets must be frequent, which prunes the exponential search.",
+  "math": "",
+  "code": "",
+  "commonMistakes": [
+    "Using confidence without lift.",
+    "Interpreting association as causation."
+  ],
+  "followUps": [
+    "Apriori vs FP-Growth?",
+    "Why is support anti-monotonic?"
+  ],
+  "production": "Control combinatorial explosion and validate discovered rules with domain context.",
+  "workedExample": "A rule can have high confidence because B is common; lift reveals whether A truly adds association.",
+  "editorial": {
+    "status": "summary"
+  }
+}

@@ -1,0 +1,58 @@
+{
+  "slug": "design-fraud",
+  "title": "Design a Rare-event Detection System",
+  "module": "system-design",
+  "priority": "high",
+  "roles": [
+    "ds",
+    "mle"
+  ],
+  "interviewAnswer": "Clarify the cost of false negatives/positives, label delay, class imbalance and response-time requirement. Optimize the operating threshold around business risk and monitor drift plus delayed ground truth.",
+  "keyPoints": [
+    "Rare positives",
+    "PR metrics",
+    "Threshold",
+    "Delayed labels"
+  ],
+  "resources": [
+    "stanford-cs329s",
+    "made-with-ml",
+    "fsdl"
+  ],
+  "featured": false,
+  "why": "Rare-event system design is a classic interview problem because metrics, latency, class imbalance and feedback delay all matter.",
+  "intuition": "Score each event quickly, optimize for the cost of false negatives/positives, and combine model predictions with rules/manual review where necessary.",
+  "deepDive": "Define decision latency and fraud label delay. Build point-in-time features from transaction/user/device history. Train with representative historical splits and class-aware loss/sampling. Calibrate scores and select thresholds from financial/review-capacity costs. Online path computes/fetches low-latency features, scores and triggers allow/review/block decisions. Labels arrive later from chargebacks/manual review, enabling monitoring/retraining.",
+  "workedExample": "A threshold sends top-risk 0.5% transactions to review while an extreme-risk threshold blocks automatically; evaluate captured fraud value and customer false declines, not accuracy.",
+  "commonMistakes": [
+    "Optimizing accuracy on 0.1% fraud.",
+    "Using future chargeback information in training features.",
+    "Ignoring adversarial adaptation/concept drift."
+  ],
+  "followUps": [
+    "Which metrics?",
+    "How choose threshold?",
+    "How handle delayed labels?",
+    "What if model service is down?"
+  ],
+  "production": "Use low-latency feature stores/caches, rules fallback, shadow/canary rollout, drift/adversarial monitoring and human-review feedback loops.",
+  "visual": {
+    "type": "flow",
+    "title": "Fraud detection system",
+    "items": [
+      "Events",
+      "Streaming features",
+      "Low-latency model",
+      "Risk threshold",
+      "Allow / review / block",
+      "Delayed labels",
+      "Retraining"
+    ],
+    "caption": "Fraud systems combine low latency with asymmetric error costs, human review and delayed ground truth.",
+    "accent": 3,
+    "orientation": "horizontal"
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

@@ -1,0 +1,58 @@
+{
+  "slug": "quantization-inference",
+  "title": "Quantization for Inference",
+  "module": "performance",
+  "priority": "very-high",
+  "roles": [
+    "mle",
+    "aie"
+  ],
+  "interviewAnswer": "Quantization represents weights and sometimes activations with fewer bits—such as INT8 or 4-bit—to reduce memory, bandwidth and often latency. Post-training quantization is simpler; quantization-aware training can preserve quality when aggressive quantization hurts accuracy.",
+  "keyPoints": [
+    "PTQ",
+    "QAT",
+    "weight-only vs activation",
+    "calibration"
+  ],
+  "resources": [
+    "hf-inference-opt",
+    "pytorch-performance"
+  ],
+  "featured": false,
+  "why": "Large models are often memory-bandwidth bound, so fewer bits can be the difference between one GPU and several GPUs.",
+  "intuition": "Instead of storing every parameter as a 32-bit float, approximate values using a smaller discrete set plus scale/zero-point information.",
+  "deepDive": "Symmetric/asymmetric schemes trade implementation simplicity and range. Calibration estimates activation ranges for PTQ. LLM weight-only quantization can dramatically reduce memory, but kernel/hardware support determines actual speedup.",
+  "workedExample": "A 7B-parameter model is roughly 28 GB just for FP32 weights, ~14 GB at FP16, and around 3.5–7 GB for 4–8-bit weights before runtime overhead.",
+  "commonMistakes": [
+    "Assuming smaller model files guarantee faster inference.",
+    "Reporting quantization without rechecking task quality and long-tail failures."
+  ],
+  "followUps": [
+    "PTQ vs QAT?",
+    "Why might INT8 be slower on unsupported hardware?"
+  ],
+  "production": "Choose quantization by measured memory/latency/quality on target hardware; keep a higher-precision fallback for critical workloads.",
+  "lab": {
+    "goal": "Compare dynamic INT8 quantization with the FP32 module on CPU.",
+    "language": "python",
+    "buildIt": "import torch\nm=torch.nn.Sequential(torch.nn.Linear(128,256),torch.nn.ReLU(),torch.nn.Linear(256,10)).eval()\nx=torch.randn(32,128); y_fp=m(x)\nq=torch.ao.quantization.quantize_dynamic(m,{torch.nn.Linear},dtype=torch.qint8)\ny_q=q(x); print((y_fp-y_q).abs().mean().item())\n",
+    "useIt": "import io\nb1=io.BytesIO(); b2=io.BytesIO(); torch.save(m.state_dict(),b1); torch.save(q.state_dict(),b2)\nprint('bytes fp32/int8',len(b1.getvalue()),len(b2.getvalue()))\n",
+    "verifyIt": "assert y_q.shape==y_fp.shape\nassert torch.isfinite(y_q).all()\n"
+  },
+  "visual": {
+    "type": "flow",
+    "title": "Post-training quantization",
+    "items": [
+      "FP32 weights/activations",
+      "Calibrate / choose scales",
+      "INT8 or lower precision",
+      "Faster/smaller inference"
+    ],
+    "caption": "Quantization reduces memory/bandwidth and can accelerate inference at the cost of possible accuracy degradation.",
+    "accent": 2,
+    "orientation": "horizontal"
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

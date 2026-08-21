@@ -1,0 +1,41 @@
+{
+  "slug": "text-classification-finetuning",
+  "title": "Text Classification & Encoder Fine-tuning",
+  "module": "nlp",
+  "priority": "high",
+  "roles": [
+    "ds",
+    "mle",
+    "aie"
+  ],
+  "interviewAnswer": "A pretrained text encoder can be fine-tuned with a classification head or used as a frozen embedding extractor. Fine-tuning adapts more strongly but costs more and can overfit small data.",
+  "keyPoints": [
+    "Encoder representation",
+    "Classification head",
+    "Frozen vs fine-tuned",
+    "Metrics"
+  ],
+  "resources": [
+    "stanford-cs224n",
+    "hf-llm"
+  ],
+  "featured": false,
+  "why": "Text classification is a common practical NLP task and a strong baseline before generative solutions.",
+  "intuition": "Reuse broad language representations instead of learning linguistic features from scratch.",
+  "deepDive": "A classifier consumes a pooled/token representation; training updates only the head or the full encoder with a smaller learning rate.",
+  "math": "",
+  "code": "",
+  "commonMistakes": [
+    "Using a generative LLM for every classification problem.",
+    "Ignoring class imbalance/calibration."
+  ],
+  "followUps": [
+    "Fine-tune vs embeddings + linear model?",
+    "Which metric for imbalance?"
+  ],
+  "production": "Benchmark simple models for latency/cost and use batch/quantized inference where appropriate.",
+  "workedExample": "Route support tickets into categories using a fine-tuned encoder.",
+  "editorial": {
+    "status": "summary"
+  }
+}

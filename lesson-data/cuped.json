@@ -1,0 +1,36 @@
+{
+  "slug": "cuped",
+  "title": "Variance Reduction & CUPED",
+  "module": "experimentation",
+  "priority": "medium",
+  "roles": [
+    "ds",
+    "da"
+  ],
+  "interviewAnswer": "CUPED uses pre-experiment covariates correlated with the outcome to reduce variance without changing the treatment effect expectation under valid conditions, increasing experiment sensitivity.",
+  "keyPoints": [
+    "Use pre-treatment covariates.",
+    "Correlation with outcome determines gain.",
+    "Avoid leakage from treatment-period features."
+  ],
+  "resources": [
+    "microsoft-experimentation"
+  ],
+  "featured": false,
+  "why": "Variance Reduction & CUPED appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
+  "intuition": "Use pre-treatment covariates.",
+  "deepDive": "CUPED uses pre-experiment covariates correlated with the outcome to reduce variance without changing the treatment effect expectation under valid conditions, increasing experiment sensitivity. Correlation with outcome determines gain. Avoid leakage from treatment-period features. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
+  "workedExample": "Adjust spend outcome using pre-experiment spend to detect smaller treatment lifts.",
+  "commonMistakes": [
+    "Applying the method without checking its assumptions or data-generating process.",
+    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+  ],
+  "followUps": [
+    "What assumptions does Variance Reduction & CUPED make?",
+    "How would you validate or debug Variance Reduction & CUPED in practice?"
+  ],
+  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "editorial": {
+    "status": "summary"
+  }
+}

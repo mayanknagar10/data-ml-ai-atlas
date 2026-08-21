@@ -1,0 +1,36 @@
+{
+  "slug": "propensity-scores",
+  "title": "Propensity Scores, Matching & Weighting",
+  "module": "causal",
+  "priority": "high",
+  "roles": [
+    "ds",
+    "as"
+  ],
+  "interviewAnswer": "The propensity score is the probability of treatment given observed covariates. Matching or inverse-probability weighting can balance observed confounders, but cannot repair unmeasured confounding or poor overlap.",
+  "keyPoints": [
+    "Check common support/positivity.",
+    "Assess covariate balance after adjustment.",
+    "Extreme weights increase variance."
+  ],
+  "resources": [
+    "causal-mixtape"
+  ],
+  "featured": false,
+  "why": "Propensity Scores, Matching & Weighting appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
+  "intuition": "Check common support/positivity.",
+  "deepDive": "The propensity score is the probability of treatment given observed covariates. Matching or inverse-probability weighting can balance observed confounders, but cannot repair unmeasured confounding or poor overlap. Assess covariate balance after adjustment. Extreme weights increase variance. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
+  "workedExample": "Weight observational treatment records so measured pre-treatment characteristics resemble a randomized comparison.",
+  "commonMistakes": [
+    "Applying the method without checking its assumptions or data-generating process.",
+    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+  ],
+  "followUps": [
+    "What assumptions does Propensity Scores, Matching & Weighting make?",
+    "How would you validate or debug Propensity Scores, Matching & Weighting in practice?"
+  ],
+  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "editorial": {
+    "status": "summary"
+  }
+}

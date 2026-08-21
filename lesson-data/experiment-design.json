@@ -1,0 +1,49 @@
+{
+  "slug": "experiment-design",
+  "title": "Randomized Experiment Design",
+  "module": "experimentation",
+  "priority": "very-high",
+  "roles": [
+    "ds",
+    "da"
+  ],
+  "interviewAnswer": "A trustworthy experiment starts with a unit of randomization, eligibility criteria, treatment assignment, primary metric, guardrails and a pre-specified analysis plan. Randomization protects causal interpretation when implementation is correct.",
+  "keyPoints": [
+    "Choose user/session/cluster randomization deliberately.",
+    "Define exposure and sample ratio checks.",
+    "Primary metrics and guardrails should be decided before reading results."
+  ],
+  "resources": [
+    "microsoft-experimentation",
+    "stanford-stats60"
+  ],
+  "featured": true,
+  "why": "Randomized Experiment Design appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
+  "intuition": "Choose user/session/cluster randomization deliberately.",
+  "deepDive": "A trustworthy experiment starts with a unit of randomization, eligibility criteria, treatment assignment, primary metric, guardrails and a pre-specified analysis plan. Randomization protects causal interpretation when implementation is correct. Define exposure and sample ratio checks. Primary metrics and guardrails should be decided before reading results. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
+  "workedExample": "Randomize users to a new recommendation algorithm while monitoring conversion plus latency and complaint-rate guardrails.",
+  "commonMistakes": [
+    "Applying the method without checking its assumptions or data-generating process.",
+    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+  ],
+  "followUps": [
+    "What assumptions does Randomized Experiment Design make?",
+    "How would you validate or debug Randomized Experiment Design in practice?"
+  ],
+  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "visual": {
+    "type": "layers",
+    "title": "Experiment design checklist",
+    "items": [
+      "Unit of randomization",
+      "Primary metric",
+      "Power / sample size",
+      "Guardrails",
+      "Analysis plan"
+    ],
+    "caption": "Good experiments are designed around the decision, not around whichever metric looks best afterward."
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

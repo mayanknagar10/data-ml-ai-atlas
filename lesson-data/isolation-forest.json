@@ -1,0 +1,89 @@
+{
+  "slug": "isolation-forest",
+  "title": "Isolation Forest",
+  "module": "anomaly",
+  "priority": "high",
+  "roles": [
+    "ds"
+  ],
+  "interviewAnswer": "Isolation Forest isolates observations through random feature splits; points requiring fewer splits are easier to isolate and receive more anomalous scores. It scales well for tabular unsupervised anomaly detection.",
+  "keyPoints": [
+    "No distance metric required.",
+    "Contamination threshold maps scores to alerts.",
+    "Feature scaling is less central than distance-based methods but feature quality still matters."
+  ],
+  "resources": [
+    "sklearn-outlier"
+  ],
+  "featured": false,
+  "why": "Isolation Forest appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
+  "intuition": "No distance metric required.",
+  "deepDive": "Isolation Forest isolates observations through random feature splits; points requiring fewer splits are easier to isolate and receive more anomalous scores. It scales well for tabular unsupervised anomaly detection. Contamination threshold maps scores to alerts. Feature scaling is less central than distance-based methods but feature quality still matters. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
+  "workedExample": "Detect unusual transactions from amounts, timing and behavioral features without anomaly labels.",
+  "commonMistakes": [
+    "Applying the method without checking its assumptions or data-generating process.",
+    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+  ],
+  "followUps": [
+    "What assumptions does Isolation Forest make?",
+    "How would you validate or debug Isolation Forest in practice?"
+  ],
+  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "lab": {
+    "goal": "Detect unusual points without labels using Isolation Forest.",
+    "language": "python",
+    "buildIt": "import numpy as np\nrng=np.random.default_rng(0)\nnormal=rng.normal(0,1,(500,2)); out=rng.normal(7,.3,(12,2)); X=np.vstack([normal,out])\n",
+    "useIt": "from sklearn.ensemble import IsolationForest\nm=IsolationForest(contamination=.03,random_state=0).fit(X)\nscore=-m.score_samples(X)\nidx=np.argsort(-score)[:15]\nprint(idx)\n",
+    "verifyIt": "assert (idx>=500).sum() >= 8\n",
+    "shipIt": "Treat anomaly scores as triage, not truth; tune alert thresholds to review capacity and monitor alert-rate/base-rate drift."
+  },
+  "visual": {
+    "type": "network",
+    "title": "Isolation Forest intuition",
+    "nodes": [
+      {
+        "id": "r",
+        "label": "Random split",
+        "x": 0.5,
+        "y": 0.1
+      },
+      {
+        "id": "l",
+        "label": "Dense region",
+        "x": 0.28,
+        "y": 0.48
+      },
+      {
+        "id": "o",
+        "label": "Outlier",
+        "x": 0.77,
+        "y": 0.48
+      },
+      {
+        "id": "ll",
+        "label": "many splits",
+        "x": 0.28,
+        "y": 0.82
+      }
+    ],
+    "edges": [
+      [
+        "r",
+        "l"
+      ],
+      [
+        "r",
+        "o"
+      ],
+      [
+        "l",
+        "ll"
+      ]
+    ],
+    "caption": "Anomalies tend to be isolated in fewer random partitioning steps than dense normal points.",
+    "directed": true
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

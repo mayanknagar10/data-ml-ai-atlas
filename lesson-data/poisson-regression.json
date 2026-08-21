@@ -1,0 +1,36 @@
+{
+  "slug": "poisson-regression",
+  "title": "Poisson & Count Regression",
+  "module": "regression-glm",
+  "priority": "high",
+  "roles": [
+    "ds",
+    "as"
+  ],
+  "interviewAnswer": "Poisson regression models count outcomes with a log link and assumes the conditional variance equals the conditional mean. Overdispersion often motivates negative-binomial or quasi-likelihood alternatives.",
+  "keyPoints": [
+    "Use exposure/offset for rates.",
+    "Check overdispersion.",
+    "Predictions are nonnegative through log link."
+  ],
+  "resources": [
+    "stanford-stats200"
+  ],
+  "featured": false,
+  "why": "Poisson & Count Regression appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
+  "intuition": "Use exposure/offset for rates.",
+  "deepDive": "Poisson regression models count outcomes with a log link and assumes the conditional variance equals the conditional mean. Overdispersion often motivates negative-binomial or quasi-likelihood alternatives. Check overdispersion. Predictions are nonnegative through log link. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
+  "workedExample": "Model support-ticket counts per customer-month with log(exposure time) as an offset.",
+  "commonMistakes": [
+    "Applying the method without checking its assumptions or data-generating process.",
+    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+  ],
+  "followUps": [
+    "What assumptions does Poisson & Count Regression make?",
+    "How would you validate or debug Poisson & Count Regression in practice?"
+  ],
+  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "editorial": {
+    "status": "summary"
+  }
+}

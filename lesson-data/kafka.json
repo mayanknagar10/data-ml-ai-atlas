@@ -1,0 +1,57 @@
+{
+  "slug": "kafka",
+  "title": "Kafka Fundamentals",
+  "module": "data-eng",
+  "priority": "very-high",
+  "roles": [
+    "de",
+    "mle"
+  ],
+  "interviewAnswer": "Kafka is a distributed event log. Producers write records to partitioned topics; consumers read offsets, often in consumer groups for parallelism and fault tolerance.",
+  "keyPoints": [
+    "Broker/topic/partition",
+    "Offsets",
+    "Consumer groups",
+    "Ordering per partition"
+  ],
+  "resources": [
+    "confluent-kafka",
+    "flink",
+    "spark"
+  ],
+  "featured": true,
+  "why": "Kafka appears in data-engineering and ML-platform interviews because it cleanly separates event producers from many downstream consumers.",
+  "intuition": "A topic is split into partitions. Producers append records; consumers read records by offset. Consumer groups divide partitions among members so processing can scale horizontally.",
+  "deepDive": "Kafka is a durable distributed log rather than a simple message queue. Ordering is guaranteed within a partition, not across an entire multi-partition topic. Delivery semantics depend on producer, broker and consumer processing/commit behavior.",
+  "math": "Key relationship: one partition is actively consumed by at most one consumer in the same consumer group at a time.",
+  "code": "# Conceptual Python producer/consumer\n# producer.send('radiation-events', value=event)\n# consumer = Consumer({'group.id': 'flink-job', ...})\n# consumer.subscribe(['radiation-events'])",
+  "commonMistakes": [
+    "Saying Kafka itself performs arbitrary stream analytics—that is typically handled by stream processors/consumers.",
+    "Assuming global ordering across partitions.",
+    "Confusing consumer groups with broadcast to independent applications."
+  ],
+  "followUps": [
+    "Why partitions?",
+    "What happens when a consumer fails?",
+    "At-least-once vs exactly-once?",
+    "Kafka vs RabbitMQ?"
+  ],
+  "production": "Monitor lag, throughput, partition balance, broker health and schema compatibility. Choose partition keys carefully because they define ordering and load distribution.",
+  "workedExample": "In a radiation-monitoring pipeline, a producer publishes measurements to Kafka while a Flink job consumes and processes them independently.",
+  "visual": {
+    "type": "flow",
+    "title": "Kafka data flow",
+    "items": [
+      "Producer",
+      "Topic partitions",
+      "Consumer group",
+      "Downstream processor"
+    ],
+    "caption": "Kafka decouples producers and consumers through durable ordered partition logs.",
+    "accent": 1,
+    "orientation": "horizontal"
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

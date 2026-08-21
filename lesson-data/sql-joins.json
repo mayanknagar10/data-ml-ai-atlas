@@ -1,0 +1,62 @@
+{
+  "slug": "sql-joins",
+  "title": "SQL Joins",
+  "module": "sql",
+  "priority": "very-high",
+  "roles": [
+    "ds",
+    "de",
+    "mle",
+    "da"
+  ],
+  "interviewAnswer": "INNER JOIN returns matching rows; LEFT JOIN keeps every row from the left side and fills unmatched right-side columns with NULL; FULL OUTER JOIN keeps rows from both sides. Choose based on what records must survive the join.",
+  "keyPoints": [
+    "Join keys",
+    "Duplicate amplification",
+    "NULL behavior",
+    "Many-to-many joins"
+  ],
+  "resources": [
+    "postgres"
+  ],
+  "featured": true,
+  "why": "Joins test whether you understand relational grain, keys and duplicate amplification—not just SQL syntax. They are central to feature building, analytics and ETL.",
+  "intuition": "A join decides which rows survive when two tables are connected by a key. Before writing SQL, state the grain of each table and whether the key is one-to-one, one-to-many or many-to-many.",
+  "deepDive": "INNER JOIN keeps only matching rows. LEFT JOIN preserves every left-side row and fills unmatched right columns with NULL. FULL OUTER JOIN preserves unmatched rows from both sides. A many-to-many join multiplies rows, which is often the source of silent metric inflation. Join predicates belong in ON when they define matching logic; filters in WHERE can accidentally turn a LEFT JOIN into INNER-like behavior by removing NULL matches.",
+  "workedExample": "customers has one row per customer while orders has many rows per customer. Joining them creates one row per order, not one row per customer. If you later average a customer-level feature without re-aggregating, heavy buyers are overrepresented.",
+  "code": "SELECT c.customer_id, o.order_id, o.amount\nFROM customers c\nLEFT JOIN orders o\n  ON c.customer_id = o.customer_id;",
+  "commonMistakes": [
+    "Ignoring table grain and creating duplicate amplification.",
+    "Filtering right-table columns in WHERE after a LEFT JOIN and unintentionally dropping unmatched rows.",
+    "Joining on non-unique or dirty keys without checking cardinality."
+  ],
+  "followUps": [
+    "INNER vs LEFT JOIN?",
+    "What happens in a many-to-many join?",
+    "How do NULLs behave in joins?",
+    "How would you detect duplicate amplification?"
+  ],
+  "production": "In feature pipelines, validate join cardinality, row counts and uniqueness before/after joins. Point-in-time joins are essential to prevent temporal leakage.",
+  "visual": {
+    "type": "compare",
+    "title": "Join semantics",
+    "left": {
+      "title": "INNER JOIN",
+      "items": [
+        "Keep matched keys only",
+        "Unmatched rows disappear"
+      ]
+    },
+    "right": {
+      "title": "LEFT JOIN",
+      "items": [
+        "Keep all left rows",
+        "Missing right values become NULL"
+      ]
+    },
+    "caption": "Always reason from table grain and which records must survive."
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

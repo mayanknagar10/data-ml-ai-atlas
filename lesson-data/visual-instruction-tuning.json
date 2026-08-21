@@ -1,0 +1,40 @@
+{
+  "slug": "visual-instruction-tuning",
+  "title": "Visual Instruction Tuning & LLaVA",
+  "module": "multimodal",
+  "priority": "high",
+  "roles": [
+    "aie",
+    "mle",
+    "cv",
+    "as"
+  ],
+  "interviewAnswer": "Visual instruction tuning adapts a vision-language model to follow natural-language instructions grounded in images. LLaVA is a classic example: it connects a CLIP vision encoder to an LLM through a projector and trains on image-instruction-response data so the model learns conversational visual reasoning.",
+  "keyPoints": [
+    "image + instruction + response",
+    "projector alignment",
+    "instruction tuning",
+    "grounded generation"
+  ],
+  "resources": [
+    "llava-paper",
+    "hf-vlm-course"
+  ],
+  "featured": false,
+  "why": "Pretrained image-text alignment alone does not guarantee useful conversational instruction following.",
+  "intuition": "CLIP teaches “which text matches this image?” Visual instruction tuning teaches “given this image and this question, how should I respond?”",
+  "deepDive": "Training often begins by aligning a connector/projector while keeping large backbones frozen, then performs multimodal instruction tuning on richer conversations. Dataset construction, resolution, connector capacity and whether the vision/LLM backbones are frozen or fine-tuned all influence cost and quality.",
+  "workedExample": "Input: an image of a chart plus “What trend appears after 2024?” Output: a grounded textual answer. The training pair teaches both image use and instruction style.",
+  "commonMistakes": [
+    "Confusing contrastive image-text pretraining with generative visual instruction tuning.",
+    "Assuming instruction tuning removes visual hallucination."
+  ],
+  "followUps": [
+    "What parameters would you freeze first?",
+    "How would you build multimodal instruction data?"
+  ],
+  "production": "Evaluate grounding, OCR/chart performance, refusal behavior and hallucination separately; text-only quality can hide weak visual dependence.",
+  "editorial": {
+    "status": "summary"
+  }
+}

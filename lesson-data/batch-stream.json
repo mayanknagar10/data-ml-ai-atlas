@@ -1,0 +1,63 @@
+{
+  "slug": "batch-stream",
+  "title": "Batch vs Streaming",
+  "module": "data-eng",
+  "priority": "very-high",
+  "roles": [
+    "de",
+    "mle"
+  ],
+  "interviewAnswer": "Batch processing handles bounded datasets on a schedule; streaming processes events continuously or in small increments. Choose based on freshness requirements, complexity, cost and correctness needs.",
+  "keyPoints": [
+    "Latency",
+    "Bounded/unbounded",
+    "Exactly-once nuance",
+    "State"
+  ],
+  "resources": [
+    "confluent-kafka",
+    "flink",
+    "spark"
+  ],
+  "featured": false,
+  "why": "Batch vs streaming is a core architecture trade-off for data and ML systems: freshness, complexity, cost and correctness all change.",
+  "intuition": "Batch waits and processes a bounded collection. Streaming processes an unbounded flow continuously or in small micro-batches.",
+  "deepDive": "Batch is simpler, cheaper and easier to reproduce when minute/hour/day freshness is sufficient. Streaming is justified when decisions need low event-to-action latency. Stream processing introduces ordering, event time, late data, state, checkpoints and delivery semantics. Many systems combine a streaming serving path with batch recomputation/backfills.",
+  "workedExample": "Daily model-feature recomputation is naturally batch. Fraud detection at payment time requires streaming/online features because waiting until tomorrow is useless.",
+  "commonMistakes": [
+    "Choosing streaming because it sounds modern without a latency requirement.",
+    "Confusing Kafka ingestion with stream processing.",
+    "Ignoring late/out-of-order events and state recovery."
+  ],
+  "followUps": [
+    "Event time vs processing time?",
+    "When is micro-batching enough?",
+    "How do you replay data?",
+    "What is the operational cost of streaming?"
+  ],
+  "production": "Define freshness SLOs first. Use the simplest architecture that meets them, and design replay/backfill paths so real-time state can be recovered after bugs or outages.",
+  "visual": {
+    "type": "compare",
+    "title": "Batch vs streaming",
+    "left": {
+      "title": "Batch",
+      "items": [
+        "Bounded datasets",
+        "Scheduled processing",
+        "Higher throughput, higher latency"
+      ]
+    },
+    "right": {
+      "title": "Streaming",
+      "items": [
+        "Unbounded events",
+        "Continuous processing",
+        "Low latency, stateful complexity"
+      ]
+    },
+    "caption": "Many systems combine both: streaming for freshness and batch for recomputation/backfills."
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

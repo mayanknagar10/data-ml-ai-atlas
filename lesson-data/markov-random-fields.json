@@ -1,0 +1,41 @@
+{
+  "slug": "markov-random-fields",
+  "title": "Markov Random Fields & Factor Graphs",
+  "module": "probabilistic-ml",
+  "priority": "medium",
+  "roles": [
+    "as",
+    "ds",
+    "mle"
+  ],
+  "interviewAnswer": "An MRF is an undirected graphical model whose joint distribution is expressed with local compatibility factors; it is useful when dependencies are symmetric rather than naturally directed.",
+  "keyPoints": [
+    "Undirected graphs",
+    "Clique potentials",
+    "Partition function",
+    "Factor graphs"
+  ],
+  "resources": [
+    "stanford-cs228",
+    "probml-book"
+  ],
+  "featured": false,
+  "why": "MRFs underpin structured prediction and spatial/image models.",
+  "intuition": "Neighboring pixels can prefer similar labels without one pixel causing the other.",
+  "deepDive": "The joint density is proportional to a product of positive potentials and requires a partition function for normalization, which can make inference difficult.",
+  "math": "",
+  "code": "",
+  "commonMistakes": [
+    "Treating potentials as normalized probabilities.",
+    "Reading causal direction from an undirected graph."
+  ],
+  "followUps": [
+    "What is a factor graph?",
+    "Why is the partition function hard?"
+  ],
+  "production": "Large MRFs often require approximate inference; validate both quality and latency.",
+  "workedExample": "Image segmentation can combine per-pixel evidence with pairwise smoothness between neighbors.",
+  "editorial": {
+    "status": "summary"
+  }
+}

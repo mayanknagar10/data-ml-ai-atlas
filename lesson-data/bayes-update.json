@@ -1,0 +1,50 @@
+{
+  "slug": "bayes-update",
+  "title": "Bayesian Updating: Prior, Likelihood & Posterior",
+  "module": "bayesian",
+  "priority": "high",
+  "roles": [
+    "ds",
+    "as"
+  ],
+  "interviewAnswer": "Bayesian inference updates prior beliefs with evidence through the likelihood to produce a posterior distribution. The posterior represents uncertainty about parameters after observing data.",
+  "keyPoints": [
+    "Posterior ∝ likelihood × prior.",
+    "Priors can regularize sparse/noisy problems.",
+    "Posterior predictive checks validate consequences of the model."
+  ],
+  "resources": [
+    "think-bayes",
+    "pymc"
+  ],
+  "featured": false,
+  "why": "Bayesian Updating: Prior, Likelihood & Posterior appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
+  "intuition": "Posterior ∝ likelihood × prior.",
+  "deepDive": "Bayesian inference updates prior beliefs with evidence through the likelihood to produce a posterior distribution. The posterior represents uncertainty about parameters after observing data. Priors can regularize sparse/noisy problems. Posterior predictive checks validate consequences of the model. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
+  "workedExample": "Update a prior conversion-rate distribution after observing new experiment successes/failures.",
+  "commonMistakes": [
+    "Applying the method without checking its assumptions or data-generating process.",
+    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+  ],
+  "followUps": [
+    "What assumptions does Bayesian Updating: Prior, Likelihood & Posterior make?",
+    "How would you validate or debug Bayesian Updating: Prior, Likelihood & Posterior in practice?"
+  ],
+  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "visual": {
+    "type": "flow",
+    "title": "Bayesian update",
+    "items": [
+      "Prior belief",
+      "Likelihood from data",
+      "Bayes rule",
+      "Posterior belief"
+    ],
+    "caption": "Bayesian inference updates prior uncertainty with evidence from observed data.",
+    "accent": 1,
+    "orientation": "horizontal"
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

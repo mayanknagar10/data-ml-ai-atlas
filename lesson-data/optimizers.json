@@ -1,0 +1,68 @@
+{
+  "slug": "optimizers",
+  "title": "SGD, Momentum & Adam",
+  "module": "dl",
+  "priority": "very-high",
+  "roles": [
+    "mle",
+    "aie",
+    "as"
+  ],
+  "interviewAnswer": "SGD follows noisy mini-batch gradients; momentum smooths updates by accumulating velocity; Adam adapts step sizes using first and second gradient moments. No optimizer is universally best.",
+  "keyPoints": [
+    "Momentum",
+    "Adam moments",
+    "Weight decay",
+    "Learning-rate interaction"
+  ],
+  "resources": [
+    "mit-6s191",
+    "pytorch",
+    "statquest",
+    "3b1b-neural",
+    "deep-learning-book"
+  ],
+  "featured": false,
+  "why": "SGD vs Momentum vs Adam tests whether you understand how parameter updates are constructed and why optimization behavior differs.",
+  "intuition": "SGD follows the current noisy gradient. Momentum remembers recent directions to smooth oscillation. Adam additionally adapts the step scale per parameter using running gradient statistics.",
+  "deepDive": "Momentum maintains an exponentially decayed velocity, accelerating consistent directions and damping zig-zag behavior. Adam tracks first and second moments of gradients with bias correction, often giving fast robust convergence. Weight decay should be understood carefully: AdamW decouples weight decay from Adam’s adaptive gradient step. Optimizer choice interacts with learning-rate schedule, batch size and generalization.",
+  "math": "Momentum: v_t=βv_{t-1}+g_t; θ←θ-ηv_t\nAdam: m_t=β₁m_{t-1}+(1-β₁)g_t; v_t=β₂v_{t-1}+(1-β₂)g_t²; update with bias-corrected m/√v",
+  "workedExample": "If SGD oscillates across a narrow valley, momentum can average those alternating directions while preserving movement along the valley.",
+  "code": "opt=torch.optim.AdamW(model.parameters(),lr=3e-4,weight_decay=1e-2)",
+  "commonMistakes": [
+    "Saying Adam is universally better than SGD.",
+    "Confusing L2 regularization with decoupled AdamW weight decay.",
+    "Comparing optimizers without retuning learning rates/schedules."
+  ],
+  "followUps": [
+    "Why does momentum help?",
+    "Adam vs AdamW?",
+    "What does beta control?",
+    "Why can SGD generalize well in vision?"
+  ],
+  "production": "Log optimizer configuration and scheduler state with checkpoints. Changing optimizer/schedule can invalidate comparisons even when architecture and data are unchanged.",
+  "visual": {
+    "type": "compare",
+    "title": "SGD vs Adam",
+    "left": {
+      "title": "SGD + momentum",
+      "items": [
+        "Global learning rate",
+        "Simple dynamics",
+        "Often strong generalization"
+      ]
+    },
+    "right": {
+      "title": "Adam",
+      "items": [
+        "Adaptive per-parameter steps",
+        "Fast practical convergence",
+        "Extra optimizer state"
+      ]
+    },
+    "caption": "Optimizer choice interacts with learning-rate schedules, batch size and model family."
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

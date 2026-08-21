@@ -1,0 +1,37 @@
+{
+  "slug": "learning-to-rank",
+  "title": "Learning to Rank: Pointwise, Pairwise & Listwise",
+  "module": "recsys",
+  "priority": "high",
+  "roles": [
+    "ds",
+    "da"
+  ],
+  "interviewAnswer": "Learning-to-rank objectives optimize ordering rather than only class labels. Pointwise treats items independently, pairwise compares preferences, and listwise objectives model the ranked list more directly.",
+  "keyPoints": [
+    "Training objective should align with ranking metric.",
+    "Position/exposure bias affects labels.",
+    "Candidate-set construction matters."
+  ],
+  "resources": [
+    "ir-book",
+    "stanford-cs246"
+  ],
+  "featured": false,
+  "why": "Learning to Rank: Pointwise, Pairwise & Listwise is a recurring foundation across data science and machine learning because it affects both theoretical correctness and practical system behavior.",
+  "intuition": "Training objective should align with ranking metric.",
+  "deepDive": "Learning-to-rank objectives optimize ordering rather than only class labels. Pointwise treats items independently, pairwise compares preferences, and listwise objectives model the ranked list more directly. Position/exposure bias affects labels. Candidate-set construction matters. The interview-level skill is not merely recalling the definition: explain the assumptions, what diagnostic evidence you would inspect, and what alternative you would choose when those assumptions fail.",
+  "workedExample": "Train a pairwise model to score clicked items above exposed-but-skipped items for the same query/user.",
+  "commonMistakes": [
+    "Using the concept mechanically without checking assumptions or data semantics.",
+    "Reporting one metric/result without examining uncertainty, slices or failure modes."
+  ],
+  "followUps": [
+    "What assumptions or limitations does Learning to Rank: Pointwise, Pairwise & Listwise have?",
+    "How would you validate Learning to Rank: Pointwise, Pairwise & Listwise on a real dataset?"
+  ],
+  "production": "In production, make assumptions explicit, validate on representative slices, compare with a simple baseline and monitor the signals that can drift.",
+  "editorial": {
+    "status": "summary"
+  }
+}

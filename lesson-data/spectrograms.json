@@ -1,0 +1,81 @@
+{
+  "slug": "spectrograms",
+  "title": "STFT, Spectrograms & Mel Features",
+  "module": "speech",
+  "priority": "high",
+  "roles": [
+    "ds",
+    "as"
+  ],
+  "interviewAnswer": "The short-time Fourier transform converts local waveform windows into time-frequency representations. Mel scaling compresses frequency resolution toward human perception and is common in speech features.",
+  "keyPoints": [
+    "Window length trades time vs frequency resolution.",
+    "Magnitude/power and phase carry different information.",
+    "Log-Mel spectrograms are common ASR inputs."
+  ],
+  "resources": [
+    "stanford-cs224s",
+    "whisper-paper"
+  ],
+  "featured": false,
+  "why": "STFT, Spectrograms & Mel Features appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
+  "intuition": "Window length trades time vs frequency resolution.",
+  "deepDive": "The short-time Fourier transform converts local waveform windows into time-frequency representations. Mel scaling compresses frequency resolution toward human perception and is common in speech features. Magnitude/power and phase carry different information. Log-Mel spectrograms are common ASR inputs. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
+  "workedExample": "Convert 16 kHz speech into overlapping frames and log-Mel features for an acoustic model.",
+  "commonMistakes": [
+    "Applying the method without checking its assumptions or data-generating process.",
+    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+  ],
+  "followUps": [
+    "What assumptions does STFT, Spectrograms & Mel Features make?",
+    "How would you validate or debug STFT, Spectrograms & Mel Features in practice?"
+  ],
+  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "lab": {
+    "goal": "Convert a waveform into an STFT magnitude spectrogram.",
+    "language": "python",
+    "buildIt": "import numpy as np\nfs=16000; t=np.arange(fs)/fs\nx=np.sin(2*np.pi*440*t)+.3*np.sin(2*np.pi*880*t)\n",
+    "useIt": "from scipy.signal import stft\nf,tt,Z=stft(x,fs=fs,nperseg=400,noverlap=240)\nmag=np.abs(Z)\nprint(mag.shape,f[mag.mean(axis=1).argmax()])\n",
+    "verifyIt": "assert mag.shape[0]>100 and mag.shape[1]>10\n",
+    "shipIt": "Version sample rate/window parameters with the model; audio preprocessing mismatches between training and serving can destroy ASR/audio quality."
+  },
+  "visual": {
+    "type": "matrix",
+    "title": "Spectrogram",
+    "rows": [
+      "low freq",
+      "mid freq",
+      "high freq"
+    ],
+    "cols": [
+      "t₁",
+      "t₂",
+      "t₃",
+      "t₄"
+    ],
+    "cells": [
+      [
+        "▁",
+        "▂",
+        "▆",
+        "▃"
+      ],
+      [
+        "▃",
+        "▇",
+        "▅",
+        "▂"
+      ],
+      [
+        "▇",
+        "▄",
+        "▂",
+        "▁"
+      ]
+    ],
+    "caption": "A spectrogram maps time to one axis, frequency to another, and signal energy to intensity."
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

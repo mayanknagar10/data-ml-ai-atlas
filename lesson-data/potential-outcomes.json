@@ -1,0 +1,56 @@
+{
+  "slug": "potential-outcomes",
+  "title": "Potential Outcomes & Average Treatment Effects",
+  "module": "causal",
+  "priority": "very-high",
+  "roles": [
+    "ds",
+    "as"
+  ],
+  "interviewAnswer": "Causal inference defines treatment effects through potential outcomes: what the same unit would experience under treatment versus control. Because both cannot be observed, identification requires randomization or assumptions/design.",
+  "keyPoints": [
+    "Fundamental problem: one potential outcome is missing.",
+    "ATE, ATT and CATE answer different questions.",
+    "Assignment mechanism is central."
+  ],
+  "resources": [
+    "causal-mixtape",
+    "harvard-causal-diagrams"
+  ],
+  "featured": true,
+  "why": "Potential Outcomes & Average Treatment Effects appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
+  "intuition": "Fundamental problem: one potential outcome is missing.",
+  "deepDive": "Causal inference defines treatment effects through potential outcomes: what the same unit would experience under treatment versus control. Because both cannot be observed, identification requires randomization or assumptions/design. ATE, ATT and CATE answer different questions. Assignment mechanism is central. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
+  "workedExample": "Estimate the average effect of a pricing banner, not merely whether exposed users buy more.",
+  "commonMistakes": [
+    "Applying the method without checking its assumptions or data-generating process.",
+    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+  ],
+  "followUps": [
+    "What assumptions does Potential Outcomes & Average Treatment Effects make?",
+    "How would you validate or debug Potential Outcomes & Average Treatment Effects in practice?"
+  ],
+  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "visual": {
+    "type": "compare",
+    "title": "Potential outcomes",
+    "left": {
+      "title": "Same unit under treatment",
+      "items": [
+        "Y(1) exists conceptually",
+        "Observed only if treated"
+      ]
+    },
+    "right": {
+      "title": "Same unit under control",
+      "items": [
+        "Y(0) exists conceptually",
+        "Observed only if untreated"
+      ]
+    },
+    "caption": "The individual treatment effect Y(1)−Y(0) cannot be observed directly because only one potential outcome is realized."
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

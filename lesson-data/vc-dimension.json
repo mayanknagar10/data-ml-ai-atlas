@@ -1,0 +1,40 @@
+{
+  "slug": "vc-dimension",
+  "title": "VC Dimension & Capacity",
+  "module": "learning-theory",
+  "priority": "medium",
+  "roles": [
+    "as",
+    "mle",
+    "ds"
+  ],
+  "interviewAnswer": "VC dimension measures the richness of a binary hypothesis class via the largest set of points it can shatter; greater capacity usually requires more data for uniform generalization guarantees.",
+  "keyPoints": [
+    "Shattering",
+    "Capacity",
+    "Sample complexity",
+    "Not parameter count"
+  ],
+  "resources": [
+    "stanford-cs229"
+  ],
+  "featured": false,
+  "why": "VC theory is foundational capacity theory.",
+  "intuition": "A class that can realize every labeling of many points is extremely flexible.",
+  "deepDive": "VC dimension yields uniform-convergence bounds for classification classes. Deep-network generalization is more nuanced, so VC dimension is a conceptual foundation rather than a practical tuning metric.",
+  "math": "",
+  "code": "",
+  "commonMistakes": [
+    "Saying VC dimension equals parameter count.",
+    "Using VC dimension directly to tune deep nets."
+  ],
+  "followUps": [
+    "What does shatter mean?",
+    "How does VC dimension affect sample complexity?"
+  ],
+  "production": "Use real validation for model selection; capacity theory explains tendencies.",
+  "workedExample": "Linear separators in 2D can shatter some configurations of three points but not arbitrary labelings of four.",
+  "editorial": {
+    "status": "summary"
+  }
+}

@@ -1,0 +1,60 @@
+{
+  "slug": "stationarity-acf",
+  "title": "Stationarity, ACF & PACF",
+  "module": "time-series",
+  "priority": "high",
+  "roles": [
+    "ds",
+    "da",
+    "as"
+  ],
+  "interviewAnswer": "Stationarity means the statistical behavior of a series is stable enough over time for many classical models to learn consistent relationships. I inspect trend/seasonality and autocorrelation; differencing or transformation can help when the level is non-stationary.",
+  "keyPoints": [
+    "weak stationarity",
+    "autocorrelation",
+    "ACF/PACF",
+    "differencing"
+  ],
+  "resources": [
+    "fpp3",
+    "statsmodels-tsa"
+  ],
+  "featured": false,
+  "why": "ARIMA-family methods rely on structure in lagged values and residuals. Understanding autocorrelation also helps diagnose leakage and seasonality.",
+  "intuition": "ACF asks “how correlated is the series with itself k steps ago?” PACF tries to isolate the direct lag-k relationship after accounting for shorter lags.",
+  "deepDive": "Weak stationarity is typically about approximately constant mean/variance and covariance depending on lag rather than absolute time. ACF/PACF are diagnostics, not magical parameter selectors. Differencing can remove stochastic trends but over-differencing adds noise.",
+  "workedExample": "A monthly series with a rising level may show slow ACF decay. First differencing y_t-y_{t-1} can make the remaining dependence easier to model; a spike at lag 12 can suggest annual seasonality.",
+  "commonMistakes": [
+    "Equating stationarity with “flat data.”",
+    "Blindly differencing until a statistical test passes without checking business meaning."
+  ],
+  "followUps": [
+    "What does an ACF spike at a seasonal lag mean?",
+    "What is over-differencing?"
+  ],
+  "production": "Monitor residual autocorrelation after deployment; systematic temporal structure in errors often means the model is leaving forecastable signal unused.",
+  "math": "ACF(k) = Corr(y_t, y_{t-k}).  First difference: Δy_t = y_t - y_{t-1}.",
+  "visual": {
+    "type": "bars",
+    "title": "Autocorrelation by lag",
+    "labels": [
+      "lag 1",
+      "lag 2",
+      "lag 3",
+      "lag 4",
+      "lag 5"
+    ],
+    "values": [
+      0.82,
+      0.61,
+      0.43,
+      0.24,
+      0.1
+    ],
+    "caption": "The ACF summarizes correlation between a series and lagged versions of itself; slow decay can signal persistent structure.",
+    "yLabel": "autocorrelation"
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

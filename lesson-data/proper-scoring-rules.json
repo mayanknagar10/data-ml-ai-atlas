@@ -1,0 +1,41 @@
+{
+  "slug": "proper-scoring-rules",
+  "title": "Proper Scoring Rules: Log Loss & Brier Score",
+  "module": "probabilistic-ml",
+  "priority": "high",
+  "roles": [
+    "ds",
+    "as",
+    "mle"
+  ],
+  "interviewAnswer": "Proper scoring rules reward honest probabilistic forecasts: in expectation, reporting the true probability minimizes expected score. Log loss and Brier score are common examples.",
+  "keyPoints": [
+    "Probability quality",
+    "Brier score",
+    "Log score",
+    "Calibration/sharpness"
+  ],
+  "resources": [
+    "stanford-stats315a",
+    "google-mlcc"
+  ],
+  "featured": false,
+  "why": "Accuracy ignores how good probability estimates are.",
+  "intuition": "Predictions of .51 and .99 can yield the same class decision but represent very different probability quality.",
+  "deepDive": "Brier score is squared error on predicted probabilities; log score punishes assigning tiny probability to events that occur.",
+  "math": "",
+  "code": "",
+  "commonMistakes": [
+    "Using accuracy to judge probability quality.",
+    "Assuming one proper score determines every thresholded decision."
+  ],
+  "followUps": [
+    "Brier vs log loss?",
+    "Calibration vs discrimination?"
+  ],
+  "production": "Use proper scores for probability quality and separate cost-aware thresholds for decisions.",
+  "workedExample": "Two classifiers with equal accuracy can have very different log loss because one is overconfident on mistakes.",
+  "editorial": {
+    "status": "summary"
+  }
+}

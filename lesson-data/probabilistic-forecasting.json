@@ -1,0 +1,122 @@
+{
+  "slug": "probabilistic-forecasting",
+  "title": "Prediction Intervals & Probabilistic Forecasting",
+  "module": "time-series",
+  "priority": "very-high",
+  "roles": [
+    "ds",
+    "da",
+    "as"
+  ],
+  "interviewAnswer": "A point forecast hides uncertainty. Probabilistic forecasting estimates quantiles or a full predictive distribution so decisions can reflect asymmetric risk and service levels.",
+  "keyPoints": [
+    "Prediction interval includes future observation uncertainty.",
+    "Quantile loss evaluates conditional quantiles.",
+    "Calibration and sharpness both matter."
+  ],
+  "resources": [
+    "fpp3",
+    "nixtla"
+  ],
+  "featured": true,
+  "why": "Prediction Intervals & Probabilistic Forecasting appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
+  "intuition": "Prediction interval includes future observation uncertainty.",
+  "deepDive": "A point forecast hides uncertainty. Probabilistic forecasting estimates quantiles or a full predictive distribution so decisions can reflect asymmetric risk and service levels. Quantile loss evaluates conditional quantiles. Calibration and sharpness both matter. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
+  "workedExample": "Inventory planning may use the 90th percentile demand forecast rather than the mean to meet a service target.",
+  "commonMistakes": [
+    "Applying the method without checking its assumptions or data-generating process.",
+    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+  ],
+  "followUps": [
+    "What assumptions does Prediction Intervals & Probabilistic Forecasting make?",
+    "How would you validate or debug Prediction Intervals & Probabilistic Forecasting in practice?"
+  ],
+  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "visual": {
+    "type": "curve",
+    "title": "Probabilistic forecast",
+    "series": [
+      {
+        "label": "median",
+        "points": [
+          [
+            0.55,
+            0.46
+          ],
+          [
+            0.68,
+            0.5
+          ],
+          [
+            0.8,
+            0.54
+          ],
+          [
+            0.92,
+            0.57
+          ],
+          [
+            1,
+            0.6
+          ]
+        ]
+      },
+      {
+        "label": "lower interval",
+        "points": [
+          [
+            0.55,
+            0.38
+          ],
+          [
+            0.68,
+            0.37
+          ],
+          [
+            0.8,
+            0.35
+          ],
+          [
+            0.92,
+            0.34
+          ],
+          [
+            1,
+            0.32
+          ]
+        ]
+      },
+      {
+        "label": "upper interval",
+        "points": [
+          [
+            0.55,
+            0.54
+          ],
+          [
+            0.68,
+            0.63
+          ],
+          [
+            0.8,
+            0.72
+          ],
+          [
+            0.92,
+            0.8
+          ],
+          [
+            1,
+            0.88
+          ]
+        ]
+      }
+    ],
+    "caption": "Forecast intervals widen as uncertainty accumulates into the future.",
+    "xLabel": "forecast horizon",
+    "yLabel": "value"
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

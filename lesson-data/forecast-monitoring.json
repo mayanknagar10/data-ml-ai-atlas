@@ -1,0 +1,52 @@
+{
+  "slug": "forecast-monitoring",
+  "title": "Forecast Monitoring & Retraining",
+  "module": "time-series",
+  "priority": "high",
+  "roles": [
+    "ds",
+    "da",
+    "as"
+  ],
+  "interviewAnswer": "Forecast systems need monitoring for bias, scale changes, missing updates, driver drift and horizon-specific error. Retraining cadence should reflect how quickly relationships change and whether new labels arrive.",
+  "keyPoints": [
+    "Track error by horizon/segment.",
+    "Bias can matter more than symmetric error.",
+    "Backfill/revisions complicate evaluation."
+  ],
+  "resources": [
+    "fpp3",
+    "google-rules-ml"
+  ],
+  "featured": false,
+  "why": "Forecast Monitoring & Retraining appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
+  "intuition": "Track error by horizon/segment.",
+  "deepDive": "Forecast systems need monitoring for bias, scale changes, missing updates, driver drift and horizon-specific error. Retraining cadence should reflect how quickly relationships change and whether new labels arrive. Bias can matter more than symmetric error. Backfill/revisions complicate evaluation. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
+  "workedExample": "A demand forecast can have acceptable MAE overall but persistent underforecast bias for high-value SKUs.",
+  "commonMistakes": [
+    "Applying the method without checking its assumptions or data-generating process.",
+    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+  ],
+  "followUps": [
+    "What assumptions does Forecast Monitoring & Retraining make?",
+    "How would you validate or debug Forecast Monitoring & Retraining in practice?"
+  ],
+  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "visual": {
+    "type": "flow",
+    "title": "Forecast monitoring loop",
+    "items": [
+      "Forecast",
+      "Actual arrives",
+      "Compute error / bias",
+      "Detect drift",
+      "Retrain or investigate"
+    ],
+    "caption": "Monitoring should track both forecast accuracy and systematic bias by segment and horizon.",
+    "accent": 2,
+    "orientation": "horizontal"
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

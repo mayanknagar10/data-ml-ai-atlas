@@ -2,6 +2,11 @@
 
 These labs are generated from `source/atlas.json`. Edit the source, then run `python scripts/build.py`.
 
+- [Iterators & Generators](python-generators/index.html)
+- [Decorators & Context Managers](python-decorators/index.html)
+- [NumPy Vectorization & Broadcasting](numpy-vectorization/index.html)
+- [pandas: Merge, GroupBy, Missing Data](pandas-core/index.html)
+- [Testing ML / Data Code](python-testing/index.html)
 - [Gradient Descent & Learning Rate](gradient-descent/index.html)
 - [Hypothesis Testing & p-values](hypothesis-testing/index.html)
 - [A/B Testing & Statistical Power](ab-testing/index.html)

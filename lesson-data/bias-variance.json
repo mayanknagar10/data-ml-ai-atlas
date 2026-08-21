@@ -1,0 +1,109 @@
+{
+  "slug": "bias-variance",
+  "title": "Bias–Variance Trade-off",
+  "module": "ml",
+  "priority": "very-high",
+  "roles": [
+    "all",
+    "as"
+  ],
+  "interviewAnswer": "High bias means the model is too constrained and underfits; high variance means it fits training data but changes too much with the sample and generalizes poorly. Model complexity, regularization and data size shift this balance.",
+  "keyPoints": [
+    "Underfit vs overfit",
+    "Learning curves",
+    "Regularization",
+    "Cross-validation"
+  ],
+  "resources": [
+    "stanford-cs229",
+    "statquest",
+    "google-mlcc"
+  ],
+  "featured": true,
+  "why": "It connects model complexity, data size, regularization and generalization—so it is a compact test of ML maturity.",
+  "intuition": "High bias: both train and validation performance are poor. High variance: training is strong but validation is much worse.",
+  "deepDive": "Bias reflects systematic error from restrictive assumptions; variance reflects sensitivity to the sampled training set. More complex models typically reduce bias but can increase variance. Regularization, augmentation and more representative data often reduce variance.",
+  "math": "Expected test error can be decomposed conceptually into bias² + variance + irreducible noise (under squared-error assumptions).",
+  "code": "# Practical diagnostic: compare train and validation curves\n# High train error + high validation error -> likely high bias\n# Low train error + much higher validation error -> likely high variance",
+  "commonMistakes": [
+    "Saying “we want both bias and variance to be zero.” Irreducible noise and finite data prevent this ideal.",
+    "Calling every train/validation gap “overfitting” without checking split quality or leakage."
+  ],
+  "followUps": [
+    "How does regularization affect bias and variance?",
+    "What do learning curves tell you?",
+    "Would more data help high bias or high variance more?"
+  ],
+  "production": "Diagnose with train/validation curves and slices before changing architecture. Sometimes the “variance problem” is actually a bad split or domain shift.",
+  "workedExample": "A very shallow tree can underfit (high bias); an unrestricted tree can memorize training data (high variance); depth/regularization balances the two.",
+  "visual": {
+    "type": "curve",
+    "title": "Bias–variance trade-off",
+    "series": [
+      {
+        "label": "training error",
+        "points": [
+          [
+            0,
+            0.78
+          ],
+          [
+            0.2,
+            0.55
+          ],
+          [
+            0.4,
+            0.38
+          ],
+          [
+            0.6,
+            0.25
+          ],
+          [
+            0.8,
+            0.16
+          ],
+          [
+            1,
+            0.1
+          ]
+        ]
+      },
+      {
+        "label": "validation error",
+        "points": [
+          [
+            0,
+            0.82
+          ],
+          [
+            0.2,
+            0.61
+          ],
+          [
+            0.4,
+            0.44
+          ],
+          [
+            0.58,
+            0.37
+          ],
+          [
+            0.75,
+            0.43
+          ],
+          [
+            1,
+            0.6
+          ]
+        ]
+      }
+    ],
+    "caption": "As model complexity grows, training error usually falls while validation error can eventually rise.",
+    "xLabel": "model complexity",
+    "yLabel": "error"
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

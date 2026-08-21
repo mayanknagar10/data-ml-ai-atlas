@@ -1,0 +1,56 @@
+{
+  "slug": "fine-tuning-lora",
+  "title": "Fine-tuning, LoRA & Quantization",
+  "module": "llm",
+  "priority": "high",
+  "roles": [
+    "aie"
+  ],
+  "interviewAnswer": "Fine-tuning changes model behavior through training; LoRA learns low-rank adapter updates instead of all parameters; quantization reduces numerical precision to lower memory/compute, usually with some quality trade-off.",
+  "keyPoints": [
+    "When RAG vs fine-tune",
+    "PEFT",
+    "4/8-bit concepts",
+    "Evaluation"
+  ],
+  "resources": [
+    "hf-llm",
+    "stanford-cs336",
+    "openai-cookbook",
+    "langchain-academy",
+    "paper-lora"
+  ],
+  "featured": false,
+  "why": "Fine-tuning/LoRA/quantization questions test whether you can choose between behavior adaptation, retrieval and serving optimization.",
+  "intuition": "Fine-tuning changes model weights. LoRA changes a small low-rank set of trainable adapters instead of all weights. Quantization stores/computes weights or activations with fewer bits to reduce memory/cost.",
+  "deepDive": "Full fine-tuning can adapt deeply but is expensive and risks catastrophic changes. LoRA represents weight updates as low-rank matrices, greatly reducing trainable parameters and optimizer memory. Quantization may be post-training or quantization-aware and trades precision for memory/throughput. RAG should usually handle changing external knowledge; fine-tuning is better for behavior/style/task patterns.",
+  "math": "LoRA update: W' = W + BA, with rank r ≪ min(d_in,d_out)",
+  "workedExample": "For an internal assistant that needs company facts updated weekly, use RAG. If it consistently fails to follow a specialized structured reasoning/output pattern, LoRA may be worth evaluating.",
+  "code": "# conceptual PEFT\n# freeze base weights; train low-rank adapter matrices on target examples",
+  "commonMistakes": [
+    "Fine-tuning to “teach” frequently changing facts that retrieval could provide.",
+    "Assuming 4-bit quantization has zero quality trade-off.",
+    "Comparing LoRA ranks without considering which layers are adapted."
+  ],
+  "followUps": [
+    "RAG vs fine-tuning?",
+    "Why LoRA saves memory?",
+    "What is QLoRA?",
+    "Post-training vs quantization-aware training?"
+  ],
+  "production": "Version base model, adapters, tokenizer and quantization config together. Re-run safety/task evals after any fine-tune or quantization change.",
+  "visual": {
+    "type": "layers",
+    "title": "LoRA adaptation",
+    "items": [
+      "Frozen base weight W",
+      "Low-rank matrices A and B",
+      "Add ΔW = BA",
+      "Task-adapted behavior"
+    ],
+    "caption": "LoRA learns a low-rank update while keeping the large pretrained weight matrix frozen."
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

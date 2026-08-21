@@ -1,0 +1,58 @@
+{
+  "slug": "agents",
+  "title": "Agents & LangGraph",
+  "module": "llm",
+  "priority": "high",
+  "roles": [
+    "aie"
+  ],
+  "interviewAnswer": "An agent repeatedly observes state, chooses an action/tool, updates state and decides whether to continue. Graph-based orchestration makes control flow, retries and state transitions explicit.",
+  "keyPoints": [
+    "State",
+    "Tool loop",
+    "Deterministic vs agentic steps",
+    "Termination"
+  ],
+  "resources": [
+    "langchain-academy",
+    "hf-agents",
+    "openai-cookbook",
+    "hf-llm"
+  ],
+  "featured": false,
+  "why": "Agent questions test whether you know when an LLM should orchestrate multi-step tool use and when a deterministic workflow is safer.",
+  "intuition": "An agent is an LLM-controlled loop: observe state, choose an action/tool, execute it, inspect the result, and continue until a stopping condition is met.",
+  "deepDive": "Agent frameworks such as LangGraph represent state and transitions explicitly, enabling branching, retries, checkpoints and human approval. The model should choose among bounded tools rather than have unrestricted system access. Use deterministic workflows when the sequence is known; use agentic control when tool choice/order depends on intermediate results. Memory, termination and error recovery must be designed deliberately.",
+  "workedExample": "A planning assistant first decides whether the question needs a forecast tool or policy retrieval; after getting the result, it may call a second tool or answer. A fixed “forecast→summarize” workflow does not need an agent.",
+  "code": "# conceptual agent state\nstate = {\"messages\": [], \"tool_results\": {}, \"steps\": 0}\n# graph nodes: llm_decide -> tool -> llm_decide -> finish",
+  "commonMistakes": [
+    "Calling every multi-step pipeline an agent.",
+    "Allowing unlimited loops/tool calls without budgets or termination.",
+    "Giving the agent broad write permissions by default."
+  ],
+  "followUps": [
+    "Agent vs workflow?",
+    "Why LangGraph?",
+    "How do you persist agent state?",
+    "How do you evaluate an agent?"
+  ],
+  "production": "Set step/time/cost limits, trace every tool call, make side effects idempotent, require confirmation for high-impact actions and provide deterministic fallbacks for critical paths.",
+  "visual": {
+    "type": "flow",
+    "title": "Agent loop",
+    "items": [
+      "Goal",
+      "Plan / choose action",
+      "Use tool",
+      "Observe result",
+      "Update state",
+      "Continue or stop"
+    ],
+    "caption": "An agent repeatedly chooses actions based on intermediate observations instead of producing one fixed response.",
+    "accent": 2,
+    "orientation": "horizontal"
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

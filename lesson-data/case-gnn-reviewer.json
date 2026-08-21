@@ -1,0 +1,100 @@
+{
+  "slug": "case-gnn-reviewer",
+  "title": "Case Study: Graph-based Matching & Recommendation",
+  "module": "project-defense",
+  "priority": "high",
+  "roles": [
+    "mle",
+    "ds"
+  ],
+  "interviewAnswer": "Explain why the problem is naturally a graph, how semantic PR features enter the graph, why an inductive GNN helps new PRs, how link prediction/ranking is evaluated and how popularity bias is handled.",
+  "keyPoints": [
+    "Graph construction",
+    "GraphSAGE",
+    "Code embeddings",
+    "Recall@K"
+  ],
+  "resources": [
+    "stanford-cs329s"
+  ],
+  "featured": false,
+  "why": "This case demonstrates a general graph-based matching system that combines content semantics, interaction structure, candidate generation, ranking and bias controls.",
+  "intuition": "Represent entities and interactions as a graph, encode content features, learn embeddings that capture both semantics and behavior, generate a manageable candidate set and then rank under product constraints.",
+  "deepDive": "Graph-based matching is useful when historical interactions carry signal that tabular features alone miss. Node features can come from text/image encoders, graph message passing propagates neighborhood context, and a link-prediction or ranking decoder scores potential matches. Evaluation should reflect the serving task—Recall@K or NDCG rather than only AUC. Temporal splits, hard-negative sampling, cold-start handling, popularity bias, freshness and eligibility constraints are central production concerns.",
+  "workedExample": "Represent users and opportunities/items as nodes, encode content features, learn graph embeddings from historical interactions, generate candidates, correct popularity bias and rank the top matches under availability and policy constraints.",
+  "commonMistakes": [
+    "Using random edge splits that leak future interactions.",
+    "Optimizing AUC while production returns only top-K matches.",
+    "Ignoring cold-start entities and popularity/exposure bias."
+  ],
+  "followUps": [
+    "Why use a graph instead of only content embeddings?",
+    "How would you create negative samples?",
+    "How would you handle unseen users/items?",
+    "How would you separate candidate generation from ranking?"
+  ],
+  "production": "Refresh graph edges/features incrementally, maintain a fast candidate stage, apply ranking and eligibility/business constraints, cache stable embeddings, monitor concentration/cold-start quality/latency and log exposure plus outcomes for retraining.",
+  "visual": {
+    "type": "network",
+    "title": "Reviewer recommendation graph",
+    "nodes": [
+      {
+        "id": "d1",
+        "label": "developer",
+        "x": 0.14,
+        "y": 0.25
+      },
+      {
+        "id": "d2",
+        "label": "developer",
+        "x": 0.14,
+        "y": 0.72
+      },
+      {
+        "id": "p1",
+        "label": "PR",
+        "x": 0.55,
+        "y": 0.24
+      },
+      {
+        "id": "p2",
+        "label": "PR",
+        "x": 0.55,
+        "y": 0.72
+      },
+      {
+        "id": "new",
+        "label": "new PR",
+        "x": 0.86,
+        "y": 0.48
+      }
+    ],
+    "edges": [
+      [
+        "d1",
+        "p1"
+      ],
+      [
+        "d1",
+        "p2"
+      ],
+      [
+        "d2",
+        "p2"
+      ],
+      [
+        "p1",
+        "new"
+      ],
+      [
+        "p2",
+        "new"
+      ]
+    ],
+    "caption": "Historical developer–PR relations plus semantic PR features create a graph space for reviewer recommendation.",
+    "directed": true
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

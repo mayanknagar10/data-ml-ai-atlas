@@ -1,0 +1,62 @@
+{
+  "slug": "bert-vs-gpt",
+  "title": "BERT vs GPT-style Models",
+  "module": "transformers",
+  "priority": "high",
+  "roles": [
+    "aie",
+    "as"
+  ],
+  "interviewAnswer": "BERT-style models are typically encoder-only and learn bidirectional contextual representations; GPT-style models are decoder-only and autoregressively predict the next token. Their pretraining objectives drive different strengths.",
+  "keyPoints": [
+    "Masked LM vs causal LM",
+    "Encoding vs generation",
+    "Fine-tuning",
+    "Context direction"
+  ],
+  "resources": [
+    "stanford-cs224n",
+    "hf-llm"
+  ],
+  "featured": false,
+  "why": "BERT vs GPT tests whether you understand encoder-style bidirectional representation learning versus causal autoregressive generation.",
+  "intuition": "BERT-style encoders can look both left and right to understand a token in context. GPT-style decoder-only models predict the next token using only earlier tokens.",
+  "deepDive": "BERT is pretrained with masked-token objectives and is strong for embeddings/classification/extraction with task heads. GPT-style models use causal masks and next-token prediction, naturally supporting generation and in-context prompting. Modern systems blur categories with encoder-decoder and instruction-tuned variants, so choose based on task rather than brand.",
+  "workedExample": "For semantic classification of a complete PR description, an encoder such as CodeBERT/BERT can produce contextual features. For generating an explanation, a causal LLM is more natural.",
+  "commonMistakes": [
+    "Calling BERT generative in the same autoregressive sense as GPT.",
+    "Saying GPT has no bidirectional information at all—later tokens integrate all earlier context, but cannot see future tokens during causal prediction.",
+    "Assuming one family always has better embeddings."
+  ],
+  "followUps": [
+    "What is causal masking?",
+    "Why masked language modeling?",
+    "Encoder-decoder transformer use case?",
+    "How would you get sentence embeddings from BERT?"
+  ],
+  "production": "Encoder models are often cheaper for embeddings/classification; generative LLMs add latency/cost and should be used only when generation/reasoning is needed.",
+  "visual": {
+    "type": "compare",
+    "title": "BERT vs GPT training",
+    "left": {
+      "title": "BERT-style encoder",
+      "items": [
+        "Bidirectional self-attention",
+        "Masked-token objectives",
+        "Strong representations"
+      ]
+    },
+    "right": {
+      "title": "GPT-style decoder",
+      "items": [
+        "Causal self-attention",
+        "Next-token prediction",
+        "Autoregressive generation"
+      ]
+    },
+    "caption": "The attention mask and training objective shape what the model learns to do."
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

@@ -1,0 +1,46 @@
+{
+  "slug": "inverted-index",
+  "title": "Inverted Index & Text Retrieval Pipeline",
+  "module": "ir",
+  "priority": "high",
+  "roles": [
+    "ds"
+  ],
+  "interviewAnswer": "An inverted index maps terms to documents/postings containing them, making lexical search efficient. Real systems also tokenize, normalize, store term statistics and support field/position information.",
+  "keyPoints": [
+    "Index construction vs query-time retrieval.",
+    "Positions enable phrase queries.",
+    "Document/term statistics support ranking."
+  ],
+  "resources": [
+    "ir-book"
+  ],
+  "featured": false,
+  "why": "Inverted Index & Text Retrieval Pipeline appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
+  "intuition": "Index construction vs query-time retrieval.",
+  "deepDive": "An inverted index maps terms to documents/postings containing them, making lexical search efficient. Real systems also tokenize, normalize, store term statistics and support field/position information. Positions enable phrase queries. Document/term statistics support ranking. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
+  "workedExample": "Index product descriptions so a query only scans postings for its terms rather than every document.",
+  "commonMistakes": [
+    "Applying the method without checking its assumptions or data-generating process.",
+    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+  ],
+  "followUps": [
+    "What assumptions does Inverted Index & Text Retrieval Pipeline make?",
+    "How would you validate or debug Inverted Index & Text Retrieval Pipeline in practice?"
+  ],
+  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "visual": {
+    "type": "schema",
+    "title": "Inverted index",
+    "center": "term → posting list",
+    "satellites": [
+      "term: graph → docs 1,4,7",
+      "term: model → docs 2,4",
+      "term: ranking → docs 3,7"
+    ],
+    "caption": "An inverted index maps each term to the documents that contain it, enabling fast lexical retrieval."
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

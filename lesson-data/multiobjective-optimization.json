@@ -1,0 +1,75 @@
+{
+  "slug": "multiobjective-optimization",
+  "title": "Multi-objective Optimization & Pareto Trade-offs",
+  "module": "optimization",
+  "priority": "high",
+  "roles": [
+    "ds",
+    "as"
+  ],
+  "interviewAnswer": "Many real systems optimize several conflicting objectives. Pareto-optimal solutions cannot improve one objective without worsening another; teams often scalarize objectives or impose constraints/guardrails.",
+  "keyPoints": [
+    "Weighted sums encode preferences but can hide trade-offs.",
+    "Constraints are often clearer for safety/SLA requirements.",
+    "Pareto frontier communicates choices."
+  ],
+  "resources": [
+    "boyd-convex",
+    "ortools"
+  ],
+  "featured": false,
+  "why": "Multi-objective Optimization & Pareto Trade-offs is a recurring foundation across data science and machine learning because it affects both theoretical correctness and practical system behavior.",
+  "intuition": "Weighted sums encode preferences but can hide trade-offs.",
+  "deepDive": "Many real systems optimize several conflicting objectives. Pareto-optimal solutions cannot improve one objective without worsening another; teams often scalarize objectives or impose constraints/guardrails. Constraints are often clearer for safety/SLA requirements. Pareto frontier communicates choices. The interview-level skill is not merely recalling the definition: explain the assumptions, what diagnostic evidence you would inspect, and what alternative you would choose when those assumptions fail.",
+  "workedExample": "Optimize recommendation relevance while requiring latency <100 ms and minimum catalog diversity.",
+  "commonMistakes": [
+    "Using the concept mechanically without checking assumptions or data semantics.",
+    "Reporting one metric/result without examining uncertainty, slices or failure modes."
+  ],
+  "followUps": [
+    "What assumptions or limitations does Multi-objective Optimization & Pareto Trade-offs have?",
+    "How would you validate Multi-objective Optimization & Pareto Trade-offs on a real dataset?"
+  ],
+  "production": "In production, make assumptions explicit, validate on representative slices, compare with a simple baseline and monitor the signals that can drift.",
+  "visual": {
+    "type": "curve",
+    "title": "Pareto frontier",
+    "series": [
+      {
+        "label": "feasible trade-offs",
+        "points": [
+          [
+            0.1,
+            0.88
+          ],
+          [
+            0.2,
+            0.76
+          ],
+          [
+            0.34,
+            0.61
+          ],
+          [
+            0.5,
+            0.48
+          ],
+          [
+            0.68,
+            0.37
+          ],
+          [
+            0.86,
+            0.29
+          ]
+        ]
+      }
+    ],
+    "caption": "Pareto-optimal solutions improve one objective only by worsening another.",
+    "xLabel": "objective 1",
+    "yLabel": "objective 2"
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

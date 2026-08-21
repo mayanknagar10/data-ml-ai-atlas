@@ -1,0 +1,45 @@
+{
+  "slug": "gmm",
+  "title": "Gaussian Mixture Models & EM",
+  "module": "unsupervised",
+  "priority": "high",
+  "roles": [
+    "ds",
+    "as"
+  ],
+  "interviewAnswer": "A Gaussian mixture models data as a weighted combination of Gaussian components and gives soft cluster probabilities. EM alternates between estimating component responsibilities and updating parameters.",
+  "keyPoints": [
+    "Soft assignments differ from k-means hard labels.",
+    "Covariance structure controls cluster shapes.",
+    "Likelihood can favor complexity without regularization/model selection."
+  ],
+  "resources": [
+    "sklearn",
+    "isl"
+  ],
+  "featured": false,
+  "why": "Gaussian Mixture Models & EM appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
+  "intuition": "Soft assignments differ from k-means hard labels.",
+  "deepDive": "A Gaussian mixture models data as a weighted combination of Gaussian components and gives soft cluster probabilities. EM alternates between estimating component responsibilities and updating parameters. Covariance structure controls cluster shapes. Likelihood can favor complexity without regularization/model selection. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
+  "workedExample": "Segment customers into overlapping behavioral groups with posterior membership probabilities.",
+  "commonMistakes": [
+    "Applying the method without checking its assumptions or data-generating process.",
+    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+  ],
+  "followUps": [
+    "What assumptions does Gaussian Mixture Models & EM make?",
+    "How would you validate or debug Gaussian Mixture Models & EM in practice?"
+  ],
+  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "lab": {
+    "goal": "Fit a Gaussian mixture and inspect soft memberships.",
+    "language": "python",
+    "buildIt": "import numpy as np\nrng=np.random.default_rng(0)\nX=np.r_[rng.normal([-2,0],[.7,.5],(200,2)),rng.normal([2,1],[.8,.7],(250,2))]\n",
+    "useIt": "from sklearn.mixture import GaussianMixture\ng=GaussianMixture(n_components=2,random_state=0).fit(X)\nP=g.predict_proba(X)\nprint(P[:5],g.means_)\n",
+    "verifyIt": "assert np.allclose(P.sum(axis=1),1) and len(g.means_)==2\n",
+    "shipIt": "Select component count/covariance with validation or information criteria and monitor whether deployed populations remain compatible with the mixture assumptions."
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

@@ -1,0 +1,66 @@
+{
+  "slug": "flow-matching",
+  "title": "Flow Matching",
+  "module": "genai",
+  "priority": "very-high",
+  "roles": [
+    "genai",
+    "aie",
+    "as"
+  ],
+  "interviewAnswer": "Flow matching trains a model to predict a continuous velocity field that transports samples from a simple distribution such as noise toward the data distribution. Inference integrates that learned vector field over time.",
+  "keyPoints": [
+    "Velocity field",
+    "Path between noise/data",
+    "ODE integration",
+    "Difference from denoising formulation"
+  ],
+  "resources": [
+    "mit-6s191",
+    "stanford-cs336",
+    "hf-diffusion",
+    "paper-flow-matching"
+  ],
+  "featured": true,
+  "why": "Flow matching is increasingly important in modern generative modeling because it offers a direct vector-field view of transporting simple noise distributions into complex data distributions.",
+  "intuition": "Instead of learning “what noise should I remove?”, imagine learning a velocity arrow at every intermediate point that tells the sample how to move from a simple source distribution toward real data.",
+  "deepDive": "Choose a probability path connecting source noise x₀ to target data x₁. Sample an intermediate xₜ and train a network vθ(xₜ,t) to match the target velocity field. At inference, solve the ODE dx/dt=vθ(x,t) from source to data. Rectified-flow variants choose simple paths that can make trajectories easier to integrate.",
+  "math": "For a simple straight interpolation xₜ=(1-t)x₀+t x₁, the target conditional velocity is x₁-x₀ (details vary by formulation/path).",
+  "code": "# Conceptual pseudocode\nx0 = sample_noise()\nx1 = sample_data()\nt = uniform(0, 1)\nxt = (1-t)*x0 + t*x1\ntarget_v = x1 - x0\npred_v = model(xt, t, condition)\nloss = mse(pred_v, target_v)",
+  "commonMistakes": [
+    "Treating every flow-matching implementation as exactly the straight-line formula above; practical paths/objectives vary.",
+    "Saying flow matching and MMDiT are synonyms: one is a training/generative formulation, the other is an architecture family."
+  ],
+  "followUps": [
+    "How is flow matching different from diffusion?",
+    "What ODE solver is used at inference?",
+    "What is rectified flow?",
+    "How does conditioning enter the velocity network?"
+  ],
+  "production": "Inference speed depends on number of function evaluations and solver choice; deployment still needs benchmarking rather than assuming flow matching is always faster.",
+  "workedExample": "For conditioned microstructure reconstruction, the velocity network can use bottleneck embeddings while transporting noise toward a sample consistent with those embeddings.",
+  "lab": {
+    "goal": "Implement a rectified-flow training target on toy points.",
+    "language": "python",
+    "buildIt": "import torch\nx0=torch.randn(256,2); x1=torch.randn(256,2)+torch.tensor([3.,0.])\nt=torch.rand(256,1); xt=(1-t)*x0+t*x1; target=x1-x0\nmodel=torch.nn.Sequential(torch.nn.Linear(3,64),torch.nn.Tanh(),torch.nn.Linear(64,2))\nopt=torch.optim.Adam(model.parameters(),1e-3)\nfor _ in range(300):\n    pred=model(torch.cat([xt,t],1)); loss=((pred-target)**2).mean()\n    opt.zero_grad(); loss.backward(); opt.step()\nprint(loss.item())\n",
+    "useIt": "# Euler integration at inference: x <- x + dt * v_theta(x,t)\nx=torch.randn(32,2); dt=.05\nfor i in range(20):\n    tcur=torch.full((32,1),i/20)\n    with torch.no_grad(): x += dt*model(torch.cat([x,tcur],1))\n",
+    "verifyIt": "assert torch.isfinite(loss)\nassert x.shape==(32,2)\n"
+  },
+  "visual": {
+    "type": "flow",
+    "title": "Flow matching",
+    "items": [
+      "Noise distribution",
+      "Intermediate state xₜ",
+      "Predict velocity field v(xₜ,t)",
+      "Integrate ODE",
+      "Data distribution"
+    ],
+    "caption": "Flow matching learns a continuous vector field that transports noise toward the data distribution.",
+    "accent": 2,
+    "orientation": "horizontal"
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

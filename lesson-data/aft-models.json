@@ -1,0 +1,37 @@
+{
+  "slug": "aft-models",
+  "title": "Accelerated Failure Time Models",
+  "module": "survival",
+  "priority": "medium",
+  "roles": [
+    "ds",
+    "da"
+  ],
+  "interviewAnswer": "AFT models describe how covariates accelerate or decelerate event time directly, offering an alternative interpretation to proportional hazards models.",
+  "keyPoints": [
+    "Models a distribution of log survival time.",
+    "Interpretation is time-ratio oriented.",
+    "Distributional assumption matters."
+  ],
+  "resources": [
+    "lifelines",
+    "statsmodels-survival"
+  ],
+  "featured": false,
+  "why": "Accelerated Failure Time Models is a recurring foundation across data science and machine learning because it affects both theoretical correctness and practical system behavior.",
+  "intuition": "Models a distribution of log survival time.",
+  "deepDive": "AFT models describe how covariates accelerate or decelerate event time directly, offering an alternative interpretation to proportional hazards models. Interpretation is time-ratio oriented. Distributional assumption matters. The interview-level skill is not merely recalling the definition: explain the assumptions, what diagnostic evidence you would inspect, and what alternative you would choose when those assumptions fail.",
+  "workedExample": "A time ratio above 1 indicates a covariate is associated with longer survival under the chosen parameterization.",
+  "commonMistakes": [
+    "Using the concept mechanically without checking assumptions or data semantics.",
+    "Reporting one metric/result without examining uncertainty, slices or failure modes."
+  ],
+  "followUps": [
+    "What assumptions or limitations does Accelerated Failure Time Models have?",
+    "How would you validate Accelerated Failure Time Models on a real dataset?"
+  ],
+  "production": "In production, make assumptions explicit, validate on representative slices, compare with a simple baseline and monitor the signals that can drift.",
+  "editorial": {
+    "status": "summary"
+  }
+}

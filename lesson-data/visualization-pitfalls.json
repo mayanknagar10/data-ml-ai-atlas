@@ -1,0 +1,36 @@
+{
+  "slug": "visualization-pitfalls",
+  "title": "Misleading Charts & Visualization Pitfalls",
+  "module": "eda-viz",
+  "priority": "high",
+  "roles": [
+    "ds",
+    "da"
+  ],
+  "interviewAnswer": "A visualization can be numerically correct and still mislead through truncated axes, inappropriate aggregation, dual axes, area encodings or selective time windows.",
+  "keyPoints": [
+    "Preserve meaningful baselines when magnitude comparisons matter.",
+    "Show uncertainty where relevant.",
+    "Avoid aggregation that hides heterogeneity."
+  ],
+  "resources": [
+    "fundamentals-dataviz"
+  ],
+  "featured": false,
+  "why": "Misleading Charts & Visualization Pitfalls appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
+  "intuition": "Preserve meaningful baselines when magnitude comparisons matter.",
+  "deepDive": "A visualization can be numerically correct and still mislead through truncated axes, inappropriate aggregation, dual axes, area encodings or selective time windows. Show uncertainty where relevant. Avoid aggregation that hides heterogeneity. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
+  "workedExample": "A conversion chart starting the y-axis at 49% makes a 49% to 50% increase look enormous.",
+  "commonMistakes": [
+    "Applying the method without checking its assumptions or data-generating process.",
+    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+  ],
+  "followUps": [
+    "What assumptions does Misleading Charts & Visualization Pitfalls make?",
+    "How would you validate or debug Misleading Charts & Visualization Pitfalls in practice?"
+  ],
+  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "editorial": {
+    "status": "summary"
+  }
+}

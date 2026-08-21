@@ -1,0 +1,39 @@
+{
+  "slug": "numerical-stability",
+  "title": "Numerical Stability: log-sum-exp, overflow & conditioning",
+  "module": "math",
+  "priority": "high",
+  "roles": [
+    "ds",
+    "mle",
+    "aie",
+    "as"
+  ],
+  "interviewAnswer": "Mathematically equivalent formulas can behave very differently in floating point. Stable implementations avoid overflow/underflow, poor conditioning and subtractive cancellation.",
+  "keyPoints": [
+    "Use log-sum-exp for softmax/log-likelihoods.",
+    "Avoid explicit matrix inversion when solves/decompositions are available.",
+    "Scale values and inspect NaN/Inf early."
+  ],
+  "resources": [
+    "numpy",
+    "deep-learning-book"
+  ],
+  "featured": false,
+  "why": "Numerical Stability: log-sum-exp, overflow & conditioning is a recurring foundation across data science and machine learning because it affects both theoretical correctness and practical system behavior.",
+  "intuition": "Use log-sum-exp for softmax/log-likelihoods.",
+  "deepDive": "Mathematically equivalent formulas can behave very differently in floating point. Stable implementations avoid overflow/underflow, poor conditioning and subtractive cancellation. Avoid explicit matrix inversion when solves/decompositions are available. Scale values and inspect NaN/Inf early. The interview-level skill is not merely recalling the definition: explain the assumptions, what diagnostic evidence you would inspect, and what alternative you would choose when those assumptions fail.",
+  "workedExample": "Compute softmax by subtracting the maximum logit before exponentiation.",
+  "commonMistakes": [
+    "Using the concept mechanically without checking assumptions or data semantics.",
+    "Reporting one metric/result without examining uncertainty, slices or failure modes."
+  ],
+  "followUps": [
+    "What assumptions or limitations does Numerical Stability: log-sum-exp, overflow & conditioning have?",
+    "How would you validate Numerical Stability: log-sum-exp, overflow & conditioning on a real dataset?"
+  ],
+  "production": "In production, make assumptions explicit, validate on representative slices, compare with a simple baseline and monitor the signals that can drift.",
+  "editorial": {
+    "status": "summary"
+  }
+}

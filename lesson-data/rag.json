@@ -1,0 +1,67 @@
+{
+  "slug": "rag",
+  "title": "RAG: Retrieval-Augmented Generation",
+  "module": "llm",
+  "priority": "very-high",
+  "roles": [
+    "aie",
+    "mle"
+  ],
+  "interviewAnswer": "RAG retrieves relevant external context and supplies it to the model at generation time. A reliable RAG system depends on ingestion, chunking, embeddings, retrieval, reranking, context construction and evaluation—not only the LLM.",
+  "keyPoints": [
+    "Chunking",
+    "Embeddings",
+    "Retriever",
+    "Grounded generation"
+  ],
+  "resources": [
+    "hf-llm",
+    "openai-cookbook",
+    "langchain-academy",
+    "paper-rag"
+  ],
+  "featured": true,
+  "why": "RAG is one of the most common AI-engineering interview topics because it combines information retrieval, LLMs, data pipelines and evaluation.",
+  "intuition": "Instead of asking the model to remember all facts, retrieve relevant evidence at query time and put that evidence into the context. The model then answers using current, domain-specific material.",
+  "deepDive": "A robust pipeline includes ingestion → parsing → chunking → embedding/indexing → query transformation → retrieval → optional reranking → context assembly → generation → citation/evaluation. Retrieval quality and generation quality must be diagnosed separately.",
+  "math": "A common semantic score is cosine(q,d) = (q·d)/(||q|| ||d||). Retrieval is usually approximate nearest-neighbor search at scale.",
+  "code": "# Conceptual pipeline\nchunks = chunk_documents(docs)\nindex.add(embed(chunks))\nq = embed(user_query)\ncandidates = index.search(q, k=20)\ncontext = rerank(user_query, candidates)[:5]\nanswer = llm(user_query, context)",
+  "commonMistakes": [
+    "Calling any prompt with pasted text “RAG” without a retrieval system.",
+    "Evaluating only final answers and never measuring retrieval recall.",
+    "Ignoring access control and document freshness."
+  ],
+  "followUps": [
+    "RAG vs fine-tuning?",
+    "How do you choose chunk size?",
+    "Why rerank?",
+    "What if retrieval returns conflicting documents?"
+  ],
+  "production": "Production RAG needs document versioning, ACL-aware retrieval, caching, observability, evaluation sets, latency/cost budgets and safe handling of untrusted retrieved text.",
+  "workedExample": "For internal engineering manuals, index approved documents, retrieve relevant sections for each question, cite the source, and evaluate whether the correct evidence was retrieved before judging the final response.",
+  "lab": {
+    "goal": "Build a minimal semantic retriever, then show where generation would plug in.",
+    "language": "python",
+    "buildIt": "from sklearn.feature_extraction.text import TfidfVectorizer\nfrom sklearn.metrics.pairwise import cosine_similarity\nchunks=['refund policy is 30 days','shipping takes 3 days','enterprise SSO uses SAML']\nvec=TfidfVectorizer().fit(chunks); X=vec.transform(chunks)\nq=vec.transform(['how long can I return an item?'])\nidx=cosine_similarity(q,X).ravel().argsort()[::-1][:2]\ncontext=[chunks[i] for i in idx]; print(context)\n",
+    "useIt": "# Production replacement: embeddings/vector DB -> optional reranker -> LLM with cited context.\nprompt='Answer only from context:\\n'+'\\n'.join(context)+'\\nQuestion: return window?'\nprint(prompt)\n",
+    "verifyIt": "assert context[0]=='refund policy is 30 days'\n"
+  },
+  "visual": {
+    "type": "flow",
+    "title": "RAG pipeline",
+    "items": [
+      "User query",
+      "Embed / search",
+      "Retrieve passages",
+      "Construct context",
+      "LLM generation",
+      "Grounded answer"
+    ],
+    "caption": "RAG separates knowledge retrieval from generation so answers can use external, updateable evidence.",
+    "accent": 2,
+    "orientation": "horizontal"
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

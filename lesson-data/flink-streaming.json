@@ -1,0 +1,56 @@
+{
+  "slug": "flink-streaming",
+  "title": "Flink & Stateful Stream Processing",
+  "module": "data-eng",
+  "priority": "high",
+  "roles": [
+    "de",
+    "mle"
+  ],
+  "interviewAnswer": "Flink processes unbounded streams with state, event-time semantics, windows and checkpointing. It is designed for continuous computations where correctness across time and failures matters.",
+  "keyPoints": [
+    "State",
+    "Event time",
+    "Watermarks",
+    "Checkpoints"
+  ],
+  "resources": [
+    "flink",
+    "confluent-kafka",
+    "spark"
+  ],
+  "featured": false,
+  "why": "Flink questions test stateful stream processing, event-time reasoning and recovery beyond simply consuming Kafka messages.",
+  "intuition": "Flink continuously processes events while maintaining state. Checkpoints make that state recoverable, and event-time/watermarks let windows reason about when events actually occurred.",
+  "deepDive": "Operators transform streams; keyed streams partition state by key. Stateful operators snapshot state/checkpoint metadata to durable storage. Event time handles out-of-order events; watermarks estimate event-time progress; windows group events over time intervals. Exactly-once guarantees require source/state/sink coordination and depend on the full pipeline, not Flink alone.",
+  "workedExample": "Radiation readings keyed by sensor can maintain rolling state and classify risk; a watermark allows late readings within a tolerated delay to update event-time windows.",
+  "commonMistakes": [
+    "Confusing processing time with event time.",
+    "Claiming exactly-once without considering the sink.",
+    "Ignoring checkpoint size/recovery cost for large state."
+  ],
+  "followUps": [
+    "Watermarks?",
+    "Keyed state?",
+    "Checkpoint vs savepoint?",
+    "How does Flink recover after failure?"
+  ],
+  "production": "Monitor checkpoint duration/failures, backpressure, watermark lag, state size and Kafka consumer lag; tune parallelism from bottlenecks.",
+  "visual": {
+    "type": "flow",
+    "title": "Stateful stream processing",
+    "items": [
+      "Event stream",
+      "Key / window",
+      "Stateful operator",
+      "Watermark / event time",
+      "Output"
+    ],
+    "caption": "Flink processes unbounded streams with state, event-time semantics and fault-tolerant checkpoints.",
+    "accent": 2,
+    "orientation": "horizontal"
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

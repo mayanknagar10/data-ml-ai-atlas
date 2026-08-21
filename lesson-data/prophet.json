@@ -1,0 +1,40 @@
+{
+  "slug": "prophet",
+  "title": "Prophet & Decomposable Forecasting",
+  "module": "time-series",
+  "priority": "medium",
+  "roles": [
+    "ds",
+    "mle",
+    "da",
+    "as"
+  ],
+  "interviewAnswer": "Prophet models a series as trend plus seasonality plus holiday/event effects. I use it when those components match the problem and fast, interpretable forecasting matters, but I still compare it with simpler and stronger baselines rather than treating it as universally best.",
+  "keyPoints": [
+    "trend",
+    "seasonality",
+    "holidays/events",
+    "diagnostics"
+  ],
+  "resources": [
+    "prophet-docs",
+    "fpppy"
+  ],
+  "featured": false,
+  "why": "Prophet is common in business forecasting and interviews because it demonstrates how domain events can be encoded explicitly.",
+  "intuition": "Think of the forecast as several interpretable curves added together: long-term movement, recurring calendars and known events.",
+  "deepDive": "Prophet uses a piecewise trend with changepoints plus Fourier-style seasonal components and optional regressors/holiday effects. It handles missing observations and irregularities reasonably well, but does not replace careful backtesting.",
+  "workedExample": "For daily orders, add weekly/yearly seasonality and company holidays, then cross-validate multiple horizons and inspect systematic residual patterns.",
+  "commonMistakes": [
+    "Saying Prophet is an LLM or neural network.",
+    "Using automatic seasonality/changepoints without validating whether they match the business."
+  ],
+  "followUps": [
+    "When would XGBoost beat Prophet?",
+    "How would you add promotions or holidays?"
+  ],
+  "production": "It is convenient for scheduled batch forecasts and interpretable component plots, but production still needs data-quality checks and retraining/monitoring.",
+  "editorial": {
+    "status": "summary"
+  }
+}

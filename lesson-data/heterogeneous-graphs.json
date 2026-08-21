@@ -1,0 +1,102 @@
+{
+  "slug": "heterogeneous-graphs",
+  "title": "Heterogeneous Graphs & Relation Types",
+  "module": "graph",
+  "priority": "high",
+  "roles": [
+    "ds",
+    "as",
+    "mle"
+  ],
+  "interviewAnswer": "Heterogeneous graphs contain different node/edge types whose relations have different semantics. Models often use relation-specific transformations or metapath/message-passing strategies.",
+  "keyPoints": [
+    "Type information changes message meaning.",
+    "Reverse edges are often explicit for directed relation flow.",
+    "Evaluation should match target relation."
+  ],
+  "resources": [
+    "stanford-cs224w"
+  ],
+  "featured": false,
+  "why": "Heterogeneous Graphs & Relation Types is a standard part of a broad data/ML curriculum because it changes how models are selected, evaluated or operated in real systems.",
+  "intuition": "Type information changes message meaning.",
+  "deepDive": "Heterogeneous graphs contain different node/edge types whose relations have different semantics. Models often use relation-specific transformations or metapath/message-passing strategies. Reverse edges are often explicit for directed relation flow. Evaluation should match target relation. A strong answer connects the formal idea to validation, data requirements and failure modes instead of treating the method as a recipe.",
+  "workedExample": "A marketplace graph has users, items and sellers with view, purchase and ownership edges.",
+  "commonMistakes": [
+    "Choosing the technique without checking whether its assumptions match the problem.",
+    "Optimizing an offline metric without checking realistic validation slices or operational constraints."
+  ],
+  "followUps": [
+    "When would you not use Heterogeneous Graphs & Relation Types?",
+    "How would you validate or tune Heterogeneous Graphs & Relation Types?"
+  ],
+  "production": "In production, validate on realistic slices, track latency/cost when relevant, and monitor for distribution changes or failure modes that the offline metric can hide.",
+  "visual": {
+    "type": "network",
+    "title": "Heterogeneous graph",
+    "nodes": [
+      {
+        "id": "u1",
+        "label": "User",
+        "x": 0.15,
+        "y": 0.35,
+        "kind": "a"
+      },
+      {
+        "id": "u2",
+        "label": "User",
+        "x": 0.15,
+        "y": 0.72,
+        "kind": "a"
+      },
+      {
+        "id": "p1",
+        "label": "PR",
+        "x": 0.5,
+        "y": 0.25,
+        "kind": "b"
+      },
+      {
+        "id": "p2",
+        "label": "PR",
+        "x": 0.5,
+        "y": 0.72,
+        "kind": "b"
+      },
+      {
+        "id": "f",
+        "label": "File",
+        "x": 0.84,
+        "y": 0.48,
+        "kind": "c"
+      }
+    ],
+    "edges": [
+      [
+        "u1",
+        "p1"
+      ],
+      [
+        "u2",
+        "p2"
+      ],
+      [
+        "u1",
+        "p2"
+      ],
+      [
+        "p1",
+        "f"
+      ],
+      [
+        "p2",
+        "f"
+      ]
+    ],
+    "caption": "Heterogeneous graphs contain multiple node and edge types, each with different semantics.",
+    "directed": true
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

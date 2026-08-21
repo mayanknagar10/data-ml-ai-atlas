@@ -1,0 +1,106 @@
+{
+  "slug": "clip-contrastive",
+  "title": "CLIP & Contrastive Image–Text Alignment",
+  "module": "multimodal",
+  "priority": "high",
+  "roles": [
+    "aie",
+    "mle",
+    "cv",
+    "as"
+  ],
+  "interviewAnswer": "CLIP trains an image encoder and text encoder so matched image-caption pairs have high cosine similarity and mismatched pairs have lower similarity. A contrastive loss over a batch creates a shared embedding space, which enables zero-shot classification and cross-modal retrieval.",
+  "keyPoints": [
+    "dual encoders",
+    "normalized embeddings",
+    "contrastive logits",
+    "zero-shot transfer"
+  ],
+  "resources": [
+    "clip-paper",
+    "hf-vlm-course",
+    "stanford-cs25"
+  ],
+  "featured": true,
+  "why": "CLIP-style alignment is foundational for retrieval, VLMs and conditioning in modern generative vision systems.",
+  "intuition": "Put an image and its caption close together on a semantic map while pushing unrelated captions away.",
+  "deepDive": "Image and text encoders produce vectors that are L2-normalized. Their pairwise dot products form a batch similarity matrix. A learned temperature/logit scale controls sharpness, and symmetric cross-entropy trains both image-to-text and text-to-image matching. At inference, arbitrary class descriptions can become text prototypes for zero-shot prediction.",
+  "math": "s_ij = (z_i^image · z_j^text)/τ.\nLoss = 0.5[CE(rows, diagonal)+CE(columns, diagonal)].",
+  "workedExample": "For a batch of three matched image-caption pairs, the desired similarity matrix has its largest values on the diagonal.",
+  "commonMistakes": [
+    "Calling CLIP a caption-generation model.",
+    "Forgetting that zero-shot classification depends strongly on prompt/class text design and distribution shift."
+  ],
+  "followUps": [
+    "Why normalize embeddings?",
+    "What does temperature do?",
+    "CLIP vs cross-encoder?"
+  ],
+  "production": "For retrieval, evaluate recall@K across slices and monitor embedding drift when encoders, prompts or preprocessing change.",
+  "lab": {
+    "goal": "Build the core CLIP contrastive similarity matrix and verify matched pairs score highest.",
+    "language": "python",
+    "buildIt": "import numpy as np\ndef norm(x): return x/np.linalg.norm(x,axis=1,keepdims=True)\nimg=norm(np.array([[1.,0.],[0.,1.],[1.,1.]]))\ntxt=norm(np.array([[.9,.1],[.1,.9],[1.,.8]]))\ntau=.1\nlogits=img@txt.T/tau\nprint(logits)",
+    "useIt": "pred=logits.argmax(axis=1); print('image→text matches',pred)",
+    "verifyIt": "assert (logits.diagonal() >= logits.max(axis=1)-1e-9).all()\n"
+  },
+  "visual": {
+    "type": "network",
+    "title": "CLIP contrastive learning",
+    "nodes": [
+      {
+        "id": "i",
+        "label": "image encoder",
+        "x": 0.18,
+        "y": 0.25
+      },
+      {
+        "id": "t",
+        "label": "text encoder",
+        "x": 0.18,
+        "y": 0.75
+      },
+      {
+        "id": "ie",
+        "label": "image embedding",
+        "x": 0.55,
+        "y": 0.25
+      },
+      {
+        "id": "te",
+        "label": "text embedding",
+        "x": 0.55,
+        "y": 0.75
+      },
+      {
+        "id": "s",
+        "label": "similarity matrix",
+        "x": 0.84,
+        "y": 0.5
+      }
+    ],
+    "edges": [
+      [
+        "i",
+        "ie"
+      ],
+      [
+        "t",
+        "te"
+      ],
+      [
+        "ie",
+        "s"
+      ],
+      [
+        "te",
+        "s"
+      ]
+    ],
+    "caption": "CLIP pulls matched image/text embeddings together and pushes mismatched pairs apart with a contrastive objective.",
+    "directed": true
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

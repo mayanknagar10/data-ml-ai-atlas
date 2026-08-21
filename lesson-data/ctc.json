@@ -1,0 +1,50 @@
+{
+  "slug": "ctc",
+  "title": "Connectionist Temporal Classification (CTC)",
+  "module": "speech",
+  "priority": "medium",
+  "roles": [
+    "ds",
+    "as"
+  ],
+  "interviewAnswer": "CTC trains sequence models when input frames are much longer than output labels and exact alignments are unknown. It sums over valid alignments using blank/repeated-token rules.",
+  "keyPoints": [
+    "Alignment is monotonic.",
+    "Blank token enables flexible timing.",
+    "Decoding can be greedy or beam search."
+  ],
+  "resources": [
+    "stanford-cs224s"
+  ],
+  "featured": false,
+  "why": "Connectionist Temporal Classification (CTC) appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
+  "intuition": "Alignment is monotonic.",
+  "deepDive": "CTC trains sequence models when input frames are much longer than output labels and exact alignments are unknown. It sums over valid alignments using blank/repeated-token rules. Blank token enables flexible timing. Decoding can be greedy or beam search. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
+  "workedExample": "Map hundreds of acoustic frames to a much shorter character sequence without frame-level transcription labels.",
+  "commonMistakes": [
+    "Applying the method without checking its assumptions or data-generating process.",
+    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+  ],
+  "followUps": [
+    "What assumptions does Connectionist Temporal Classification (CTC) make?",
+    "How would you validate or debug Connectionist Temporal Classification (CTC) in practice?"
+  ],
+  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "visual": {
+    "type": "flow",
+    "title": "CTC decoding",
+    "items": [
+      "Frame-level token probabilities",
+      "Allow blanks / repeats",
+      "Collapse repeats",
+      "Remove blanks",
+      "Output sequence"
+    ],
+    "caption": "CTC trains sequence models without requiring exact frame-to-token alignment.",
+    "accent": 2,
+    "orientation": "horizontal"
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

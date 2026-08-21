@@ -1,0 +1,61 @@
+{
+  "slug": "time-series-split",
+  "title": "Time-Series Splits & Backtesting",
+  "module": "time-series",
+  "priority": "very-high",
+  "roles": [
+    "ds",
+    "mle",
+    "da",
+    "as"
+  ],
+  "interviewAnswer": "Random train/test splitting is usually wrong for forecasting because it leaks the future into the past. I split chronologically and evaluate with rolling or expanding-window backtests that mimic how the model will actually be used.",
+  "keyPoints": [
+    "chronological split",
+    "rolling/expanding windows",
+    "no future leakage",
+    "match deployment horizon"
+  ],
+  "resources": [
+    "fpp3",
+    "fpppy",
+    "statsmodels-tsa"
+  ],
+  "featured": true,
+  "why": "Forecast validation is easy to make unrealistically optimistic. A model should only use information that would have existed at the prediction timestamp.",
+  "intuition": "Imagine standing at each historical date and pretending it is “today.” Train only on the past, forecast the next horizon, record the error, then move forward.",
+  "deepDive": "Random cross-validation breaks temporal ordering. Use a final untouched future holdout for the last estimate, while rolling-origin validation compares models/hyperparameters. Feature engineering must also be point-in-time correct: rolling means, target encodings, and joins cannot peek ahead.",
+  "workedExample": "For monthly demand, train Jan–Dec 2024 and validate Jan–Mar 2025; then train through Mar and validate Apr–Jun. Compare errors across windows instead of trusting one lucky split.",
+  "commonMistakes": [
+    "Using random K-fold CV on dependent time-series observations.",
+    "Computing rolling features on the full dataset before splitting, which leaks future information."
+  ],
+  "followUps": [
+    "When is random splitting acceptable for temporal data?",
+    "How do you choose expanding vs sliding windows?"
+  ],
+  "production": "Backtests should mirror prediction cadence, horizon, retraining frequency and data availability. Production feature pipelines need event-time/point-in-time semantics.",
+  "code": "# sklearn-style rolling evaluation\nfrom sklearn.model_selection import TimeSeriesSplit\n\ntscv = TimeSeriesSplit(n_splits=5)\nfor train_idx, val_idx in tscv.split(X):\n    X_train, X_val = X.iloc[train_idx], X.iloc[val_idx]\n    y_train, y_val = y.iloc[train_idx], y.iloc[val_idx]",
+  "lab": {
+    "goal": "Backtest without future leakage using expanding windows.",
+    "language": "python",
+    "buildIt": "import numpy as np\nfrom sklearn.metrics import mean_absolute_error\ny=np.arange(30)+np.sin(np.arange(30))\nerrors=[]\nfor cutoff in range(15,27,3):\n    train=y[:cutoff]; val=y[cutoff:cutoff+3]\n    pred=np.repeat(train[-1],len(val)) # naive baseline\n    errors.append(mean_absolute_error(val,pred))\nprint(errors, np.mean(errors))\n",
+    "useIt": "from sklearn.model_selection import TimeSeriesSplit\nfor tr,va in TimeSeriesSplit(n_splits=4).split(y):\n    assert tr.max()<va.min()\n",
+    "verifyIt": "assert len(errors)==4\nassert all(e>=0 for e in errors)\n"
+  },
+  "visual": {
+    "type": "flow",
+    "title": "Rolling-origin validation",
+    "items": [
+      "Train ≤ t₁ → validate t₂",
+      "Train ≤ t₂ → validate t₃",
+      "Train ≤ t₃ → validate t₄"
+    ],
+    "caption": "Time-series validation respects chronology; random shuffling can leak future information.",
+    "accent": 1,
+    "orientation": "horizontal"
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

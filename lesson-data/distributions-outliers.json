@@ -1,0 +1,100 @@
+{
+  "slug": "distributions-outliers",
+  "title": "Distributions, Skewness & Outliers",
+  "module": "eda-viz",
+  "priority": "very-high",
+  "roles": [
+    "ds",
+    "da"
+  ],
+  "interviewAnswer": "Outliers are not automatically bad data. I first determine whether they are errors, rare but valid cases, or a separate population, then choose transformations, robust statistics or explicit modeling accordingly.",
+  "keyPoints": [
+    "Compare mean vs median under skew.",
+    "Use quantiles/IQR and domain constraints.",
+    "Log transforms can stabilize heavy right tails."
+  ],
+  "resources": [
+    "openintro-stats",
+    "fundamentals-dataviz"
+  ],
+  "featured": true,
+  "why": "Distributions, Skewness & Outliers appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
+  "intuition": "Compare mean vs median under skew.",
+  "deepDive": "Outliers are not automatically bad data. I first determine whether they are errors, rare but valid cases, or a separate population, then choose transformations, robust statistics or explicit modeling accordingly. Use quantiles/IQR and domain constraints. Log transforms can stabilize heavy right tails. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
+  "workedExample": "A few enterprise customers may be legitimate extreme spenders; deleting them could destroy the business signal.",
+  "commonMistakes": [
+    "Applying the method without checking its assumptions or data-generating process.",
+    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+  ],
+  "followUps": [
+    "What assumptions does Distributions, Skewness & Outliers make?",
+    "How would you validate or debug Distributions, Skewness & Outliers in practice?"
+  ],
+  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "visual": {
+    "type": "scatter",
+    "title": "Outlier detection depends on context",
+    "series": [
+      {
+        "label": "main cloud",
+        "points": [
+          [
+            0.12,
+            0.22
+          ],
+          [
+            0.19,
+            0.3
+          ],
+          [
+            0.24,
+            0.25
+          ],
+          [
+            0.31,
+            0.37
+          ],
+          [
+            0.38,
+            0.33
+          ],
+          [
+            0.43,
+            0.46
+          ],
+          [
+            0.52,
+            0.48
+          ],
+          [
+            0.6,
+            0.57
+          ],
+          [
+            0.67,
+            0.6
+          ],
+          [
+            0.75,
+            0.68
+          ]
+        ]
+      },
+      {
+        "label": "possible outlier",
+        "points": [
+          [
+            0.89,
+            0.2
+          ]
+        ]
+      }
+    ],
+    "caption": "An unusual point may be an error, a rare valid case, or the most important observation in the dataset.",
+    "xLabel": "feature 1",
+    "yLabel": "feature 2"
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

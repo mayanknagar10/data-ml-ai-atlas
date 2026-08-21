@@ -1,0 +1,46 @@
+{
+  "slug": "regression-metrics",
+  "title": "Regression Metrics: RMSE, MAE, MAPE & R²",
+  "module": "evaluation",
+  "priority": "very-high",
+  "roles": [
+    "ds"
+  ],
+  "interviewAnswer": "Regression metrics emphasize different error properties. RMSE punishes large errors; MAE is robust and in target units; MAPE fails near zero and weights relative errors unevenly; R² measures variance explained relative to a mean baseline.",
+  "keyPoints": [
+    "Metric must match decision cost.",
+    "Scale-dependent vs scale-free metrics differ.",
+    "Always compare with a baseline."
+  ],
+  "resources": [
+    "isl",
+    "fpp3"
+  ],
+  "featured": true,
+  "why": "Regression Metrics: RMSE, MAE, MAPE & R² is a recurring foundation across data science and machine learning because it affects both theoretical correctness and practical system behavior.",
+  "intuition": "Metric must match decision cost.",
+  "deepDive": "Regression metrics emphasize different error properties. RMSE punishes large errors; MAE is robust and in target units; MAPE fails near zero and weights relative errors unevenly; R² measures variance explained relative to a mean baseline. Scale-dependent vs scale-free metrics differ. Always compare with a baseline. The interview-level skill is not merely recalling the definition: explain the assumptions, what diagnostic evidence you would inspect, and what alternative you would choose when those assumptions fail.",
+  "workedExample": "Forecast demand with MAE for typical unit error and WAPE/MASE for cross-series comparability rather than blindly using MAPE near zeros.",
+  "commonMistakes": [
+    "Using the concept mechanically without checking assumptions or data semantics.",
+    "Reporting one metric/result without examining uncertainty, slices or failure modes."
+  ],
+  "followUps": [
+    "What assumptions or limitations does Regression Metrics: RMSE, MAE, MAPE & R² have?",
+    "How would you validate Regression Metrics: RMSE, MAE, MAPE & R² on a real dataset?"
+  ],
+  "production": "In production, make assumptions explicit, validate on representative slices, compare with a simple baseline and monitor the signals that can drift.",
+  "visual": {
+    "type": "concept-map",
+    "title": "Regression Metrics: RMSE, MAE, MAPE & R²",
+    "items": [
+      "Metric must match decision cost.",
+      "Scale-dependent vs scale-free metrics differ.",
+      "Always compare with a baseline."
+    ],
+    "caption": "A compact concept map for the most important ideas in this lesson."
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

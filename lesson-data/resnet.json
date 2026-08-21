@@ -1,0 +1,59 @@
+{
+  "slug": "resnet",
+  "title": "Residual Networks",
+  "module": "cv",
+  "priority": "high",
+  "roles": [
+    "cv",
+    "mle",
+    "as"
+  ],
+  "interviewAnswer": "Residual connections learn a change relative to the input and create shorter gradient paths, making very deep networks easier to optimize.",
+  "keyPoints": [
+    "Skip connection",
+    "Identity mapping",
+    "Optimization benefit",
+    "Not just ensemble intuition"
+  ],
+  "resources": [
+    "stanford-cs231n",
+    "mit-6s191",
+    "d2l",
+    "paper-resnet"
+  ],
+  "featured": false,
+  "why": "Residual networks are foundational because skip connections changed the trainability of very deep models and appear throughout modern architectures.",
+  "intuition": "Instead of forcing a block to learn a full transformation H(x), learn a residual F(x)=H(x)-x and add the input back: y=x+F(x).",
+  "deepDive": "Identity shortcuts create short gradient paths and make it easier for a block to behave like identity if extra depth is unnecessary. When shapes differ, projection shortcuts can align dimensions. Residual connections do not eliminate all optimization issues but significantly improve signal/gradient propagation and are also used in transformers and diffusion U-Nets.",
+  "math": "y = x + F(x;W)",
+  "workedExample": "If a residual branch initially outputs near zero, the block behaves approximately like identity, so adding depth does not necessarily destroy an already useful representation.",
+  "code": "def forward(self,x):\n    return self.relu(x + self.block(x))",
+  "commonMistakes": [
+    "Saying ResNet solves vanishing gradients completely.",
+    "Adding tensors with incompatible shapes without projection.",
+    "Confusing residual connections with DenseNet concatenation."
+  ],
+  "followUps": [
+    "Why does identity help optimization?",
+    "What if channel count changes?",
+    "ResNet vs DenseNet?",
+    "Where else are residuals used?"
+  ],
+  "production": "Residual backbones are mature/efficient; inference optimization often benefits from standard kernels and well-supported architectures.",
+  "visual": {
+    "type": "flow",
+    "title": "Residual block",
+    "items": [
+      "Input x",
+      "Residual branch F(x)",
+      "Add x + F(x)",
+      "Activation"
+    ],
+    "caption": "Skip connections provide a direct information/gradient path through deep networks.",
+    "accent": 2,
+    "orientation": "horizontal"
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

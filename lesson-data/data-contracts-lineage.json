@@ -1,0 +1,38 @@
+{
+  "slug": "data-contracts-lineage",
+  "title": "Data Contracts, Lineage & Semantic Consistency",
+  "module": "analytics-eng",
+  "priority": "high",
+  "roles": [
+    "de",
+    "ds",
+    "da"
+  ],
+  "interviewAnswer": "Data contracts make schemas, ownership and expectations explicit; lineage shows downstream dependencies. Together they reduce silent breakage and clarify impact when producers change data.",
+  "keyPoints": [
+    "Schema compatibility is not enough; semantics matter.",
+    "Owners and SLAs should be explicit.",
+    "Metric definitions should be centralized/versioned."
+  ],
+  "resources": [
+    "dbt-docs",
+    "google-rules-ml"
+  ],
+  "featured": false,
+  "why": "Data Contracts, Lineage & Semantic Consistency appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
+  "intuition": "Schema compatibility is not enough; semantics matter.",
+  "deepDive": "Data contracts make schemas, ownership and expectations explicit; lineage shows downstream dependencies. Together they reduce silent breakage and clarify impact when producers change data. Owners and SLAs should be explicit. Metric definitions should be centralized/versioned. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
+  "workedExample": "Changing “revenue” from gross to net without versioning can silently corrupt every downstream dashboard/model.",
+  "commonMistakes": [
+    "Applying the method without checking its assumptions or data-generating process.",
+    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+  ],
+  "followUps": [
+    "What assumptions does Data Contracts, Lineage & Semantic Consistency make?",
+    "How would you validate or debug Data Contracts, Lineage & Semantic Consistency in practice?"
+  ],
+  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "editorial": {
+    "status": "summary"
+  }
+}

@@ -1,0 +1,55 @@
+{
+  "slug": "spatial-validation",
+  "title": "Spatial Cross-Validation & Geographic Leakage",
+  "module": "geospatial",
+  "priority": "high",
+  "roles": [
+    "ds",
+    "as",
+    "mle"
+  ],
+  "interviewAnswer": "Random splits can overestimate geospatial model performance because nearby samples are correlated; spatial blocking or leave-region-out validation better measures transfer to new areas.",
+  "keyPoints": [
+    "Spatial leakage",
+    "Blocked CV",
+    "Leave-region-out",
+    "Deployment geography"
+  ],
+  "resources": [
+    "geodata-science-book",
+    "pysal",
+    "google-rules-ml"
+  ],
+  "featured": false,
+  "why": "Spatial data can make test examples near-duplicates of training examples.",
+  "intuition": "If deployment is a new city, validation should mimic a new city—not random points from the same streets.",
+  "deepDive": "Block scale should reflect autocorrelation range and deployment scope; performance can be reported by region and distance from training support.",
+  "math": "",
+  "code": "",
+  "commonMistakes": [
+    "Randomly splitting spatially correlated rows.",
+    "Using blocks too small to break dependence."
+  ],
+  "followUps": [
+    "How choose block size?",
+    "Spatial vs temporal leakage?"
+  ],
+  "production": "Design validation around geographic deployment and monitor regional performance.",
+  "workedExample": "Hold out whole farms/regions for crop prediction instead of random pixels from each farm.",
+  "visual": {
+    "type": "map",
+    "title": "Spatial validation holds out coherent regions",
+    "regions": [
+      0.2,
+      0.2,
+      0.8,
+      0.2,
+      0.8,
+      0.8
+    ],
+    "caption": "Conceptually, geographic blocks separate train and test instead of randomly mixing neighbors."
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

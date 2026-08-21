@@ -1,0 +1,118 @@
+{
+  "slug": "mse-mae",
+  "title": "MSE vs MAE",
+  "module": "evaluation",
+  "priority": "very-high",
+  "roles": [
+    "all"
+  ],
+  "interviewAnswer": "Use MSE when you want large errors penalized disproportionately because errors are squared. Use MAE when you want a loss that grows linearly and is more robust to outliers. The choice is about error behavior—not whether the current loss value is “large” or “small.”",
+  "keyPoints": [
+    "MSE squares residuals",
+    "MAE uses absolute residuals",
+    "Outlier sensitivity",
+    "Gaussian vs Laplace interpretation"
+  ],
+  "resources": [
+    "google-mlcc",
+    "statquest",
+    "sklearn",
+    "isl"
+  ],
+  "featured": true,
+  "why": "This is a classic interview question because it tests whether you understand how a loss function changes model behavior, not whether you can recite formulas.",
+  "intuition": "Imagine residuals [1, 1, 1, 10]. MAE treats the large error as 10; MSE turns it into 100. That single point therefore dominates MSE much more strongly.",
+  "deepDive": "MSE is smooth everywhere and its gradient grows with error magnitude, so large residuals drive larger updates. MAE has a constant-magnitude gradient away from zero and is more robust to extreme residuals. Statistically, minimizing expected squared error targets the conditional mean, while minimizing expected absolute error targets the conditional median.",
+  "math": "MSE = (1/n) Σ(yᵢ-ŷᵢ)²\nMAE = (1/n) Σ|yᵢ-ŷᵢ|",
+  "code": "import numpy as np\ny = np.array([0., 0., 0., 0.])\ny_hat = np.array([1., 1., 1., 10.])\nerrors = y - y_hat\nprint('MAE:', np.mean(np.abs(errors)))\nprint('MSE:', np.mean(errors ** 2))",
+  "commonMistakes": [
+    "“Use MSE when the loss is big and MAE when it is small.” — incorrect. The choice is about error weighting and assumptions.",
+    "“MAE ignores large errors.” — false; it penalizes them linearly rather than quadratically.",
+    "Comparing raw MSE and MAE magnitudes as if they were on the same units; MSE is in squared target units."
+  ],
+  "followUps": [
+    "When would you use RMSE?",
+    "How does Huber loss combine MAE and MSE behavior?",
+    "Which estimate minimizes expected MSE vs MAE?",
+    "What happens to gradients near zero?"
+  ],
+  "production": "Choose the metric/loss from business error cost. A model may train with one differentiable loss and still be selected using a different operational metric.",
+  "workedExample": "If one price prediction is off by €100 while most are off by €5, MSE strongly prioritizes fixing the €100 miss. MAE is less dominated by that single outlier.",
+  "lab": {
+    "goal": "Make outlier sensitivity visible rather than memorizing definitions.",
+    "language": "python",
+    "buildIt": "import numpy as np\ny=np.array([10,10,10,10.])\np1=np.array([9,11,10,30.])\nerr=p1-y\nmae=np.mean(np.abs(err)); mse=np.mean(err**2)\nprint('errors',err,'MAE',mae,'MSE',mse)\n",
+    "useIt": "from sklearn.metrics import mean_absolute_error, mean_squared_error\nprint(mean_absolute_error(y,p1),mean_squared_error(y,p1))\n",
+    "verifyIt": "p2=np.array([9,11,10,14.])\nassert np.mean((p1-y)**2)-np.mean((p2-y)**2) > np.mean(abs(p1-y))-np.mean(abs(p2-y))\n"
+  },
+  "visual": {
+    "type": "curve",
+    "title": "How error size changes the penalty",
+    "series": [
+      {
+        "label": "MAE",
+        "points": [
+          [
+            0,
+            0
+          ],
+          [
+            0.2,
+            0.2
+          ],
+          [
+            0.4,
+            0.4
+          ],
+          [
+            0.6,
+            0.6
+          ],
+          [
+            0.8,
+            0.8
+          ],
+          [
+            1,
+            1
+          ]
+        ]
+      },
+      {
+        "label": "MSE",
+        "points": [
+          [
+            0,
+            0
+          ],
+          [
+            0.2,
+            0.04
+          ],
+          [
+            0.4,
+            0.16
+          ],
+          [
+            0.6,
+            0.36
+          ],
+          [
+            0.8,
+            0.64
+          ],
+          [
+            1,
+            1
+          ]
+        ]
+      }
+    ],
+    "caption": "MAE grows linearly with residual magnitude; MSE grows quadratically, so large errors receive much more weight.",
+    "xLabel": "|error|",
+    "yLabel": "relative penalty"
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

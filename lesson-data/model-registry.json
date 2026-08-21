@@ -1,0 +1,64 @@
+{
+  "slug": "model-registry",
+  "title": "Model Registry & Versioning",
+  "module": "mlops",
+  "priority": "high",
+  "roles": [
+    "mle",
+    "aie"
+  ],
+  "interviewAnswer": "A model registry stores versioned model artifacts plus metadata, evaluation results and lifecycle state. It gives deployment systems an explicit, auditable model version to promote or roll back.",
+  "keyPoints": [
+    "Version",
+    "Stage/approval",
+    "Metadata",
+    "Rollback"
+  ],
+  "resources": [
+    "made-with-ml",
+    "aws-sagemaker",
+    "fsdl",
+    "stanford-cs329s"
+  ],
+  "featured": false,
+  "why": "A model registry provides controlled versioning and lifecycle metadata between experimentation and deployment.",
+  "intuition": "Think of it as a catalog of deployable model artifacts with versions, metrics, provenance and approval states—not just a folder of checkpoint files.",
+  "deepDive": "A registry entry should reference model artifact, preprocessing/tokenizer, training run, data/code versions, evaluation results and stage/approval. Promotion should use automated and/or human gates. Rollback means redeploying a previous approved artifact/config, not retraining from memory. Multiple deployments can point to different versions during canary/shadow tests.",
+  "workedExample": "Model v12 is “Production”; v13 passes offline metrics and becomes “Staging.” A canary detects latency/quality regression, so traffic returns to v12.",
+  "commonMistakes": [
+    "Versioning only the weights but not preprocessing/tokenizer.",
+    "Overwriting “model.pkl” in place.",
+    "Promoting based only on one aggregate metric."
+  ],
+  "followUps": [
+    "Registry vs artifact store?",
+    "What metadata belongs with a model?",
+    "How do you roll back?",
+    "Who/what approves promotion?"
+  ],
+  "production": "Use immutable artifact identifiers and deployment manifests so every prediction can be traced to an exact model/preprocessing version.",
+  "lab": {
+    "goal": "Represent model versions as immutable artifacts and implement a simple promotion/rollback pointer.",
+    "language": "python",
+    "buildIt": "registry={}\ndef register(version,uri,metric):\n    registry[version]={'uri':uri,'metric':metric}\nregister('v1','models/v1.pt',.82); register('v2','models/v2.pt',.86)\nproduction='v1'\n",
+    "useIt": "production=max(registry,key=lambda v:registry[v]['metric'])\nprint('promote',production,registry[production])",
+    "verifyIt": "previous='v1'; production='v2'; production=previous\nassert production=='v1'\n"
+  },
+  "visual": {
+    "type": "flow",
+    "title": "Model registry lifecycle",
+    "items": [
+      "Training run",
+      "Metrics + artifact",
+      "Register version",
+      "Approve stage",
+      "Deploy / rollback"
+    ],
+    "caption": "A registry links each model version to metadata, evaluation and deployment status so releases are reproducible and reversible.",
+    "accent": 2,
+    "orientation": "horizontal"
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

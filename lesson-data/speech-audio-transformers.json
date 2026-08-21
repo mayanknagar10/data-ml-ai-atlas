@@ -1,0 +1,41 @@
+{
+  "slug": "speech-audio-transformers",
+  "title": "Speech & Audio Transformers: Spectrograms and ASR",
+  "module": "speech",
+  "priority": "medium",
+  "roles": [
+    "aie",
+    "mle",
+    "as"
+  ],
+  "interviewAnswer": "Audio models typically convert a waveform into time-frequency features such as log-Mel spectrograms, then use an encoder or encoder-decoder model to classify audio or generate text. Whisper is a well-known transformer encoder-decoder trained for multilingual speech recognition, translation and language identification.",
+  "keyPoints": [
+    "waveform → spectrogram",
+    "temporal sequence",
+    "encoder / encoder-decoder",
+    "ASR"
+  ],
+  "resources": [
+    "whisper-paper",
+    "whisper-github",
+    "hf-multimodal-transformers"
+  ],
+  "featured": false,
+  "why": "Audio is an important modality in multimodal AI and introduces sequence-length, sampling-rate and streaming constraints that differ from text/images.",
+  "intuition": "A spectrogram turns sound into an image-like map of frequency over time; the model then learns patterns across that temporal-frequency representation.",
+  "deepDive": "ASR systems normalize/resample audio and create acoustic features such as log-Mel spectrograms. Transformer encoders model the acoustic sequence; sequence-to-sequence decoders generate text tokens. Other architectures use CTC. Streaming ASR adds chunking, context windows and latency trade-offs.",
+  "workedExample": "A 30-second audio clip is resampled, converted to log-Mel features, encoded, and decoded autoregressively into transcript tokens.",
+  "commonMistakes": [
+    "Treating raw audio samples as equivalent to text tokens without discussing preprocessing/feature representation.",
+    "Ignoring word-error rate and streaming latency in ASR evaluation."
+  ],
+  "followUps": [
+    "What is WER?",
+    "CTC vs encoder-decoder ASR?",
+    "How would you stream inference?"
+  ],
+  "production": "Track word-error rate by accent/noise/domain, real-time factor, chunk latency and audio-quality failures; audio privacy/PII can be especially sensitive.",
+  "editorial": {
+    "status": "summary"
+  }
+}

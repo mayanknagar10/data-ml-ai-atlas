@@ -1,0 +1,105 @@
+{
+  "slug": "batching-throughput",
+  "title": "Batching, Queueing & Throughput",
+  "module": "performance",
+  "priority": "very-high",
+  "roles": [
+    "mle",
+    "aie"
+  ],
+  "interviewAnswer": "Batching amortizes fixed overhead and improves accelerator utilization, so throughput rises, but waiting to form batches can increase latency. I choose static, dynamic or continuous batching based on SLA, traffic pattern and model shape.",
+  "keyPoints": [
+    "batch size",
+    "latency-throughput trade-off",
+    "dynamic batching",
+    "queueing"
+  ],
+  "resources": [
+    "hf-inference-opt",
+    "fsdl"
+  ],
+  "featured": false,
+  "why": "Production capacity is often limited more by poor batching than by raw model speed.",
+  "intuition": "One GPU prefers doing a useful chunk of work at once; users prefer not waiting for other requests. Serving design balances those goals.",
+  "deepDive": "For LLMs, sequence lengths vary and continuous batching can admit new requests as others finish. Memory capacity, KV cache and tail latency often determine maximum useful batch size.",
+  "workedExample": "Batch size 1 may give 40 ms/request at 25 req/s, while batch 16 gives 180 ms/batch ≈89 req/s. Better throughput, worse individual latency.",
+  "commonMistakes": [
+    "Maximizing batch size without considering p95 latency.",
+    "Comparing throughput across different input lengths or hardware without normalization."
+  ],
+  "followUps": [
+    "What is continuous batching?",
+    "How would you design admission control?"
+  ],
+  "production": "Autoscaling should consider queue depth, GPU utilization and latency; overload protection is part of correctness.",
+  "visual": {
+    "type": "curve",
+    "title": "Batch size trade-off",
+    "series": [
+      {
+        "label": "throughput",
+        "points": [
+          [
+            0,
+            0.15
+          ],
+          [
+            0.2,
+            0.4
+          ],
+          [
+            0.4,
+            0.65
+          ],
+          [
+            0.6,
+            0.82
+          ],
+          [
+            0.8,
+            0.9
+          ],
+          [
+            1,
+            0.92
+          ]
+        ]
+      },
+      {
+        "label": "per-request latency",
+        "points": [
+          [
+            0,
+            0.18
+          ],
+          [
+            0.2,
+            0.22
+          ],
+          [
+            0.4,
+            0.3
+          ],
+          [
+            0.6,
+            0.43
+          ],
+          [
+            0.8,
+            0.61
+          ],
+          [
+            1,
+            0.85
+          ]
+        ]
+      }
+    ],
+    "caption": "Larger batches often improve throughput while increasing queueing and per-request latency; dynamic batching balances the two.",
+    "xLabel": "batch size",
+    "yLabel": "relative metric"
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

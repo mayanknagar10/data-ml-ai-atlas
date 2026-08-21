@@ -1,0 +1,39 @@
+{
+  "slug": "guardrails-observability",
+  "title": "Guardrails, Policy Checks & AI Observability",
+  "module": "ai-safety",
+  "priority": "high",
+  "roles": [
+    "aie",
+    "mle"
+  ],
+  "interviewAnswer": "Guardrails are deterministic or model-assisted checks around an AI system: input validation, output schemas, policy classifiers, tool permissions, rate limits and human approval. Observability records traces, retrieval/tool calls, latency, cost and safety events so failures can be diagnosed.",
+  "keyPoints": [
+    "defense in depth",
+    "structured output",
+    "tracing",
+    "policy events"
+  ],
+  "resources": [
+    "owasp-llm",
+    "nist-ai-rmf",
+    "fsdl"
+  ],
+  "featured": true,
+  "why": "A single prompt cannot enforce reliability across every model update and adversarial input. External checks make behavior inspectable and controllable.",
+  "intuition": "Put guardrails at the boundaries where failure becomes consequential, and record enough trace data to reconstruct what happened.",
+  "deepDive": "Schema validators catch malformed outputs; policy layers can block unsupported actions; tracing links user request → retrieval → model → tool → result. Guardrails also fail, so monitor false positives/negatives.",
+  "workedExample": "Before an agent deletes a record, validate the tool arguments, re-check authorization, require explicit approval and log the decision independently of the LLM trace.",
+  "commonMistakes": [
+    "Calling every content filter a complete “safety system.”",
+    "Logging traces without privacy controls or retention limits."
+  ],
+  "followUps": [
+    "Where should guardrails live?",
+    "What would you trace in a RAG agent?"
+  ],
+  "production": "Define SLOs for latency/reliability plus safety/security indicators; alert on changes in refusal rate, tool errors, retrieval anomalies and policy violations.",
+  "editorial": {
+    "status": "summary"
+  }
+}

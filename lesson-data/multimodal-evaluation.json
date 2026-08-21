@@ -1,0 +1,40 @@
+{
+  "slug": "multimodal-evaluation",
+  "title": "Multimodal Evaluation & Visual Hallucination",
+  "module": "multimodal",
+  "priority": "high",
+  "roles": [
+    "aie",
+    "mle",
+    "cv",
+    "as"
+  ],
+  "interviewAnswer": "Multimodal evaluation should test whether the answer is actually grounded in the image, not only whether the text is fluent. I evaluate task accuracy plus grounding/OCR/counting/spatial reasoning slices, hallucination rates and robustness to irrelevant or missing visual information.",
+  "keyPoints": [
+    "grounding",
+    "task-specific slices",
+    "visual hallucination",
+    "modality ablations"
+  ],
+  "resources": [
+    "hf-vlm-course",
+    "llava-paper"
+  ],
+  "featured": false,
+  "why": "A VLM can produce a plausible answer from language priors while barely using the image.",
+  "intuition": "Ask: if I remove or change the image, does the answer change appropriately? If not, the model may be guessing from text patterns.",
+  "deepDive": "Evaluation can include benchmark accuracy, human review, grounding metrics and targeted perturbations. Important categories include OCR, object existence, counting, spatial relations, charts/documents and long-tail entities. Modality ablation and counterfactual images reveal text-dominance or shortcut behavior.",
+  "workedExample": "Ask “How many red bolts are visible?” with the correct image, a blank image and a modified image. A grounded system should react to those visual changes.",
+  "commonMistakes": [
+    "Using only BLEU/ROUGE or generic LLM-as-judge scores for visual grounding.",
+    "Assuming a confident detailed answer means the image was understood."
+  ],
+  "followUps": [
+    "How would you detect text-only shortcutting?",
+    "How do you evaluate OCR-heavy VLMs?"
+  ],
+  "production": "Log visual-input quality and build image-specific eval suites; fallback or request a better image when resolution/visibility is insufficient.",
+  "editorial": {
+    "status": "summary"
+  }
+}

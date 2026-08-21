@@ -1,0 +1,87 @@
+{
+  "slug": "difference-in-differences",
+  "title": "Difference-in-Differences",
+  "module": "causal",
+  "priority": "high",
+  "roles": [
+    "ds",
+    "as"
+  ],
+  "interviewAnswer": "Difference-in-differences compares outcome changes over time between treated and control groups. Its key identifying assumption is that, absent treatment, their trends would have evolved in parallel.",
+  "keyPoints": [
+    "Inspect pre-trends.",
+    "Treatment timing and anticipation matter.",
+    "Use clustered/appropriate uncertainty."
+  ],
+  "resources": [
+    "causal-mixtape"
+  ],
+  "featured": false,
+  "why": "Difference-in-Differences appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
+  "intuition": "Inspect pre-trends.",
+  "deepDive": "Difference-in-differences compares outcome changes over time between treated and control groups. Its key identifying assumption is that, absent treatment, their trends would have evolved in parallel. Treatment timing and anticipation matter. Use clustered/appropriate uncertainty. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
+  "workedExample": "Compare sales change in regions receiving a policy versus similar untreated regions before and after rollout.",
+  "commonMistakes": [
+    "Applying the method without checking its assumptions or data-generating process.",
+    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+  ],
+  "followUps": [
+    "What assumptions does Difference-in-Differences make?",
+    "How would you validate or debug Difference-in-Differences in practice?"
+  ],
+  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "lab": {
+    "goal": "Compute a simple 2x2 difference-in-differences estimate.",
+    "language": "python",
+    "buildIt": "treated_pre=100; treated_post=130\ncontrol_pre=90; control_post=100\ndid=(treated_post-treated_pre)-(control_post-control_pre)\nprint('DiD',did)",
+    "useIt": "import pandas as pd, statsmodels.formula.api as smf\ndf=pd.DataFrame({'y':[100,130,90,100],'treated':[1,1,0,0],'post':[0,1,0,1]})\nfit=smf.ols('y ~ treated + post + treated:post',data=df).fit()\nprint(fit.params['treated:post'])",
+    "shipIt": "A real DiD study needs many units/time periods, pre-trend diagnostics, explicit treatment timing, robust/clustered uncertainty and sensitivity to composition changes.",
+    "verifyIt": "assert abs(did-20)<1e-9"
+  },
+  "visual": {
+    "type": "curve",
+    "title": "Difference-in-differences",
+    "series": [
+      {
+        "label": "control",
+        "points": [
+          [
+            0,
+            0.32
+          ],
+          [
+            0.48,
+            0.42
+          ],
+          [
+            1,
+            0.52
+          ]
+        ]
+      },
+      {
+        "label": "treated",
+        "points": [
+          [
+            0,
+            0.42
+          ],
+          [
+            0.48,
+            0.52
+          ],
+          [
+            1,
+            0.82
+          ]
+        ]
+      }
+    ],
+    "caption": "DiD attributes the post-treatment divergence to treatment under a parallel-trends assumption.",
+    "xLabel": "time",
+    "yLabel": "outcome"
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

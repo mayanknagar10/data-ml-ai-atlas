@@ -1,0 +1,62 @@
+{
+  "slug": "actor-critic",
+  "title": "Actor-Critic & Advantage Estimation",
+  "module": "rl",
+  "priority": "high",
+  "roles": [
+    "aie",
+    "mle",
+    "as"
+  ],
+  "interviewAnswer": "Actor-critic combines a policy model—the actor—with a value model—the critic. The critic estimates how good the current state/action is, and the actor updates using an advantage signal, which reduces the high variance of pure Monte Carlo policy gradients.",
+  "keyPoints": [
+    "actor = policy",
+    "critic = value estimate",
+    "advantage",
+    "bias–variance trade-off"
+  ],
+  "resources": [
+    "berkeley-cs285",
+    "hf-deep-rl",
+    "openai-spinning-up"
+  ],
+  "featured": false,
+  "why": "Most practical policy optimization methods build on actor-critic ideas.",
+  "intuition": "The actor chooses; the critic says whether the outcome was better or worse than expected.",
+  "deepDive": "An advantage A(s,a)=Q(s,a)−V(s) measures relative quality. Critics can be trained with TD targets, while the actor uses advantage-weighted log-probability gradients. Generalized Advantage Estimation (GAE) blends multi-step TD errors to tune bias versus variance.",
+  "math": "A(s,a)=Q(s,a)−V(s).\nTD error δ_t=r_t+γV(s_{t+1})−V(s_t).",
+  "workedExample": "If an action returns 8 units of estimated value while the state baseline is 5, advantage is +3, so the actor should increase that action probability.",
+  "commonMistakes": [
+    "Treating actor and critic as two independent objectives with no shared signal.",
+    "Saying the critic chooses the action."
+  ],
+  "followUps": [
+    "What is GAE?",
+    "Why can a poor critic destabilize learning?"
+  ],
+  "production": "Monitor policy entropy, KL drift, critic loss, reward distribution and rollout quality together; one scalar reward curve can hide collapse.",
+  "visual": {
+    "type": "compare",
+    "title": "Actor–critic",
+    "left": {
+      "title": "Actor",
+      "items": [
+        "Represents policy π(a|s)",
+        "Chooses actions",
+        "Updated toward better actions"
+      ]
+    },
+    "right": {
+      "title": "Critic",
+      "items": [
+        "Estimates value / advantage",
+        "Evaluates actor decisions",
+        "Reduces gradient variance"
+      ]
+    },
+    "caption": "Actor–critic methods combine direct policy optimization with learned value estimates."
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

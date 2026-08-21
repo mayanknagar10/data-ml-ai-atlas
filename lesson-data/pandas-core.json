@@ -1,0 +1,186 @@
+{
+  "slug": "pandas-core",
+  "title": "pandas: Merge, GroupBy, Missing Data",
+  "module": "python",
+  "priority": "high",
+  "roles": [
+    "ds",
+    "mle"
+  ],
+  "interviewAnswer": "For pandas work, first define each table's grain and key cardinality. Use `merge` for relational joins and validate the intended one-to-one or many-to-one relationship; use groupby aggregation when rows collapse and transform when results must align with original rows. Treat missing values according to their meaning, not with a universal fill. Use explicit `.loc` assignment under current Copy-on-Write semantics, and test row counts, uniqueness, dtypes, match rates, and edge cases.",
+  "keyPoints": [
+    "Grain before operations",
+    "Join cardinality is a contract",
+    "Aggregate and transform differ",
+    "Missingness has meaning",
+    "Validate shape, keys, and dtypes"
+  ],
+  "resources": [
+    "pandas-merging",
+    "pandas-groupby",
+    "pandas-missing",
+    "pandas-copy-on-write"
+  ],
+  "featured": false,
+  "why": "Most tabular model failures begin before training: duplicated joins overweight entities, inconsistent categories break serving, timestamps leak the future, or silent dtype changes alter comparisons. pandas is permissive because exploratory work benefits from flexibility; a production pipeline must supply the missing constraints. Interviews use merge and groupby questions to test relational reasoning, not memory of method names. The high-value answer predicts how many rows can appear, which keys may be unmatched, how nulls propagate, and how the result will be verified. Current Copy-on-Write behavior also makes old advice about ambiguous chained assignment obsolete; explicit single-operation assignment is the durable habit.",
+  "intuition": "Treat every DataFrame as a relation with a sentence describing one row. A customer table says one row per customer; an orders table says one row per order. A join combines those sentences and its output grain follows the key relationship. Groupby partitions rows by a key, then aggregation produces one row per group while transformation broadcasts a group result back to member rows. A missing value is a state in the data-generating process, not an instruction to call `fillna(0)`.",
+  "deepDive": "The full explanation is organized into the structured sections below.",
+  "workedExample": "Aggregate orders to customer grain, validate the customer dimension as unique, then left-join and fill only the structural no-order aggregates.",
+  "code": "agg=(orders.groupby('customer_id',as_index=False)\n          .agg(total_spend=('amount','sum'),\n               n_orders=('order_id','nunique')))\nfeatures=customers.merge(agg,on='customer_id',how='left')",
+  "commonMistakes": [
+    {
+      "mistake": "A left join always preserves the number of left rows.",
+      "correction": "It preserves left records but duplicate matches on the right can multiply each record. Enforce the intended cardinality with `validate`."
+    },
+    {
+      "mistake": "`groupby().count()` counts group rows.",
+      "correction": "`count` counts non-missing values per selected column; `size` counts rows, and `nunique` counts distinct non-missing values by default."
+    },
+    {
+      "mistake": "Fill every missing numeric value with zero.",
+      "correction": "Zero is valid only when the missing mechanism means measured absence. Unknown, not applicable, censored, and structurally unmatched states need distinct policies."
+    }
+  ],
+  "followUps": [
+    {
+      "question": "What is the difference between groupby aggregate and transform?",
+      "answer": "Aggregation reduces groups to summaries; transform returns values aligned with the original rows, usually one result per input row."
+    },
+    {
+      "question": "How do you diagnose unexpected rows after a merge?",
+      "answer": "Inspect key multiplicities on both sides, use `validate` and `indicator`, compare row and unique-key counts, and examine high-multiplicity keys before changing data."
+    },
+    {
+      "question": "What changed with Copy-on-Write?",
+      "answer": "Derived objects behave independently for mutation while pandas may share storage internally until write; chained assignment cannot update the original and explicit `.loc` assignment is required."
+    }
+  ],
+  "production": "Version schemas and transformation code together. Record input/output rows, unique keys, duplicate rates, merge match categories, null rates, invalid parses, reconciliation totals, and memory. Fit temporal and statistical transforms only on allowed training history. Fail closed on violated key contracts instead of dropping duplicates. Make jobs idempotent, partition outputs deterministically, preserve lineage, and provide rollback to the previous data version. Move to SQL, DuckDB, Spark, or another engine when data size, concurrency, or governance exceeds an in-memory process.",
+  "editorial": {
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "pandas makes labeled tabular transformations concise, but correctness depends on contracts that the syntax does not infer for you. A merge can multiply rows because keys are duplicated. A groupby can drop missing keys or return a differently indexed result. A fill operation can change dtype, encode an invalid statistical assumption, or leak future information. This chapter treats a DataFrame transformation as a relational and statistical program: define row grain, key cardinality, schema, missingness policy, and expected output before calling an API. It covers label versus position indexing, Copy-on-Write mutation semantics in current pandas, database-style joins, groupby aggregation and transformation, nullable dtypes, and validation patterns. The worked example builds customer features from orders while preserving customers with no orders and detecting duplicate dimension keys. You will learn to measure row counts and match rates, distinguish structural absence from unknown measurement, test edge cases, and recognize when pandas is no longer the right execution engine. The goal is a reproducible data contract, not a clever chain of method calls.",
+  "prerequisites": [
+    "python-data-structures",
+    "numpy-vectorization"
+  ],
+  "learningObjectives": [
+    "Specify DataFrame row grain, keys, dtypes, and missing-value semantics before a transformation.",
+    "Predict merge cardinality and groupby result shape, then enforce those expectations with validation.",
+    "Write mutation-safe pandas code and test transformations for duplicates, nulls, schema drift, and leakage."
+  ],
+  "deepSections": [
+    {
+      "id": "schema-indexing-mutation",
+      "title": "Schema, indexing, and mutation",
+      "body": "A DataFrame has labeled axes and columns with dtypes. The index can be meaningful, but many pipelines are clearer with domain keys as ordinary columns and a simple index. `.loc` selects by labels and boolean conditions; `.iloc` selects by integer position. Label slices can include the stop label, unlike ordinary Python positional slicing. Never assume current row order is a business key. Sort explicitly when order matters and assert uniqueness when a label is intended to identify one record.\n\nSchema includes more than names: dtype, nullability, allowed categories, timezone, units, and row grain. Object dtype can hide mixed Python values. Nullable integer, boolean, and string dtypes preserve missingness without forcing every column into float or generic object representation. Conversion should be deliberate and invalid parsing should produce a measured error or explicit missing value according to policy.\n\nCopy-on-Write is the current pandas 3.x model: derived objects behave as copies from the user's perspective, while data may be shared internally until a write. Chained assignment cannot reliably update the original and should be replaced by one `.loc[row_mask, column] = value` operation. This is clearer across versions and makes the mutation target visible. Avoid `inplace=True` as a performance belief; it does not guarantee zero allocation or clearer ownership."
+    },
+    {
+      "id": "merge-cardinality",
+      "title": "Merges, cardinality, and row multiplication",
+      "body": "A merge matches key values using inner, left, right, or outer semantics. The crucial property is cardinality. If key k appears a_k times on the left and b_k times on the right, an inner match contributes a_k times b_k rows for that key. Duplicate keys therefore multiply records. This can be correct for a many-to-many relationship but is disastrous when a dimension table was expected to have one row per entity.\n\nUse `validate='one_to_one'`, `'one_to_many'`, or `'many_to_one'` to make the relationship executable. Use `indicator=True` during validation to measure left-only, right-only, and matched records. Normalize key dtype and representation before joining; string `'001'`, integer 1, case differences, whitespace, and timezone mismatches are domain problems rather than merge tricks. Decide how null keys behave and whether they are legal.\n\nChoose output columns and suffix policy explicitly. Joining entire wide tables can duplicate unused data and inflate memory. Measure input/output row counts, unique keys, and match rates. A left join used for feature enrichment should usually preserve the left row count under a many-to-one contract. If it does not, stop rather than deduplicating afterward: post-join deduplication hides which record was chosen and may corrupt measures."
+    },
+    {
+      "id": "groupby-semantics",
+      "title": "GroupBy: aggregation, transformation, filtration, and application",
+      "body": "GroupBy follows split-apply-combine, but the kind of apply determines output shape. Aggregation reduces each group to scalar or summary rows. Transformation returns a result aligned to the original group rows, enabling within-group centering or percentage-of-total features. Filtration retains or removes whole groups according to a predicate. General `apply` offers flexibility but can be slower and can produce difficult index behavior; prefer named aggregations, vectorized transforms, and built-in operations when they express the task.\n\nGrouping keys become index levels by default in many aggregations; `as_index=False` can keep them as columns. `sort`, `observed`, and `dropna` affect ordering, categorical combinations, and missing-key groups. Do not rely on defaults when these semantics matter. A categorical groupby may represent unobserved categories depending on configuration. A missing group key may be excluded unless requested.\n\nNamed aggregation makes output schema explicit: `total=('amount','sum')`. Distinguish row count, non-null count, and distinct count: `size`, `count`, and `nunique` answer different questions. Null amounts may be skipped by a sum, and all-null groups need a business rule. Test a tiny table where these counts differ so an accidental substitution cannot pass."
+    },
+    {
+      "id": "missing-data-validation",
+      "title": "Missing data, temporal correctness, and validation",
+      "body": "pandas represents missingness through sentinels such as `NaN`, `NaT`, and `pd.NA`, with behavior influenced by dtype. Use `isna` rather than equality comparisons. Arithmetic and reductions may propagate or skip missing values according to operation parameters. A fill value is an assumption: zero may mean measured absence, category 'unknown' may combine distinct mechanisms, and mean imputation changes variance and relationships. Preserve an indicator when missingness itself may carry information, while checking whether that signal will exist at serving time.\n\nDropping missing rows changes the population. Forward filling assumes ordering and persistence; using it across entity boundaries or after random sorting is wrong. Time-series interpolation and feature construction must use only information available at the prediction timestamp. Fit imputation values on training data and apply them to validation and production. Record null rates by source and important slice so upstream changes are visible.\n\nValidate transformations with assertions or a schema tool: required columns, dtypes, uniqueness, ranges, row-count relationships, match rate, null budget, and time boundaries. Compare aggregates before and after joins when amounts should be conserved. Keep representative duplicate, unmatched, all-null, empty, and timezone cases in tests. For large data, inspect memory usage, select columns early, use appropriate dtypes, process partitions, or move to a query engine when the workload no longer fits one process."
+    }
+  ],
+  "math": "For join key k with multiplicities a_k and b_k, an inner join emits Σ_k a_k b_k matched rows. A many-to-one enrichment requires b_k ≤ 1 and should preserve the left row count for a left join. Group aggregation emits at most one summary row per observed group, while transform preserves the original row alignment.",
+  "workedExamples": [
+    {
+      "title": "Build customer spend features with explicit join and missingness policy",
+      "setup": "Customers are one row per customer. Orders are one row per order; some customers have none, some order amounts are invalid, and duplicate customer rows are an upstream error.",
+      "walkthrough": "Validate customer IDs as unique and order IDs according to retry policy. Parse amounts, quarantine invalid records, aggregate valid orders by customer with named totals and distinct counts, then left-merge into customers with `validate='one_to_one'` because both sides are now customer grain and `indicator=True` for coverage. A missing aggregate for a left-only customer structurally means no matched order and may become zero; a missing amount inside a matched order is a measurement-quality problem and must not be silently treated as zero. Assert left row preservation, uniqueness, nonnegative counts, and reconciliation of aggregate totals.",
+      "conclusion": "Aggregation before joining makes the output grain explicit, and separate missingness policies prevent 'no order' from being confused with 'unknown amount'."
+    }
+  ],
+  "exercises": [
+    {
+      "difficulty": "recall",
+      "prompt": "A key occurs twice on the left and three times on the right. How many matched rows does that key create?",
+      "solution": "Six rows: each of the two left rows pairs with each of the three right rows."
+    },
+    {
+      "difficulty": "application",
+      "prompt": "Choose aggregate or transform for subtracting each department's mean salary from every employee salary.",
+      "solution": "Use transform for the group mean because the mean must align back to every original employee row."
+    },
+    {
+      "difficulty": "diagnosis",
+      "prompt": "A feature job's row count grows after enriching events with account attributes. What do you inspect first?",
+      "solution": "Check duplicate account keys and enforce a many-to-one merge. Do not deduplicate the expanded output because that hides the incorrect dimension grain."
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "pandas-merging",
+      "contribution": "Defines merge modes, cardinality validation, indicator columns, and join behavior used in the relational correctness model."
+    },
+    {
+      "resource": "pandas-groupby",
+      "contribution": "Defines split-apply-combine and the output semantics of aggregation, transformation, filtration, and apply."
+    },
+    {
+      "resource": "pandas-missing",
+      "contribution": "Grounds missing-value sentinels, nullable dtype behavior, detection, propagation, dropping, and filling."
+    },
+    {
+      "resource": "pandas-copy-on-write",
+      "contribution": "Verifies current pandas 3.x mutation semantics and the requirement to replace chained assignment with explicit operations."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "flow",
+      "title": "Contract-first tabular transformation",
+      "items": [
+        "Declare grain and keys",
+        "Validate schema",
+        "Transform or aggregate",
+        "Validate join cardinality",
+        "Reconcile output"
+      ],
+      "caption": "Correct pandas code begins and ends with explicit data contracts rather than method chaining alone.",
+      "afterSection": "schema-indexing-mutation"
+    },
+    {
+      "type": "compare",
+      "title": "Aggregation and transformation",
+      "left": {
+        "title": "Aggregate",
+        "items": [
+          "One summary per group",
+          "Reduces row count",
+          "Defines a new grain",
+          "Example: customer total"
+        ]
+      },
+      "right": {
+        "title": "Transform",
+        "items": [
+          "Aligned to input rows",
+          "Preserves row count",
+          "Broadcasts group result",
+          "Example: centered value"
+        ]
+      },
+      "caption": "Choose the operation by required output grain and alignment.",
+      "afterSection": "groupby-semantics"
+    }
+  ],
+  "lab": {
+    "goal": "Build a contract-checked customer feature table and verify key uniqueness, row preservation, reconciliation, and missingness policy.",
+    "language": "python",
+    "buildIt": "def key_counts(rows, key):\n    counts = {}\n    for row in rows:\n        value = row[key]\n        counts[value] = counts.get(value, 0) + 1\n    return counts\n\ndef require_unique(rows, key):\n    duplicates = [k for k, n in key_counts(rows, key).items() if n > 1]\n    if duplicates:\n        raise ValueError(f'duplicate {key}: {duplicates[:3]}')",
+    "useIt": "import pandas as pd\ncustomers = pd.DataFrame({'customer_id': [1, 2, 3]})\norders = pd.DataFrame({'order_id': [10, 11, 12], 'customer_id': [1, 1, 2], 'amount': [5., 7., 3.]})\nagg = orders.groupby('customer_id', as_index=False).agg(total_spend=('amount', 'sum'), n_orders=('order_id', 'nunique'))\nfeatures = customers.merge(agg, on='customer_id', how='left', validate='one_to_one', indicator=True)\nfeatures[['total_spend', 'n_orders']] = features[['total_spend', 'n_orders']].fillna(0)",
+    "verifyIt": "assert customers['customer_id'].is_unique\nassert agg['customer_id'].is_unique\nassert len(features) == len(customers)\nassert features['customer_id'].is_unique\nassert features.loc[features.customer_id == 3, 'n_orders'].iat[0] == 0\nassert features['total_spend'].sum() == orders['amount'].sum()\nassert set(features['_merge']) <= {'both', 'left_only', 'right_only'}",
+    "shipIt": "Add schema versions, duplicate and null budgets, merge coverage metrics, temporal cutoffs, reconciliations, partitioned writes, lineage, and rollback to a prior immutable dataset."
+  }
+}

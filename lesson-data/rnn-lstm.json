@@ -1,0 +1,51 @@
+{
+  "slug": "rnn-lstm",
+  "title": "RNNs, LSTMs & GRUs",
+  "module": "nlp",
+  "priority": "medium",
+  "roles": [
+    "ds",
+    "as"
+  ],
+  "interviewAnswer": "RNNs process sequences recurrently but suffer long-range optimization issues; LSTM/GRU gates help preserve or forget state. Transformers largely replaced them for many NLP tasks but they remain important foundations and useful for some streaming sequences.",
+  "keyPoints": [
+    "Hidden state summarizes past.",
+    "Gates mitigate vanishing gradients.",
+    "Sequential computation limits parallelism."
+  ],
+  "resources": [
+    "stanford-cs224n",
+    "d2l"
+  ],
+  "featured": false,
+  "why": "RNNs, LSTMs & GRUs appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
+  "intuition": "Hidden state summarizes past.",
+  "deepDive": "RNNs process sequences recurrently but suffer long-range optimization issues; LSTM/GRU gates help preserve or forget state. Transformers largely replaced them for many NLP tasks but they remain important foundations and useful for some streaming sequences. Gates mitigate vanishing gradients. Sequential computation limits parallelism. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
+  "workedExample": "Model a short sensor sequence online with a GRU when latency/stateful streaming is more important than huge context.",
+  "commonMistakes": [
+    "Applying the method without checking its assumptions or data-generating process.",
+    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+  ],
+  "followUps": [
+    "What assumptions does RNNs, LSTMs & GRUs make?",
+    "How would you validate or debug RNNs, LSTMs & GRUs in practice?"
+  ],
+  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "visual": {
+    "type": "flow",
+    "title": "Recurrent sequence model",
+    "items": [
+      "xₜ",
+      "hidden state hₜ₋₁",
+      "RNN/LSTM cell",
+      "new hₜ",
+      "output"
+    ],
+    "caption": "Recurrent models process sequences step by step while carrying hidden state forward.",
+    "accent": 2,
+    "orientation": "horizontal"
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

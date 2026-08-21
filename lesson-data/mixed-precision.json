@@ -1,0 +1,66 @@
+{
+  "slug": "mixed-precision",
+  "title": "Mixed Precision: FP32, FP16 & BF16",
+  "module": "performance",
+  "priority": "high",
+  "roles": [
+    "mle",
+    "aie",
+    "cv"
+  ],
+  "interviewAnswer": "Mixed precision runs many expensive operations in FP16 or BF16 while keeping numerically sensitive parts at higher precision. It reduces memory bandwidth and often increases GPU throughput; BF16 has a wider exponent range, while FP16 may need loss scaling during training.",
+  "keyPoints": [
+    "memory bandwidth",
+    "tensor cores",
+    "FP16 loss scaling",
+    "BF16 range"
+  ],
+  "resources": [
+    "pytorch-performance",
+    "pytorch"
+  ],
+  "featured": false,
+  "why": "Mixed precision is one of the highest-leverage ways to fit larger batches/models and accelerate modern GPU workloads.",
+  "intuition": "Use fewer bits where precision is not crucial, but protect calculations that would overflow/underflow or accumulate error.",
+  "deepDive": "Automatic mixed precision chooses operation dtypes. FP16 has more mantissa precision than BF16 but much less exponent range; BF16 is often easier for training on supported hardware. Numerical validation remains essential.",
+  "workedExample": "A model that uses 14 GB in FP32 may fit comfortably under mixed precision, allowing a larger batch and better GPU utilization without changing the architecture.",
+  "commonMistakes": [
+    "Assuming half precision always produces identical numerics.",
+    "Using lower precision without checking hardware support or final quality."
+  ],
+  "followUps": [
+    "Why can BF16 train without loss scaling more often?",
+    "Would you use mixed precision for CPU inference?"
+  ],
+  "production": "Track accuracy and latency/memory jointly; mixed precision can change kernel choice and numerical behavior across devices.",
+  "lab": {
+    "goal": "Use PyTorch autocast safely for inference and verify output shape/finite values.",
+    "language": "python",
+    "buildIt": "import torch\nmodel=torch.nn.Sequential(torch.nn.Linear(128,256),torch.nn.ReLU(),torch.nn.Linear(256,10)).cuda().eval()\nx=torch.randn(64,128,device='cuda')\nwith torch.inference_mode(), torch.autocast('cuda',dtype=torch.float16):\n    y=model(x)\nprint(y.dtype,y.shape)\n",
+    "useIt": "# Training usually combines autocast with GradScaler for FP16.\nscaler=torch.amp.GradScaler('cuda')\n",
+    "verifyIt": "assert y.shape==(64,10)\nassert torch.isfinite(y).all()\n"
+  },
+  "visual": {
+    "type": "compare",
+    "title": "Precision trade-off",
+    "left": {
+      "title": "FP32",
+      "items": [
+        "Higher numeric range/precision",
+        "More memory / bandwidth"
+      ]
+    },
+    "right": {
+      "title": "FP16/BF16 mixed precision",
+      "items": [
+        "Lower memory",
+        "Higher tensor throughput",
+        "Keep sensitive ops in higher precision"
+      ]
+    },
+    "caption": "Mixed precision improves throughput when hardware supports it, but numerical stability still needs monitoring."
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

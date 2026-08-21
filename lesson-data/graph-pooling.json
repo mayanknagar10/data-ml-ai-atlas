@@ -1,0 +1,36 @@
+{
+  "slug": "graph-pooling",
+  "title": "Graph-level Prediction & Pooling",
+  "module": "graph",
+  "priority": "medium",
+  "roles": [
+    "as",
+    "mle"
+  ],
+  "interviewAnswer": "For graph-level tasks, node embeddings must be aggregated into a graph representation using mean/sum/max, attention or hierarchical pooling before prediction.",
+  "keyPoints": [
+    "Sum/mean pooling encode different size behavior.",
+    "Permutation invariance is required.",
+    "Pooling can bottleneck structural information."
+  ],
+  "resources": [
+    "stanford-cs224w"
+  ],
+  "featured": false,
+  "why": "Graph-level Prediction & Pooling is a standard part of a broad data/ML curriculum because it changes how models are selected, evaluated or operated in real systems.",
+  "intuition": "Sum/mean pooling encode different size behavior.",
+  "deepDive": "For graph-level tasks, node embeddings must be aggregated into a graph representation using mean/sum/max, attention or hierarchical pooling before prediction. Permutation invariance is required. Pooling can bottleneck structural information. A strong answer connects the formal idea to validation, data requirements and failure modes instead of treating the method as a recipe.",
+  "workedExample": "Predict molecular properties by message passing over atoms/bonds followed by graph pooling.",
+  "commonMistakes": [
+    "Choosing the technique without checking whether its assumptions match the problem.",
+    "Optimizing an offline metric without checking realistic validation slices or operational constraints."
+  ],
+  "followUps": [
+    "When would you not use Graph-level Prediction & Pooling?",
+    "How would you validate or tune Graph-level Prediction & Pooling?"
+  ],
+  "production": "In production, validate on realistic slices, track latency/cost when relevant, and monitor for distribution changes or failure modes that the offline metric can hide.",
+  "editorial": {
+    "status": "summary"
+  }
+}

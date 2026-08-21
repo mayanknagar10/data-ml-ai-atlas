@@ -1,0 +1,38 @@
+{
+  "slug": "chi-square",
+  "title": "Chi-square Tests for Categorical Data",
+  "module": "stat-inference",
+  "priority": "medium",
+  "roles": [
+    "ds",
+    "da",
+    "as"
+  ],
+  "interviewAnswer": "Chi-square tests compare observed categorical counts with counts expected under a null such as independence. They operate on counts, not percentages detached from sample size.",
+  "keyPoints": [
+    "Expected cell counts matter for approximation quality.",
+    "Independence is a common null.",
+    "Effect size still matters."
+  ],
+  "resources": [
+    "openintro-stats",
+    "stanford-stats200"
+  ],
+  "featured": false,
+  "why": "Chi-square Tests for Categorical Data appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
+  "intuition": "Expected cell counts matter for approximation quality.",
+  "deepDive": "Chi-square tests compare observed categorical counts with counts expected under a null such as independence. They operate on counts, not percentages detached from sample size. Independence is a common null. Effect size still matters. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
+  "workedExample": "Test whether device type and conversion outcome are associated in a contingency table.",
+  "commonMistakes": [
+    "Applying the method without checking its assumptions or data-generating process.",
+    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+  ],
+  "followUps": [
+    "What assumptions does Chi-square Tests for Categorical Data make?",
+    "How would you validate or debug Chi-square Tests for Categorical Data in practice?"
+  ],
+  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "editorial": {
+    "status": "summary"
+  }
+}

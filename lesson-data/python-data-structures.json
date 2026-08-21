@@ -1,0 +1,177 @@
+{
+  "slug": "python-data-structures",
+  "title": "Lists, Tuples, Sets & Dictionaries",
+  "module": "python",
+  "priority": "very-high",
+  "roles": [
+    "ds",
+    "mle",
+    "aie"
+  ],
+  "description": "Python's built-in containers are not interchangeable spellings for a collection. A list represents an ordered, mutable sequence; a tuple represents an ordered sequence whose membership cannot be changed; a set represents unique hashable values; and a dictionary represents a mapping from unique hashable keys to values. Those semantic promises determine what operations are natural, what mistakes the type system can prevent, and how a program behaves as data grows. This chapter develops a working model that connects Python-level behavior to the underlying array and hash-table mechanisms without turning implementation details into language guarantees. You will learn to choose a container from the invariants of the problem, reason about identity and aliasing, explain the equality-and-hashing contract, estimate important operation costs, and recognize when a specialized structure such as `deque`, `Counter`, or `defaultdict` expresses the job more accurately. The goal is not to memorize a complexity table. It is to make container choices that remain correct, readable, and predictable in data pipelines, model-serving code, and interviews.",
+  "prerequisites": [
+    "big-o"
+  ],
+  "learningObjectives": [
+    "Choose a Python container by ordering, uniqueness, mutability, lookup, and update requirements.",
+    "Explain how equality, identity, hashing, and aliasing affect container correctness.",
+    "Diagnose accidental quadratic work, mutable-default bugs, and invalid dictionary or set keys."
+  ],
+  "interviewAnswer": "Use a list for an ordered mutable sequence, a tuple for a fixed record-like sequence, a set for uniqueness and fast membership, and a dictionary for key-value lookup. The important trade-offs are semantics first, then expected operation cost. Lists use contiguous reference storage, while sets and dictionaries are hash based. Hash-table lookup is expected constant time, not an absolute worst-case guarantee, and keys must obey the equality-and-hash contract.",
+  "keyPoints": [
+    "Choose by invariant before complexity",
+    "Mutability and aliasing change behavior",
+    "Dictionary and set keys must be hashable",
+    "Expected complexity is not a universal guarantee",
+    "Specialized collections often express intent better"
+  ],
+  "why": "Container choices sit underneath almost every Python data or ML program. A wrong choice may silently duplicate records, lose ordering assumptions, make a cache incorrect, or turn a linear pipeline into a quadratic one. Interviews use these types to test whether a candidate can connect an API to invariants and costs. Production incidents often expose the same gap: a list is scanned on every request when a lookup table was intended, a shared mutable default leaks state between calls, or a dictionary key changes conceptually even though Python requires its hash to remain stable. Understanding the mechanism makes these failures easier to predict and explain.",
+  "intuition": "Treat each container as a promise. A list promises position and change. A tuple promises position and fixed membership, although the objects referenced inside it may still be mutable. A set promises that equal items appear once, without exposing a positional API. A dictionary promises one value per key and preserves insertion order as a language behavior in modern Python, but it remains a mapping rather than a sequence. The implementation supports the promise: lists store references in a resizable array, which makes indexing natural; sets and dictionaries organize entries using hashes, which makes membership or key lookup natural. Start with the promise your problem needs, then confirm that the operation costs fit the workload.",
+  "deepDive": "The full explanation is organized into the structured sections below.",
+  "deepSections": [
+    {
+      "id": "objects-identity-mutability",
+      "title": "Objects, identity, equality, and mutability",
+      "body": "Python variables hold references to objects rather than boxes that permanently own values. Assignment copies a reference, so two names can point to the same mutable list or dictionary. Mutating through either name changes the one shared object. The `is` operator asks whether two references identify the same object; `==` asks whether their values compare equal. These questions are different, and using `is` for ordinary value comparison is a common bug.\n\nMutability describes whether an object's state can change after construction. Lists, sets, and dictionaries are mutable. Tuples are immutable in the narrower sense that their sequence of references cannot be replaced, inserted, or removed. A tuple can still contain a list, and that nested list can change. This distinction matters for reasoning and hashing: an immutable outer container is not automatically hashable when one of its elements is unhashable.\n\nAliasing becomes dangerous when mutation is surprising. A function default such as `def collect(x, items=[]):` creates one list when the function is defined, not a fresh list for every call. Repeated calls share it. Multiplication can also alias nested objects: `[[]] * 3` produces three references to the same inner list. Prefer an explicit `None` sentinel for mutable defaults and a comprehension when each nested object must be independent. Copying has levels too. A shallow copy creates a new outer container but reuses references to nested objects; a deep copy recursively copies a graph and can be expensive or semantically wrong for resources and shared identities."
+    },
+    {
+      "id": "sequences",
+      "title": "Lists and tuples as sequences",
+      "body": "A list is an ordered, mutable sequence backed in common Python implementations by a resizable array of object references. Indexing is efficient because the address of a slot can be computed from its position. Appending is usually efficient because the implementation reserves spare capacity; occasionally it allocates a larger array and copies references. That is why append is described with amortized analysis rather than a promise that every individual call takes identical time. Inserting or deleting near the front requires shifting later references, so repeated front operations are a sign to consider `collections.deque`.\n\nA tuple supports the same positional reading operations but not membership changes. This makes it useful for fixed composite values, unpacking, multiple return values, and records where position has a stable meaning. Immutability communicates intent and may make a tuple hashable when every element is hashable. It does not make position self-documenting; a dataclass, named tuple, or typed object may be clearer when fields have domain names.\n\nSlicing a built-in list creates a new list containing references to the selected objects. It is therefore linear in the slice length and shallow with respect to nested values. Repeated slicing inside a loop can copy far more than expected. Membership in a general list or tuple requires equality comparisons until a match is found, so it is linear in the number of examined elements. A sequence remains the right choice when order, duplicates, and positional traversal are the real requirements; converting everything to a set merely to advertise speed can destroy required information."
+    },
+    {
+      "id": "hash-containers",
+      "title": "Dictionaries, sets, hashing, and collisions",
+      "body": "A dictionary maps a key to one value, while a set stores keys without associated values. Both rely on a hash to choose where to search. Equal objects must have equal hashes. If an object's equality-relevant state could change after insertion, the container might search using a new hash and fail to find the entry in the location chosen by the old hash. Python therefore requires dictionary keys and set elements to be hashable, and mutable built-in containers such as lists and dictionaries are not hashable.\n\nHashes can collide: different keys may produce the same hash or compete for the same table region. The container resolves collisions and uses equality to identify the correct key. Consequently, lookup is expected constant time under normal hashing and load behavior, not a mathematical worst-case guarantee. Resizing also makes some individual updates more expensive. The useful engineering model is that dictionaries and sets make repeated lookup and uniqueness operations efficient, while consuming additional memory and depending on a sound hash/equality contract.\n\nDictionaries preserve insertion order in current Python language semantics, but code should still use them as mappings. Updating an existing key does not move it to the end; deleting and reinserting can. Sets do not provide a positional or stable presentation-order contract. If sorted output is required, sort explicitly at the boundary. Dictionary comprehensions, `get`, `setdefault`, `defaultdict`, and `Counter` solve related but different problems. `defaultdict` makes missing-key construction explicit; `Counter` represents a multiset of counts; careless `setdefault` calls can allocate defaults even when a key exists. Choose the operation that states the intended missing-key behavior."
+    },
+    {
+      "id": "complexity-model",
+      "title": "Reasoning about operation cost",
+      "body": "Complexity is a model of growth, not a stopwatch reading. List indexing does not grow with list length in the usual model, but scanning for a value does. Appending is amortized constant time, while inserting at index zero is linear because existing references shift. Dictionary and set lookup are expected constant time, while iteration is linear in the number of entries. Building a set from a list also costs time and memory; it only pays off when uniqueness or repeated membership checks justify the conversion.\n\nThe surrounding algorithm matters more than an isolated operation. Checking `item in seen_list` for every one of `n` records can perform a growing scan each time and approach quadratic work. Using a set can make the whole pass expected linear. Conversely, converting a tiny list to a set inside every call may add overhead without improving the meaningful bottleneck. Memory locality, object allocation, hashing cost, equality cost, and interpreter overhead affect real runtime even when Big-O notation matches.\n\nTreat implementation details cautiously. CPython behavior is relevant to most production Python, but the language specification defines semantics more strongly than memory layout or a particular growth factor. Explain expected costs with their assumptions, measure representative workloads when performance matters, and avoid brittle microbenchmarks. For data engineering, prefer bounded memory and streaming when input can be large. For request paths, consider whether a container is rebuilt for every request or reused safely. For concurrent code, remember that individual interpreter operations are not a substitute for a higher-level atomicity design."
+    },
+    {
+      "id": "selection-framework",
+      "title": "A container-selection framework",
+      "body": "Begin with invariants. Do elements have a meaningful order? Are duplicates meaningful? Is lookup by a domain key central? Must the collection change after construction? Is random positional access required? A list fits ordered mutable data with duplicates. A tuple fits fixed positional data. A set fits uniqueness or repeated membership. A dictionary fits association by key. Then refine with specialized collections: `deque` for efficient operations at both ends, `Counter` for frequencies, `defaultdict` for grouped accumulation, `heapq` for a priority queue over a list, and dataclasses for named records.\n\nNext examine lifecycle and scale. A set used to deduplicate an unbounded stream also grows without bound; the type improves lookup but does not solve retention. A dictionary used as a cache needs eviction, synchronization, and failure behavior. A list of every batch defeats the memory benefit of an upstream generator. A tuple sent across a public boundary can be hard to evolve because callers depend on positions. Container selection is therefore part of system design, not merely syntax.\n\nFinally make assumptions executable. Assert key uniqueness before building a dictionary if duplicates indicate bad data. Validate that a many-to-one join really is many-to-one. Preserve deterministic presentation by sorting at the output boundary. Use type hints to document element and key types, but remember they do not enforce runtime invariants on their own. Tests should cover empty collections, duplicate keys, mutation, and the largest realistic cardinality."
+    },
+    {
+      "id": "failure-modes",
+      "title": "Failure modes and debugging signals",
+      "body": "Container bugs often look unrelated to containers. A result that changes after another function runs may come from shared aliases. Repeated state across calls may come from a mutable default. Missing dictionary entries may come from inconsistent normalization of keys. Memory growth may come from a set or cache with no retention policy. Latency that worsens with traffic may come from a nested list membership scan. Nondeterministic tests may depend on set presentation order.\n\nDebug by checking invariants before optimizing. Print or log identities only in controlled diagnostics to reveal unexpected sharing. Count inputs, unique keys, and output rows around transformations. Profile allocations and call counts rather than guessing. When a mapping is built from records, decide what duplicate keys mean instead of letting the last value silently win. When a set removes duplicates, decide which accompanying record should survive. When a list must be copied, state whether nested objects may remain shared.\n\nThe strongest interview answer connects semantics, expected complexity, and failure behavior. It does not claim dictionaries are always faster or tuples are deeply immutable. The strongest production design also includes lifecycle: who owns the container, who may mutate it, how large it may grow, and which checks demonstrate that its invariants still hold."
+    }
+  ],
+  "math": "For n stored elements: list index is commonly modeled as O(1); list membership as O(n); append as amortized O(1); insertion near the front as O(n); dictionary/set lookup and update as expected O(1); and iteration as O(n). These are growth models under ordinary implementation and hashing assumptions, not per-operation latency guarantees.",
+  "workedExample": "Deduplicating events by scanning a list of previously seen IDs repeats a growing membership search. A set expresses uniqueness and changes the expected whole-pass cost from quadratic to linear, while a dictionary is appropriate when the latest event or aggregate must be retained per ID.",
+  "workedExamples": [
+    {
+      "title": "Aggregate events without hiding duplicate policy",
+      "setup": "A stream contains event dictionaries with an event ID, customer ID, and amount. Duplicate event IDs are retries and must not be counted twice; totals are required per customer in first-seen customer order.",
+      "walkthrough": "Maintain a `seen_event_ids` set for retry detection and a dictionary from customer ID to running total. For each event, validate required fields, skip it if its event ID is already present, then add the ID and update the customer's total. Dictionary insertion order preserves first appearance for presentation, while lookup remains key based. Record duplicate and invalid counts as explicit metrics rather than silently dropping data. A list of IDs would preserve order but make every retry check scan previous IDs; a set alone would deduplicate but could not hold totals.",
+      "conclusion": "Two containers are appropriate because there are two invariants: unique processed event IDs and one aggregate value per customer key. The design also needs a retention boundary if the stream is unbounded, because an ever-growing set is not a complete production deduplication system."
+    }
+  ],
+  "code": "from collections import defaultdict\nseen = set()\ntotals = defaultdict(float)\nfor event in events:\n    if event['id'] in seen:\n        continue\n    seen.add(event['id'])\n    totals[event['customer_id']] += event['amount']",
+  "commonMistakes": [
+    {
+      "mistake": "Dictionaries and sets are always O(1).",
+      "correction": "Lookup is expected constant time under ordinary hashing and load behavior. Collisions, resizing, expensive equality, adversarial inputs, and construction costs still matter."
+    },
+    {
+      "mistake": "A tuple is deeply immutable and therefore always hashable.",
+      "correction": "A tuple fixes its references, but referenced mutable objects can still change. The tuple is hashable only when every element is hashable."
+    },
+    {
+      "mistake": "Use a set whenever membership is faster.",
+      "correction": "A set removes duplicates and positional semantics and uses more memory. It is correct only when those semantics match the problem."
+    }
+  ],
+  "followUps": [
+    {
+      "question": "Why is list append amortized O(1) rather than O(1) for every call?",
+      "answer": "A resizable array usually has spare capacity, so most appends write one reference. Occasionally it allocates a larger backing array and copies existing references. Averaged across many appends, the growth cost is constant per append under the usual strategy."
+    },
+    {
+      "question": "Why must equal dictionary keys have equal hashes?",
+      "answer": "The hash directs lookup to a candidate region before equality identifies the matching key. If equal keys had different hashes, lookup could search a different region and fail to find an equal key already stored."
+    },
+    {
+      "question": "When should you use a deque instead of a list?",
+      "answer": "Use a deque when the core workload repeatedly appends and removes at both ends. A list is excellent at appending or popping at the end and at indexing, but front insertion or removal shifts remaining references."
+    }
+  ],
+  "production": "Define ownership, mutation rights, maximum cardinality, eviction or retention, and serialization behavior for long-lived containers. Monitor cache or deduplication-set size, duplicate rates, and key-normalization failures. Validate uniqueness before lossy conversions, avoid shared mutable defaults, and profile representative workloads before replacing clear code with specialized structures. A rollback-safe change preserves data semantics as well as latency.",
+  "exercises": [
+    {
+      "difficulty": "recall",
+      "prompt": "Choose a container for an ordered sequence that permits duplicates and frequent appends at the end, and explain why a set is not equivalent.",
+      "solution": "Use a list. It preserves order and duplicates and supports efficient amortized append. A set would remove duplicates and does not provide positional sequence semantics."
+    },
+    {
+      "difficulty": "application",
+      "prompt": "Explain the bug in `rows = [[]] * 3; rows[0].append(1)` and give a correct construction.",
+      "solution": "Multiplication repeats the reference to one inner list, so every row appears to change. Use `rows = [[] for _ in range(3)]` to construct three independent lists."
+    },
+    {
+      "difficulty": "diagnosis",
+      "prompt": "A deduplication worker's memory grows continuously although lookup is fast. Identify the missing design decision.",
+      "solution": "The set has no retention or eviction boundary. Exact deduplication over an unbounded stream requires unbounded state; define a time/idempotency window, durable compacted state, partitioning, or an approximate structure with an explicit error trade-off."
+    }
+  ],
+  "resources": [
+    "python-docs",
+    "mit-algorithms"
+  ],
+  "sourceNotes": [
+    {
+      "resource": "python-docs",
+      "contribution": "Defines built-in container semantics, mutability, iteration, hashing requirements, and standard collection APIs."
+    },
+    {
+      "resource": "mit-algorithms",
+      "contribution": "Provides the asymptotic and amortized-analysis framework used to reason about container operation growth."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "compare",
+      "title": "Sequence and hash-container promises",
+      "left": {
+        "title": "List / tuple",
+        "items": [
+          "Ordered sequence",
+          "Duplicates retained",
+          "Position-based access",
+          "List mutable; tuple fixed"
+        ]
+      },
+      "right": {
+        "title": "Set / dictionary",
+        "items": [
+          "Hash-based lookup",
+          "Unique keys",
+          "No positional API",
+          "Extra memory for index"
+        ]
+      },
+      "caption": "Choose a container by the invariant it promises before comparing expected operation cost. This is a conceptual comparison."
+    },
+    {
+      "type": "flow",
+      "title": "Choose from the required invariant",
+      "items": [
+        "Need order?",
+        "Need duplicates?",
+        "Need keyed lookup?",
+        "Need mutation?",
+        "Select container"
+      ],
+      "caption": "Container choice starts with the information the program must preserve, then checks operation and lifecycle costs.",
+      "afterSection": "selection-framework"
+    }
+  ],
+  "editorial": {
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "featured": false
+}

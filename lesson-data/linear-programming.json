@@ -1,0 +1,92 @@
+{
+  "slug": "linear-programming",
+  "title": "Linear Programming",
+  "module": "optimization",
+  "priority": "high",
+  "roles": [
+    "ds",
+    "as"
+  ],
+  "interviewAnswer": "Linear programming optimizes a linear objective under linear constraints. It is ideal for allocation, blending, planning and many operational decisions once predictions have been produced.",
+  "keyPoints": [
+    "Decision variables, objective, constraints.",
+    "Feasible region is a polyhedron.",
+    "Sensitivity/shadow prices can be valuable."
+  ],
+  "resources": [
+    "scipy-optimize",
+    "ortools"
+  ],
+  "featured": false,
+  "why": "Linear Programming appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
+  "intuition": "Decision variables, objective, constraints.",
+  "deepDive": "Linear programming optimizes a linear objective under linear constraints. It is ideal for allocation, blending, planning and many operational decisions once predictions have been produced. Feasible region is a polyhedron. Sensitivity/shadow prices can be valuable. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
+  "workedExample": "Allocate limited inventory across regions to maximize expected margin subject to stock and service constraints.",
+  "commonMistakes": [
+    "Applying the method without checking its assumptions or data-generating process.",
+    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+  ],
+  "followUps": [
+    "What assumptions does Linear Programming make?",
+    "How would you validate or debug Linear Programming in practice?"
+  ],
+  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "lab": {
+    "goal": "Solve a small constrained allocation problem with linear programming.",
+    "language": "python",
+    "buildIt": "# Maximize 3*x + 2*y subject to x+y<=4, x<=2, x,y>=0\n# Inspect corner points for a tiny LP.\npts=[(0,0),(2,0),(0,4),(2,2)]\nbest=max(pts,key=lambda p:3*p[0]+2*p[1])\nprint(best,3*best[0]+2*best[1])",
+    "useIt": "from scipy.optimize import linprog\nres=linprog(c=[-3,-2],A_ub=[[1,1],[1,0]],b_ub=[4,2],bounds=[(0,None),(0,None)])\nprint(res.x,-res.fun)",
+    "shipIt": "Decision systems should version objective coefficients and constraints separately from predictive models and log infeasibility/override reasons.",
+    "verifyIt": "assert res.success and res.x.sum() <= 4.000001"
+  },
+  "visual": {
+    "type": "scatter",
+    "title": "Linear programming geometry",
+    "series": [
+      {
+        "label": "feasible vertices",
+        "points": [
+          [
+            0.18,
+            0.2
+          ],
+          [
+            0.18,
+            0.62
+          ],
+          [
+            0.56,
+            0.7
+          ],
+          [
+            0.78,
+            0.42
+          ],
+          [
+            0.6,
+            0.2
+          ]
+        ]
+      },
+      {
+        "label": "objective direction",
+        "points": [
+          [
+            0.2,
+            0.3
+          ],
+          [
+            0.82,
+            0.76
+          ]
+        ]
+      }
+    ],
+    "caption": "With a linear objective and linear constraints, an optimum occurs at a feasible-region vertex when one exists.",
+    "xLabel": "decision x₁",
+    "yLabel": "decision x₂"
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

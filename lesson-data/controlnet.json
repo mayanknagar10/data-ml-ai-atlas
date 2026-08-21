@@ -1,0 +1,99 @@
+{
+  "slug": "controlnet",
+  "title": "ControlNet",
+  "module": "genai",
+  "priority": "medium",
+  "roles": [
+    "genai",
+    "cv",
+    "as"
+  ],
+  "interviewAnswer": "ControlNet adds a trainable conditioning branch to a pretrained diffusion model so structural signals such as edges, depth or poses can guide generation while preserving much of the pretrained backbone.",
+  "keyPoints": [
+    "Structural control",
+    "Frozen/pretrained backbone concept",
+    "Conditioning maps",
+    "Training efficiency"
+  ],
+  "resources": [
+    "mit-6s191",
+    "stanford-cs336",
+    "hf-diffusion"
+  ],
+  "featured": false,
+  "why": "ControlNet is a practical way to add structural conditioning to pretrained diffusion models while preserving much of the base model capability.",
+  "intuition": "Create a trainable branch that processes a control signal such as edges, depth or pose, then inject its features into a mostly frozen diffusion backbone.",
+  "deepDive": "ControlNet copies/augments parts of the pretrained network and uses zero-initialized connections so the added branch starts with minimal disturbance to the base model. The control encoder learns spatial guidance aligned with the denoising network. It is useful when text/semantic embeddings are insufficient to preserve geometry.",
+  "workedExample": "Canny edges from a microstructure can guide boundary layout while SDXL provides realistic texture/style variation.",
+  "commonMistakes": [
+    "Saying ControlNet guarantees exact geometry.",
+    "Assuming the whole base diffusion model must be retrained.",
+    "Using noisy/incorrect control maps without evaluating sensitivity."
+  ],
+  "followUps": [
+    "Why zero convolutions?",
+    "ControlNet vs cross-attention?",
+    "What control signals can be used?",
+    "How do you balance control strength and diversity?"
+  ],
+  "production": "Control preprocessing becomes part of the serving contract; version edge/depth extraction settings with the model and monitor failures when controls are sparse/noisy.",
+  "visual": {
+    "type": "network",
+    "title": "ControlNet conditioning",
+    "nodes": [
+      {
+        "id": "x",
+        "label": "structure input",
+        "x": 0.12,
+        "y": 0.22
+      },
+      {
+        "id": "cn",
+        "label": "ControlNet branch",
+        "x": 0.4,
+        "y": 0.22
+      },
+      {
+        "id": "z",
+        "label": "latent + text",
+        "x": 0.18,
+        "y": 0.72
+      },
+      {
+        "id": "u",
+        "label": "diffusion U-Net",
+        "x": 0.62,
+        "y": 0.52
+      },
+      {
+        "id": "o",
+        "label": "generated image",
+        "x": 0.9,
+        "y": 0.52
+      }
+    ],
+    "edges": [
+      [
+        "x",
+        "cn"
+      ],
+      [
+        "cn",
+        "u"
+      ],
+      [
+        "z",
+        "u"
+      ],
+      [
+        "u",
+        "o"
+      ]
+    ],
+    "caption": "ControlNet injects spatial control into a pretrained diffusion backbone while preserving the original generative model.",
+    "directed": true
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

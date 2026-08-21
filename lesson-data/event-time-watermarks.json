@@ -1,0 +1,91 @@
+{
+  "slug": "event-time-watermarks",
+  "title": "Event Time, Processing Time & Watermarks",
+  "module": "data-eng",
+  "priority": "very-high",
+  "roles": [
+    "de",
+    "mle"
+  ],
+  "interviewAnswer": "Streaming systems distinguish when an event occurred from when it was processed. Watermarks express progress in event time and let systems close windows while tolerating bounded late data.",
+  "keyPoints": [
+    "Late/out-of-order events are normal.",
+    "Watermark policy trades completeness vs latency.",
+    "Window state needs cleanup."
+  ],
+  "resources": [
+    "flink"
+  ],
+  "featured": true,
+  "why": "Event Time, Processing Time & Watermarks is a recurring foundation across data science and machine learning because it affects both theoretical correctness and practical system behavior.",
+  "intuition": "Late/out-of-order events are normal.",
+  "deepDive": "Streaming systems distinguish when an event occurred from when it was processed. Watermarks express progress in event time and let systems close windows while tolerating bounded late data. Watermark policy trades completeness vs latency. Window state needs cleanup. The interview-level skill is not merely recalling the definition: explain the assumptions, what diagnostic evidence you would inspect, and what alternative you would choose when those assumptions fail.",
+  "workedExample": "Aggregate sensor events by the minute even when some events arrive 30 seconds late.",
+  "commonMistakes": [
+    "Using the concept mechanically without checking assumptions or data semantics.",
+    "Reporting one metric/result without examining uncertainty, slices or failure modes."
+  ],
+  "followUps": [
+    "What assumptions or limitations does Event Time, Processing Time & Watermarks have?",
+    "How would you validate Event Time, Processing Time & Watermarks on a real dataset?"
+  ],
+  "production": "In production, make assumptions explicit, validate on representative slices, compare with a simple baseline and monitor the signals that can drift.",
+  "visual": {
+    "type": "curve",
+    "title": "Event time vs processing time",
+    "series": [
+      {
+        "label": "event arrivals",
+        "points": [
+          [
+            0.05,
+            0.15
+          ],
+          [
+            0.18,
+            0.23
+          ],
+          [
+            0.32,
+            0.36
+          ],
+          [
+            0.46,
+            0.31
+          ],
+          [
+            0.58,
+            0.56
+          ],
+          [
+            0.72,
+            0.48
+          ],
+          [
+            0.86,
+            0.73
+          ]
+        ]
+      },
+      {
+        "label": "watermark",
+        "points": [
+          [
+            0.05,
+            0.08
+          ],
+          [
+            0.86,
+            0.65
+          ]
+        ]
+      }
+    ],
+    "caption": "Watermarks estimate how complete event time is and determine when windows can close despite out-of-order arrivals.",
+    "xLabel": "processing time",
+    "yLabel": "event time"
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

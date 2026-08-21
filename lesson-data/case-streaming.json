@@ -1,0 +1,57 @@
+{
+  "slug": "case-streaming",
+  "title": "Case Study: Real-time Streaming Application",
+  "module": "project-defense",
+  "priority": "high",
+  "roles": [
+    "de",
+    "mle"
+  ],
+  "interviewAnswer": "Describe event source → Kafka → stream processor → storage/cache/API → UI. Explain why streaming was needed, what each component owns, how containers communicate and where failures are observed.",
+  "keyPoints": [
+    "Kafka vs Flink roles",
+    "State",
+    "Containers",
+    "End-to-end data flow"
+  ],
+  "resources": [
+    "confluent-kafka",
+    "flink",
+    "docker",
+    "stanford-cs329s"
+  ],
+  "featured": false,
+  "why": "This case demonstrates end-to-end data engineering: event ingestion, stateful processing, API/cache, UI, containers and cloud deployment.",
+  "intuition": "Separate producers from processors with Kafka, compute continuously with Flink, serve recent/aggregated data through an API, cache hot reads, and keep each service independently deployable.",
+  "deepDive": "Discuss topic/partition design, consumer offsets, event-time vs processing-time, state/checkpoints in Flink, Redis as a cache rather than source of truth, Flask API boundaries, and Docker Compose for local multi-service orchestration. Explain failure recovery and exactly-once/at-least-once claims carefully.",
+  "workedExample": "Telemetry events → Kafka topic → Flink stateful classification/aggregation → low-latency store/cache → backend API → operational dashboard. Docker Compose can run local versions of the broker, stream processor, cache, backend and frontend as separate services.",
+  "commonMistakes": [
+    "Calling Kafka just a queue and ignoring retention/replay.",
+    "Assuming multiple containers always require different images.",
+    "Claiming exactly-once end-to-end without checking sinks and commits."
+  ],
+  "followUps": [
+    "Why Kafka instead of direct API calls?",
+    "Why Flink?",
+    "What happens when the consumer crashes?",
+    "Why Redis?"
+  ],
+  "production": "Monitor consumer lag, event throughput, checkpoint health, late events, API latency and cache hit rate. Scale partitions/consumers and TaskManagers based on bottlenecks rather than adding replicas blindly.",
+  "visual": {
+    "type": "flow",
+    "title": "Streaming monitoring case",
+    "items": [
+      "Data producer",
+      "Kafka",
+      "PyFlink processing",
+      "Redis / API",
+      "React map UI"
+    ],
+    "caption": "The case demonstrates event streaming, stateful processing, caching and an end-user visualization layer.",
+    "accent": 2,
+    "orientation": "horizontal"
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

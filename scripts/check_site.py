@@ -32,6 +32,14 @@ def check_file(path: Path):
 html_files=[ROOT/'index.html',ROOT/'book.html',*sorted((ROOT/'labs').glob('*/index.html'))]
 errs=[]
 for f in html_files: errs.extend(check_file(f))
+index_text=(ROOT/'index.html').read_text(encoding='utf-8')
+for script in ('chapter-loader.js','chapter-reader.js'):
+    if f'src="{script}"' not in index_text: errs.append(f'index.html: missing {script}')
+styles=(ROOT/'styles.css').read_text(encoding='utf-8')
+for selector in ('.chapter-toc','.chapter-objectives','.chapter-exercises','.chapter-nav','.chapter-load-error'):
+    if selector not in styles: errs.append(f'styles.css: missing {selector}')
+lesson_files=sorted((ROOT/'lesson-data').glob('*.json'))
+if not lesson_files: errs.append('lesson-data: no generated lesson JSON files')
 if errs:
     raise SystemExit('\n'.join(errs[:50]))
 print(f'OK: checked local href/src targets in {len(html_files)} HTML files')

@@ -1,0 +1,65 @@
+{
+  "slug": "ab-testing",
+  "title": "A/B Testing & Statistical Power",
+  "module": "experimentation",
+  "priority": "very-high",
+  "roles": [
+    "ds",
+    "da"
+  ],
+  "interviewAnswer": "A/B testing compares randomized groups to estimate causal treatment effects. Before running the test, define the primary metric, minimum detectable effect, significance level and required power to determine sample size.",
+  "keyPoints": [
+    "Randomization",
+    "Power",
+    "Multiple testing",
+    "Guardrail metrics"
+  ],
+  "resources": [
+    "statquest",
+    "google-mlcc",
+    "harvard-stat110"
+  ],
+  "featured": false,
+  "why": "A/B testing is one of the most common Data Scientist interview topics because it combines statistics, causal reasoning, product judgment and operational constraints.",
+  "intuition": "Randomization makes treatment and control comparable on average, so a difference in outcomes can be attributed to the intervention rather than pre-existing group differences—assuming the experiment is executed correctly.",
+  "deepDive": "Define the unit of randomization, primary metric, guardrails, minimum detectable effect, significance level, desired power and sample size before launch. Watch for interference between units, novelty effects, sample-ratio mismatch, repeated peeking and multiple metrics. Statistical significance is only one decision input; effect size, confidence interval, cost and risk matter too.",
+  "math": "Power = P(reject H₀ | a specified real effect exists)\nType I error = α\nType II error = β; power = 1-β",
+  "workedExample": "For a checkout redesign, randomize users rather than page views if the same user can return repeatedly. Define conversion as the primary metric, latency/errors as guardrails, and decide the minimum lift worth shipping before estimating sample size.",
+  "code": "# Conceptual experiment checklist\nexperiment = {\n  \"unit\": \"user\",\n  \"primary_metric\": \"conversion\",\n  \"alpha\": 0.05,\n  \"power\": 0.80,\n  \"guardrails\": [\"latency\", \"error_rate\"]\n}",
+  "commonMistakes": [
+    "Stopping the test the first time p<0.05 without a sequential-testing plan.",
+    "Testing many metrics and reporting only the significant one.",
+    "Ignoring sample-ratio mismatch or users appearing in both groups."
+  ],
+  "followUps": [
+    "How do you choose sample size?",
+    "What is statistical power?",
+    "How would you handle multiple testing?",
+    "What if randomization must happen by store or company rather than user?"
+  ],
+  "production": "Experimentation platforms need deterministic assignment, exposure logging, metric definitions, data-quality checks and safeguards against peeking. The statistical test is only one component of the system.",
+  "lab": {
+    "goal": "Estimate conversion uplift and a confidence interval before declaring an experiment winner.",
+    "language": "python",
+    "buildIt": "import math\nn1,x1=5000,500; n2,x2=5000,575\np1,p2=x1/n1,x2/n2\nd=p2-p1\nse=math.sqrt(p1*(1-p1)/n1+p2*(1-p2)/n2)\nlo,hi=d-1.96*se,d+1.96*se\nprint('uplift',d,'95% CI',lo,hi)",
+    "useIt": "# scipy can provide a z-test or confidence-interval helpers; the key is\n# to define the metric, unit of randomization and stopping rule before peeking.\nrelative=(x2/n2)/(x1/n1)-1\nprint('relative uplift',relative)",
+    "verifyIt": "assert lo>0\n"
+  },
+  "visual": {
+    "type": "flow",
+    "title": "A/B experiment",
+    "items": [
+      "Eligible population",
+      "Random assignment",
+      "Control vs treatment",
+      "Measure outcome",
+      "Estimate effect"
+    ],
+    "caption": "Randomization breaks systematic confounding in expectation, enabling a causal comparison.",
+    "accent": 1,
+    "orientation": "horizontal"
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

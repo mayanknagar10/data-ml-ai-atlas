@@ -1,0 +1,64 @@
+{
+  "slug": "neural-network",
+  "title": "Neural Network Fundamentals",
+  "module": "dl",
+  "priority": "very-high",
+  "roles": [
+    "all",
+    "as"
+  ],
+  "interviewAnswer": "A neural network composes linear transformations with nonlinear activations. Training adjusts parameters to minimize a loss, while intermediate layers learn representations useful for the task.",
+  "keyPoints": [
+    "Layers",
+    "Weights/biases",
+    "Activation",
+    "Loss/optimizer"
+  ],
+  "resources": [
+    "mit-6s191",
+    "3b1b-neural",
+    "pytorch",
+    "deep-learning-book",
+    "d2l"
+  ],
+  "featured": false,
+  "why": "Every DL interview expects you to explain a neural network from first principles, not just name PyTorch modules.",
+  "intuition": "A neural network repeatedly performs weighted combinations followed by nonlinear transformations. Training adjusts the weights so those transformations produce useful representations for the task.",
+  "deepDive": "A feed-forward layer computes z=Wx+b and activation a=φ(z). Stacking linear layers without nonlinearities collapses to one linear transformation, so activations create expressive nonlinear functions. The final layer/loss depends on the task: logits plus cross-entropy for classification, continuous outputs with regression losses, etc. Parameters are learned by backpropagation and an optimizer over mini-batches.",
+  "math": "z^(l)=W^(l)a^(l-1)+b^(l)\na^(l)=φ(z^(l))",
+  "workedExample": "For image classification, early layers may detect local edges/textures while later layers combine them into task-specific patterns before the classifier head.",
+  "code": "import torch.nn as nn\nmodel=nn.Sequential(\n  nn.Linear(20,64), nn.ReLU(),\n  nn.Linear(64,1)\n)",
+  "commonMistakes": [
+    "Saying neurons “think” independently rather than describing tensor operations.",
+    "Forgetting that outputs are usually logits before softmax/sigmoid loss handling.",
+    "Assuming more layers always improve performance."
+  ],
+  "followUps": [
+    "Why do we need nonlinear activations?",
+    "What is backpropagation?",
+    "How do you choose output activation/loss?",
+    "What causes overfitting in neural networks?"
+  ],
+  "production": "The architecture is only one part of a DL system; reproducible preprocessing, checkpoints, device/mixed-precision handling and monitoring are equally important.",
+  "lab": {
+    "goal": "Train a tiny MLP end-to-end and inspect gradients.",
+    "language": "python",
+    "buildIt": "import torch\nx=torch.linspace(-2,2,200).unsqueeze(1); y=(x**2)\nmodel=torch.nn.Sequential(torch.nn.Linear(1,32),torch.nn.ReLU(),torch.nn.Linear(32,1))\nopt=torch.optim.Adam(model.parameters(),lr=1e-2)\nfor _ in range(500):\n    opt.zero_grad(); loss=torch.nn.functional.mse_loss(model(x),y); loss.backward(); opt.step()\nprint('loss',loss.item())\n",
+    "useIt": "# Same pattern scales to real tasks: Dataset/DataLoader -> nn.Module -> loss -> optimizer.\nprint(model(torch.tensor([[1.5]])).item())\n",
+    "verifyIt": "assert loss.item()<0.02\nassert all(p.grad is not None for p in model.parameters())\n"
+  },
+  "visual": {
+    "type": "layers",
+    "title": "Feed-forward neural network",
+    "items": [
+      "Input features",
+      "Hidden layer 1",
+      "Hidden layer 2",
+      "Output"
+    ],
+    "caption": "Each layer applies a learned affine transformation followed by a nonlinearity, enabling hierarchical representation learning."
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

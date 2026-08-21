@@ -1,0 +1,104 @@
+{
+  "slug": "threshold-tuning",
+  "title": "Decision Thresholds & Cost-sensitive Classification",
+  "module": "evaluation",
+  "priority": "very-high",
+  "roles": [
+    "ds"
+  ],
+  "interviewAnswer": "The default 0.5 threshold is arbitrary unless costs and class priors justify it. Choose thresholds using validation data, business costs, safety constraints or capacity targets.",
+  "keyPoints": [
+    "Changing threshold changes precision/recall, not underlying ranking.",
+    "Tune after training on held-out data.",
+    "Revisit threshold when prevalence/costs shift."
+  ],
+  "resources": [
+    "sklearn",
+    "google-rules-ml",
+    "google-mlcc-exercises"
+  ],
+  "featured": true,
+  "why": "Decision Thresholds & Cost-sensitive Classification is a recurring foundation across data science and machine learning because it affects both theoretical correctness and practical system behavior.",
+  "intuition": "Changing threshold changes precision/recall, not underlying ranking.",
+  "deepDive": "The default 0.5 threshold is arbitrary unless costs and class priors justify it. Choose thresholds using validation data, business costs, safety constraints or capacity targets. Tune after training on held-out data. Revisit threshold when prevalence/costs shift. The interview-level skill is not merely recalling the definition: explain the assumptions, what diagnostic evidence you would inspect, and what alternative you would choose when those assumptions fail.",
+  "workedExample": "Set a fraud-alert threshold to maximize captured fraud subject to analysts reviewing at most 1,000 cases/day.",
+  "commonMistakes": [
+    "Using the concept mechanically without checking assumptions or data semantics.",
+    "Reporting one metric/result without examining uncertainty, slices or failure modes."
+  ],
+  "followUps": [
+    "What assumptions or limitations does Decision Thresholds & Cost-sensitive Classification have?",
+    "How would you validate Decision Thresholds & Cost-sensitive Classification on a real dataset?"
+  ],
+  "production": "In production, make assumptions explicit, validate on representative slices, compare with a simple baseline and monitor the signals that can drift.",
+  "visual": {
+    "type": "curve",
+    "title": "Threshold changes the operating point",
+    "series": [
+      {
+        "label": "precision",
+        "points": [
+          [
+            0,
+            0.18
+          ],
+          [
+            0.2,
+            0.3
+          ],
+          [
+            0.4,
+            0.46
+          ],
+          [
+            0.6,
+            0.63
+          ],
+          [
+            0.8,
+            0.79
+          ],
+          [
+            1,
+            0.92
+          ]
+        ]
+      },
+      {
+        "label": "recall",
+        "points": [
+          [
+            0,
+            0.98
+          ],
+          [
+            0.2,
+            0.9
+          ],
+          [
+            0.4,
+            0.78
+          ],
+          [
+            0.6,
+            0.63
+          ],
+          [
+            0.8,
+            0.42
+          ],
+          [
+            1,
+            0.08
+          ]
+        ]
+      }
+    ],
+    "caption": "Threshold selection is a product/risk decision: raising the threshold often increases precision while reducing recall.",
+    "xLabel": "classification threshold",
+    "yLabel": "metric"
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

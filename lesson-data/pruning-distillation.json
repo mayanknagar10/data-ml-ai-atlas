@@ -1,0 +1,38 @@
+{
+  "slug": "pruning-distillation",
+  "title": "Pruning & Knowledge Distillation",
+  "module": "performance",
+  "priority": "medium",
+  "roles": [
+    "mle",
+    "aie"
+  ],
+  "interviewAnswer": "Pruning removes low-value parameters or structure; distillation trains a smaller student to mimic a larger teacher. Both can reduce serving cost, but structured pruning usually maps to hardware better than arbitrary sparsity, and distillation quality depends on the teacher targets and task.",
+  "keyPoints": [
+    "unstructured vs structured pruning",
+    "teacher/student",
+    "soft targets",
+    "hardware-aware speedup"
+  ],
+  "resources": [
+    "pytorch-performance",
+    "deep-learning-book"
+  ],
+  "featured": false,
+  "why": "Parameter count is not the same as real latency. Compression methods matter only if the runtime can exploit them.",
+  "intuition": "Pruning asks “what can I remove?” Distillation asks “can a smaller model learn the useful behavior of the bigger one?”",
+  "deepDive": "Unstructured sparsity may compress well yet remain slow on dense kernels. Distillation can use logits, intermediate representations or generated data. Always benchmark final hardware and evaluate task-specific regressions.",
+  "workedExample": "Distill a 1B classifier into a 100M student using teacher probabilities, then compare latency and calibration—not just top-1 accuracy.",
+  "commonMistakes": [
+    "Assuming 50% sparsity means 2× speed.",
+    "Distilling only on easy examples and losing rare behavior."
+  ],
+  "followUps": [
+    "What is temperature in distillation?",
+    "When is pruning preferable to quantization?"
+  ],
+  "production": "Compression belongs in a cost/quality optimization loop with deployment benchmarks and rollback criteria.",
+  "editorial": {
+    "status": "summary"
+  }
+}

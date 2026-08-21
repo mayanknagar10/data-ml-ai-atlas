@@ -1,0 +1,92 @@
+{
+  "slug": "confidence-intervals",
+  "title": "Confidence Intervals",
+  "module": "stat-inference",
+  "priority": "very-high",
+  "roles": [
+    "ds",
+    "da",
+    "as"
+  ],
+  "interviewAnswer": "A frequentist 95% confidence interval is produced by a procedure that would contain the true parameter in 95% of repeated samples. It is not literally a 95% probability statement about a fixed parameter after observing the data.",
+  "keyPoints": [
+    "Standard error",
+    "Coverage interpretation",
+    "Sample size",
+    "Assumptions"
+  ],
+  "resources": [
+    "statquest",
+    "harvard-stat110"
+  ],
+  "featured": false,
+  "why": "Confidence intervals test whether you understand uncertainty rather than reporting point estimates as if they were exact.",
+  "intuition": "A point estimate gives one number; a confidence interval shows the range of values compatible with sampling uncertainty under a specified procedure. Wider intervals mean more uncertainty.",
+  "deepDive": "In frequentist inference, the parameter is fixed and the interval is random before sampling. A 95% confidence procedure has 95% long-run coverage under its assumptions. Width depends on standard error, confidence level and sample size. Correct coverage can fail when assumptions, dependence, or repeated peeking are ignored.",
+  "math": "Generic form: estimate ± critical_value × standard_error\nFor a mean with large n: X̄ ± z_(1-α/2) σ/√n",
+  "workedExample": "If a conversion lift is estimated at +1.2 percentage points with a 95% CI of [-0.2, 2.6], the data are compatible with both a small negative and a useful positive effect; the point estimate alone is not enough.",
+  "code": "import numpy as np\nfrom scipy import stats\nx=np.array([10,11,12,9,13,12,11])\nmean=x.mean(); se=stats.sem(x)\nprint(stats.t.interval(.95, df=len(x)-1, loc=mean, scale=se))",
+  "commonMistakes": [
+    "Saying there is a 95% probability the fixed frequentist parameter lies in this observed interval.",
+    "Reporting a CI without the assumptions or sample design.",
+    "Treating a narrow but biased interval as trustworthy."
+  ],
+  "followUps": [
+    "How does sample size affect interval width?",
+    "What is the difference between a confidence interval and prediction interval?",
+    "When would you use a bootstrap interval?",
+    "How does repeated testing affect coverage?"
+  ],
+  "production": "Confidence intervals are useful for experiment effects, model metrics, latency estimates and business KPIs. Slice-level intervals can reveal when apparent subgroup differences are mostly sampling noise.",
+  "visual": {
+    "type": "curve",
+    "title": "Confidence interval around an estimate",
+    "series": [
+      {
+        "label": "estimate",
+        "points": [
+          [
+            0,
+            0.5
+          ],
+          [
+            1,
+            0.5
+          ]
+        ]
+      },
+      {
+        "label": "lower",
+        "points": [
+          [
+            0,
+            0.36
+          ],
+          [
+            1,
+            0.36
+          ]
+        ]
+      },
+      {
+        "label": "upper",
+        "points": [
+          [
+            0,
+            0.64
+          ],
+          [
+            1,
+            0.64
+          ]
+        ]
+      }
+    ],
+    "caption": "The interval is produced by a procedure with a stated long-run coverage rate; it is not a probability that this fixed interval contains the parameter.",
+    "xLabel": "repeated study",
+    "yLabel": "estimate"
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

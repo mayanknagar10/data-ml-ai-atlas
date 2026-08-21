@@ -1,0 +1,46 @@
+{
+  "slug": "nested-cv",
+  "title": "Nested Cross-validation",
+  "module": "evaluation",
+  "priority": "medium",
+  "roles": [
+    "ds"
+  ],
+  "interviewAnswer": "Nested cross-validation separates hyperparameter/model selection in an inner loop from unbiased performance estimation in an outer loop. It is useful when datasets are small and tuning would otherwise contaminate evaluation.",
+  "keyPoints": [
+    "Inner CV selects; outer CV estimates.",
+    "Computational cost is higher.",
+    "Final deployment can refit after evaluation protocol is complete."
+  ],
+  "resources": [
+    "isl",
+    "sklearn"
+  ],
+  "featured": false,
+  "why": "Nested Cross-validation is a standard part of a broad data/ML curriculum because it changes how models are selected, evaluated or operated in real systems.",
+  "intuition": "Inner CV selects; outer CV estimates.",
+  "deepDive": "Nested cross-validation separates hyperparameter/model selection in an inner loop from unbiased performance estimation in an outer loop. It is useful when datasets are small and tuning would otherwise contaminate evaluation. Computational cost is higher. Final deployment can refit after evaluation protocol is complete. A strong answer connects the formal idea to validation, data requirements and failure modes instead of treating the method as a recipe.",
+  "workedExample": "Compare several model families on a small biomedical dataset without reporting the same CV score used for tuning.",
+  "commonMistakes": [
+    "Choosing the technique without checking whether its assumptions match the problem.",
+    "Optimizing an offline metric without checking realistic validation slices or operational constraints."
+  ],
+  "followUps": [
+    "When would you not use Nested Cross-validation?",
+    "How would you validate or tune Nested Cross-validation?"
+  ],
+  "production": "In production, validate on realistic slices, track latency/cost when relevant, and monitor for distribution changes or failure modes that the offline metric can hide.",
+  "visual": {
+    "type": "layers",
+    "title": "Nested cross-validation",
+    "items": [
+      "Outer split · unbiased evaluation",
+      "Inner split · model / hyperparameter selection",
+      "Final outer score"
+    ],
+    "caption": "The inner loop selects the model; the outer loop estimates generalization without reusing the same validation data."
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

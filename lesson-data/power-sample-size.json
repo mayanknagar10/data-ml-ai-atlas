@@ -1,0 +1,48 @@
+{
+  "slug": "power-sample-size",
+  "title": "Power, Minimum Detectable Effect & Sample Size",
+  "module": "stat-inference",
+  "priority": "very-high",
+  "roles": [
+    "ds",
+    "da",
+    "as"
+  ],
+  "interviewAnswer": "Power is the probability of detecting an effect of a specified size when it truly exists. Sample-size planning links baseline variance/rate, significance level, desired power and minimum detectable effect.",
+  "keyPoints": [
+    "Power is defined relative to an alternative effect size.",
+    "Smaller MDE requires more samples.",
+    "Low power produces noisy, inconclusive experiments."
+  ],
+  "resources": [
+    "openintro-stats",
+    "microsoft-experimentation"
+  ],
+  "featured": true,
+  "why": "Power, Minimum Detectable Effect & Sample Size appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
+  "intuition": "Power is defined relative to an alternative effect size.",
+  "deepDive": "Power is the probability of detecting an effect of a specified size when it truly exists. Sample-size planning links baseline variance/rate, significance level, desired power and minimum detectable effect. Smaller MDE requires more samples. Low power produces noisy, inconclusive experiments. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
+  "workedExample": "Plan an A/B test to reliably detect a 1% relative conversion lift before launching it.",
+  "commonMistakes": [
+    "Applying the method without checking its assumptions or data-generating process.",
+    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+  ],
+  "followUps": [
+    "What assumptions does Power, Minimum Detectable Effect & Sample Size make?",
+    "How would you validate or debug Power, Minimum Detectable Effect & Sample Size in practice?"
+  ],
+  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "visual": {
+    "type": "concept-map",
+    "title": "Power, Minimum Detectable Effect & Sample Size",
+    "items": [
+      "Power is defined relative to an alternative effect size.",
+      "Smaller MDE requires more samples.",
+      "Low power produces noisy, inconclusive experiments."
+    ],
+    "caption": "A compact concept map for the most important ideas in this lesson."
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

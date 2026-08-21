@@ -1,0 +1,54 @@
+{
+  "slug": "sql-window-functions",
+  "title": "Window Functions",
+  "module": "sql",
+  "priority": "very-high",
+  "roles": [
+    "ds",
+    "de",
+    "mle",
+    "da"
+  ],
+  "interviewAnswer": "Window functions compute values across related rows without collapsing them. Common examples are ROW_NUMBER, RANK, LAG, LEAD and running aggregates using OVER(PARTITION BY ... ORDER BY ...).",
+  "keyPoints": [
+    "Window vs GROUP BY",
+    "Partition and ordering",
+    "Ranking",
+    "Rolling metrics"
+  ],
+  "resources": [
+    "postgres"
+  ],
+  "featured": true,
+  "why": "Window functions are a common SQL interview discriminator because they solve ranking, lag/lead and rolling calculations without collapsing row-level detail.",
+  "intuition": "GROUP BY reduces many rows into one row per group. A window function keeps the original rows but lets each row look across a defined set of neighboring rows.",
+  "deepDive": "The OVER clause defines the window. PARTITION BY resets calculations by group; ORDER BY defines sequence; a frame such as ROWS BETWEEN controls which ordered rows contribute. ROW_NUMBER assigns unique positions, RANK leaves gaps after ties, DENSE_RANK does not. LAG/LEAD access prior/future rows and are useful for temporal features.",
+  "workedExample": "To find each customer’s latest order, assign ROW_NUMBER() OVER(PARTITION BY customer_id ORDER BY order_date DESC) and keep row_number=1. This avoids a separate aggregate-plus-join pattern.",
+  "code": "SELECT * FROM (\n  SELECT o.*,\n         ROW_NUMBER() OVER(\n           PARTITION BY customer_id ORDER BY order_date DESC\n         ) AS rn\n  FROM orders o\n) x\nWHERE rn = 1;",
+  "commonMistakes": [
+    "Confusing PARTITION BY with GROUP BY.",
+    "Ignoring tie behavior between ROW_NUMBER, RANK and DENSE_RANK.",
+    "Using LAG/LEAD without an explicit, meaningful ordering."
+  ],
+  "followUps": [
+    "ROW_NUMBER vs RANK vs DENSE_RANK?",
+    "How do you calculate a running average?",
+    "Window function vs GROUP BY?",
+    "What is a window frame?"
+  ],
+  "production": "Window functions are useful in feature generation, deduplication and event sequencing, but large partitions/orderings can be expensive; inspect execution plans and partition strategies.",
+  "visual": {
+    "type": "concept-map",
+    "title": "Window Functions",
+    "items": [
+      "Window vs GROUP BY",
+      "Partition and ordering",
+      "Ranking",
+      "Rolling metrics"
+    ],
+    "caption": "A compact concept map for the most important ideas in this lesson."
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

@@ -1,0 +1,37 @@
+{
+  "slug": "independence",
+  "title": "Independence & Conditional Independence",
+  "module": "probability",
+  "priority": "high",
+  "roles": [
+    "ds",
+    "as"
+  ],
+  "interviewAnswer": "Independence means the joint factorizes into marginals; conditional independence means two variables become independent after conditioning on a third set. Conditional independence is central to graphical models and causal reasoning.",
+  "keyPoints": [
+    "Zero correlation does not generally imply independence.",
+    "Conditioning can remove or create dependence.",
+    "DAG separation statements are about conditional independence."
+  ],
+  "resources": [
+    "harvard-stat110",
+    "harvard-causal-diagrams"
+  ],
+  "featured": false,
+  "why": "Independence & Conditional Independence is a recurring foundation across data science and machine learning because it affects both theoretical correctness and practical system behavior.",
+  "intuition": "Zero correlation does not generally imply independence.",
+  "deepDive": "Independence means the joint factorizes into marginals; conditional independence means two variables become independent after conditioning on a third set. Conditional independence is central to graphical models and causal reasoning. Conditioning can remove or create dependence. DAG separation statements are about conditional independence. The interview-level skill is not merely recalling the definition: explain the assumptions, what diagnostic evidence you would inspect, and what alternative you would choose when those assumptions fail.",
+  "workedExample": "Two symptoms may be dependent overall but independent after conditioning on their common disease cause.",
+  "commonMistakes": [
+    "Using the concept mechanically without checking assumptions or data semantics.",
+    "Reporting one metric/result without examining uncertainty, slices or failure modes."
+  ],
+  "followUps": [
+    "What assumptions or limitations does Independence & Conditional Independence have?",
+    "How would you validate Independence & Conditional Independence on a real dataset?"
+  ],
+  "production": "In production, make assumptions explicit, validate on representative slices, compare with a simple baseline and monitor the signals that can drift.",
+  "editorial": {
+    "status": "summary"
+  }
+}

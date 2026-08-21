@@ -1,0 +1,56 @@
+{
+  "slug": "vlm-architecture",
+  "title": "Vision-Language Model Architecture: Encoder, Projector & LLM",
+  "module": "multimodal",
+  "priority": "high",
+  "roles": [
+    "aie",
+    "mle",
+    "cv",
+    "as"
+  ],
+  "interviewAnswer": "A common VLM architecture uses a pretrained vision encoder to turn an image into visual features, a projector or resampler to map those features into the language model’s embedding space, and an LLM that attends to the resulting visual tokens together with text tokens to generate an answer.",
+  "keyPoints": [
+    "vision encoder",
+    "projector/resampler",
+    "visual tokens",
+    "LLM decoder"
+  ],
+  "resources": [
+    "llava-paper",
+    "hf-vlm-course",
+    "hf-multimodal-transformers"
+  ],
+  "featured": true,
+  "why": "This pattern explains systems from simple LLaVA-style connectors to more complex resamplers and multimodal transformers.",
+  "intuition": "The vision model extracts what is in the image; the projector translates those features into token-like vectors the language model can understand.",
+  "deepDive": "Vision encoders commonly produce patch/token features. A linear/MLP projector, Q-Former or Perceiver-style resampler reduces/adapts them. The LLM then conditions generation on visual tokens plus prompt tokens. Some models keep separate modality streams with cross/joint attention; others insert projected visual tokens directly into the language sequence.",
+  "workedExample": "A ViT returns 576 patch vectors of dimension 1024. An MLP projects each to the LLM hidden size, and the resulting visual tokens are prepended before the user question.",
+  "commonMistakes": [
+    "Saying the raw image is passed directly into the LLM tokenizer.",
+    "Assuming a larger number of visual tokens is always better; it also increases context and compute."
+  ],
+  "followUps": [
+    "Linear projector vs Q-Former/resampler?",
+    "Where do visual positional features come from?",
+    "How does VLM inference affect KV-cache cost?"
+  ],
+  "production": "Visual token count, image resolution and preprocessing strongly affect latency/memory; batch images by compatible shape and cache vision features when appropriate.",
+  "visual": {
+    "type": "flow",
+    "title": "Vision-language model",
+    "items": [
+      "Image",
+      "Vision encoder",
+      "Project / resample visual tokens",
+      "Language model",
+      "Text output"
+    ],
+    "caption": "A VLM converts visual information into token-like representations that a language model can condition on.",
+    "accent": 2,
+    "orientation": "horizontal"
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

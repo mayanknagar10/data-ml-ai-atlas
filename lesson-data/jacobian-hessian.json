@@ -1,0 +1,39 @@
+{
+  "slug": "jacobian-hessian",
+  "title": "Jacobians, Hessians & Second-order Thinking",
+  "module": "math",
+  "priority": "medium",
+  "roles": [
+    "ds",
+    "mle",
+    "aie",
+    "as"
+  ],
+  "interviewAnswer": "The Jacobian collects first derivatives of vector-valued functions; the Hessian contains second derivatives of a scalar objective and describes local curvature.",
+  "keyPoints": [
+    "Gradient gives first-order direction.",
+    "Hessian eigenvalues describe local curvature.",
+    "Second-order methods can converge quickly but are expensive in high dimensions."
+  ],
+  "resources": [
+    "mit-linear-algebra",
+    "stanford-cs229"
+  ],
+  "featured": false,
+  "why": "Jacobians, Hessians & Second-order Thinking is a recurring foundation across data science and machine learning because it affects both theoretical correctness and practical system behavior.",
+  "intuition": "Gradient gives first-order direction.",
+  "deepDive": "The Jacobian collects first derivatives of vector-valued functions; the Hessian contains second derivatives of a scalar objective and describes local curvature. Hessian eigenvalues describe local curvature. Second-order methods can converge quickly but are expensive in high dimensions. The interview-level skill is not merely recalling the definition: explain the assumptions, what diagnostic evidence you would inspect, and what alternative you would choose when those assumptions fail.",
+  "workedExample": "Newton’s method rescales the gradient using curvature rather than taking the same learning-rate geometry in every direction.",
+  "commonMistakes": [
+    "Using the concept mechanically without checking assumptions or data semantics.",
+    "Reporting one metric/result without examining uncertainty, slices or failure modes."
+  ],
+  "followUps": [
+    "What assumptions or limitations does Jacobians, Hessians & Second-order Thinking have?",
+    "How would you validate Jacobians, Hessians & Second-order Thinking on a real dataset?"
+  ],
+  "production": "In production, make assumptions explicit, validate on representative slices, compare with a simple baseline and monitor the signals that can drift.",
+  "editorial": {
+    "status": "summary"
+  }
+}

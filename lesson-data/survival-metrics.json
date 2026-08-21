@@ -1,0 +1,36 @@
+{
+  "slug": "survival-metrics",
+  "title": "Survival Model Evaluation",
+  "module": "survival",
+  "priority": "medium",
+  "roles": [
+    "ds",
+    "da"
+  ],
+  "interviewAnswer": "Survival models require metrics that handle censoring, such as concordance index and time-dependent calibration/Brier scores. Ordinary classification metrics at arbitrary cutoffs can discard useful time information.",
+  "keyPoints": [
+    "C-index assesses ranking.",
+    "Calibration matters at relevant horizons.",
+    "Evaluation must account for censoring."
+  ],
+  "resources": [
+    "lifelines"
+  ],
+  "featured": false,
+  "why": "Survival Model Evaluation appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
+  "intuition": "C-index assesses ranking.",
+  "deepDive": "Survival models require metrics that handle censoring, such as concordance index and time-dependent calibration/Brier scores. Ordinary classification metrics at arbitrary cutoffs can discard useful time information. Calibration matters at relevant horizons. Evaluation must account for censoring. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
+  "workedExample": "Evaluate whether higher predicted risk corresponds to earlier churn and whether 90-day survival probabilities are calibrated.",
+  "commonMistakes": [
+    "Applying the method without checking its assumptions or data-generating process.",
+    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+  ],
+  "followUps": [
+    "What assumptions does Survival Model Evaluation make?",
+    "How would you validate or debug Survival Model Evaluation in practice?"
+  ],
+  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "editorial": {
+    "status": "summary"
+  }
+}

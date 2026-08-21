@@ -1,0 +1,92 @@
+{
+  "slug": "dag-confounding",
+  "title": "DAGs, Confounders & Colliders",
+  "module": "causal",
+  "priority": "medium",
+  "roles": [
+    "ds",
+    "as"
+  ],
+  "interviewAnswer": "A causal DAG encodes assumptions about which variables cause which others. A confounder causes both treatment and outcome and often needs adjustment; a collider is caused by two variables and conditioning on it can create a spurious association.",
+  "keyPoints": [
+    "DAG",
+    "confounder",
+    "collider",
+    "backdoor paths"
+  ],
+  "resources": [
+    "causal-neal",
+    "causal-mixtape"
+  ],
+  "featured": false,
+  "why": "Choosing adjustment variables mechanically from correlation can bias causal estimates. DAG reasoning makes assumptions explicit before modeling.",
+  "intuition": "Imagine arrows as information about the data-generating process. Conditioning can close useful backdoor paths—but can also accidentally open a path through a collider.",
+  "deepDive": "The backdoor criterion formalizes sets that block noncausal paths between treatment and outcome without blocking the causal effect itself. DAGs do not prove assumptions; they make them inspectable.",
+  "workedExample": "Ability → Training and Ability → Salary makes Ability a confounder when estimating Training → Salary. If Hiring ← Ability and Hiring ← Network, conditioning on Hiring can associate Ability and Network even if they were independent.",
+  "commonMistakes": [
+    "Calling every correlated variable a confounder.",
+    "Conditioning on a collider because “more controls must be better.”"
+  ],
+  "followUps": [
+    "What is a backdoor path?",
+    "Can DAG structure be learned reliably from data alone?"
+  ],
+  "production": "For experimentation/decision systems, keep causal assumptions versioned alongside the analysis and distinguish pre-treatment from post-treatment features.",
+  "visual": {
+    "type": "network",
+    "title": "Confounder vs collider",
+    "nodes": [
+      {
+        "id": "c",
+        "label": "Confounder C",
+        "x": 0.5,
+        "y": 0.1
+      },
+      {
+        "id": "t",
+        "label": "Treatment T",
+        "x": 0.2,
+        "y": 0.48
+      },
+      {
+        "id": "y",
+        "label": "Outcome Y",
+        "x": 0.8,
+        "y": 0.48
+      },
+      {
+        "id": "k",
+        "label": "Collider K",
+        "x": 0.5,
+        "y": 0.84
+      }
+    ],
+    "edges": [
+      [
+        "c",
+        "t"
+      ],
+      [
+        "c",
+        "y"
+      ],
+      [
+        "t",
+        "y"
+      ],
+      [
+        "t",
+        "k"
+      ],
+      [
+        "y",
+        "k"
+      ]
+    ],
+    "caption": "A confounder creates a backdoor path that often needs adjustment. Conditioning on a collider can create bias.",
+    "directed": true
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

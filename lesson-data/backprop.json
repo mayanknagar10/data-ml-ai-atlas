@@ -1,0 +1,66 @@
+{
+  "slug": "backprop",
+  "title": "Backpropagation",
+  "module": "dl",
+  "priority": "very-high",
+  "roles": [
+    "all",
+    "as"
+  ],
+  "interviewAnswer": "Backpropagation efficiently computes gradients by applying the chain rule from the loss backward through the computation graph. The optimizer then uses those gradients to update parameters.",
+  "keyPoints": [
+    "Forward vs backward",
+    "Chain rule",
+    "Autograd",
+    "Gradient accumulation"
+  ],
+  "resources": [
+    "mit-6s191",
+    "3b1b-neural",
+    "pytorch",
+    "deep-learning-book",
+    "d2l"
+  ],
+  "featured": true,
+  "why": "Interviewers want to know whether you understand what frameworks such as PyTorch automate.",
+  "intuition": "A forward pass computes the prediction and loss. Backprop starts at the loss and repeatedly applies the chain rule to compute how changing each parameter would change that loss.",
+  "deepDive": "Backprop is reverse-mode automatic differentiation on a computation graph. It reuses intermediate derivatives so the gradient of a scalar loss with respect to millions of parameters is computed efficiently. The optimizer is separate: backprop gives gradients; SGD/Adam uses them.",
+  "math": "For z=wx+b and L=L(z): ∂L/∂w = (∂L/∂z)(∂z/∂w) = (∂L/∂z)x",
+  "code": "import torch\nw = torch.tensor([2.0], requires_grad=True)\nx = torch.tensor([3.0])\ny = w * x\nloss = (y - 5) ** 2\nloss.backward()\nprint(w.grad)",
+  "commonMistakes": [
+    "“Backprop updates weights.” Backprop computes gradients; the optimizer updates weights.",
+    "Forgetting optimizer.zero_grad() / gradient accumulation behavior in PyTorch."
+  ],
+  "followUps": [
+    "Why does gradient descent move opposite the gradient?",
+    "What causes vanishing gradients?",
+    "What does detach() do?",
+    "Why is reverse mode efficient for neural nets?"
+  ],
+  "production": "In production training, watch gradient norms and numerical stability; use clipping or mixed-precision scaling where appropriate.",
+  "workedExample": "If w=2, x=3 and target=5, the model predicts 6. Backprop computes how changing w changes the squared error so the optimizer can move w downward.",
+  "lab": {
+    "goal": "Verify backpropagation against a hand-derived scalar gradient.",
+    "language": "python",
+    "buildIt": "# f(w)=(w*x-y)^2 -> df/dw=2*(w*x-y)*x\nw,x,y=2.0,3.0,10.0\nmanual=2*(w*x-y)*x\nprint('manual',manual)\n",
+    "useIt": "import torch\nwt=torch.tensor(w,requires_grad=True); loss=(wt*x-y)**2; loss.backward()\nprint('autograd',wt.grad.item())\n",
+    "verifyIt": "assert abs(manual-wt.grad.item())<1e-6\n"
+  },
+  "visual": {
+    "type": "flow",
+    "title": "Backpropagation",
+    "items": [
+      "Forward pass",
+      "Compute loss",
+      "Apply chain rule backward",
+      "Gradients",
+      "Optimizer update"
+    ],
+    "caption": "Backprop computes parameter gradients; the optimizer uses them to update weights.",
+    "accent": 2,
+    "orientation": "horizontal"
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

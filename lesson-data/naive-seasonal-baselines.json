@@ -1,0 +1,100 @@
+{
+  "slug": "naive-seasonal-baselines",
+  "title": "Naive, Seasonal-Naive & Drift Baselines",
+  "module": "time-series",
+  "priority": "very-high",
+  "roles": [
+    "ds",
+    "da",
+    "as"
+  ],
+  "interviewAnswer": "Forecasting should start with naive baselines. Last-value, seasonal-naive and drift forecasts often perform surprisingly well; a complex model is useful only if it beats the baseline out-of-sample.",
+  "keyPoints": [
+    "Seasonal-naive repeats last comparable season.",
+    "Drift extrapolates average trend.",
+    "Baseline defines whether complexity adds value."
+  ],
+  "resources": [
+    "fpp3"
+  ],
+  "featured": true,
+  "why": "Naive, Seasonal-Naive & Drift Baselines appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
+  "intuition": "Seasonal-naive repeats last comparable season.",
+  "deepDive": "Forecasting should start with naive baselines. Last-value, seasonal-naive and drift forecasts often perform surprisingly well; a complex model is useful only if it beats the baseline out-of-sample. Drift extrapolates average trend. Baseline defines whether complexity adds value. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
+  "workedExample": "Forecast next Monday’s sales using last Monday before evaluating ARIMA or a neural model.",
+  "commonMistakes": [
+    "Applying the method without checking its assumptions or data-generating process.",
+    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+  ],
+  "followUps": [
+    "What assumptions does Naive, Seasonal-Naive & Drift Baselines make?",
+    "How would you validate or debug Naive, Seasonal-Naive & Drift Baselines in practice?"
+  ],
+  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "lab": {
+    "goal": "Build naive and seasonal-naive forecasts before complex models.",
+    "language": "python",
+    "buildIt": "import numpy as np\ny=np.array([10,12,11,13,15,16,14,11,13,12,14,16,17,15],float)\nh=7\nlast=np.repeat(y[-1],h)\nseasonal=y[-7:]\nprint('last',last,'seasonal',seasonal)\n",
+    "useIt": "def mae(a,b): return np.mean(np.abs(a-b))\nactual=np.array([12,14,13,15,17,18,16],float)\nprint('MAE last',mae(actual,last),'seasonal',mae(actual,seasonal))\n",
+    "verifyIt": "assert len(seasonal)==h\n",
+    "shipIt": "Ship a seasonal-naive fallback beside every forecasting service; if the complex model cannot beat it by segment/horizon, revisit the model or data."
+  },
+  "visual": {
+    "type": "curve",
+    "title": "Forecast baselines",
+    "series": [
+      {
+        "label": "history",
+        "points": [
+          [
+            0,
+            0.3
+          ],
+          [
+            0.14,
+            0.42
+          ],
+          [
+            0.28,
+            0.35
+          ],
+          [
+            0.42,
+            0.56
+          ],
+          [
+            0.56,
+            0.46
+          ],
+          [
+            0.7,
+            0.68
+          ]
+        ]
+      },
+      {
+        "label": "seasonal naive",
+        "points": [
+          [
+            0.7,
+            0.68
+          ],
+          [
+            0.84,
+            0.56
+          ],
+          [
+            1,
+            0.46
+          ]
+        ]
+      }
+    ],
+    "caption": "Always beat a simple naive/seasonal-naive baseline before adding model complexity.",
+    "xLabel": "time",
+    "yLabel": "value"
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

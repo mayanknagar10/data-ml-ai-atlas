@@ -1,0 +1,62 @@
+{
+  "slug": "embedding-retrieval",
+  "title": "Embedding Search & Vector Databases",
+  "module": "llm",
+  "priority": "very-high",
+  "roles": [
+    "aie"
+  ],
+  "interviewAnswer": "Convert documents and queries to embeddings, compare them using a similarity metric, and retrieve nearest items. Production retrieval often adds metadata filters, hybrid lexical search and reranking.",
+  "keyPoints": [
+    "Cosine/dot product",
+    "ANN search",
+    "Metadata filtering",
+    "Hybrid retrieval"
+  ],
+  "resources": [
+    "openai-cookbook",
+    "hf-llm",
+    "langchain-academy"
+  ],
+  "featured": false,
+  "why": "Vector retrieval is the core of modern semantic search and many RAG systems, so interviews probe embeddings, similarity, indexing and evaluation together.",
+  "intuition": "Encode documents and queries into the same vector space, then retrieve nearby vectors. At small scale brute-force comparison works; at large scale approximate nearest-neighbor indexes trade exactness for speed/memory.",
+  "deepDive": "Chunking determines retrieval granularity. Embedding model choice determines what similarity means. Vector databases/indexes commonly use cosine, dot product or Euclidean distance and ANN structures such as HNSW or IVF. Metadata filtering narrows candidates. Hybrid search combines dense semantic retrieval with lexical BM25. Rerankers can improve precision after a broad first-stage retrieval.",
+  "workedExample": "For planning-policy RAG, chunk by coherent policy sections, embed chunks, retrieve top candidates by semantic similarity, optionally rerank, then pass only grounded chunks to the LLM.",
+  "commonMistakes": [
+    "Assuming the nearest vector is necessarily relevant enough to answer.",
+    "Using huge chunks that retrieve broad documents but bury the needed sentence.",
+    "Changing the embedding model without rebuilding/revalidating the index."
+  ],
+  "followUps": [
+    "Cosine vs dot product?",
+    "HNSW intuition?",
+    "Dense vs sparse/hybrid retrieval?",
+    "How do you evaluate retrieval separately from generation?"
+  ],
+  "production": "Monitor recall/precision on a labeled query set, index freshness, embedding version, latency and filter correctness. Keep source IDs/metadata so answers can cite provenance.",
+  "lab": {
+    "goal": "Build cosine-similarity retrieval over a tiny vector index and return top-k items.",
+    "language": "python",
+    "buildIt": "import numpy as np\ndocs=np.array([[1.,0.],[0.,1.],[.8,.2],[-1.,0.]])\nq=np.array([1.,.1])\ndef norm(x): return x/np.linalg.norm(x,axis=-1,keepdims=True)\nscores=norm(docs)@norm(q)\nrank=np.argsort(-scores)\nprint(rank,scores[rank])",
+    "useIt": "top_k=2\nprint('retrieved ids',rank[:top_k].tolist())",
+    "verifyIt": "assert rank[0] in (0,2)\nassert scores[rank[0]]>scores[rank[-1]]\n"
+  },
+  "visual": {
+    "type": "flow",
+    "title": "Embedding retrieval",
+    "items": [
+      "Documents",
+      "Chunk + embed",
+      "Vector index",
+      "Query embedding",
+      "Nearest neighbors"
+    ],
+    "caption": "Semantic retrieval compares learned vector representations rather than exact term overlap.",
+    "accent": 2,
+    "orientation": "horizontal"
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

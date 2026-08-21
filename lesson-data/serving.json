@@ -1,0 +1,63 @@
+{
+  "slug": "serving",
+  "title": "Batch vs Online Model Serving",
+  "module": "mlops",
+  "priority": "very-high",
+  "roles": [
+    "mle",
+    "aie"
+  ],
+  "interviewAnswer": "Online serving optimizes low-latency per-request predictions; batch inference processes many items asynchronously and is often simpler and cheaper for heavy workloads. Choose from user and freshness requirements.",
+  "keyPoints": [
+    "Latency/throughput",
+    "Synchronous/asynchronous",
+    "GPU batching",
+    "Cost"
+  ],
+  "resources": [
+    "fsdl",
+    "stanford-cs329s",
+    "made-with-ml"
+  ],
+  "featured": false,
+  "why": "Model serving design determines latency, cost, scalability and failure behavior after training. Interviews often ask whether a use case really needs real-time inference.",
+  "intuition": "Batch serving predicts many items asynchronously. Online serving answers individual/small-batch requests under a latency SLO. Pick based on when the prediction is actually needed.",
+  "deepDive": "Batch jobs can maximize throughput and GPU utilization with simpler retries. Online endpoints need autoscaling, request validation, timeouts, concurrency control and low tail latency. Asynchronous serving is useful for heavy jobs such as image/3D reconstruction: submit a job, process on GPU, persist the result and poll/callback for completion. Streaming inference sits between event ingestion and online scoring.",
+  "workedExample": "A 40-minute 3D reconstruction should be an asynchronous batch job, not an HTTP request that blocks a browser. A fraud score at checkout must be online.",
+  "commonMistakes": [
+    "Using a real-time API for long-running jobs.",
+    "Optimizing average latency while ignoring p95/p99.",
+    "Coupling the model server to mutable training code/dependencies."
+  ],
+  "followUps": [
+    "Batch vs online?",
+    "When use async jobs?",
+    "How would you autoscale GPU inference?",
+    "How do you roll back a bad model?"
+  ],
+  "production": "Define latency/throughput SLOs, queueing behavior, concurrency limits, model warmup, health checks, retries and capacity before choosing infrastructure.",
+  "visual": {
+    "type": "compare",
+    "title": "Batch vs online inference",
+    "left": {
+      "title": "Batch inference",
+      "items": [
+        "Large offline jobs",
+        "High throughput",
+        "Results stored for later"
+      ]
+    },
+    "right": {
+      "title": "Online inference",
+      "items": [
+        "Per-request predictions",
+        "Low-latency SLOs",
+        "Autoscaling / concurrency concerns"
+      ]
+    },
+    "caption": "Serving architecture should follow latency, freshness, throughput and cost requirements."
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

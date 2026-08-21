@@ -1,0 +1,65 @@
+{
+  "slug": "cnn",
+  "title": "CNN Fundamentals",
+  "module": "cv",
+  "priority": "very-high",
+  "roles": [
+    "mle",
+    "cv",
+    "as"
+  ],
+  "interviewAnswer": "CNNs exploit local spatial structure with shared filters. Early layers learn local edges/textures, while deeper layers combine them into larger receptive-field features.",
+  "keyPoints": [
+    "Kernel",
+    "Stride",
+    "Padding",
+    "Channels"
+  ],
+  "resources": [
+    "stanford-cs231n",
+    "mit-6s191",
+    "deep-learning-book",
+    "d2l",
+    "distill-feature-visualization"
+  ],
+  "featured": false,
+  "why": "CNNs remain foundational for vision and help explain locality, parameter sharing, receptive fields and why 2D vs 3D architectures behave differently.",
+  "intuition": "A convolution reuses the same small filter across locations, so the model learns patterns such as edges or textures regardless of where they appear.",
+  "deepDive": "A convolution kernel slides across spatial dimensions, producing feature maps. Parameter sharing makes CNNs far more efficient than dense layers on images. Stride controls sampling; padding controls boundary/size behavior; dilation expands receptive field. Stacking layers builds hierarchical features and enlarges effective receptive field. Pooling/strided convolution reduce spatial resolution while increasing semantic abstraction.",
+  "math": "For 1D dimension: output = floor((N + 2P - D(K-1) - 1)/S + 1)",
+  "workedExample": "A 3×3 RGB filter has 3×3×3 weights per output channel, and the same weights are applied at every image location, unlike a fully connected layer with separate weights per pixel.",
+  "code": "import torch.nn as nn\nconv=nn.Conv2d(in_channels=3,out_channels=32,kernel_size=3,padding=1)",
+  "commonMistakes": [
+    "Saying convolution is automatically translation invariant; it is more accurately translation equivariant before pooling/aggregation.",
+    "Ignoring channel dimensions.",
+    "Assuming a large theoretical receptive field means all pixels contribute equally in practice."
+  ],
+  "followUps": [
+    "What do stride and padding do?",
+    "Why parameter sharing?",
+    "CNN vs ViT?",
+    "2D vs 3D convolution?"
+  ],
+  "production": "Vision pipelines must keep resize/crop/normalization identical between training and serving. Throughput depends heavily on resolution, batch size and device kernels.",
+  "lab": {
+    "goal": "Build a small CNN and verify spatial/channel shapes.",
+    "language": "python",
+    "buildIt": "import torch\nnet=torch.nn.Sequential(\n torch.nn.Conv2d(1,8,3,padding=1),torch.nn.ReLU(),torch.nn.MaxPool2d(2),\n torch.nn.Conv2d(8,16,3,padding=1),torch.nn.ReLU(),torch.nn.AdaptiveAvgPool2d(1),\n torch.nn.Flatten(),torch.nn.Linear(16,3))\nx=torch.randn(4,1,64,64); print(net(x).shape)\n",
+    "useIt": "# Inspect feature map shape explicitly.\nfeatures=net[:3](x); print(features.shape)  # [4, 8, 32, 32]\n",
+    "verifyIt": "assert net(x).shape==(4,3)\nassert features.shape==(4,8,32,32)\n"
+  },
+  "visual": {
+    "type": "layers",
+    "title": "CNN hierarchy",
+    "items": [
+      "Pixels",
+      "Edges / local textures",
+      "Motifs / parts",
+      "Task-specific representation"
+    ],
+    "caption": "Convolution combines local connectivity and weight sharing, building progressively richer spatial features."
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

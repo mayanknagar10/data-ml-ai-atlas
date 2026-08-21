@@ -1,0 +1,56 @@
+{
+  "slug": "credible-vs-confidence",
+  "title": "Credible Intervals vs Confidence Intervals",
+  "module": "bayesian",
+  "priority": "high",
+  "roles": [
+    "ds",
+    "as"
+  ],
+  "interviewAnswer": "A Bayesian credible interval is a probability statement about a parameter under the posterior; a frequentist confidence interval is a procedure that covers the fixed parameter at a stated long-run frequency.",
+  "keyPoints": [
+    "Interpretations differ even when numerical intervals look similar.",
+    "Bayesian intervals depend on prior/model.",
+    "Frequentist coverage is about repeated procedures."
+  ],
+  "resources": [
+    "think-bayes",
+    "stanford-stats200"
+  ],
+  "featured": false,
+  "why": "Credible Intervals vs Confidence Intervals appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
+  "intuition": "Interpretations differ even when numerical intervals look similar.",
+  "deepDive": "A Bayesian credible interval is a probability statement about a parameter under the posterior; a frequentist confidence interval is a procedure that covers the fixed parameter at a stated long-run frequency. Bayesian intervals depend on prior/model. Frequentist coverage is about repeated procedures. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
+  "workedExample": "A 95% credible interval can be described as containing 95% posterior probability for the parameter under the model.",
+  "commonMistakes": [
+    "Applying the method without checking its assumptions or data-generating process.",
+    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+  ],
+  "followUps": [
+    "What assumptions does Credible Intervals vs Confidence Intervals make?",
+    "How would you validate or debug Credible Intervals vs Confidence Intervals in practice?"
+  ],
+  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "visual": {
+    "type": "compare",
+    "title": "Credible vs confidence intervals",
+    "left": {
+      "title": "Bayesian credible interval",
+      "items": [
+        "Probability statement about parameter",
+        "Depends on prior + likelihood"
+      ]
+    },
+    "right": {
+      "title": "Frequentist confidence interval",
+      "items": [
+        "Coverage statement about procedure",
+        "Parameter treated as fixed"
+      ]
+    },
+    "caption": "The numerical intervals can look similar while the interpretation is fundamentally different."
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

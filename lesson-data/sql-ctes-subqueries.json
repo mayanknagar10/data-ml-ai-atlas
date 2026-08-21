@@ -1,0 +1,43 @@
+{
+  "slug": "sql-ctes-subqueries",
+  "title": "CTEs & Subqueries",
+  "module": "sql",
+  "priority": "medium",
+  "roles": [
+    "ds",
+    "de",
+    "mle",
+    "da"
+  ],
+  "interviewAnswer": "CTEs make complex SQL easier to reason about by naming intermediate results. They are often used to structure transformations before the final query.",
+  "keyPoints": [
+    "Readability",
+    "Recursive CTE concept",
+    "Optimization depends on database",
+    "Avoid unnecessary nesting"
+  ],
+  "resources": [
+    "postgres"
+  ],
+  "featured": false,
+  "why": "CTEs and subqueries test how you structure multi-step SQL and reason about readability versus optimizer behavior.",
+  "intuition": "A subquery nests a query inside another expression. A CTE names an intermediate query so complex logic reads like staged transformations.",
+  "deepDive": "CTEs improve organization and can be recursive. Modern optimizers may inline them, but materialization behavior is database/version specific. Correlated subqueries reference outer rows and can be expensive if not optimized. EXISTS is often a clear way to express “does any related row exist?” without duplicate joins.",
+  "workedExample": "Use a CTE to aggregate order spend per customer, then join that one-row-per-customer result to customer attributes. This makes grain explicit.",
+  "code": "WITH spend AS (\n SELECT customer_id, SUM(amount) total\n FROM orders GROUP BY customer_id\n)\nSELECT c.customer_id, s.total\nFROM customers c LEFT JOIN spend s USING(customer_id);",
+  "commonMistakes": [
+    "Assuming a CTE always materializes or is always faster.",
+    "Using SELECT * in deeply nested transformations and losing schema clarity.",
+    "Using correlated subqueries without checking the execution plan."
+  ],
+  "followUps": [
+    "CTE vs subquery?",
+    "What is a correlated subquery?",
+    "EXISTS vs IN?",
+    "What is a recursive CTE?"
+  ],
+  "production": "Prefer maintainable SQL with explicit grain/columns; performance decisions should come from query plans and realistic data, not blanket rules about CTEs.",
+  "editorial": {
+    "status": "summary"
+  }
+}

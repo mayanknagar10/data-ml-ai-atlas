@@ -14,6 +14,8 @@ const state = {
   resumeFileName: '',
   jdFileName: '',
 };
+const chapterLoader=AtlasChapterLoader.create((...args)=>fetch(...args));
+let routeVersion=0;
 function esc(s=''){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));}
 function save(){localStorage.setItem('atlas-done',JSON.stringify([...state.done]));localStorage.setItem('atlas-role',state.role)}
 function priorityLabel(p){return {'very-high':'Very high','high':'High','medium':'Medium'}[p]||p}
@@ -23,13 +25,13 @@ function lessonVisible(l){
   const q=state.query.toLowerCase();
   const roleOk=state.role==='all'||l.roles.includes('all')||l.roles.includes(state.role);
   const pOk=state.priority==='all'||l.priority===state.priority;
-  const qOk=!q||(`${l.title} ${l.interviewAnswer} ${l.keyPoints.join(' ')}`).toLowerCase().includes(q);
+  const qOk=!q||(`${l.title} ${l.description||''} ${l.interviewAnswer} ${l.keyPoints.join(' ')}`).toLowerCase().includes(q);
   return roleOk&&pOk&&qOk;
 }
 function progress(){return Math.round(100*state.done.size/ATLAS.lessons.length)}
-function deepCount(){return ATLAS.lessons.filter(l=>l.status==='deep-complete').length}
-function labCount(){return ATLAS.lessons.filter(l=>l.lab).length}
-function visualCount(){return ATLAS.lessons.filter(l=>l.visual).length}
+function deepCount(){return ATLAS.lessons.filter(l=>['chapter-complete','verified'].includes(l.status)).length}
+function labCount(){return ATLAS.lessons.filter(l=>l.hasLab).length}
+function visualCount(){return ATLAS.lessons.reduce((n,l)=>n+(l.visualCount||0),0)}
 function doneBtn(slug){const d=state.done.has(slug);return `<button class="check ${d?'done':''}" data-done="${slug}" title="Mark complete">${d?'✓':''}</button>`}
 function wireDone(){document.querySelectorAll('[data-done]').forEach(b=>b.onclick=e=>{e.preventDefault();e.stopPropagation();const s=b.dataset.done;state.done.has(s)?state.done.delete(s):state.done.add(s);save();route();});}
 function home(){
@@ -54,16 +56,17 @@ function svgWrap(text,x,y,max=18,anchor='middle',cls='viz-text'){
  words.forEach(w=>{const last=lines.length-1; const cand=(lines[last]+' '+w).trim(); if(cand.length>max && lines[last]) lines.push(w); else lines[last]=cand;});
  const start=y-((lines.length-1)*7); return `<text x="${x}" y="${start}" text-anchor="${anchor}" class="${cls}">${lines.map((ln,i)=>`<tspan x="${x}" dy="${i?14:0}">${esc(ln)}</tspan>`).join('')}</text>`;
 }
-function visualHtml(l){
- const v=l.visual; if(!v)return '';
+function visualHtml(l,vArg=null,visualIndex=0){
+ const v=vArg||l.visual; if(!v)return '';
  const title=esc(v.title||l.title); const caption=esc(v.caption||'Conceptual illustration.');
  const colors=['var(--viz-1)','var(--viz-2)','var(--viz-3)','var(--viz-4)'];
- const arrow='<marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L0,6 L9,3 z" fill="var(--viz-line)"/></marker>';
+ const arrowId=`arrow-${String(l.slug||'lesson').replace(/[^a-z0-9-]/gi,'-')}-${visualIndex}`;
+ const arrow=`<marker id="${arrowId}" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L0,6 L9,3 z" fill="var(--viz-line)"/></marker>`;
  let body='';
  if(v.type==='flow'){
    const items=v.items||[]; const vertical=v.orientation==='vertical';
-   if(vertical){const h=58,gap=20,x=300,w=400;items.forEach((it,i)=>{const y=45+i*(h+gap); if(i)body+=`<line x1="500" y1="${y-gap}" x2="500" y2="${y-6}" class="viz-edge" marker-end="url(#arrow)"/>`;body+=`<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="14" class="viz-node ${v.accent===i?'accent':''}"/>${svgWrap(it,500,y+33,34)}`;});}
-   else {const n=Math.max(items.length,1), margin=45, gap=26, w=Math.min(150,(1000-2*margin-gap*(n-1))/n), y=145,h=100;items.forEach((it,i)=>{const x=margin+i*(w+gap); if(i)body+=`<line x1="${x-gap+6}" y1="${y+h/2}" x2="${x-7}" y2="${y+h/2}" class="viz-edge" marker-end="url(#arrow)"/>`;body+=`<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="16" class="viz-node ${v.accent===i?'accent':''}"/>${svgWrap(it,x+w/2,y+54,Math.max(12,Math.floor(w/8)))}`;});}
+   if(vertical){const h=58,gap=20,x=300,w=400;items.forEach((it,i)=>{const y=45+i*(h+gap); if(i)body+=`<line x1="500" y1="${y-gap}" x2="500" y2="${y-6}" class="viz-edge" marker-end="url(#${arrowId})"/>`;body+=`<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="14" class="viz-node ${v.accent===i?'accent':''}"/>${svgWrap(it,500,y+33,34)}`;});}
+   else {const n=Math.max(items.length,1), margin=45, gap=26, w=Math.min(150,(1000-2*margin-gap*(n-1))/n), y=145,h=100;items.forEach((it,i)=>{const x=margin+i*(w+gap); if(i)body+=`<line x1="${x-gap+6}" y1="${y+h/2}" x2="${x-7}" y2="${y+h/2}" class="viz-edge" marker-end="url(#${arrowId})"/>`;body+=`<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="16" class="viz-node ${v.accent===i?'accent':''}"/>${svgWrap(it,x+w/2,y+54,Math.max(12,Math.floor(w/8)))}`;});}
  } else if(v.type==='layers'){
    const items=v.items||[]; const w=660,h=56,gap=14,x=170;items.forEach((it,i)=>{const y=48+i*(h+gap);body+=`<rect x="${x+i*18}" y="${y}" width="${w-i*36}" height="${h}" rx="13" fill="${colors[i%4]}" opacity="${0.16+0.05*(i%3)}" stroke="${colors[i%4]}"/>${svgWrap(it,500,y+33,42)}`;});
  } else if(v.type==='curve'){
@@ -81,7 +84,7 @@ function visualHtml(l){
  } else if(v.type==='matrix'){
    const rows=v.rows||[],cols=v.cols||[],cells=v.cells||[]; const left=190,top=90,w=650,h=250,cw=w/Math.max(cols.length,1),ch=h/Math.max(rows.length,1); cols.forEach((c,i)=>body+=svgWrap(c,left+i*cw+cw/2,68,14)); rows.forEach((r,j)=>body+=svgWrap(r,170,top+j*ch+ch/2,14,'end')); for(let j=0;j<rows.length;j++)for(let i=0;i<cols.length;i++){const val=(cells[j]||[])[i]??'';let op=.10+.10*((i+j)%3);const num=parseFloat(String(val).replace('%',''));if(Number.isFinite(num))op=.12+.60*(String(val).includes('%')?num/100:Math.min(1,num));body+=`<rect x="${left+i*cw}" y="${top+j*ch}" width="${cw}" height="${ch}" fill="${colors[(i+j)%4]}" opacity="${op}" stroke="var(--viz-border)"/>${svgWrap(val,left+i*cw+cw/2,top+j*ch+ch/2+4,14)}`;}
  } else if(v.type==='network'){
-   const nodes=v.nodes||[],edges=v.edges||[]; const by=Object.fromEntries(nodes.map(n=>[n.id,n])); edges.forEach(e=>{const a=by[e[0]],b=by[e[1]];if(!a||!b)return;body+=`<line x1="${80+a.x*840}" y1="${40+a.y*330}" x2="${80+b.x*840}" y2="${40+b.y*330}" class="viz-edge" ${v.directed?'marker-end="url(#arrow)"':''}/>`;});nodes.forEach((n,i)=>{const x=80+n.x*840,y=40+n.y*330;body+=`<circle cx="${x}" cy="${y}" r="34" fill="${colors[['a','b','c'].indexOf(n.kind)>=0?['a','b','c'].indexOf(n.kind):i%4]}" opacity=".16" stroke="${colors[['a','b','c'].indexOf(n.kind)>=0?['a','b','c'].indexOf(n.kind):i%4]}" stroke-width="2"/>${svgWrap(n.label,x,y+4,15)}`;});
+   const nodes=v.nodes||[],edges=v.edges||[]; const by=Object.fromEntries(nodes.map(n=>[n.id,n])); edges.forEach(e=>{const a=by[e[0]],b=by[e[1]];if(!a||!b)return;body+=`<line x1="${80+a.x*840}" y1="${40+a.y*330}" x2="${80+b.x*840}" y2="${40+b.y*330}" class="viz-edge" ${v.directed?`marker-end="url(#${arrowId})"`:''}/>`;});nodes.forEach((n,i)=>{const x=80+n.x*840,y=40+n.y*330;body+=`<circle cx="${x}" cy="${y}" r="34" fill="${colors[['a','b','c'].indexOf(n.kind)>=0?['a','b','c'].indexOf(n.kind):i%4]}" opacity=".16" stroke="${colors[['a','b','c'].indexOf(n.kind)>=0?['a','b','c'].indexOf(n.kind):i%4]}" stroke-width="2"/>${svgWrap(n.label,x,y+4,15)}`;});
  } else if(v.type==='schema'){
    const sats=v.satellites||[]; const cx=500,cy=210; sats.forEach((s,i)=>{const ang=(Math.PI*2*i/sats.length)-Math.PI/2,x=cx+300*Math.cos(ang),y=cy+145*Math.sin(ang);body+=`<line x1="${cx}" y1="${cy}" x2="${x}" y2="${y}" class="viz-edge"/><rect x="${x-105}" y="${y-32}" width="210" height="64" rx="14" class="viz-node"/>${svgWrap(s,x,y+4,22)}`;});body+=`<rect x="390" y="165" width="220" height="90" rx="18" class="viz-node accent"/>${svgWrap(v.center||'',500,214,22)}`;
  } else if(v.type==='compare'){
@@ -100,6 +103,47 @@ function lessonPage(slug){
  const l=lessonFor(slug); if(!l)return notFound(); const m=moduleFor(l.module);
  const detailSections = l.why ? `<section><h2>Why this matters</h2><p>${esc(l.why)}</p></section><section><h2>Intuition</h2><p>${esc(l.intuition)}</p></section>${visualHtml(l)}<section><h2>Deep explanation</h2><p>${esc(l.deepDive)}</p></section>${l.math?`<section><h2>Math / formal view</h2><div class="math">${esc(l.math)}</div></section>`:''}${l.workedExample?`<section><h2>Worked example</h2><p>${esc(l.workedExample)}</p></section>`:''}${labHtml(l)}${l.production?`<section><h2>Ship it: production / system-design connection</h2><p>${esc(l.production)}</p></section>`:''}${l.commonMistakes?`<section class="warning"><h2>Common wrong answers</h2><ul>${l.commonMistakes.map(x=>`<li>${esc(x)}</li>`).join('')}</ul></section>`:''}${l.followUps?`<section><h2>Likely follow-ups</h2><ul>${l.followUps.map(x=>`<li>${esc(x)}</li>`).join('')}</ul></section>`:''}` : `<section><h2>What to know</h2><ul>${l.keyPoints.map(x=>`<li>${esc(x)}</li>`).join('')}</ul></section>`;
  return `<div class="breadcrumbs"><a href="#/">Home</a> / <a href="#/module/${m.slug}">${m.title}</a> / ${l.title}</div><section class="lesson-head"><div class="meta"><span class="pill ${l.priority}">${priorityLabel(l.priority)} priority</span><span class="pill ${l.status}">${l.status}</span>${doneBtn(l.slug)}</div><h1>${l.title}</h1><p class="lede">${esc(l.keyPoints.join(' · '))}</p></section><div class="answer-card"><h3>🎤 30–60 second interview answer</h3><p>${esc(l.interviewAnswer)}</p></div><div class="content-grid"><article class="article">${detailSections}</article><aside class="sidebar"><div class="side-card"><div class="kicker">Quick revision</div><ul>${l.keyPoints.map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div><div class="side-card"><div class="kicker">Best resources</div>${resourcesHtml(l.resources)}</div></aside></div>`;
+}
+function readerContext(slug){
+ const summary=lessonFor(slug); const m=summary?moduleFor(summary.module):null;
+ const moduleLessons=summary?ATLAS.lessons.filter(l=>l.module===summary.module):[];
+ const index=moduleLessons.findIndex(l=>l.slug===slug);
+ return {
+   module:m,
+   previous:index>0?moduleLessons[index-1]:null,
+   next:index>=0&&index<moduleLessons.length-1?moduleLessons[index+1]:null,
+   lessonTitle:(value)=>lessonFor(value)?.title||value,
+ };
+}
+function readerHelpers(){
+ return {
+   escape:esc,
+   visualHtml,
+   labHtml,
+   resourcesHtml,
+   doneButton:doneBtn,
+ };
+}
+function chapterLoading(summary){
+ return `<div class="breadcrumbs"><a href="#/">Home</a> / Loading</div><section class="chapter-loading" aria-live="polite"><div class="loading-line wide"></div><div class="loading-line"></div><div class="loading-block"></div><p>Loading ${esc(summary.title)}…</p></section>`;
+}
+function chapterLoadError(summary,error){
+ return `<div class="breadcrumbs"><a href="#/">Home</a> / ${esc(summary.title)}</div><section class="chapter-load-error" role="alert"><div class="kicker">Chapter unavailable</div><h1>${esc(summary.title)}</h1><p>${esc(error?.message||'The lesson file could not be loaded.')}</p><button id="retryChapter" class="primary-btn">Retry chapter</button> <a class="ghost" href="#/module/${esc(summary.module)}">Return to module</a></section>`;
+}
+async function loadLessonPage(slug,version,refresh=false){
+ const summary=lessonFor(slug);
+ if(!summary){$('#app').innerHTML=notFound();return}
+ $('#app').innerHTML=chapterLoading(summary);
+ try{
+   const chapter=await chapterLoader.load(slug,{refresh});
+   if(version!==routeVersion||location.hash!==`#/lesson/${slug}`)return;
+   $('#app').innerHTML=AtlasChapterReader.render(chapter,readerContext(slug),readerHelpers());
+   wireCommon();scrollTo(0,0);
+ }catch(error){
+   if(version!==routeVersion)return;
+   $('#app').innerHTML=chapterLoadError(summary,error);
+   const retry=$('#retryChapter');if(retry)retry.onclick=()=>loadLessonPage(slug,version,true);
+ }
 }
 function roadmap(){
  return `<div class="breadcrumbs"><a href="#/">Home</a> / Roadmap</div><section class="lesson-head"><div class="kicker">Complete map</div><h1>Roadmap</h1><p class="lede">Use the priorities as a triage system. “Very high” means you should be able to answer without warming up.</p></section>${ATLAS.modules.map(m=>{const ls=ATLAS.lessons.filter(l=>l.module===m.slug);return `<section class="section"><h2>${m.icon} ${m.title}</h2><ol class="toc-list">${ls.map(l=>`<li><a href="#/lesson/${l.slug}">${l.title}</a> <span class="pill ${l.priority}">${priorityLabel(l.priority)}</span></li>`).join('')}</ol></section>`}).join('')}`;
@@ -142,16 +186,16 @@ function quizPage(){
  const m=moduleFor(l.module);
  return `<div class="breadcrumbs"><a href="#/">Home</a> / Practice</div><section class="lesson-head"><div class="kicker">Mock interview mode</div><h1>Practice one question at a time</h1><p class="lede">Say your answer aloud before revealing the model answer. Then use the follow-ups to push one level deeper.</p></section>
  <div class="toolbar"><select id="priority"><option value="all">All priorities</option><option value="very-high" ${state.priority==='very-high'?'selected':''}>Very high</option><option value="high" ${state.priority==='high'?'selected':''}>High</option><option value="medium" ${state.priority==='medium'?'selected':''}>Medium</option></select><div class="roles">${[['all','All'],['ds','Data Scientist'],['da','Data / Product Analyst'],['as','Applied Scientist'],['mle','ML Engineer'],['aie','AI Engineer'],['de','Data Engineer'],['cv','Computer Vision']].map(([v,n])=>`<button class="role-btn ${state.role===v?'active':''}" data-role="${v}">${n}</button>`).join('')}</div><button id="newQuiz" class="primary-btn">New question</button></div>
- <section class="quiz-card"><div class="meta"><span class="pill ${l.priority}">${priorityLabel(l.priority)}</span><span class="pill">${m.icon} ${m.title}</span></div><h2>${l.title}</h2><p class="quiz-prompt">Explain this as if the interviewer asked you directly. Aim for 30–60 seconds.</p><button id="revealQuiz" class="primary-btn">Reveal answer</button><div id="quizAnswer" class="quiz-answer" hidden><div class="answer-card"><h3>Strong interview answer</h3><p>${esc(l.interviewAnswer)}</p></div><h3>Key points</h3><ul>${l.keyPoints.map(x=>`<li>${esc(x)}</li>`).join('')}</ul><h3>Follow-ups</h3><ul>${(l.followUps||[]).map(x=>`<li>${esc(x)}</li>`).join('')}</ul><p><a href="#/lesson/${l.slug}">Open full lesson →</a></p></div></section>`;
+ <section class="quiz-card"><div class="meta"><span class="pill ${l.priority}">${priorityLabel(l.priority)}</span><span class="pill">${m.icon} ${m.title}</span></div><h2>${l.title}</h2><p class="quiz-prompt">Explain this as if the interviewer asked you directly. Aim for 30–60 seconds.</p><button id="revealQuiz" class="primary-btn">Reveal answer</button><div id="quizAnswer" class="quiz-answer" hidden><div class="answer-card"><h3>Strong interview answer</h3><p>${esc(l.interviewAnswer)}</p></div><h3>Key points</h3><ul>${l.keyPoints.map(x=>`<li>${esc(x)}</li>`).join('')}</ul><h3>Follow-ups</h3><ul>${(l.followUpQuestions||[]).map(x=>`<li>${esc(x)}</li>`).join('')}</ul><p><a href="#/lesson/${l.slug}">Open full lesson →</a></p></div></section>`;
 }
 
 function labsPage(){
- const labs=ATLAS.lessons.filter(l=>l.lab);
- return `<div class="breadcrumbs"><a href="#/">Home</a> / Code labs</div><section class="lesson-head"><div class="kicker">Build · Use · Verify</div><h1>Runnable code labs</h1><p class="lede">The reference course gets one thing exactly right: understanding improves when you implement the mechanism before hiding it behind a framework. These labs keep that rhythm while staying interview-focused.</p></section><div class="lab-grid section">${labs.map(l=>{const m=moduleFor(l.module);return `<article class="lab-card"><div class="meta"><span class="pill ${l.priority}">${priorityLabel(l.priority)}</span><span class="pill">${m.icon} ${m.title}</span></div><h3><a href="#/lesson/${l.slug}">${l.title}</a></h3><p>${esc(l.lab.goal)}</p><div class="lab-actions"><a href="#/lesson/${l.slug}">Open lesson</a><a href="labs/${l.slug}/index.html" target="_blank">Lab files ↗</a></div></article>`}).join('')}</div>`;
+ const labs=ATLAS.lessons.filter(l=>l.hasLab);
+ return `<div class="breadcrumbs"><a href="#/">Home</a> / Code labs</div><section class="lesson-head"><div class="kicker">Build · Use · Verify</div><h1>Runnable code labs</h1><p class="lede">The reference course gets one thing exactly right: understanding improves when you implement the mechanism before hiding it behind a framework. These labs keep that rhythm while staying interview-focused.</p></section><div class="lab-grid section">${labs.map(l=>{const m=moduleFor(l.module);return `<article class="lab-card"><div class="meta"><span class="pill ${l.priority}">${priorityLabel(l.priority)}</span><span class="pill">${m.icon} ${m.title}</span></div><h3><a href="#/lesson/${l.slug}">${l.title}</a></h3><p>${esc(l.labGoal)}</p><div class="lab-actions"><a href="#/lesson/${l.slug}">Open lesson</a><a href="labs/${l.slug}/index.html" target="_blank">Lab files ↗</a></div></article>`}).join('')}</div>`;
 }
 function visualsPage(){
- const ls=ATLAS.lessons.filter(l=>l.visual);
- const groups=ATLAS.modules.map(m=>{const xs=ls.filter(l=>l.module===m.slug);if(!xs.length)return '';return `<section class="section"><div class="kicker">${m.icon} ${m.title}</div><div class="visual-index-grid">${xs.map(l=>`<a class="visual-index-card" href="#/lesson/${l.slug}"><span class="pill">${esc(l.visual.type)}</span><strong>${l.title}</strong><small>${esc(l.visual.title||'Concept visual')}</small></a>`).join('')}</div></section>`}).join('');
+ const ls=ATLAS.lessons.filter(l=>l.visualCount);
+ const groups=ATLAS.modules.map(m=>{const xs=ls.filter(l=>l.module===m.slug);if(!xs.length)return '';return `<section class="section"><div class="kicker">${m.icon} ${m.title}</div><div class="visual-index-grid">${xs.map(l=>{const first=(l.visualSummaries||[])[0]||{};const types=[...new Set((l.visualSummaries||[]).map(v=>v.type).filter(Boolean))].join(' · ');return `<a class="visual-index-card" href="#/lesson/${l.slug}"><span class="pill">${esc(types||'visual')}</span><strong>${l.title}</strong><small>${esc(first.title||'Concept visual')}${l.visualCount>1?` · ${l.visualCount} visuals`:''}</small></a>`}).join('')}</div></section>`}).join('');
  return `<div class="breadcrumbs"><a href="#/">Home</a> / Visual atlas</div><section class="lesson-head"><div class="kicker">Original diagrams · theme-aware SVG</div><h1>Visual atlas</h1><p class="lede">${ls.length} original conceptual diagrams integrated directly into lessons and the generated book. They are designed to clarify structure, trade-offs and system flow rather than decorate the page.</p></section>${groups}`;
 }
 
@@ -200,7 +244,7 @@ function wireCommon(){
  const copyPrepPlan=$('#copyPrepPlan'); if(copyPrepPlan)copyPrepPlan.onclick=async()=>{if(!state.analyzerResult)return;try{await navigator.clipboard.writeText(AtlasAnalyzer.planText(state.analyzerResult));const old=copyPrepPlan.textContent;copyPrepPlan.textContent='Copied';setTimeout(()=>copyPrepPlan.textContent=old,900)}catch{}};
  const s=$('#search'); if(s)s.oninput=e=>{state.query=e.target.value;setTimeout(()=>route(false),0)}; const p=$('#priority'); if(p)p.onchange=e=>{state.priority=e.target.value;route(false)}; document.querySelectorAll('[data-role]').forEach(b=>b.onclick=()=>{state.role=b.dataset.role;save();route(false)});
 }
-function route(scroll=true){const h=location.hash.replace(/^#\//,'').split('/');let view;if(!h[0])view=home();else if(h[0]==='module')view=modulePage(h[1]);else if(h[0]==='lesson')view=lessonPage(h[1]);else if(h[0]==='roadmap')view=roadmap();else if(h[0]==='paths')view=pathsPage();else if(h[0]==='analyzer')view=analyzerPage();else if(h[0]==='quiz')view=quizPage();else if(h[0]==='labs')view=labsPage();else if(h[0]==='resources')view=resourcePage();else if(h[0]==='visuals')view=visualsPage();else view=notFound();$('#app').innerHTML=view;wireCommon();if(scroll)scrollTo(0,0)}
+function route(scroll=true){const version=++routeVersion;const h=location.hash.replace(/^#\//,'').split('/');if(h[0]==='lesson'){loadLessonPage(h[1],version);return}let view;if(!h[0])view=home();else if(h[0]==='module')view=modulePage(h[1]);else if(h[0]==='roadmap')view=roadmap();else if(h[0]==='paths')view=pathsPage();else if(h[0]==='analyzer')view=analyzerPage();else if(h[0]==='quiz')view=quizPage();else if(h[0]==='labs')view=labsPage();else if(h[0]==='resources')view=resourcePage();else if(h[0]==='visuals')view=visualsPage();else view=notFound();$('#app').innerHTML=view;wireCommon();if(scroll)scrollTo(0,0)}
 window.addEventListener('hashchange',()=>route());
 const menuBtn=$('#menuBtn'), mainNav=$('#mainNav');if(menuBtn&&mainNav){menuBtn.onclick=()=>{const open=mainNav.classList.toggle('open');menuBtn.setAttribute('aria-expanded',String(open));menuBtn.textContent=open?'✕ Close':'☰ Menu'};mainNav.querySelectorAll('a').forEach(a=>a.addEventListener('click',()=>{mainNav.classList.remove('open');menuBtn.setAttribute('aria-expanded','false');menuBtn.textContent='☰ Menu'}));}
 const themeBtn=$('#themeBtn');function updateThemeBtn(){if(themeBtn)themeBtn.textContent=document.documentElement.dataset.theme==='dark'?'☀ Light':'☾ Dark'}updateThemeBtn();if(themeBtn)themeBtn.onclick=()=>{const n=document.documentElement.dataset.theme==='dark'?'light':'dark';document.documentElement.dataset.theme=n;localStorage.setItem('atlas-theme',n);updateThemeBtn()};

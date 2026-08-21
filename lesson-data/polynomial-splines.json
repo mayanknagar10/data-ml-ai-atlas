@@ -1,0 +1,36 @@
+{
+  "slug": "polynomial-splines",
+  "title": "Polynomial Regression & Splines",
+  "module": "regression-glm",
+  "priority": "high",
+  "roles": [
+    "ds",
+    "as"
+  ],
+  "interviewAnswer": "Basis expansion lets linear models represent nonlinear relationships. High-degree global polynomials can behave badly at boundaries; splines build smoother local pieces joined at knots.",
+  "keyPoints": [
+    "Model remains linear in coefficients despite nonlinear features.",
+    "Splines give local flexibility.",
+    "Regularization/knot choice controls complexity."
+  ],
+  "resources": [
+    "isl"
+  ],
+  "featured": false,
+  "why": "Polynomial Regression & Splines appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
+  "intuition": "Model remains linear in coefficients despite nonlinear features.",
+  "deepDive": "Basis expansion lets linear models represent nonlinear relationships. High-degree global polynomials can behave badly at boundaries; splines build smoother local pieces joined at knots. Splines give local flexibility. Regularization/knot choice controls complexity. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
+  "workedExample": "Model diminishing returns of ad spend using splines rather than a single straight line.",
+  "commonMistakes": [
+    "Applying the method without checking its assumptions or data-generating process.",
+    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+  ],
+  "followUps": [
+    "What assumptions does Polynomial Regression & Splines make?",
+    "How would you validate or debug Polynomial Regression & Splines in practice?"
+  ],
+  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "editorial": {
+    "status": "summary"
+  }
+}

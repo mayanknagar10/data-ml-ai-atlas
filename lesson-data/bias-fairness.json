@@ -1,0 +1,39 @@
+{
+  "slug": "bias-fairness",
+  "title": "Bias & Fairness in ML",
+  "module": "ai-safety",
+  "priority": "high",
+  "roles": [
+    "ds",
+    "mle",
+    "aie"
+  ],
+  "interviewAnswer": "Bias can enter through sampling, labels, features, historical decisions or deployment feedback. Fairness has multiple incompatible definitions, so I first identify the affected groups and harm, then choose metrics/interventions aligned with the use case.",
+  "keyPoints": [
+    "data/label bias",
+    "subgroup metrics",
+    "fairness definitions",
+    "feedback loops"
+  ],
+  "resources": [
+    "nist-ai-rmf",
+    "isl"
+  ],
+  "featured": false,
+  "why": "Aggregate accuracy can hide systematic harm or underperformance for a small group.",
+  "intuition": "A model learns patterns in the data-generating process—including historical inequities and measurement errors—not an objective notion of fairness.",
+  "deepDive": "Demographic parity, equalized odds and calibration answer different questions and cannot generally all hold simultaneously when base rates differ. Mitigations can occur in data, objectives, thresholds or workflow design.",
+  "workedExample": "A hiring model with 90% overall accuracy may have much lower recall for one group because the historical labels reflect unequal opportunities.",
+  "commonMistakes": [
+    "Choosing a fairness metric without defining the harm.",
+    "Removing protected attributes and assuming bias disappears."
+  ],
+  "followUps": [
+    "Why can fairness metrics conflict?",
+    "How would you audit subgroup performance?"
+  ],
+  "production": "Continuously monitor subgroup distributions/outcomes where legally and ethically appropriate; changes in user populations can change fairness properties.",
+  "editorial": {
+    "status": "summary"
+  }
+}

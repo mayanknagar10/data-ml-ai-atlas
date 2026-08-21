@@ -1,0 +1,102 @@
+{
+  "slug": "hnsw",
+  "title": "HNSW Intuition & Tuning",
+  "module": "ir",
+  "priority": "high",
+  "roles": [
+    "ds"
+  ],
+  "interviewAnswer": "HNSW builds a multilayer proximity graph: upper sparse layers navigate quickly toward the neighborhood, and lower dense layers refine the search. Parameters trade build cost, memory, recall and latency.",
+  "keyPoints": [
+    "M controls graph connectivity/memory.",
+    "efConstruction affects index quality/build cost.",
+    "efSearch trades query latency for recall."
+  ],
+  "resources": [
+    "hnsw-paper",
+    "faiss"
+  ],
+  "featured": false,
+  "why": "HNSW Intuition & Tuning appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
+  "intuition": "M controls graph connectivity/memory.",
+  "deepDive": "HNSW builds a multilayer proximity graph: upper sparse layers navigate quickly toward the neighborhood, and lower dense layers refine the search. Parameters trade build cost, memory, recall and latency. efConstruction affects index quality/build cost. efSearch trades query latency for recall. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
+  "workedExample": "Increase efSearch when retrieval recall is insufficient and latency budget allows it.",
+  "commonMistakes": [
+    "Applying the method without checking its assumptions or data-generating process.",
+    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+  ],
+  "followUps": [
+    "What assumptions does HNSW Intuition & Tuning make?",
+    "How would you validate or debug HNSW Intuition & Tuning in practice?"
+  ],
+  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "visual": {
+    "type": "network",
+    "title": "HNSW search layers",
+    "nodes": [
+      {
+        "id": "q",
+        "label": "query",
+        "x": 0.1,
+        "y": 0.5
+      },
+      {
+        "id": "a",
+        "label": "entry",
+        "x": 0.32,
+        "y": 0.18
+      },
+      {
+        "id": "b",
+        "label": "coarse hop",
+        "x": 0.55,
+        "y": 0.25
+      },
+      {
+        "id": "c",
+        "label": "fine hop",
+        "x": 0.7,
+        "y": 0.52
+      },
+      {
+        "id": "d",
+        "label": "nearest",
+        "x": 0.88,
+        "y": 0.58
+      },
+      {
+        "id": "e",
+        "label": "neighbor",
+        "x": 0.55,
+        "y": 0.76
+      }
+    ],
+    "edges": [
+      [
+        "q",
+        "a"
+      ],
+      [
+        "a",
+        "b"
+      ],
+      [
+        "b",
+        "c"
+      ],
+      [
+        "c",
+        "d"
+      ],
+      [
+        "c",
+        "e"
+      ]
+    ],
+    "caption": "HNSW navigates a hierarchical proximity graph: coarse upper layers move quickly, lower layers refine the neighborhood.",
+    "directed": true
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

@@ -1,0 +1,50 @@
+{
+  "slug": "privacy-pii",
+  "title": "Privacy, PII & Data Minimization",
+  "module": "ai-safety",
+  "priority": "very-high",
+  "roles": [
+    "mle",
+    "aie",
+    "de"
+  ],
+  "interviewAnswer": "I minimize sensitive data, define purpose and retention, restrict access, encrypt data in transit/at rest, and avoid sending PII to models or logs unless explicitly required and governed. Privacy starts in architecture, not with masking at the end.",
+  "keyPoints": [
+    "data minimization",
+    "PII",
+    "retention",
+    "access control"
+  ],
+  "resources": [
+    "owasp-llm",
+    "nist-ai-rmf"
+  ],
+  "featured": false,
+  "why": "LLM/ML systems often duplicate data into prompts, vector stores, logs, caches and training sets, multiplying exposure.",
+  "intuition": "Every extra copy of sensitive data is another place that can leak. Keep only what the system genuinely needs.",
+  "deepDive": "Redaction/tokenization, tenant isolation, access control, deletion workflows and data lineage are common controls. Embeddings can still reveal information; they should not automatically be treated as anonymized.",
+  "workedExample": "An internal RAG assistant should enforce document ACLs before retrieval, not retrieve everything and merely ask the LLM not to reveal it.",
+  "commonMistakes": [
+    "Assuming embeddings cannot contain sensitive information.",
+    "Logging complete prompts/responses in production by default."
+  ],
+  "followUps": [
+    "How do you implement right-to-delete in a vector store?",
+    "Where can PII leak in an LLM pipeline?"
+  ],
+  "production": "Build classification/retention into ingestion, retrieval, logging and backup policies; test cross-tenant access explicitly.",
+  "visual": {
+    "type": "concept-map",
+    "title": "Privacy, PII & Data Minimization",
+    "items": [
+      "data minimization",
+      "PII",
+      "retention",
+      "access control"
+    ],
+    "caption": "A compact concept map for the most important ideas in this lesson."
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

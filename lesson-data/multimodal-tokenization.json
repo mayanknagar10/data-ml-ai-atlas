@@ -1,0 +1,40 @@
+{
+  "slug": "multimodal-tokenization",
+  "title": "Multimodal Tokenization, Patches & Resamplers",
+  "module": "multimodal",
+  "priority": "medium",
+  "roles": [
+    "aie",
+    "mle",
+    "cv",
+    "as"
+  ],
+  "interviewAnswer": "Text becomes discrete tokens, while images are usually represented as patches or learned visual features. A multimodal model must convert those features into a manageable token sequence—often through patch embeddings, pooling, learned queries, a Q-Former or a Perceiver-style resampler—before the language model consumes them.",
+  "keyPoints": [
+    "image patches",
+    "visual feature tokens",
+    "token compression",
+    "projector/resampler"
+  ],
+  "resources": [
+    "hf-vlm-course",
+    "hf-multimodal-transformers"
+  ],
+  "featured": false,
+  "why": "Token count is one of the main accuracy/latency/memory trade-offs in VLM inference.",
+  "intuition": "A 4K image contains far too many pixels to treat each pixel like a word. Convert it into a much smaller set of semantic visual tokens.",
+  "deepDive": "ViT-style encoders patchify the image and produce contextual features. Some systems pass many patch features to the LLM; others use learned queries/resamplers to compress them. High-resolution strategies may tile/crop images, which improves fine detail but multiplies visual tokens and prefill cost.",
+  "workedExample": "A 336×336 image with 14×14 patches gives 24×24=576 patch positions before any pooling/resampling.",
+  "commonMistakes": [
+    "Calling visual patch embeddings “the same tokenizer” as BPE text tokens.",
+    "Ignoring the quadratic or memory cost of injecting many visual tokens."
+  ],
+  "followUps": [
+    "Why use a Perceiver Resampler?",
+    "How would you handle high-resolution documents?"
+  ],
+  "production": "Benchmark quality versus visual-token count and resolution; cache or reuse visual embeddings for repeated questions about the same image.",
+  "editorial": {
+    "status": "summary"
+  }
+}

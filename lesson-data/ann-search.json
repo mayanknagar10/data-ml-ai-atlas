@@ -1,0 +1,57 @@
+{
+  "slug": "ann-search",
+  "title": "Approximate Nearest Neighbor Search",
+  "module": "ir",
+  "priority": "very-high",
+  "roles": [
+    "ds"
+  ],
+  "interviewAnswer": "Exact vector search becomes expensive at large scale. ANN indexes trade a small amount of recall for much lower latency/memory cost using structures such as HNSW or IVF.",
+  "keyPoints": [
+    "Measure recall-latency-memory trade-off.",
+    "Index build/update strategy matters.",
+    "Distance metric must match embedding training/use."
+  ],
+  "resources": [
+    "faiss",
+    "hnsw-paper"
+  ],
+  "featured": true,
+  "why": "Approximate Nearest Neighbor Search appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
+  "intuition": "Measure recall-latency-memory trade-off.",
+  "deepDive": "Exact vector search becomes expensive at large scale. ANN indexes trade a small amount of recall for much lower latency/memory cost using structures such as HNSW or IVF. Index build/update strategy matters. Distance metric must match embedding training/use. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
+  "workedExample": "Retrieve top semantic candidates from 100 million embeddings in tens of milliseconds rather than exhaustive dot products.",
+  "commonMistakes": [
+    "Applying the method without checking its assumptions or data-generating process.",
+    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+  ],
+  "followUps": [
+    "What assumptions does Approximate Nearest Neighbor Search make?",
+    "How would you validate or debug Approximate Nearest Neighbor Search in practice?"
+  ],
+  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "lab": {
+    "goal": "Build a small vector nearest-neighbor retrieval index.",
+    "language": "python",
+    "buildIt": "import numpy as np\nrng=np.random.default_rng(0)\nX=rng.normal(size=(1000,32)); X/=np.linalg.norm(X,axis=1,keepdims=True)\nq=X[123]+.01*rng.normal(size=32); q/=np.linalg.norm(q)\n",
+    "useIt": "from sklearn.neighbors import NearestNeighbors\nnn=NearestNeighbors(n_neighbors=5,metric='cosine').fit(X)\ndist,idx=nn.kneighbors(q.reshape(1,-1))\nprint(idx[0],dist[0])\n",
+    "verifyIt": "assert 123 in idx[0]\n",
+    "shipIt": "At large scale swap exact search for ANN (HNSW/IVF/Faiss), then benchmark recall@K versus latency, memory, build/update cost."
+  },
+  "visual": {
+    "type": "flow",
+    "title": "Approximate nearest-neighbor retrieval",
+    "items": [
+      "Query embedding",
+      "ANN index",
+      "Nearby vectors",
+      "Candidate IDs"
+    ],
+    "caption": "ANN trades a small amount of recall for much lower retrieval latency at scale.",
+    "accent": 1,
+    "orientation": "horizontal"
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

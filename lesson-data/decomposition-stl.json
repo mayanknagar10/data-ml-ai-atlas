@@ -1,0 +1,56 @@
+{
+  "slug": "decomposition-stl",
+  "title": "Classical Decomposition & STL",
+  "module": "time-series",
+  "priority": "high",
+  "roles": [
+    "ds",
+    "da",
+    "as"
+  ],
+  "interviewAnswer": "Decomposition separates trend, seasonal and remainder components. STL uses local regression and allows flexible changing seasonality, making it valuable for exploration, deseasonalization and anomaly diagnosis.",
+  "keyPoints": [
+    "Additive vs multiplicative structure.",
+    "STL supports robust fitting to reduce outlier influence.",
+    "Decomposition itself is not always the final forecast model."
+  ],
+  "resources": [
+    "fpp3"
+  ],
+  "featured": false,
+  "why": "Classical Decomposition & STL appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
+  "intuition": "Additive vs multiplicative structure.",
+  "deepDive": "Decomposition separates trend, seasonal and remainder components. STL uses local regression and allows flexible changing seasonality, making it valuable for exploration, deseasonalization and anomaly diagnosis. STL supports robust fitting to reduce outlier influence. Decomposition itself is not always the final forecast model. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
+  "workedExample": "Decompose monthly demand to inspect whether seasonal amplitude changes over time.",
+  "commonMistakes": [
+    "Applying the method without checking its assumptions or data-generating process.",
+    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+  ],
+  "followUps": [
+    "What assumptions does Classical Decomposition & STL make?",
+    "How would you validate or debug Classical Decomposition & STL in practice?"
+  ],
+  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "lab": {
+    "goal": "Decompose a seasonal series with STL.",
+    "language": "python",
+    "buildIt": "import numpy as np\nt=np.arange(120)\ny=.05*t + 2*np.sin(2*np.pi*t/12) + np.random.default_rng(0).normal(0,.3,len(t))\n",
+    "useIt": "from statsmodels.tsa.seasonal import STL\nr=STL(y,period=12,robust=True).fit()\nprint(r.trend[:5],r.seasonal[:5])\n",
+    "verifyIt": "assert len(r.trend)==len(y) and abs(np.nanmean(r.resid))<1\n",
+    "shipIt": "Use decomposition for diagnostics and feature construction; preserve the exact period/calendar semantics in training and production."
+  },
+  "visual": {
+    "type": "layers",
+    "title": "STL decomposition",
+    "items": [
+      "Observed",
+      "Seasonal component",
+      "Trend component",
+      "Remainder"
+    ],
+    "caption": "STL uses robust local smoothing to decompose a series while allowing seasonality to evolve over time."
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

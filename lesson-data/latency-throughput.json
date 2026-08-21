@@ -1,0 +1,53 @@
+{
+  "slug": "latency-throughput",
+  "title": "Latency, Throughput & Cost Trade-offs",
+  "module": "system-design",
+  "priority": "very-high",
+  "roles": [
+    "mle",
+    "aie"
+  ],
+  "interviewAnswer": "Latency is time per request; throughput is work per unit time. Batching usually improves throughput/GPU utilization but can increase individual-request latency, so tune around the product SLO and cost.",
+  "keyPoints": [
+    "p50/p95/p99",
+    "Batching",
+    "Concurrency",
+    "SLO"
+  ],
+  "resources": [
+    "fsdl",
+    "stanford-cs329s"
+  ],
+  "featured": false,
+  "why": "System-design interviews test whether you can reason about service quality and cost, not only model accuracy.",
+  "intuition": "Latency is how long one request takes; throughput is how much work the system completes per unit time. Batching can improve throughput but may add waiting latency.",
+  "deepDive": "Average latency hides tail behavior, so track p50/p95/p99. Throughput is bounded by compute, memory bandwidth, I/O and queueing. Increasing batch size often improves GPU utilization until memory or tail-latency limits. Concurrency can raise throughput but cause contention. Autoscaling needs a metric tied to bottlenecks—queue depth, GPU utilization or requests per replica—not arbitrary CPU alone.",
+  "math": "Throughput ≈ completed requests / time\nLittle’s Law (stable system): L = λW, relating average items in system, arrival rate and time in system.",
+  "workedExample": "An LLM endpoint can batch 16 prompts for high token throughput, but an interactive chat may prefer smaller dynamic batches to keep first-token latency low.",
+  "commonMistakes": [
+    "Optimizing mean latency instead of tail latency.",
+    "Equating more replicas with linear throughput scaling.",
+    "Ignoring queueing time and model-loading cold starts."
+  ],
+  "followUps": [
+    "p95 vs average latency?",
+    "Why does batching help GPUs?",
+    "How do you choose an autoscaling signal?",
+    "What is the cost/latency trade-off of larger models?"
+  ],
+  "production": "Set explicit SLOs and cost budgets, profile the bottleneck, load-test realistic traffic and monitor queue depth, utilization, tail latency and error rate together.",
+  "visual": {
+    "type": "concept-map",
+    "title": "Latency, Throughput & Cost Trade-offs",
+    "items": [
+      "p50/p95/p99",
+      "Batching",
+      "Concurrency",
+      "SLO"
+    ],
+    "caption": "A compact concept map for the most important ideas in this lesson."
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

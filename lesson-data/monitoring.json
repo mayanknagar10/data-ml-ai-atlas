@@ -1,0 +1,57 @@
+{
+  "slug": "monitoring",
+  "title": "Monitoring: System, Data & Model",
+  "module": "mlops",
+  "priority": "very-high",
+  "roles": [
+    "mle",
+    "aie"
+  ],
+  "interviewAnswer": "Monitor system health such as failures and latency, data quality/drift, and model quality when ground truth becomes available. Version models so a degraded release can be rolled back.",
+  "keyPoints": [
+    "Logs/metrics",
+    "Data drift",
+    "Performance drift",
+    "Alerts/rollback"
+  ],
+  "resources": [
+    "fsdl",
+    "made-with-ml",
+    "stanford-cs329s",
+    "google-rules-ml"
+  ],
+  "featured": true,
+  "why": "Models can fail while servers look healthy, and servers can fail while offline model metrics remain excellent. You need separate monitoring layers.",
+  "intuition": "System monitoring asks “is the service running?” Data monitoring asks “does input still look valid?” Model monitoring asks “are predictions still useful?”",
+  "deepDive": "Track errors, availability, latency and resource use; validate schemas/ranges and distribution changes; measure model quality when ground truth arrives; slice metrics by important cohorts. Drift is a diagnostic signal, not an automatic retrain trigger.",
+  "math": "Examples: p95 latency, error rate, null-rate change, PSI/KS-style drift statistics, delayed precision/recall.",
+  "code": "# Simple monitoring shape\nlog(request_id, model_version, latency_ms, input_schema_ok)\nmetrics.observe('prediction_latency_ms', latency_ms)\n# Later, join predictions to ground truth and compute quality by model_version.",
+  "commonMistakes": [
+    "Monitoring only CPU/GPU and ignoring model/data quality.",
+    "Retraining automatically whenever any drift detector fires.",
+    "No model version in prediction logs, making rollback diagnosis hard."
+  ],
+  "followUps": [
+    "Data drift vs concept drift?",
+    "What if labels arrive after 30 days?",
+    "How would you monitor a generative model?",
+    "What triggers rollback?"
+  ],
+  "production": "Create alerts around user-facing SLOs and hard data contracts. Keep a stable previous model version ready for rollback; use canary/shadow releases for higher-risk changes.",
+  "workedExample": "A classification endpoint can have 99.99% uptime while recall silently drops because the production population changed—system health alone would miss it.",
+  "visual": {
+    "type": "layers",
+    "title": "ML monitoring stack",
+    "items": [
+      "System health · errors/latency",
+      "Data quality · schema/missingness",
+      "Drift · feature/prediction distributions",
+      "Model quality · labels/metrics",
+      "Business impact"
+    ],
+    "caption": "Monitoring needs multiple layers because infrastructure can be healthy while the model or product outcome degrades."
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

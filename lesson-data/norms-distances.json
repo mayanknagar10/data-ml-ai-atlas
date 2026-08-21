@@ -1,0 +1,39 @@
+{
+  "slug": "norms-distances",
+  "title": "Norms, Distances & Similarity",
+  "module": "math",
+  "priority": "high",
+  "roles": [
+    "ds",
+    "mle",
+    "aie",
+    "as"
+  ],
+  "interviewAnswer": "Norms measure vector magnitude; distance functions measure separation; similarity functions such as cosine compare direction. The choice changes model geometry, nearest neighbors, clustering and regularization.",
+  "keyPoints": [
+    "L1 and L2 norms behave differently.",
+    "Cosine similarity ignores absolute scale.",
+    "Distance concentration becomes problematic in high dimensions."
+  ],
+  "resources": [
+    "mit-linear-algebra",
+    "3b1b-linear-algebra"
+  ],
+  "featured": false,
+  "why": "Norms, Distances & Similarity is a recurring foundation across data science and machine learning because it affects both theoretical correctness and practical system behavior.",
+  "intuition": "L1 and L2 norms behave differently.",
+  "deepDive": "Norms measure vector magnitude; distance functions measure separation; similarity functions such as cosine compare direction. The choice changes model geometry, nearest neighbors, clustering and regularization. Cosine similarity ignores absolute scale. Distance concentration becomes problematic in high dimensions. The interview-level skill is not merely recalling the definition: explain the assumptions, what diagnostic evidence you would inspect, and what alternative you would choose when those assumptions fail.",
+  "workedExample": "Cosine similarity can match two text embeddings with similar direction even if their norms differ.",
+  "commonMistakes": [
+    "Using the concept mechanically without checking assumptions or data semantics.",
+    "Reporting one metric/result without examining uncertainty, slices or failure modes."
+  ],
+  "followUps": [
+    "What assumptions or limitations does Norms, Distances & Similarity have?",
+    "How would you validate Norms, Distances & Similarity on a real dataset?"
+  ],
+  "production": "In production, make assumptions explicit, validate on representative slices, compare with a simple baseline and monitor the signals that can drift.",
+  "editorial": {
+    "status": "summary"
+  }
+}

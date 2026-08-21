@@ -1,0 +1,53 @@
+{
+  "slug": "eda-workflow",
+  "title": "A Systematic EDA Workflow",
+  "module": "eda-viz",
+  "priority": "very-high",
+  "roles": [
+    "ds",
+    "de",
+    "da"
+  ],
+  "interviewAnswer": "EDA should answer what the rows/columns mean, whether values are valid, how variables are distributed, how missingness occurs, and which relationships or subgroups deserve deeper investigation before modeling.",
+  "keyPoints": [
+    "Start with schema, units and provenance.",
+    "Inspect distributions and missingness.",
+    "Check duplicates, impossible values and leakage.",
+    "Segment by relevant groups/time."
+  ],
+  "resources": [
+    "berkeley-data100",
+    "pandas-user-guide"
+  ],
+  "featured": true,
+  "why": "A Systematic EDA Workflow appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
+  "intuition": "Start with schema, units and provenance.",
+  "deepDive": "EDA should answer what the rows/columns mean, whether values are valid, how variables are distributed, how missingness occurs, and which relationships or subgroups deserve deeper investigation before modeling. Inspect distributions and missingness. Check duplicates, impossible values and leakage. Segment by relevant groups/time. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
+  "workedExample": "Before modeling churn, inspect whether labels are future-derived, whether tenure changes the base rate, and whether missing fields cluster by customer type.",
+  "commonMistakes": [
+    "Applying the method without checking its assumptions or data-generating process.",
+    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+  ],
+  "followUps": [
+    "What assumptions does A Systematic EDA Workflow make?",
+    "How would you validate or debug A Systematic EDA Workflow in practice?"
+  ],
+  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "visual": {
+    "type": "flow",
+    "title": "EDA loop",
+    "items": [
+      "Understand grain",
+      "Check distributions",
+      "Inspect missingness/outliers",
+      "Explore relationships",
+      "Validate assumptions"
+    ],
+    "caption": "EDA is an iterative diagnostic process, not a collection of decorative plots.",
+    "accent": 2,
+    "orientation": "horizontal"
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

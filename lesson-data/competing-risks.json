@@ -1,0 +1,37 @@
+{
+  "slug": "competing-risks",
+  "title": "Competing Risks",
+  "module": "survival",
+  "priority": "medium",
+  "roles": [
+    "ds",
+    "da"
+  ],
+  "interviewAnswer": "Competing risks occur when multiple mutually exclusive event types can happen and one prevents observation of another. Treating competing events as ordinary censoring can misestimate event probabilities.",
+  "keyPoints": [
+    "Cause-specific hazard and cumulative incidence answer different questions.",
+    "Event type matters.",
+    "Use domain-specific estimand."
+  ],
+  "resources": [
+    "lifelines",
+    "statsmodels-survival"
+  ],
+  "featured": false,
+  "why": "Competing Risks is a recurring foundation across data science and machine learning because it affects both theoretical correctness and practical system behavior.",
+  "intuition": "Cause-specific hazard and cumulative incidence answer different questions.",
+  "deepDive": "Competing risks occur when multiple mutually exclusive event types can happen and one prevents observation of another. Treating competing events as ordinary censoring can misestimate event probabilities. Event type matters. Use domain-specific estimand. The interview-level skill is not merely recalling the definition: explain the assumptions, what diagnostic evidence you would inspect, and what alternative you would choose when those assumptions fail.",
+  "workedExample": "For customer accounts, cancellation and upgrade are competing terminal outcomes for time-to-churn analysis.",
+  "commonMistakes": [
+    "Using the concept mechanically without checking assumptions or data semantics.",
+    "Reporting one metric/result without examining uncertainty, slices or failure modes."
+  ],
+  "followUps": [
+    "What assumptions or limitations does Competing Risks have?",
+    "How would you validate Competing Risks on a real dataset?"
+  ],
+  "production": "In production, make assumptions explicit, validate on representative slices, compare with a simple baseline and monitor the signals that can drift.",
+  "editorial": {
+    "status": "summary"
+  }
+}

@@ -1,0 +1,42 @@
+{
+  "slug": "selective-prediction",
+  "title": "Selective Prediction & Abstention",
+  "module": "probabilistic-ml",
+  "priority": "medium",
+  "roles": [
+    "ds",
+    "as",
+    "mle",
+    "aie"
+  ],
+  "interviewAnswer": "Selective prediction lets a model abstain on uncertain cases, trading coverage—the fraction answered—against risk on the answered subset.",
+  "keyPoints": [
+    "Abstention",
+    "Risk-coverage",
+    "Confidence threshold",
+    "Human fallback"
+  ],
+  "resources": [
+    "conformal-intro",
+    "stanford-stats315a"
+  ],
+  "featured": false,
+  "why": "High-stakes automation should sometimes know when not to decide.",
+  "intuition": "Answer easy cases automatically and escalate ambiguous cases instead of forcing a low-confidence prediction.",
+  "deepDive": "A reject rule thresholds a confidence/uncertainty measure; as coverage falls, accepted-case error should usually fall. The fallback path and capacity are part of the system design.",
+  "math": "",
+  "code": "",
+  "commonMistakes": [
+    "Optimizing coverage without tracking accepted-case error.",
+    "Assuming the same threshold remains valid after shift."
+  ],
+  "followUps": [
+    "How do you choose the abstention threshold?",
+    "How does conformal prediction help?"
+  ],
+  "production": "Define fallback SLOs and monitor risk-coverage after deployment.",
+  "workedExample": "OCR can accept clear forms and route ambiguous scans to manual review.",
+  "editorial": {
+    "status": "summary"
+  }
+}

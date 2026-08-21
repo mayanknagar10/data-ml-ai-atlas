@@ -1,0 +1,40 @@
+{
+  "slug": "independent-component-analysis",
+  "title": "Independent Component Analysis (ICA)",
+  "module": "unsupervised",
+  "priority": "medium",
+  "roles": [
+    "ds",
+    "as"
+  ],
+  "interviewAnswer": "ICA decomposes observed mixtures into latent components that are statistically independent, typically relying on non-Gaussianity; unlike PCA, the objective is independence rather than just uncorrelated variance directions.",
+  "keyPoints": [
+    "Source separation",
+    "Independence",
+    "Non-Gaussianity",
+    "Whitening"
+  ],
+  "resources": [
+    "stanford-cs229",
+    "probml-book"
+  ],
+  "featured": false,
+  "why": "ICA is a classic blind-source-separation method and deepens understanding of latent representations.",
+  "intuition": "Multiple microphones record mixtures of the same speakers; ICA tries to recover the original independent sources.",
+  "deepDive": "After centering/whitening, ICA optimizes a measure of non-Gaussianity or independence. Components are identifiable only up to permutation and scale/sign under standard assumptions.",
+  "math": "",
+  "code": "",
+  "commonMistakes": [
+    "Equating independence with zero correlation.",
+    "Assuming ICA can separate Gaussian sources uniquely."
+  ],
+  "followUps": [
+    "ICA vs PCA?",
+    "Why is non-Gaussianity important?"
+  ],
+  "production": "Check component stability and physical interpretability; preprocessing strongly affects results.",
+  "workedExample": "Separate mixed audio signals recorded by several sensors without knowing the mixing coefficients.",
+  "editorial": {
+    "status": "summary"
+  }
+}

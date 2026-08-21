@@ -1,0 +1,82 @@
+{
+  "slug": "replication-consistency",
+  "title": "Replication & Consistency Models",
+  "module": "distributed",
+  "priority": "high",
+  "roles": [
+    "de",
+    "mle"
+  ],
+  "interviewAnswer": "Replication improves availability/read scale but creates questions about when replicas agree. Strong, eventual and session-level consistency offer different latency/availability trade-offs.",
+  "keyPoints": [
+    "Replication is not backup.",
+    "Read-after-write may matter even when global strong consistency does not.",
+    "Conflict resolution depends on model."
+  ],
+  "resources": [
+    "mit-6824"
+  ],
+  "featured": false,
+  "why": "Replication & Consistency Models appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
+  "intuition": "Replication is not backup.",
+  "deepDive": "Replication improves availability/read scale but creates questions about when replicas agree. Strong, eventual and session-level consistency offer different latency/availability trade-offs. Read-after-write may matter even when global strong consistency does not. Conflict resolution depends on model. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
+  "workedExample": "A metrics dashboard may tolerate seconds of lag; a payment balance usually cannot.",
+  "commonMistakes": [
+    "Applying the method without checking its assumptions or data-generating process.",
+    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+  ],
+  "followUps": [
+    "What assumptions does Replication & Consistency Models make?",
+    "How would you validate or debug Replication & Consistency Models in practice?"
+  ],
+  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "visual": {
+    "type": "network",
+    "title": "Replication",
+    "nodes": [
+      {
+        "id": "p",
+        "label": "primary",
+        "x": 0.2,
+        "y": 0.5
+      },
+      {
+        "id": "r1",
+        "label": "replica 1",
+        "x": 0.7,
+        "y": 0.25
+      },
+      {
+        "id": "r2",
+        "label": "replica 2",
+        "x": 0.7,
+        "y": 0.5
+      },
+      {
+        "id": "r3",
+        "label": "replica 3",
+        "x": 0.7,
+        "y": 0.75
+      }
+    ],
+    "edges": [
+      [
+        "p",
+        "r1"
+      ],
+      [
+        "p",
+        "r2"
+      ],
+      [
+        "p",
+        "r3"
+      ]
+    ],
+    "caption": "Replication improves availability/read scale, but the consistency model determines when replicas may serve stale data.",
+    "directed": true
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

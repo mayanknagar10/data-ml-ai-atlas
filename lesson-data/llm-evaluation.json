@@ -1,0 +1,53 @@
+{
+  "slug": "llm-evaluation",
+  "title": "LLM Evaluation",
+  "module": "llm",
+  "priority": "very-high",
+  "roles": [
+    "aie"
+  ],
+  "interviewAnswer": "Define task-specific datasets and success criteria, then combine deterministic checks, model-based judges where appropriate, and human review. Track quality, latency, cost and safety together.",
+  "keyPoints": [
+    "Golden set",
+    "Structured checks",
+    "LLM-as-judge caveats",
+    "Regression evaluation"
+  ],
+  "resources": [
+    "openai-cookbook",
+    "made-with-ml",
+    "hf-llm",
+    "langchain-academy"
+  ],
+  "featured": false,
+  "why": "LLM systems are stochastic and task-dependent, so “it looked good in a few prompts” is not an engineering evaluation strategy.",
+  "intuition": "Turn the application goal into measurable dimensions: correctness, groundedness, usefulness, safety, latency and cost. Build a stable test set and compare changes against it.",
+  "deepDive": "Use exact/programmatic checks where possible, model-based judges for subjective dimensions, and human review for calibration/high-risk cases. Evaluate components separately: retrieval, tool selection, structured output, final response. Include adversarial and edge cases. Report distributions and failure categories rather than one aggregate score. Version prompts, models and datasets so regressions are reproducible.",
+  "workedExample": "For a tool-using planning assistant, evaluate whether it chooses the correct function and arguments, whether the numerical result matches the tool output, whether the explanation is useful, and total latency/cost.",
+  "commonMistakes": [
+    "Using only BLEU/ROUGE for open-ended assistant quality.",
+    "Changing the test set every time a model changes.",
+    "Trusting one LLM judge without human calibration or pairwise consistency checks."
+  ],
+  "followUps": [
+    "How would you build an eval set?",
+    "LLM-as-judge pros/cons?",
+    "How do you evaluate agents?",
+    "What metrics matter in production?"
+  ],
+  "production": "Run evals in CI before prompt/model releases and online monitoring after deployment. Keep failure traces so qualitative regressions can be diagnosed, not just counted.",
+  "visual": {
+    "type": "concept-map",
+    "title": "LLM Evaluation",
+    "items": [
+      "Golden set",
+      "Structured checks",
+      "LLM-as-judge caveats",
+      "Regression evaluation"
+    ],
+    "caption": "A compact concept map for the most important ideas in this lesson."
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

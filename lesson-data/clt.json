@@ -1,0 +1,56 @@
+{
+  "slug": "clt",
+  "title": "Law of Large Numbers & Central Limit Theorem",
+  "module": "probability",
+  "priority": "high",
+  "roles": [
+    "ds",
+    "as"
+  ],
+  "interviewAnswer": "The law of large numbers explains why sample averages stabilize around expectations. The CLT explains why normalized sums often approach a Normal distribution, enabling many confidence intervals and tests.",
+  "keyPoints": [
+    "Different theorems",
+    "Sampling distribution",
+    "Conditions matter",
+    "Why Normal approximations appear"
+  ],
+  "resources": [
+    "harvard-stat110",
+    "statquest"
+  ],
+  "featured": false,
+  "why": "The LLN and CLT explain why averages stabilize and why Normal-based confidence intervals and tests often work even when individual observations are not Normal.",
+  "intuition": "The law of large numbers is about where the sample average goes as sample size increases. The central limit theorem is about the shape of the sampling distribution after centering and scaling. They answer different questions.",
+  "deepDive": "Under suitable conditions, the sample mean converges to the population expectation (LLN). Separately, the standardized sum or mean converges in distribution toward a Normal law (CLT). The approximation can be poor for small samples, heavy tails, strong dependence, or non-identically distributed data; blindly invoking the CLT is not a substitute for checking the data-generating process.",
+  "math": "LLN: X̄_n → μ as n→∞ (in an appropriate convergence sense)\nCLT: √n (X̄_n-μ)/σ ⇒ N(0,1)",
+  "workedExample": "Individual transaction amounts may be strongly right-skewed, but the distribution of the average transaction amount across many independent samples can become approximately Normal as sample size grows.",
+  "code": "import numpy as np\nrng=np.random.default_rng(0)\nmeans=[rng.exponential(1,size=100).mean() for _ in range(5000)]\nprint(np.mean(means), np.std(means))",
+  "commonMistakes": [
+    "Saying the CLT means the raw data becomes Normal.",
+    "Treating LLN and CLT as the same theorem.",
+    "Ignoring dependence or heavy-tailed behavior."
+  ],
+  "followUps": [
+    "Does the CLT require the original data to be Normal?",
+    "What changes when observations are dependent?",
+    "Why does standard error shrink like 1/sqrt(n)?",
+    "What is the difference between convergence in probability and in distribution?"
+  ],
+  "production": "Many dashboards and experiments use Normal approximations for uncertainty. For small or highly skewed samples, bootstrap or exact methods may be safer.",
+  "visual": {
+    "type": "flow",
+    "title": "Central Limit Theorem intuition",
+    "items": [
+      "Population",
+      "Repeated samples",
+      "Sample means",
+      "Approximately normal"
+    ],
+    "caption": "Under broad conditions, the distribution of sample means becomes approximately normal as sample size grows.",
+    "accent": 2,
+    "orientation": "horizontal"
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

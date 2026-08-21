@@ -1,0 +1,123 @@
+{
+  "slug": "exponential-smoothing",
+  "title": "Exponential Smoothing / ETS",
+  "module": "time-series",
+  "priority": "medium",
+  "roles": [
+    "ds",
+    "da",
+    "as"
+  ],
+  "interviewAnswer": "Exponential smoothing builds forecasts from recursively updated level, trend and seasonality components, giving more weight to recent observations. ETS models are excellent business-forecasting baselines, especially when patterns are smooth and recurring.",
+  "keyPoints": [
+    "level",
+    "trend",
+    "seasonality",
+    "recent observations weighted more"
+  ],
+  "resources": [
+    "fpp3",
+    "fpppy",
+    "statsmodels-tsa"
+  ],
+  "featured": false,
+  "why": "ETS often performs extremely well on operational forecasting with little tuning and has an intuitive decomposition for stakeholders.",
+  "intuition": "Instead of fitting one global regression line, keep updating a compact state of “where the series is now, where it is moving, and what season we are in.”",
+  "deepDive": "Simple exponential smoothing models level only; Holt adds trend; Holt-Winters adds seasonality. Additive vs multiplicative components depend on whether seasonal amplitude stays constant or grows with the level.",
+  "workedExample": "If monthly demand has a stable upward trend and December is consistently +20 units, additive seasonal ETS is natural. If the December uplift is about +20%, multiplicative seasonality may fit better.",
+  "commonMistakes": [
+    "Assuming exponential smoothing is just a moving average.",
+    "Using multiplicative seasonality when zeros/negative values make it inappropriate."
+  ],
+  "followUps": [
+    "Holt vs Holt-Winters?",
+    "Additive vs multiplicative seasonality?"
+  ],
+  "production": "ETS is lightweight and reliable for batch forecasting, and is a strong champion model to compare with more expensive approaches.",
+  "lab": {
+    "goal": "Fit an ETS-style trend/seasonal forecast.",
+    "language": "python",
+    "buildIt": "import numpy as np\nt=np.arange(72)\ny=20+.2*t+3*np.sin(2*np.pi*t/12)+np.random.default_rng(1).normal(0,.4,len(t))\n",
+    "useIt": "from statsmodels.tsa.holtwinters import ExponentialSmoothing\nm=ExponentialSmoothing(y,trend='add',seasonal='add',seasonal_periods=12).fit()\nf=m.forecast(12)\nprint(f)\n",
+    "verifyIt": "assert len(f)==12 and np.isfinite(f).all()\n",
+    "shipIt": "Keep a reproducible backtest by horizon; retrain only after the newest complete observations and compare against seasonal-naive before deployment."
+  },
+  "visual": {
+    "type": "curve",
+    "title": "Exponential smoothing intuition",
+    "series": [
+      {
+        "label": "observations",
+        "points": [
+          [
+            0,
+            0.28
+          ],
+          [
+            0.15,
+            0.46
+          ],
+          [
+            0.3,
+            0.34
+          ],
+          [
+            0.45,
+            0.61
+          ],
+          [
+            0.6,
+            0.44
+          ],
+          [
+            0.75,
+            0.68
+          ],
+          [
+            0.9,
+            0.58
+          ]
+        ]
+      },
+      {
+        "label": "smoothed level",
+        "points": [
+          [
+            0,
+            0.28
+          ],
+          [
+            0.15,
+            0.37
+          ],
+          [
+            0.3,
+            0.35
+          ],
+          [
+            0.45,
+            0.48
+          ],
+          [
+            0.6,
+            0.46
+          ],
+          [
+            0.75,
+            0.57
+          ],
+          [
+            0.9,
+            0.58
+          ]
+        ]
+      }
+    ],
+    "caption": "Recent observations receive more weight; the smoothing parameter controls responsiveness.",
+    "xLabel": "time",
+    "yLabel": "value"
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

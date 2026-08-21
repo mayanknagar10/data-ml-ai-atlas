@@ -1,0 +1,47 @@
+{
+  "slug": "recsys-offline-online",
+  "title": "Offline vs Online Recommender Evaluation",
+  "module": "recsys",
+  "priority": "very-high",
+  "roles": [
+    "ds",
+    "da"
+  ],
+  "interviewAnswer": "Offline ranking metrics measure historical predictive quality, but online experiments measure user/system impact. Historical logs are biased by the previous recommender, so offline gains do not guarantee online lift.",
+  "keyPoints": [
+    "Recall/NDCG/MRR measure different ranking aspects.",
+    "Use temporal splits and candidate consistency.",
+    "A/B tests capture behavior and feedback loops."
+  ],
+  "resources": [
+    "stanford-cs246",
+    "microsoft-experimentation"
+  ],
+  "featured": true,
+  "why": "Offline vs Online Recommender Evaluation appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
+  "intuition": "Recall/NDCG/MRR measure different ranking aspects.",
+  "deepDive": "Offline ranking metrics measure historical predictive quality, but online experiments measure user/system impact. Historical logs are biased by the previous recommender, so offline gains do not guarantee online lift. Use temporal splits and candidate consistency. A/B tests capture behavior and feedback loops. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
+  "workedExample": "An NDCG improvement may reduce diversity or increase latency; online guardrails reveal that trade-off.",
+  "commonMistakes": [
+    "Applying the method without checking its assumptions or data-generating process.",
+    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+  ],
+  "followUps": [
+    "What assumptions does Offline vs Online Recommender Evaluation make?",
+    "How would you validate or debug Offline vs Online Recommender Evaluation in practice?"
+  ],
+  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "visual": {
+    "type": "concept-map",
+    "title": "Offline vs Online Recommender Evaluation",
+    "items": [
+      "Recall/NDCG/MRR measure different ranking aspects.",
+      "Use temporal splits and candidate consistency.",
+      "A/B tests capture behavior and feedback loops."
+    ],
+    "caption": "A compact concept map for the most important ideas in this lesson."
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

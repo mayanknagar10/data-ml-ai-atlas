@@ -1,0 +1,56 @@
+{
+  "slug": "iou-nms-map",
+  "title": "IoU, NMS & mAP for Detection",
+  "module": "cv",
+  "priority": "very-high",
+  "roles": [
+    "cv",
+    "mle",
+    "as"
+  ],
+  "interviewAnswer": "Intersection-over-Union measures box overlap; Non-Maximum Suppression removes redundant overlapping predictions; mAP summarizes precision-recall across classes and IoU thresholds depending on benchmark.",
+  "keyPoints": [
+    "IoU threshold defines a localization match.",
+    "NMS threshold affects duplicate vs missed close objects.",
+    "mAP hides per-class/size performance."
+  ],
+  "resources": [
+    "stanford-cs231n"
+  ],
+  "featured": true,
+  "why": "IoU, NMS & mAP for Detection is a standard part of a broad data/ML curriculum because it changes how models are selected, evaluated or operated in real systems.",
+  "intuition": "IoU threshold defines a localization match.",
+  "deepDive": "Intersection-over-Union measures box overlap; Non-Maximum Suppression removes redundant overlapping predictions; mAP summarizes precision-recall across classes and IoU thresholds depending on benchmark. NMS threshold affects duplicate vs missed close objects. mAP hides per-class/size performance. A strong answer connects the formal idea to validation, data requirements and failure modes instead of treating the method as a recipe.",
+  "workedExample": "A predicted box with IoU 0.8 can count as a true localization while multiple overlapping boxes may need NMS.",
+  "commonMistakes": [
+    "Choosing the technique without checking whether its assumptions match the problem.",
+    "Optimizing an offline metric without checking realistic validation slices or operational constraints."
+  ],
+  "followUps": [
+    "When would you not use IoU, NMS & mAP for Detection?",
+    "How would you validate or tune IoU, NMS & mAP for Detection?"
+  ],
+  "production": "In production, validate on realistic slices, track latency/cost when relevant, and monitor for distribution changes or failure modes that the offline metric can hide.",
+  "visual": {
+    "type": "compare",
+    "title": "Detection metrics",
+    "left": {
+      "title": "IoU + NMS",
+      "items": [
+        "IoU measures box overlap",
+        "NMS suppresses duplicates"
+      ]
+    },
+    "right": {
+      "title": "mAP",
+      "items": [
+        "Aggregates precision–recall",
+        "Evaluated across classes / IoU thresholds"
+      ]
+    },
+    "caption": "Detection evaluation needs both localization quality and ranking/classification quality."
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

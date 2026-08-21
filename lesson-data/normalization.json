@@ -1,0 +1,59 @@
+{
+  "slug": "normalization",
+  "title": "BatchNorm vs LayerNorm",
+  "module": "dl",
+  "priority": "high",
+  "roles": [
+    "mle",
+    "aie",
+    "as"
+  ],
+  "interviewAnswer": "BatchNorm normalizes using batch statistics and is common in CNNs; LayerNorm normalizes features within each example and is standard in transformers. Their behavior at inference differs.",
+  "keyPoints": [
+    "Axes differ",
+    "Train/eval behavior",
+    "Batch-size sensitivity",
+    "Transformer use"
+  ],
+  "resources": [
+    "mit-6s191",
+    "pytorch",
+    "3b1b-neural",
+    "deep-learning-book"
+  ],
+  "featured": false,
+  "why": "BatchNorm vs LayerNorm is a common deep-learning question because they normalize along different dimensions and behave differently in training/inference.",
+  "intuition": "BatchNorm uses statistics across examples for each feature/channel. LayerNorm uses statistics within each example across its hidden features.",
+  "deepDive": "BatchNorm normalizes activations using batch mean/variance and maintains running estimates for inference; small/non-iid batches can make estimates noisy. LayerNorm normalizes per token/sample and does not depend on other examples, making it natural for transformers and variable sequence lengths. Both include learned scale/shift parameters; neither simply “forces mean 0 forever.”",
+  "math": "BN: x̂=(x-μ_batch)/sqrt(σ²_batch+ε); y=γx̂+β\nLN: same form but μ,σ computed across chosen feature dimensions per sample",
+  "workedExample": "A transformer token of dimension 768 can be LayerNormed across those 768 features independently of batch size, while BatchNorm would couple it to other batch examples.",
+  "code": "bn=nn.BatchNorm2d(64)\nln=nn.LayerNorm(768)",
+  "commonMistakes": [
+    "Saying BatchNorm uses the current batch at inference.",
+    "Saying LayerNorm normalizes across the batch.",
+    "Forgetting model.eval() changes BatchNorm/Dropout behavior."
+  ],
+  "followUps": [
+    "Why LayerNorm in transformers?",
+    "What happens with tiny batches?",
+    "Pre-LN vs post-LN?",
+    "BatchNorm as regularization?"
+  ],
+  "production": "Ensure training/eval modes are correct and saved running statistics are loaded. Distribution shifts can make BatchNorm statistics less representative.",
+  "visual": {
+    "type": "flow",
+    "title": "Normalization placement",
+    "items": [
+      "Layer output",
+      "Normalize statistics",
+      "Learn scale + shift",
+      "Activation / next layer"
+    ],
+    "caption": "Normalization stabilizes activation scales; BatchNorm and LayerNorm normalize along different axes.",
+    "accent": null,
+    "orientation": "horizontal"
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

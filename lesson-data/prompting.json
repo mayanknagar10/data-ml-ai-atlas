@@ -1,0 +1,43 @@
+{
+  "slug": "prompting",
+  "title": "Prompt Engineering",
+  "module": "llm",
+  "priority": "high",
+  "roles": [
+    "aie"
+  ],
+  "interviewAnswer": "Good prompting specifies the task, context, constraints and output format, then evaluates prompts on representative examples. Prompting should be treated as an engineering artifact with tests, not magic wording.",
+  "keyPoints": [
+    "Clear instructions",
+    "Few-shot examples",
+    "Structured outputs",
+    "Evaluation"
+  ],
+  "resources": [
+    "anthropic-prompting",
+    "openai-cookbook",
+    "hf-llm",
+    "langchain-academy"
+  ],
+  "featured": false,
+  "why": "Prompting is the lowest-cost control surface for LLM behavior and often the first thing an interviewer expects you to reason about before fine-tuning or adding agents.",
+  "intuition": "A prompt specifies the task, relevant context, constraints and desired output format. Good prompting reduces ambiguity rather than relying on clever wording tricks.",
+  "deepDive": "Useful prompts separate instructions from data, define the role/task clearly, provide examples only when they add signal, constrain output structure and state what to do when evidence is insufficient. System/developer instructions generally have higher priority than user content in modern chat APIs. Prompt engineering should be evaluated with a test set because changes can improve some cases while degrading others.",
+  "workedExample": "For a support classifier, specify the allowed labels and output JSON schema instead of asking for “a helpful classification.” Add representative few-shot examples only if zero-shot performance is insufficient.",
+  "code": "prompt = {\n  \"task\": \"Classify the ticket\",\n  \"labels\": [\"billing\", \"technical\", \"account\"],\n  \"rules\": \"Return JSON only; do not invent fields.\"\n}",
+  "commonMistakes": [
+    "Treating prompt wording as a substitute for missing retrieval/tools/data.",
+    "Stuffing huge irrelevant context into every request.",
+    "Changing prompts without regression evaluation."
+  ],
+  "followUps": [
+    "Zero-shot vs few-shot?",
+    "When would you use structured output?",
+    "Prompting vs fine-tuning?",
+    "How do you handle prompt injection?"
+  ],
+  "production": "Version prompts like code, evaluate them before release, log prompt/model versions and sanitize/segregate untrusted retrieved content so it cannot silently override application instructions.",
+  "editorial": {
+    "status": "summary"
+  }
+}

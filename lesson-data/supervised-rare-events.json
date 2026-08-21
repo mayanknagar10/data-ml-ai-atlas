@@ -1,0 +1,36 @@
+{
+  "slug": "supervised-rare-events",
+  "title": "Supervised Rare-event Modeling",
+  "module": "anomaly",
+  "priority": "high",
+  "roles": [
+    "ds"
+  ],
+  "interviewAnswer": "When rare-event labels exist, treat the problem as cost-sensitive classification with careful temporal splits, sampling/weighting and precision-recall evaluation rather than unsupervised anomaly detection.",
+  "keyPoints": [
+    "Negative sampling can distort prevalence.",
+    "Calibrate/adjust probabilities if training distribution changes.",
+    "Use event-time split to avoid leakage."
+  ],
+  "resources": [
+    "sklearn",
+    "google-rules-ml"
+  ],
+  "featured": false,
+  "why": "Supervised Rare-event Modeling is a recurring foundation across data science and machine learning because it affects both theoretical correctness and practical system behavior.",
+  "intuition": "Negative sampling can distort prevalence.",
+  "deepDive": "When rare-event labels exist, treat the problem as cost-sensitive classification with careful temporal splits, sampling/weighting and precision-recall evaluation rather than unsupervised anomaly detection. Calibrate/adjust probabilities if training distribution changes. Use event-time split to avoid leakage. The interview-level skill is not merely recalling the definition: explain the assumptions, what diagnostic evidence you would inspect, and what alternative you would choose when those assumptions fail.",
+  "workedExample": "Train a failure classifier on 1% positives using weighted loss and evaluate recall at a fixed false-alert budget.",
+  "commonMistakes": [
+    "Using the concept mechanically without checking assumptions or data semantics.",
+    "Reporting one metric/result without examining uncertainty, slices or failure modes."
+  ],
+  "followUps": [
+    "What assumptions or limitations does Supervised Rare-event Modeling have?",
+    "How would you validate Supervised Rare-event Modeling on a real dataset?"
+  ],
+  "production": "In production, make assumptions explicit, validate on representative slices, compare with a simple baseline and monitor the signals that can drift.",
+  "editorial": {
+    "status": "summary"
+  }
+}

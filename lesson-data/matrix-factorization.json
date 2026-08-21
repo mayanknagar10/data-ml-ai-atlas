@@ -1,0 +1,54 @@
+{
+  "slug": "matrix-factorization",
+  "title": "Matrix Factorization for Recommenders",
+  "module": "recsys",
+  "priority": "very-high",
+  "roles": [
+    "ds",
+    "da"
+  ],
+  "interviewAnswer": "Matrix factorization learns low-dimensional user and item vectors whose interaction predicts preference. With implicit feedback, objectives often weight observed interactions plus sampled/unobserved examples.",
+  "keyPoints": [
+    "Latent factors capture collaborative structure.",
+    "Regularization handles sparse data.",
+    "Bias terms and confidence weighting matter."
+  ],
+  "resources": [
+    "stanford-cs246"
+  ],
+  "featured": true,
+  "why": "Matrix Factorization for Recommenders appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
+  "intuition": "Latent factors capture collaborative structure.",
+  "deepDive": "Matrix factorization learns low-dimensional user and item vectors whose interaction predicts preference. With implicit feedback, objectives often weight observed interactions plus sampled/unobserved examples. Regularization handles sparse data. Bias terms and confidence weighting matter. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
+  "workedExample": "Learn 64-dimensional user/item embeddings and rank items by dot product.",
+  "commonMistakes": [
+    "Applying the method without checking its assumptions or data-generating process.",
+    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+  ],
+  "followUps": [
+    "What assumptions does Matrix Factorization for Recommenders make?",
+    "How would you validate or debug Matrix Factorization for Recommenders in practice?"
+  ],
+  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "lab": {
+    "goal": "Factorize a tiny user-item rating matrix with gradient descent.",
+    "language": "python",
+    "buildIt": "import numpy as np\nrng=np.random.default_rng(0)\nR=np.array([[5.,4.,0.],[0.,3.,4.],[4.,0.,5.]])\nmask=R>0; U=rng.normal(scale=.1,size=(3,2)); V=rng.normal(scale=.1,size=(3,2))\nfor _ in range(2000):\n    E=(U@V.T-R)*mask\n    U-=.01*(E@V+.01*U); V-=.01*(E.T@U+.01*V)\nprint(U@V.T)",
+    "useIt": "scores=U@V.T\nprint('top item for user0',np.argsort(-scores[0]))",
+    "shipIt": "At scale, separate offline factor training from low-latency candidate retrieval, exclude already-seen/ineligible items and monitor popularity/exposure bias.",
+    "verifyIt": "assert np.mean(((U@V.T-R)[mask])**2) < 0.5"
+  },
+  "visual": {
+    "type": "layers",
+    "title": "Matrix factorization",
+    "items": [
+      "User–item interactions",
+      "User embeddings × item embeddings",
+      "Predicted preference scores"
+    ],
+    "caption": "Low-rank embeddings capture latent preference dimensions from sparse interaction matrices."
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

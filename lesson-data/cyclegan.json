@@ -1,0 +1,96 @@
+{
+  "slug": "cyclegan",
+  "title": "CycleGAN & Unpaired Translation",
+  "module": "genai",
+  "priority": "high",
+  "roles": [
+    "genai",
+    "cv",
+    "as"
+  ],
+  "interviewAnswer": "CycleGAN learns mappings between two unpaired image domains using adversarial losses plus cycle consistency. The cycle constraint encourages content preservation but does not guarantee physical correctness or eliminate hallucination.",
+  "keyPoints": [
+    "Two generators",
+    "Two discriminators",
+    "Cycle consistency",
+    "Unpaired domains"
+  ],
+  "resources": [
+    "stanford-cs231n",
+    "mit-6s191",
+    "stanford-cs336",
+    "paper-cyclegan"
+  ],
+  "featured": false,
+  "why": "CycleGAN is important when paired examples do not exist and is directly relevant to unpaired scientific/image translation projects.",
+  "intuition": "Learn A→B and B→A together. Adversarial losses make outputs look like each target domain; cycle consistency encourages translating there and back to recover the original content.",
+  "deepDive": "Two generators G:A→B and F:B→A plus discriminators D_A/D_B are trained jointly. Adversarial objectives match marginal domain appearance; cycle loss ||F(G(a))-a|| and ||G(F(b))-b|| constrains mappings. Identity loss is sometimes added. Cycle consistency reduces arbitrary mappings but does not guarantee semantic/physical correctness or prevent hallucination.",
+  "math": "L = L_GAN(G,D_B)+L_GAN(F,D_A)+λ_cyc L_cyc (+ λ_id L_id)",
+  "workedExample": "Two microscopy or imaging modalities can form unpaired domains when exact aligned source/target pairs do not exist. Cycle consistency encourages content preservation, but generated target-style texture still requires domain-specific validation.",
+  "code": "# inference typically uses only the desired generator\nwith torch.no_grad():\n    translated = G(source)",
+  "commonMistakes": [
+    "Saying CycleGAN needs paired images.",
+    "Saying cycle loss guarantees no hallucinations.",
+    "Using discriminator/generator training losses as the only quality metric."
+  ],
+  "followUps": [
+    "Why two generators/discriminators?",
+    "What is cycle consistency?",
+    "What is used at inference?",
+    "Why not supervised SR?"
+  ],
+  "production": "Store only required inference generators/checkpoints, but retain training configs. Monitor output artifacts and domain-specific validity, especially under input-domain drift.",
+  "visual": {
+    "type": "network",
+    "title": "CycleGAN",
+    "nodes": [
+      {
+        "id": "a",
+        "label": "Domain A",
+        "x": 0.12,
+        "y": 0.3
+      },
+      {
+        "id": "g",
+        "label": "G: A→B",
+        "x": 0.38,
+        "y": 0.2
+      },
+      {
+        "id": "b",
+        "label": "Domain B",
+        "x": 0.7,
+        "y": 0.3
+      },
+      {
+        "id": "f",
+        "label": "F: B→A",
+        "x": 0.42,
+        "y": 0.75
+      }
+    ],
+    "edges": [
+      [
+        "a",
+        "g"
+      ],
+      [
+        "g",
+        "b"
+      ],
+      [
+        "b",
+        "f"
+      ],
+      [
+        "f",
+        "a"
+      ]
+    ],
+    "caption": "Cycle consistency encourages an unpaired translation A→B→A to preserve information from the original sample.",
+    "directed": true
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

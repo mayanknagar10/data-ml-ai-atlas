@@ -1,0 +1,56 @@
+{
+  "slug": "debug-dl",
+  "title": "Debugging a Model That Will Not Learn",
+  "module": "dl",
+  "priority": "very-high",
+  "roles": [
+    "mle",
+    "aie",
+    "as"
+  ],
+  "interviewAnswer": "Verify data and labels, then try to overfit a tiny batch. Inspect loss, outputs, gradients, learning rate, preprocessing and train/eval modes before changing architecture. Debug from simplest assumptions outward.",
+  "keyPoints": [
+    "Overfit tiny batch",
+    "Check labels",
+    "Inspect gradients",
+    "Establish simple baseline"
+  ],
+  "resources": [
+    "fsdl",
+    "made-with-ml",
+    "pytorch",
+    "mit-6s191"
+  ],
+  "featured": true,
+  "why": "Debugging questions reveal whether you can work independently when a model fails rather than randomly changing hyperparameters.",
+  "intuition": "Debug from the simplest possible failure outward: verify data and labels, then prove the model can overfit a tiny batch, then inspect gradients/loss/learning rate, then scale complexity.",
+  "deepDive": "Check shapes, dtypes, normalization, label alignment and train/eval modes. Overfit one batch: if the model cannot drive training loss down, there is likely a pipeline, optimization or capacity bug. Inspect baseline loss, output ranges, gradient norms and which parameters receive gradients. Disable augmentation/regularization, simplify the model, compare against a trivial baseline, then reintroduce complexity one piece at a time.",
+  "workedExample": "If binary classification loss stays near 0.693, inspect whether logits vary, labels are correct, gradients are nonzero and the optimizer actually owns the model parameters before increasing network depth.",
+  "code": "# Tiny-batch sanity test\nx,y=next(iter(loader))\nfor _ in range(500):\n    opt.zero_grad(); loss=criterion(model(x),y)\n    loss.backward(); opt.step()\nprint(loss.item())",
+  "commonMistakes": [
+    "Changing model architecture before verifying labels/data.",
+    "Debugging training and validation problems simultaneously.",
+    "Leaving dropout/augmentation on while trying to prove the pipeline can overfit a tiny batch."
+  ],
+  "followUps": [
+    "Why overfit one batch?",
+    "What if loss is NaN?",
+    "What if gradients are all zero?",
+    "Training loss decreases but validation worsens—what next?"
+  ],
+  "production": "Capture reproducible configs, seeds, logs, sample inputs, checkpoints and environment versions so failures can be reproduced instead of debugged from memory.",
+  "visual": {
+    "type": "concept-map",
+    "title": "Debugging a Model That Will Not Learn",
+    "items": [
+      "Overfit tiny batch",
+      "Check labels",
+      "Inspect gradients",
+      "Establish simple baseline"
+    ],
+    "caption": "A compact concept map for the most important ideas in this lesson."
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

@@ -1,0 +1,55 @@
+{
+  "slug": "rlhf-preference",
+  "title": "RLHF, Reward Models & Preference Optimization",
+  "module": "rl",
+  "priority": "high",
+  "roles": [
+    "aie",
+    "mle",
+    "as"
+  ],
+  "interviewAnswer": "RLHF usually starts with supervised instruction tuning, then learns a preference or reward signal from human comparisons and optimizes the policy against that signal while constraining drift from a reference model. PPO is one optimization route; DPO is different—it directly optimizes preference likelihood without explicitly training a reward model and running online RL.",
+  "keyPoints": [
+    "SFT → preferences → alignment",
+    "reward model",
+    "reference/KL constraint",
+    "PPO vs DPO"
+  ],
+  "resources": [
+    "stanford-cs234",
+    "berkeley-cs285",
+    "openai-spinning-up"
+  ],
+  "featured": true,
+  "why": "AI-engineering interviews increasingly ask whether candidates understand the distinction between pretraining, supervised fine-tuning and preference alignment.",
+  "intuition": "First teach the model to follow instructions, then show it pairs of better/worse responses so training can push behavior toward human preferences rather than only next-token likelihood.",
+  "deepDive": "Classical RLHF collects comparison data, trains a reward model, generates rollouts and optimizes a policy—often with PPO—while penalizing divergence from a reference. Direct preference methods such as DPO derive a supervised-style objective from preference pairs and a reference policy, avoiding an explicit online RL loop. Both inherit issues from preference-data quality and objective misspecification.",
+  "math": "Conceptually: maximize E[reward(response)] − β·KL(π || π_ref).",
+  "workedExample": "Annotators prefer response A to B for the same prompt. A reward-model pipeline learns a scalar preference signal; a direct-preference pipeline updates the policy to increase the relative likelihood of A versus B.",
+  "commonMistakes": [
+    "Saying DPO and PPO are the same algorithm.",
+    "Assuming human preference labels equal factual correctness or safety."
+  ],
+  "followUps": [
+    "Why include a reference-model KL penalty?",
+    "What are reward hacking and preference-model bias?",
+    "SFT vs RLHF?"
+  ],
+  "production": "Alignment needs dataset governance, annotator-quality controls, red-team evaluation and monitoring of regressions across capability, safety and style dimensions.",
+  "visual": {
+    "type": "flow",
+    "title": "Preference optimization pipeline",
+    "items": [
+      "Prompt + candidate responses",
+      "Human / model preference labels",
+      "Reward or preference model",
+      "Optimize policy"
+    ],
+    "caption": "Preference optimization aligns model behavior with ranked outputs rather than only next-token likelihood.",
+    "accent": 2,
+    "orientation": "horizontal"
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

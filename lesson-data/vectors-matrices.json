@@ -1,0 +1,55 @@
+{
+  "slug": "vectors-matrices",
+  "title": "Vectors, Matrices & Dot Products",
+  "module": "math",
+  "priority": "very-high",
+  "roles": [
+    "all",
+    "as"
+  ],
+  "interviewAnswer": "A vector represents an ordered set of features or a direction; a matrix represents a linear transformation or collection of vectors. The dot product measures alignment and is the core operation behind linear models, attention scores and neural layers.",
+  "keyPoints": [
+    "Geometric and algebraic views",
+    "Matrix multiplication as composition",
+    "Dot product and similarity",
+    "Shapes matter"
+  ],
+  "resources": [
+    "mit-linear-algebra",
+    "3b1b-linear-algebra"
+  ],
+  "featured": true,
+  "why": "Vectors and matrices are the language of embeddings, linear models, neural networks, PCA, attention and almost every numerical ML implementation.",
+  "intuition": "A vector is an ordered list representing a point, direction or feature set. A matrix is a collection of vectors and can be viewed as a linear transformation that rotates, scales, projects or mixes coordinates.",
+  "deepDive": "The dot product measures alignment and also computes weighted sums. Matrix multiplication composes linear transformations and requires inner dimensions to match. Norms measure vector magnitude. Rank tells how many independent directions a matrix contains. In ML, a batch is often a matrix X with rows as samples and columns as features; a linear layer computes XW+b.",
+  "math": "Dot product: x·w = Σ_i x_i w_i\nMatrix product: C_ij = Σ_k A_ik B_kj\nL2 norm: ||x||₂ = sqrt(Σ_i x_i²)",
+  "workedExample": "If X has shape (batch, 10) and W has shape (10, 32), then XW has shape (batch, 32). Each output feature is a dot product between the input and one column of W.",
+  "code": "import numpy as np\nX=np.random.randn(64,10)\nW=np.random.randn(10,32)\nY=X@W\nprint(Y.shape)  # (64, 32)",
+  "commonMistakes": [
+    "Mixing elementwise multiplication with matrix multiplication.",
+    "Ignoring tensor shapes during architecture explanations.",
+    "Saying cosine similarity and dot product are identical without normalization assumptions."
+  ],
+  "followUps": [
+    "What does a dot product mean geometrically?",
+    "What is matrix rank?",
+    "Why does matrix multiplication order matter?",
+    "How are embeddings compared?"
+  ],
+  "production": "Shape reasoning prevents many silent bugs in deep learning, vector search and batched inference. Log/validate tensor dimensions at system boundaries.",
+  "visual": {
+    "type": "flow",
+    "title": "Linear transformation",
+    "items": [
+      "Input vector x",
+      "Matrix W",
+      "Output vector Wx"
+    ],
+    "caption": "A matrix can be viewed as a transformation that rotates, scales, projects or mixes coordinates.",
+    "accent": 1,
+    "orientation": "horizontal"
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

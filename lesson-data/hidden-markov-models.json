@@ -1,0 +1,55 @@
+{
+  "slug": "hidden-markov-models",
+  "title": "Hidden Markov Models",
+  "module": "probabilistic-ml",
+  "priority": "high",
+  "roles": [
+    "ds",
+    "as",
+    "mle",
+    "aie"
+  ],
+  "interviewAnswer": "An HMM models a sequence with hidden states that follow Markov transitions and emit observations. Forward-backward computes marginals/likelihoods, Viterbi finds the most likely state path, and Baum–Welch learns parameters.",
+  "keyPoints": [
+    "Latent states",
+    "Transitions/emissions",
+    "Forward-backward",
+    "Viterbi"
+  ],
+  "resources": [
+    "stanford-cs228",
+    "stanford-cs229",
+    "probml-book"
+  ],
+  "featured": false,
+  "why": "HMMs are foundational probabilistic sequence models used in speech, bioinformatics and state estimation.",
+  "intuition": "You observe noisy outputs but assume an unobserved state evolves over time.",
+  "deepDive": "The Markov assumption enables dynamic programming. Forward recursion sums over state paths; Viterbi replaces summation with maximization to recover the best path.",
+  "math": "",
+  "code": "",
+  "commonMistakes": [
+    "Confusing state with observation.",
+    "Using Viterbi when marginal state probabilities are required."
+  ],
+  "followUps": [
+    "Forward-backward vs Viterbi?",
+    "How is Baum–Welch related to EM?"
+  ],
+  "production": "HMMs are interpretable and efficient baselines, but their assumptions can be too restrictive for complex sequences.",
+  "workedExample": "A machine can move through healthy/degraded/failing hidden states while vibration measurements are noisy emissions.",
+  "visual": {
+    "type": "flow",
+    "title": "Hidden-state sequence with observations",
+    "items": [
+      "Hidden state t−1",
+      "Hidden state t",
+      "Hidden state t+1",
+      "Observed emissions"
+    ],
+    "caption": "Latent states transition through time and generate noisy observations.",
+    "orientation": "horizontal"
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

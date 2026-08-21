@@ -1,0 +1,46 @@
+{
+  "slug": "cap-theorem",
+  "title": "CAP Theorem Without the Myth",
+  "module": "distributed",
+  "priority": "medium",
+  "roles": [
+    "de",
+    "mle"
+  ],
+  "interviewAnswer": "Under a network partition, a distributed system must choose between always returning a consistent response and always remaining available. CAP is about partition scenarios, not a permanent “pick two” product label.",
+  "keyPoints": [
+    "Partition tolerance is unavoidable in distributed networks.",
+    "Consistency has multiple definitions beyond CAP.",
+    "Latency trade-offs also matter outside partitions."
+  ],
+  "resources": [
+    "mit-6824"
+  ],
+  "featured": false,
+  "why": "CAP Theorem Without the Myth appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
+  "intuition": "Partition tolerance is unavoidable in distributed networks.",
+  "deepDive": "Under a network partition, a distributed system must choose between always returning a consistent response and always remaining available. CAP is about partition scenarios, not a permanent “pick two” product label. Consistency has multiple definitions beyond CAP. Latency trade-offs also matter outside partitions. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
+  "workedExample": "During a partition, a strongly consistent metadata store may reject writes rather than accept conflicting states.",
+  "commonMistakes": [
+    "Applying the method without checking its assumptions or data-generating process.",
+    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+  ],
+  "followUps": [
+    "What assumptions does CAP Theorem Without the Myth make?",
+    "How would you validate or debug CAP Theorem Without the Myth in practice?"
+  ],
+  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "visual": {
+    "type": "concept-map",
+    "title": "CAP theorem",
+    "items": [
+      "Consistency",
+      "Availability",
+      "Partition tolerance"
+    ],
+    "caption": "During a network partition, a distributed system must trade off serving every request against guaranteeing a single consistent view."
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

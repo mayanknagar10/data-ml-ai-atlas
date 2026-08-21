@@ -1,0 +1,50 @@
+{
+  "slug": "cox-ph",
+  "title": "Cox Proportional Hazards Model",
+  "module": "survival",
+  "priority": "high",
+  "roles": [
+    "ds",
+    "da"
+  ],
+  "interviewAnswer": "The Cox model relates covariates multiplicatively to hazard without specifying the baseline hazard shape. Coefficients are interpreted through hazard ratios, under the proportional-hazards assumption.",
+  "keyPoints": [
+    "Hazard ratio exp(beta).",
+    "Check proportional hazards.",
+    "Censoring assumptions still matter."
+  ],
+  "resources": [
+    "lifelines",
+    "stanford-stats200"
+  ],
+  "featured": false,
+  "why": "Cox Proportional Hazards Model appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
+  "intuition": "Hazard ratio exp(beta).",
+  "deepDive": "The Cox model relates covariates multiplicatively to hazard without specifying the baseline hazard shape. Coefficients are interpreted through hazard ratios, under the proportional-hazards assumption. Check proportional hazards. Censoring assumptions still matter. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
+  "workedExample": "A hazard ratio of 1.5 for a feature means 50% higher instantaneous event hazard at a given time, holding other covariates fixed.",
+  "commonMistakes": [
+    "Applying the method without checking its assumptions or data-generating process.",
+    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+  ],
+  "followUps": [
+    "What assumptions does Cox Proportional Hazards Model make?",
+    "How would you validate or debug Cox Proportional Hazards Model in practice?"
+  ],
+  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "visual": {
+    "type": "flow",
+    "title": "Cox proportional hazards",
+    "items": [
+      "Covariates x",
+      "Linear predictor βᵀx",
+      "Relative hazard exp(βᵀx)",
+      "Event-time risk"
+    ],
+    "caption": "Cox models covariate effects on relative hazard while leaving the baseline hazard unspecified.",
+    "accent": 1,
+    "orientation": "horizontal"
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

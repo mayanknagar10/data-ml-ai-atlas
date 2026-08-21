@@ -1,0 +1,58 @@
+{
+  "slug": "case-cv-reconstruction",
+  "title": "Case Study: Scientific 3D Reconstruction / Super-resolution",
+  "module": "project-defense",
+  "priority": "high",
+  "roles": [
+    "cv",
+    "mle"
+  ],
+  "interviewAnswer": "Lead with the physical problem and downstream use, then explain the 2D/3D constraint, model stages, interpolation/fusion, your contribution and validation. Be explicit about hallucination risk and what the domain expert validated.",
+  "keyPoints": [
+    "Problem before architecture",
+    "Why each stage exists",
+    "Own contribution",
+    "Domain validation"
+  ],
+  "resources": [
+    "stanford-cs231n",
+    "fsdl",
+    "stanford-cs329s",
+    "paper-cyclegan"
+  ],
+  "featured": false,
+  "why": "This case demonstrates the trade-offs in scientific 3D reconstruction: fidelity, cross-slice consistency, compute cost, uncertainty and downstream validation.",
+  "intuition": "Start from the sensing/measurement gap, then compare 2D slice-wise, 3D patch-wise and learned upsampling strategies. The important question is not only whether output looks sharper, but whether it preserves structures required by downstream measurement or simulation.",
+  "deepDive": "A defensible design separates acquisition constraints from modeling choices. A pipeline may use deterministic interpolation as a baseline, 2D or 3D neural enhancement, multi-view fusion, uncertainty estimates and domain-specific validation. Patch-wise 3D models improve volumetric context but increase memory and stitching complexity. Generative models may recover realistic detail but require explicit checks against hallucinated or physically inconsistent structure. Evaluation should combine image metrics with downstream domain metrics and comparison to simple baselines.",
+  "workedExample": "A low-resolution volumetric scan can be reconstructed through plane-wise or patch-wise enhancement, interpolation or learned upsampling, cross-view fusion and domain-specific validation before downstream simulation or measurement.",
+  "commonMistakes": [
+    "Treating visual sharpness as proof of scientific correctness.",
+    "Ignoring interpolation or bicubic/trilinear baselines.",
+    "Evaluating random neighboring patches across train/test and leaking spatial structure."
+  ],
+  "followUps": [
+    "When would you prefer a 2D model to a 3D model?",
+    "How would you quantify uncertainty in reconstructed regions?",
+    "Which image metrics can disagree with downstream scientific validity?",
+    "How would you productionize a large-volume reconstruction pipeline?"
+  ],
+  "production": "For production, use a versioned batch pipeline: validate volume metadata, tile or patch consistently, run deterministic preprocessing and a versioned GPU model, stitch/postprocess outputs, record provenance and uncertainty, run domain quality gates, store the reconstructed volume and expose job status/results through an API or internal application.",
+  "visual": {
+    "type": "flow",
+    "title": "Scientific 3D reconstruction case",
+    "items": [
+      "Low-resolution volume",
+      "Baseline / patch extraction",
+      "2D or 3D enhancement",
+      "Cross-view / patch fusion",
+      "Domain quality gates",
+      "High-resolution volume"
+    ],
+    "caption": "A robust reconstruction system separates enhancement from fusion and validates the result with both image and domain-specific checks.",
+    "accent": 3,
+    "orientation": "horizontal"
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

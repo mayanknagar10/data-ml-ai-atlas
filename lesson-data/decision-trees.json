@@ -1,0 +1,103 @@
+{
+  "slug": "decision-trees",
+  "title": "Decision Trees",
+  "module": "ml",
+  "priority": "very-high",
+  "roles": [
+    "ds",
+    "mle",
+    "as"
+  ],
+  "interviewAnswer": "Decision trees recursively split the feature space to make child nodes purer. They capture nonlinear interactions and require little preprocessing, but deep trees overfit easily.",
+  "keyPoints": [
+    "Gini/entropy",
+    "Split criterion",
+    "Depth",
+    "Feature importance caveats"
+  ],
+  "resources": [
+    "sklearn",
+    "statquest",
+    "stanford-cs229",
+    "google-mlcc",
+    "isl"
+  ],
+  "featured": false,
+  "why": "Decision trees introduce recursive partitioning, impurity measures, overfitting and the foundation for random forests and gradient boosting.",
+  "intuition": "A tree repeatedly asks simple questions that split the data into purer groups. Each path from root to leaf is an interpretable set of rules.",
+  "deepDive": "For classification, splits often maximize impurity reduction using Gini or entropy; regression trees reduce squared/absolute error. Trees naturally model nonlinear interactions and mixed scales but are high variance: a small data change can alter structure. Depth, minimum samples and pruning regularize them. Greedy split selection is local, not globally optimal.",
+  "math": "Gini = 1-Σ_k p_k²\nEntropy = -Σ_k p_k log p_k\nSplit gain = parent impurity - weighted child impurities",
+  "workedExample": "A failure classifier might first split on load, then material type, then temperature. The interactions are learned without manually creating load×material features.",
+  "code": "from sklearn.tree import DecisionTreeClassifier\nm=DecisionTreeClassifier(max_depth=5,min_samples_leaf=20,random_state=0)\nm.fit(X_train,y_train)",
+  "commonMistakes": [
+    "Assuming deeper trees are always better.",
+    "Treating feature-importance scores as causal.",
+    "Ignoring class imbalance or leakage because trees handle preprocessing well."
+  ],
+  "followUps": [
+    "Gini vs entropy?",
+    "Why do trees overfit?",
+    "How does pruning help?",
+    "Why do ensembles improve trees?"
+  ],
+  "production": "Tree models are strong tabular baselines. Validate input ranges/categories and monitor feature distributions because splits can behave unexpectedly outside training support.",
+  "visual": {
+    "type": "network",
+    "title": "Decision tree",
+    "nodes": [
+      {
+        "id": "a",
+        "label": "x₁ < 5?",
+        "x": 0.5,
+        "y": 0.12
+      },
+      {
+        "id": "b",
+        "label": "x₂ < 2?",
+        "x": 0.28,
+        "y": 0.47
+      },
+      {
+        "id": "c",
+        "label": "class B",
+        "x": 0.72,
+        "y": 0.47
+      },
+      {
+        "id": "d",
+        "label": "class A",
+        "x": 0.15,
+        "y": 0.82
+      },
+      {
+        "id": "e",
+        "label": "class C",
+        "x": 0.4,
+        "y": 0.82
+      }
+    ],
+    "edges": [
+      [
+        "a",
+        "b"
+      ],
+      [
+        "a",
+        "c"
+      ],
+      [
+        "b",
+        "d"
+      ],
+      [
+        "b",
+        "e"
+      ]
+    ],
+    "caption": "Trees recursively partition feature space into regions with simpler predictions.",
+    "directed": true
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

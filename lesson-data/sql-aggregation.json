@@ -1,0 +1,43 @@
+{
+  "slug": "sql-aggregation",
+  "title": "GROUP BY, HAVING & Aggregation",
+  "module": "sql",
+  "priority": "high",
+  "roles": [
+    "ds",
+    "de",
+    "mle",
+    "da"
+  ],
+  "interviewAnswer": "GROUP BY changes the grain of the result by aggregating rows into groups. WHERE filters before aggregation; HAVING filters after aggregation.",
+  "keyPoints": [
+    "Row grain",
+    "COUNT(*) vs COUNT(column)",
+    "WHERE vs HAVING",
+    "Conditional aggregation"
+  ],
+  "resources": [
+    "postgres"
+  ],
+  "featured": false,
+  "why": "Aggregation tests row-grain reasoning and is ubiquitous in analytics and feature engineering.",
+  "intuition": "GROUP BY collapses rows sharing group keys. WHERE filters input rows before grouping; HAVING filters groups after aggregate values exist.",
+  "deepDive": "Every selected non-aggregated column must be functionally compatible with the group grain. COUNT(*) counts rows while COUNT(column) ignores NULL. Conditional aggregation with CASE computes multiple metrics in one pass. Be careful that joins before aggregation may duplicate facts and inflate sums.",
+  "workedExample": "To find customers with at least five completed orders, filter completed rows in WHERE, group by customer, then HAVING COUNT(*)>=5.",
+  "code": "SELECT customer_id, COUNT(*) AS n_orders, SUM(amount) AS revenue\nFROM orders\nWHERE status='completed'\nGROUP BY customer_id\nHAVING COUNT(*) >= 5;",
+  "commonMistakes": [
+    "Using WHERE with an aggregate expression instead of HAVING.",
+    "Forgetting COUNT(column) ignores NULL.",
+    "Aggregating after a duplicate-amplifying join without checking grain."
+  ],
+  "followUps": [
+    "WHERE vs HAVING?",
+    "COUNT(*) vs COUNT(col)?",
+    "How do you do conditional aggregation?",
+    "When would a window function be better?"
+  ],
+  "production": "Feature pipelines should document output grain and validate counts/sums against source totals so join/aggregation mistakes are caught early.",
+  "editorial": {
+    "status": "summary"
+  }
+}

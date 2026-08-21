@@ -1,0 +1,58 @@
+{
+  "slug": "tfidf-bm25",
+  "title": "TF-IDF & BM25",
+  "module": "ir",
+  "priority": "very-high",
+  "roles": [
+    "ds"
+  ],
+  "interviewAnswer": "TF-IDF weights terms by within-document frequency and corpus rarity. BM25 adds saturation and document-length normalization, making it a strong lexical ranking baseline.",
+  "keyPoints": [
+    "Rare terms carry more discrimination.",
+    "BM25 term-frequency gain saturates.",
+    "Lexical search handles exact names/codes well."
+  ],
+  "resources": [
+    "ir-book",
+    "elastic-bm25"
+  ],
+  "featured": true,
+  "why": "TF-IDF & BM25 appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
+  "intuition": "Rare terms carry more discrimination.",
+  "deepDive": "TF-IDF weights terms by within-document frequency and corpus rarity. BM25 adds saturation and document-length normalization, making it a strong lexical ranking baseline. BM25 term-frequency gain saturates. Lexical search handles exact names/codes well. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
+  "workedExample": "A query containing a rare error code should strongly match documents containing that exact code.",
+  "commonMistakes": [
+    "Applying the method without checking its assumptions or data-generating process.",
+    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+  ],
+  "followUps": [
+    "What assumptions does TF-IDF & BM25 make?",
+    "How would you validate or debug TF-IDF & BM25 in practice?"
+  ],
+  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "lab": {
+    "goal": "Implement a tiny BM25 scorer and compare lexical ranking.",
+    "language": "python",
+    "buildIt": "import math,re\ndocs=['red bolt m8 stainless','blue bolt m6 steel','m8 stainless anchor bolt']\nq='m8 stainless bolt'.split()\ntok=[re.findall(r'\\w+',doc.lower()) for doc in docs]\nN=len(tok); avg=sum(map(len,tok))/N\ndef bm25(i,k1=1.5,b=.75):\n    s=0.0\n    for term in q:\n        df=sum(term in x for x in tok)\n        idf=math.log(1+(N-df+.5)/(df+.5))\n        tf=tok[i].count(term)\n        if tf:\n            s+=idf*tf*(k1+1)/(tf+k1*(1-b+b*len(tok[i])/avg))\n    return s\nprint([bm25(i) for i in range(N)])\n",
+    "useIt": "from sklearn.feature_extraction.text import TfidfVectorizer\nfrom sklearn.metrics.pairwise import cosine_similarity\nv=TfidfVectorizer().fit(docs+[' '.join(q)])\nM=v.transform(docs); qq=v.transform([' '.join(q)])\nprint(cosine_similarity(qq,M)[0])\n",
+    "verifyIt": "assert max(range(N),key=bm25) in {0,2}\n",
+    "shipIt": "Keep lexical retrieval as a production baseline even with vectors; exact identifiers, rare codes and filters often benefit from BM25/hybrid search."
+  },
+  "visual": {
+    "type": "flow",
+    "title": "BM25 scoring",
+    "items": [
+      "Query terms",
+      "Term frequency",
+      "Inverse document frequency",
+      "Length normalization",
+      "Document score"
+    ],
+    "caption": "BM25 combines term match strength with rarity and document-length normalization.",
+    "accent": 2,
+    "orientation": "horizontal"
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

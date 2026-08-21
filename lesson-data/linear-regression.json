@@ -1,0 +1,116 @@
+{
+  "slug": "linear-regression",
+  "title": "Linear Regression",
+  "module": "regression-glm",
+  "priority": "very-high",
+  "roles": [
+    "ds",
+    "mle",
+    "as"
+  ],
+  "interviewAnswer": "Linear regression models the target as a weighted sum of features and typically minimizes squared error. Know its assumptions, how coefficients are interpreted, and why multicollinearity/outliers can matter.",
+  "keyPoints": [
+    "OLS objective",
+    "Residual assumptions",
+    "R²",
+    "Regularized variants"
+  ],
+  "resources": [
+    "stanford-cs229",
+    "google-mlcc",
+    "statquest",
+    "isl"
+  ],
+  "featured": false,
+  "why": "Linear regression is simple enough to derive but rich enough to test assumptions, loss functions, interpretation, regularization and statistical reasoning.",
+  "intuition": "The model fits a plane through feature space. Each coefficient changes the predicted target by a constant amount per unit feature change, holding other features fixed.",
+  "deepDive": "Ordinary least squares minimizes squared residuals. Under standard assumptions it has useful unbiasedness/inference properties, but prediction can still work when inference assumptions are imperfect. Multicollinearity makes coefficients unstable; nonlinear relationships require transformed features or other models; heteroscedasticity affects standard errors. Ridge/Lasso trade bias for stability/sparsity.",
+  "math": "ŷ = Xβ + b\nOLS: minimize ||y-Xβ||₂²\nClosed form when invertible: β̂=(XᵀX)^{-1}Xᵀy",
+  "workedExample": "If house price increases roughly linearly with area but location shifts the baseline, include both area and encoded location. A strong coefficient does not by itself prove area causally changes price.",
+  "code": "from sklearn.linear_model import LinearRegression\nm=LinearRegression().fit(X_train,y_train)\nprint(m.coef_, m.intercept_)",
+  "commonMistakes": [
+    "Saying linear regression requires every feature to be Normally distributed.",
+    "Interpreting coefficients causally without design assumptions.",
+    "Ignoring multicollinearity and residual structure."
+  ],
+  "followUps": [
+    "What assumptions matter for inference?",
+    "Ridge vs Lasso?",
+    "Why use MSE?",
+    "What is R² and when can it mislead?"
+  ],
+  "production": "Monitor residual distribution, drift, coefficient stability and extrapolation. Linear models can be excellent baselines because they are cheap, interpretable and easy to debug.",
+  "lab": {
+    "goal": "Implement ordinary least squares with gradient descent, then compare it with scikit-learn.",
+    "language": "python",
+    "buildIt": "import numpy as np\nrng=np.random.default_rng(0)\nX=rng.normal(size=(200,1)); y=3*X[:,0]+2+rng.normal(0,.3,200)\nXb=np.c_[np.ones(len(X)),X]\nw=np.zeros(2); lr=.05\nfor _ in range(1000):\n    pred=Xb@w\n    grad=(2/len(Xb))*Xb.T@(pred-y)\n    w-=lr*grad\nprint('from scratch:',w)\n",
+    "useIt": "from sklearn.linear_model import LinearRegression\nm=LinearRegression().fit(X,y)\nprint('sklearn:',m.intercept_,m.coef_)\n",
+    "verifyIt": "assert abs(w[0]-2)<0.2\nassert abs(w[1]-3)<0.2\n"
+  },
+  "visual": {
+    "type": "scatter",
+    "title": "Linear regression",
+    "series": [
+      {
+        "label": "data",
+        "points": [
+          [
+            0.08,
+            0.16
+          ],
+          [
+            0.18,
+            0.24
+          ],
+          [
+            0.25,
+            0.33
+          ],
+          [
+            0.37,
+            0.39
+          ],
+          [
+            0.46,
+            0.5
+          ],
+          [
+            0.58,
+            0.55
+          ],
+          [
+            0.68,
+            0.68
+          ],
+          [
+            0.82,
+            0.74
+          ],
+          [
+            0.9,
+            0.86
+          ]
+        ]
+      },
+      {
+        "label": "fit",
+        "points": [
+          [
+            0.06,
+            0.14
+          ],
+          [
+            0.93,
+            0.86
+          ]
+        ]
+      }
+    ],
+    "caption": "The model estimates a conditional mean relationship; residual diagnostics matter as much as the fitted line.",
+    "xLabel": "x",
+    "yLabel": "y"
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

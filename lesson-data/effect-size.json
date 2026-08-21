@@ -1,0 +1,48 @@
+{
+  "slug": "effect-size",
+  "title": "Effect Size vs Statistical Significance",
+  "module": "stat-inference",
+  "priority": "very-high",
+  "roles": [
+    "ds",
+    "da",
+    "as"
+  ],
+  "interviewAnswer": "Statistical significance asks whether an effect is hard to explain by noise under a null; effect size asks whether the magnitude is practically meaningful. Large samples can make tiny effects significant.",
+  "keyPoints": [
+    "Report magnitude and uncertainty, not p-value alone.",
+    "Practical significance depends on costs/base rates.",
+    "Confidence intervals communicate plausible effect ranges."
+  ],
+  "resources": [
+    "openintro-stats",
+    "microsoft-experimentation"
+  ],
+  "featured": true,
+  "why": "Effect Size vs Statistical Significance appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
+  "intuition": "Report magnitude and uncertainty, not p-value alone.",
+  "deepDive": "Statistical significance asks whether an effect is hard to explain by noise under a null; effect size asks whether the magnitude is practically meaningful. Large samples can make tiny effects significant. Practical significance depends on costs/base rates. Confidence intervals communicate plausible effect ranges. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
+  "workedExample": "A 0.05 percentage-point conversion lift can be highly significant on millions of users but still not justify engineering cost.",
+  "commonMistakes": [
+    "Applying the method without checking its assumptions or data-generating process.",
+    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+  ],
+  "followUps": [
+    "What assumptions does Effect Size vs Statistical Significance make?",
+    "How would you validate or debug Effect Size vs Statistical Significance in practice?"
+  ],
+  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "visual": {
+    "type": "concept-map",
+    "title": "Effect Size vs Statistical Significance",
+    "items": [
+      "Report magnitude and uncertainty, not p-value alone.",
+      "Practical significance depends on costs/base rates.",
+      "Confidence intervals communicate plausible effect ranges."
+    ],
+    "caption": "A compact concept map for the most important ideas in this lesson."
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

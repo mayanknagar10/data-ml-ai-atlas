@@ -1,0 +1,37 @@
+{
+  "slug": "backdoor-adjustment",
+  "title": "Backdoor Adjustment & Confounding Control",
+  "module": "causal",
+  "priority": "high",
+  "roles": [
+    "ds",
+    "as"
+  ],
+  "interviewAnswer": "A valid adjustment set blocks noncausal backdoor paths between treatment and outcome without conditioning on colliders or descendants that introduce bias. DAGs make these assumptions explicit.",
+  "keyPoints": [
+    "Control confounders, not every available variable.",
+    "Conditioning on colliders can create associations.",
+    "Causal graph is an assumptions tool."
+  ],
+  "resources": [
+    "harvard-causal-diagrams",
+    "causal-mixtape"
+  ],
+  "featured": false,
+  "why": "Backdoor Adjustment & Confounding Control appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
+  "intuition": "Control confounders, not every available variable.",
+  "deepDive": "A valid adjustment set blocks noncausal backdoor paths between treatment and outcome without conditioning on colliders or descendants that introduce bias. DAGs make these assumptions explicit. Conditioning on colliders can create associations. Causal graph is an assumptions tool. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
+  "workedExample": "Adjust for prior customer risk when studying intervention effect, but not for a post-treatment support interaction caused by the intervention.",
+  "commonMistakes": [
+    "Applying the method without checking its assumptions or data-generating process.",
+    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+  ],
+  "followUps": [
+    "What assumptions does Backdoor Adjustment & Confounding Control make?",
+    "How would you validate or debug Backdoor Adjustment & Confounding Control in practice?"
+  ],
+  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "editorial": {
+    "status": "summary"
+  }
+}

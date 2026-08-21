@@ -1,0 +1,95 @@
+{
+  "slug": "synthetic-control",
+  "title": "Synthetic Control",
+  "module": "causal",
+  "priority": "medium",
+  "roles": [
+    "ds",
+    "as"
+  ],
+  "interviewAnswer": "Synthetic control builds a weighted combination of untreated units that reproduces the treated unit’s pre-treatment trajectory, then uses post-treatment divergence as an estimated effect.",
+  "keyPoints": [
+    "Useful for one/few treated aggregate units.",
+    "Pre-treatment fit is crucial.",
+    "Placebo/permutation checks help assess unusualness."
+  ],
+  "resources": [
+    "causal-mixtape"
+  ],
+  "featured": false,
+  "why": "Synthetic Control appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
+  "intuition": "Useful for one/few treated aggregate units.",
+  "deepDive": "Synthetic control builds a weighted combination of untreated units that reproduces the treated unit’s pre-treatment trajectory, then uses post-treatment divergence as an estimated effect. Pre-treatment fit is crucial. Placebo/permutation checks help assess unusualness. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
+  "workedExample": "Construct a synthetic region from other regions to evaluate a citywide intervention.",
+  "commonMistakes": [
+    "Applying the method without checking its assumptions or data-generating process.",
+    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+  ],
+  "followUps": [
+    "What assumptions does Synthetic Control make?",
+    "How would you validate or debug Synthetic Control in practice?"
+  ],
+  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "visual": {
+    "type": "curve",
+    "title": "Synthetic control",
+    "series": [
+      {
+        "label": "treated",
+        "points": [
+          [
+            0,
+            0.3
+          ],
+          [
+            0.25,
+            0.36
+          ],
+          [
+            0.5,
+            0.41
+          ],
+          [
+            0.7,
+            0.58
+          ],
+          [
+            1,
+            0.78
+          ]
+        ]
+      },
+      {
+        "label": "synthetic control",
+        "points": [
+          [
+            0,
+            0.31
+          ],
+          [
+            0.25,
+            0.35
+          ],
+          [
+            0.5,
+            0.42
+          ],
+          [
+            0.7,
+            0.47
+          ],
+          [
+            1,
+            0.53
+          ]
+        ]
+      }
+    ],
+    "caption": "Before intervention the synthetic control should closely track the treated unit; the post-intervention gap estimates the effect.",
+    "xLabel": "time",
+    "yLabel": "outcome"
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

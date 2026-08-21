@@ -1,0 +1,55 @@
+{
+  "slug": "value-bellman",
+  "title": "Value Functions & the Bellman Equation",
+  "module": "rl",
+  "priority": "high",
+  "roles": [
+    "aie",
+    "mle",
+    "as"
+  ],
+  "interviewAnswer": "A value function estimates expected future return. V(s) values a state under a policy; Q(s,a) values taking an action in a state and then following the policy. The Bellman equation expresses a value recursively as immediate reward plus discounted expected value of the next state.",
+  "keyPoints": [
+    "V(s)",
+    "Q(s,a)",
+    "recursive decomposition",
+    "Bellman expectation / optimality"
+  ],
+  "resources": [
+    "stanford-cs234",
+    "deepmind-rl-youtube",
+    "openai-spinning-up"
+  ],
+  "featured": false,
+  "why": "Value functions are the backbone of Q-learning, actor-critic methods and many planning algorithms.",
+  "intuition": "Instead of evaluating an entire future trajectory every time, summarize “how promising is it from here?” and bootstrap from the next state.",
+  "deepDive": "For a fixed policy, the Bellman expectation equation is a self-consistency relationship. The optimality equation replaces the policy-weighted next action with a max over actions. Temporal-difference methods learn from sampled transitions by nudging current estimates toward a one-step bootstrap target.",
+  "math": "V^π(s)=E[r + γV^π(s′)].\nQ*(s,a)=E[r + γ max_{a′}Q*(s′,a′)].",
+  "workedExample": "If a state gives reward 2 and the expected next-state value is 10 with γ=0.9, its one-step target is 2+0.9×10=11.",
+  "commonMistakes": [
+    "Confusing immediate reward with state value.",
+    "Saying Bellman equations require a known environment model; model-free TD methods use sampled transitions."
+  ],
+  "followUps": [
+    "What is bootstrapping?",
+    "Bellman expectation vs Bellman optimality?",
+    "Why can Q-learning be off-policy?"
+  ],
+  "production": "Value estimates are only as useful as the reward and data coverage; offline RL systems can extrapolate badly for actions rarely represented in logged data.",
+  "visual": {
+    "type": "flow",
+    "title": "Bellman backup",
+    "items": [
+      "Immediate reward",
+      "Discounted next-state value",
+      "Add them",
+      "Updated value estimate"
+    ],
+    "caption": "The Bellman equation expresses value recursively as immediate reward plus discounted future value.",
+    "accent": 1,
+    "orientation": "horizontal"
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

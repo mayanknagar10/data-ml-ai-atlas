@@ -1,0 +1,59 @@
+{
+  "slug": "latent-diffusion",
+  "title": "Latent Diffusion",
+  "module": "genai",
+  "priority": "high",
+  "roles": [
+    "genai",
+    "aie",
+    "as"
+  ],
+  "interviewAnswer": "Latent diffusion performs the generative process in a compressed latent space rather than pixels, reducing compute while a decoder maps the final latent back to the image domain.",
+  "keyPoints": [
+    "Autoencoder",
+    "Latent space",
+    "Compute savings",
+    "Decoder fidelity"
+  ],
+  "resources": [
+    "mit-6s191",
+    "stanford-cs336",
+    "hf-diffusion",
+    "paper-ddpm"
+  ],
+  "featured": false,
+  "why": "Latent diffusion explains how systems such as Stable Diffusion reduce image-generation compute by denoising compressed representations instead of pixels.",
+  "intuition": "First compress an image into a smaller latent grid with an autoencoder. Run the diffusion process in that latent space, then decode the final latent back to pixels.",
+  "deepDive": "A pretrained encoder/decoder defines the latent representation. The denoiser operates on lower-resolution/multi-channel latents, reducing spatial compute while retaining semantic content. Conditioning enters via cross-attention/other pathways. The autoencoder is a bottleneck: if it loses details, the diffusion model cannot reconstruct them exactly. Latent scaling/distribution must match training.",
+  "workedExample": "An image may be encoded from 1024×1024 pixels to a much smaller latent tensor; denoising that tensor is dramatically cheaper than operating on every RGB pixel.",
+  "commonMistakes": [
+    "Saying latent diffusion is just image compression without a generative denoising model.",
+    "Ignoring reconstruction limits of the autoencoder.",
+    "Mixing latent scales/codecs from incompatible checkpoints."
+  ],
+  "followUps": [
+    "Why latent instead of pixel diffusion?",
+    "What does the VAE do in Stable Diffusion?",
+    "How does conditioning enter?",
+    "What information can the bottleneck lose?"
+  ],
+  "production": "Cache/optimize autoencoder and denoiser separately, version latent codec with the model, and benchmark decode quality plus end-to-end latency.",
+  "visual": {
+    "type": "flow",
+    "title": "Latent diffusion",
+    "items": [
+      "Image",
+      "Encoder",
+      "Compact latent",
+      "Diffusion in latent space",
+      "Decoder",
+      "Image"
+    ],
+    "caption": "Moving diffusion from pixel space into a compressed latent space reduces compute while preserving generative capacity.",
+    "accent": 2,
+    "orientation": "horizontal"
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

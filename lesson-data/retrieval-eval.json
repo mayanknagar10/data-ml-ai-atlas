@@ -1,0 +1,45 @@
+{
+  "slug": "retrieval-eval",
+  "title": "MRR, MAP, Recall@K & NDCG",
+  "module": "ir",
+  "priority": "very-high",
+  "roles": [
+    "ds"
+  ],
+  "interviewAnswer": "Retrieval metrics depend on whether you care about finding any relevant result, all relevant results, or graded relevance near the top. MRR emphasizes first relevant rank; NDCG rewards graded relevance with position discount.",
+  "keyPoints": [
+    "Define relevance judgments first.",
+    "Recall@K matters for candidate stages.",
+    "NDCG supports graded relevance."
+  ],
+  "resources": [
+    "ir-book"
+  ],
+  "featured": true,
+  "why": "MRR, MAP, Recall@K & NDCG appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
+  "intuition": "Define relevance judgments first.",
+  "deepDive": "Retrieval metrics depend on whether you care about finding any relevant result, all relevant results, or graded relevance near the top. MRR emphasizes first relevant rank; NDCG rewards graded relevance with position discount. Recall@K matters for candidate stages. NDCG supports graded relevance. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
+  "workedExample": "For support search, first-answer usefulness may make MRR important; for RAG candidate retrieval, Recall@K may dominate.",
+  "commonMistakes": [
+    "Applying the method without checking its assumptions or data-generating process.",
+    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+  ],
+  "followUps": [
+    "What assumptions does MRR, MAP, Recall@K & NDCG make?",
+    "How would you validate or debug MRR, MAP, Recall@K & NDCG in practice?"
+  ],
+  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "visual": {
+    "type": "concept-map",
+    "title": "MRR, MAP, Recall@K & NDCG",
+    "items": [
+      "Define relevance judgments first.",
+      "Recall@K matters for candidate stages.",
+      "NDCG supports graded relevance."
+    ],
+    "caption": "A compact concept map for the most important ideas in this lesson."
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

@@ -1,0 +1,37 @@
+{
+  "slug": "data-formats",
+  "title": "CSV vs Parquet vs Avro",
+  "module": "data-eng",
+  "priority": "high",
+  "roles": [
+    "de",
+    "ds"
+  ],
+  "interviewAnswer": "CSV is simple text but lacks strong types/efficient analytics; Parquet is columnar for analytical scans; Avro is row-oriented with schemas and is common for event serialization.",
+  "keyPoints": [
+    "Choose based on access pattern.",
+    "Schema evolution differs.",
+    "Compression and predicate pushdown matter."
+  ],
+  "resources": [
+    "spark",
+    "confluent-kafka"
+  ],
+  "featured": false,
+  "why": "CSV vs Parquet vs Avro is a recurring foundation across data science and machine learning because it affects both theoretical correctness and practical system behavior.",
+  "intuition": "Choose based on access pattern.",
+  "deepDive": "CSV is simple text but lacks strong types/efficient analytics; Parquet is columnar for analytical scans; Avro is row-oriented with schemas and is common for event serialization. Schema evolution differs. Compression and predicate pushdown matter. The interview-level skill is not merely recalling the definition: explain the assumptions, what diagnostic evidence you would inspect, and what alternative you would choose when those assumptions fail.",
+  "workedExample": "Use Avro for Kafka events and Parquet for analytical history in object storage.",
+  "commonMistakes": [
+    "Using the concept mechanically without checking assumptions or data semantics.",
+    "Reporting one metric/result without examining uncertainty, slices or failure modes."
+  ],
+  "followUps": [
+    "What assumptions or limitations does CSV vs Parquet vs Avro have?",
+    "How would you validate CSV vs Parquet vs Avro on a real dataset?"
+  ],
+  "production": "In production, make assumptions explicit, validate on representative slices, compare with a simple baseline and monitor the signals that can drift.",
+  "editorial": {
+    "status": "summary"
+  }
+}

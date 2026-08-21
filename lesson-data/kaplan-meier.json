@@ -1,0 +1,98 @@
+{
+  "slug": "kaplan-meier",
+  "title": "Kaplan–Meier Estimator & Log-rank Test",
+  "module": "survival",
+  "priority": "high",
+  "roles": [
+    "ds",
+    "da"
+  ],
+  "interviewAnswer": "Kaplan–Meier estimates the survival curve nonparametrically by multiplying conditional survival probabilities at event times. The log-rank test compares survival curves across groups under assumptions.",
+  "keyPoints": [
+    "Handles right censoring.",
+    "Median survival comes from S(t)=0.5 when reached.",
+    "Curves can cross, complicating simple comparisons."
+  ],
+  "resources": [
+    "lifelines"
+  ],
+  "featured": false,
+  "why": "Kaplan–Meier Estimator & Log-rank Test appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
+  "intuition": "Handles right censoring.",
+  "deepDive": "Kaplan–Meier estimates the survival curve nonparametrically by multiplying conditional survival probabilities at event times. The log-rank test compares survival curves across groups under assumptions. Median survival comes from S(t)=0.5 when reached. Curves can cross, complicating simple comparisons. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
+  "workedExample": "Compare retention survival for two acquisition channels while accounting for recent users who have not yet churned.",
+  "commonMistakes": [
+    "Applying the method without checking its assumptions or data-generating process.",
+    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+  ],
+  "followUps": [
+    "What assumptions does Kaplan–Meier Estimator & Log-rank Test make?",
+    "How would you validate or debug Kaplan–Meier Estimator & Log-rank Test in practice?"
+  ],
+  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "lab": {
+    "goal": "Fit and inspect a Kaplan–Meier survival curve.",
+    "language": "python",
+    "buildIt": "import numpy as np\nt=np.array([1,2,2,3,5],float); e=np.array([1,1,0,1,0])\ns=1.0\nfor time in sorted(set(t[e==1])):\n    at_risk=(t>=time).sum(); events=((t==time)&(e==1)).sum(); s*=1-events/at_risk\n    print(time,s)",
+    "useIt": "from lifelines import KaplanMeierFitter\nkm=KaplanMeierFitter().fit(t,event_observed=e)\nprint(km.survival_function_)",
+    "shipIt": "Production survival dashboards should define event/censoring rules, cohort entry, timezone/window semantics and delayed labels explicitly.",
+    "verifyIt": "assert 0 <= s <= 1"
+  },
+  "visual": {
+    "type": "curve",
+    "title": "Kaplan–Meier survival curve",
+    "series": [
+      {
+        "label": "survival",
+        "points": [
+          [
+            0,
+            1
+          ],
+          [
+            0.16,
+            0.92
+          ],
+          [
+            0.16,
+            0.84
+          ],
+          [
+            0.34,
+            0.84
+          ],
+          [
+            0.34,
+            0.7
+          ],
+          [
+            0.56,
+            0.7
+          ],
+          [
+            0.56,
+            0.52
+          ],
+          [
+            0.8,
+            0.52
+          ],
+          [
+            0.8,
+            0.36
+          ],
+          [
+            1,
+            0.36
+          ]
+        ]
+      }
+    ],
+    "caption": "The Kaplan–Meier estimator decreases stepwise at observed events while accounting for censoring.",
+    "xLabel": "time",
+    "yLabel": "survival probability"
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

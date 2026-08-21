@@ -1,0 +1,53 @@
+{
+  "slug": "receptive-field",
+  "title": "Receptive Field",
+  "module": "cv",
+  "priority": "high",
+  "roles": [
+    "cv",
+    "mle",
+    "as"
+  ],
+  "interviewAnswer": "A unit’s receptive field is the input region that can influence it. Deeper layers, larger kernels, stride and dilation increase receptive field and therefore spatial context.",
+  "keyPoints": [
+    "Effective vs theoretical",
+    "Stride",
+    "Dilation",
+    "Context vs detail"
+  ],
+  "resources": [
+    "stanford-cs231n",
+    "mit-6s191"
+  ],
+  "featured": false,
+  "why": "Receptive field explains how CNN features gather spatial context and why architecture choices affect fine details versus global structure.",
+  "intuition": "A feature in a deep layer “sees” a region of the original image. Deeper layers, larger kernels, stride and dilation increase that region.",
+  "deepDive": "Theoretical receptive field accumulates through layers, but the effective receptive field may be smaller/nonuniform. Stride/pooling enlarge field faster while reducing spatial resolution. Dilation enlarges context without the same parameter count. For segmentation/reconstruction, balancing global context with local detail motivates skip connections and multi-scale architectures.",
+  "workedExample": "Two stacked 3×3 stride-1 convolutions give a 5×5 theoretical receptive field; adding a stride-2 layer makes each subsequent feature cover input positions farther apart.",
+  "commonMistakes": [
+    "Equating receptive field with kernel size of one layer.",
+    "Assuming every pixel inside the theoretical field contributes equally.",
+    "Increasing stride without considering lost detail."
+  ],
+  "followUps": [
+    "How does dilation affect receptive field?",
+    "Why use pooling/stride?",
+    "Why U-Net skip connections?",
+    "What is effective receptive field?"
+  ],
+  "production": "For large images/3D patches, receptive field determines whether the model has enough contextual information; patch sizes and tiling overlap must match it.",
+  "visual": {
+    "type": "layers",
+    "title": "Receptive field growth",
+    "items": [
+      "Layer 1 · small patch",
+      "Layer 2 · wider context",
+      "Layer 3 · larger context",
+      "Deep feature · broad context"
+    ],
+    "caption": "Stacking convolutions increases the input region that can influence a feature."
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

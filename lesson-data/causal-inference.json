@@ -1,0 +1,46 @@
+{
+  "slug": "causal-inference",
+  "title": "Causal Inference vs Prediction",
+  "module": "causal",
+  "priority": "high",
+  "roles": [
+    "ds",
+    "as"
+  ],
+  "interviewAnswer": "Prediction asks what will happen; causal inference asks what would happen if we intervene. A predictive feature can be highly correlated with an outcome without being a valid lever. Causal answers require assumptions about treatment assignment, confounding and counterfactuals.",
+  "keyPoints": [
+    "prediction ≠ causation",
+    "treatment/outcome",
+    "counterfactual",
+    "identification assumptions"
+  ],
+  "resources": [
+    "causal-neal",
+    "causal-mixtape"
+  ],
+  "featured": true,
+  "why": "Data Scientists are often asked “will X happen?” and “will changing X cause Y?” Those are different questions and require different validation.",
+  "intuition": "For each unit, causality imagines two potential outcomes—under treatment and under control—but we can observe only one. Experimental randomization or credible identification assumptions help estimate the missing counterfactual.",
+  "deepDive": "Randomized controlled trials balance confounders in expectation. With observational data, DAGs and designs such as matching, difference-in-differences or instrumental variables may identify effects under stronger assumptions.",
+  "workedExample": "A churn model may find support calls predict cancellation. Reducing support calls is not necessarily a causal intervention; both could be caused by underlying product problems.",
+  "commonMistakes": [
+    "Interpreting feature importance as causal effect.",
+    "Controlling for every available variable, including colliders or post-treatment variables."
+  ],
+  "followUps": [
+    "Why does randomization help causal inference?",
+    "What is a confounder?"
+  ],
+  "production": "Causal decisions should document assumptions and sensitivity; production recommendation/policy systems should not turn predictive correlations into interventions without evidence.",
+  "math": "Individual treatment effect: Y_i(1)-Y_i(0), but only one potential outcome is observed for each unit.",
+  "lab": {
+    "goal": "Simulate confounding to show prediction is not intervention.",
+    "language": "python",
+    "buildIt": "import numpy as np\nrng=np.random.default_rng(0); n=10000\nability=rng.normal(size=n)\ntraining=(ability+rng.normal(size=n)>.3).astype(int)\nsalary=2*ability + 1.5*training + rng.normal(size=n)\nnaive=salary[training==1].mean()-salary[training==0].mean()\nprint('naive association',naive,'true treatment effect',1.5)\n",
+    "useIt": "# Adjust for the confounder with a simple regression.\nfrom sklearn.linear_model import LinearRegression\nX=np.c_[training,ability]; m=LinearRegression().fit(X,salary)\nprint('adjusted training coefficient',m.coef_[0])\n",
+    "verifyIt": "assert abs(m.coef_[0]-1.5)<.1\nassert naive>m.coef_[0]\n"
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

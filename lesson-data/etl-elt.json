@@ -1,0 +1,65 @@
+{
+  "slug": "etl-elt",
+  "title": "ETL vs ELT",
+  "module": "data-eng",
+  "priority": "very-high",
+  "roles": [
+    "de",
+    "ds",
+    "mle"
+  ],
+  "interviewAnswer": "ETL transforms data before loading it into the target system; ELT loads raw data first and transforms within a powerful warehouse/lakehouse. Choice depends on governance, scale, latency and platform.",
+  "keyPoints": [
+    "Extract/transform/load",
+    "Warehouse compute",
+    "Raw-zone retention",
+    "Governance"
+  ],
+  "resources": [
+    "made-with-ml",
+    "confluent-kafka",
+    "flink",
+    "spark"
+  ],
+  "featured": false,
+  "why": "ETL vs ELT tests whether you understand where transformations happen and how modern data platforms trade control, scalability and governance.",
+  "intuition": "ETL transforms data before it reaches the analytical destination. ELT loads raw data first and transforms inside the warehouse/lakehouse using its compute.",
+  "deepDive": "ETL is useful when destination constraints, privacy or standardization require processing before load. ELT preserves raw data and exploits scalable warehouse compute, improving reprocessing/flexibility. Real systems are often hybrid. The important design questions are lineage, schema evolution, idempotency, data quality, cost and whether transformations need to support both batch and near-real-time consumers.",
+  "workedExample": "An ADF pipeline can extract relational tables, apply SQL transformations and load curated outputs—ETL. A lakehouse workflow might first land raw files, then use Spark/SQL models inside the platform—ELT.",
+  "commonMistakes": [
+    "Saying ELT is always newer/better.",
+    "Ignoring governance and sensitive fields when landing raw data.",
+    "Treating ETL/ELT as only a tool choice rather than a data-flow architecture choice."
+  ],
+  "followUps": [
+    "When would you prefer ETL?",
+    "Why is ELT common in cloud warehouses?",
+    "How do you make pipelines idempotent?",
+    "How do you handle schema changes?"
+  ],
+  "production": "Track lineage, source timestamps, row counts, checksums and quality expectations at each stage. Backfills and retries should not duplicate or corrupt downstream data.",
+  "visual": {
+    "type": "compare",
+    "title": "ETL vs ELT",
+    "left": {
+      "title": "ETL",
+      "items": [
+        "Extract",
+        "Transform before loading",
+        "Load curated output"
+      ]
+    },
+    "right": {
+      "title": "ELT",
+      "items": [
+        "Extract",
+        "Load raw/structured data",
+        "Transform inside warehouse/lakehouse"
+      ]
+    },
+    "caption": "The choice depends on compute location, governance, latency and how many downstream consumers need raw data."
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

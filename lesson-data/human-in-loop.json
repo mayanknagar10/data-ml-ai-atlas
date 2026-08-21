@@ -1,0 +1,53 @@
+{
+  "slug": "human-in-loop",
+  "title": "Human-in-the-Loop & Safe Fallbacks",
+  "module": "ai-safety",
+  "priority": "medium",
+  "roles": [
+    "ds",
+    "mle",
+    "aie"
+  ],
+  "interviewAnswer": "Human-in-the-loop is useful when errors are costly, uncertainty can be detected and a qualified reviewer can actually improve decisions. I define escalation thresholds, what context the human sees, and a safe fallback when the model or reviewer is unavailable.",
+  "keyPoints": [
+    "escalation",
+    "uncertainty",
+    "review UX",
+    "safe fallback"
+  ],
+  "resources": [
+    "nist-ai-rmf",
+    "google-rules-ml"
+  ],
+  "featured": false,
+  "why": "Adding a human checkbox does not automatically make a system safe; poor alert quality can create automation bias or reviewer fatigue.",
+  "intuition": "Use humans where judgment changes the outcome, not as decoration after the model already acted.",
+  "deepDive": "Escalation can be based on confidence, novelty, policy category or consequence. Review interfaces should expose evidence and allow disagreement. Measure human+AI performance, not model performance alone.",
+  "workedExample": "An engineering failure classifier can auto-handle obvious safe cases, escalate borderline/high-risk cases, and default to conservative behavior if inference is unavailable.",
+  "commonMistakes": [
+    "Escalating so many cases that reviewers rubber-stamp them.",
+    "Assuming model confidence is perfectly calibrated."
+  ],
+  "followUps": [
+    "How do you choose an escalation threshold?",
+    "What is automation bias?"
+  ],
+  "production": "Track queue size, override rate, reviewer agreement and post-review outcomes; overload needs a graceful conservative mode.",
+  "visual": {
+    "type": "flow",
+    "title": "Human-in-the-loop decision",
+    "items": [
+      "Model prediction",
+      "Confidence / risk gate",
+      "Human review when needed",
+      "Final action",
+      "Feedback captured"
+    ],
+    "caption": "Human review is most useful when routing rules are explicit and feedback returns to the system.",
+    "accent": 2,
+    "orientation": "horizontal"
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

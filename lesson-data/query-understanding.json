@@ -1,0 +1,35 @@
+{
+  "slug": "query-understanding",
+  "title": "Query Understanding: Spelling, Intent & Filters",
+  "module": "ir",
+  "priority": "high",
+  "roles": [
+    "ds"
+  ],
+  "interviewAnswer": "Search quality often improves before retrieval by normalizing queries, correcting spelling, identifying entities/intent and extracting structured filters. Query rewriting must preserve user intent.",
+  "keyPoints": [
+    "Exact identifiers should not be “corrected” like prose.",
+    "Filters can improve precision dramatically.",
+    "Log query reformulations as feedback."
+  ],
+  "resources": [
+    "ir-book"
+  ],
+  "featured": false,
+  "why": "Query Understanding: Spelling, Intent & Filters is a recurring foundation across data science and machine learning because it affects both theoretical correctness and practical system behavior.",
+  "intuition": "Exact identifiers should not be “corrected” like prose.",
+  "deepDive": "Search quality often improves before retrieval by normalizing queries, correcting spelling, identifying entities/intent and extracting structured filters. Query rewriting must preserve user intent. Filters can improve precision dramatically. Log query reformulations as feedback. The interview-level skill is not merely recalling the definition: explain the assumptions, what diagnostic evidence you would inspect, and what alternative you would choose when those assumptions fail.",
+  "workedExample": "Parse “red M8 bolt 50mm” into lexical terms plus product/color/size filters.",
+  "commonMistakes": [
+    "Using the concept mechanically without checking assumptions or data semantics.",
+    "Reporting one metric/result without examining uncertainty, slices or failure modes."
+  ],
+  "followUps": [
+    "What assumptions or limitations does Query Understanding: Spelling, Intent & Filters have?",
+    "How would you validate Query Understanding: Spelling, Intent & Filters on a real dataset?"
+  ],
+  "production": "In production, make assumptions explicit, validate on representative slices, compare with a simple baseline and monitor the signals that can drift.",
+  "editorial": {
+    "status": "summary"
+  }
+}

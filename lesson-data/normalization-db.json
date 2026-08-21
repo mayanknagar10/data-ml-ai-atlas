@@ -1,0 +1,38 @@
+{
+  "slug": "normalization-db",
+  "title": "Database Normalization: 1NF to 3NF",
+  "module": "sql",
+  "priority": "high",
+  "roles": [
+    "de",
+    "ds",
+    "da"
+  ],
+  "interviewAnswer": "Normalization reduces update anomalies by separating facts according to functional dependencies; analytical systems may deliberately denormalize for read performance.",
+  "keyPoints": [
+    "Normalization serves transactional integrity.",
+    "Denormalization serves access patterns.",
+    "Know the grain/key of every table."
+  ],
+  "resources": [
+    "cmu-db",
+    "postgres"
+  ],
+  "featured": false,
+  "why": "Database Normalization: 1NF to 3NF is a recurring foundation across data science and machine learning because it affects both theoretical correctness and practical system behavior.",
+  "intuition": "Normalization serves transactional integrity.",
+  "deepDive": "Normalization reduces update anomalies by separating facts according to functional dependencies; analytical systems may deliberately denormalize for read performance. Denormalization serves access patterns. Know the grain/key of every table. The interview-level skill is not merely recalling the definition: explain the assumptions, what diagnostic evidence you would inspect, and what alternative you would choose when those assumptions fail.",
+  "workedExample": "Store customer details once rather than repeating address columns in every order row.",
+  "commonMistakes": [
+    "Using the concept mechanically without checking assumptions or data semantics.",
+    "Reporting one metric/result without examining uncertainty, slices or failure modes."
+  ],
+  "followUps": [
+    "What assumptions or limitations does Database Normalization: 1NF to 3NF have?",
+    "How would you validate Database Normalization: 1NF to 3NF on a real dataset?"
+  ],
+  "production": "In production, make assumptions explicit, validate on representative slices, compare with a simple baseline and monitor the signals that can drift.",
+  "editorial": {
+    "status": "summary"
+  }
+}

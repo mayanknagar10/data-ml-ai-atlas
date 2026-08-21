@@ -1,0 +1,43 @@
+{
+  "slug": "convexity",
+  "title": "Convexity & Optimization Intuition",
+  "module": "optimization",
+  "priority": "high",
+  "roles": [
+    "ds",
+    "as"
+  ],
+  "interviewAnswer": "A convex objective has no bad local minima: any local minimum is global. Deep networks are non-convex, so optimization relies on practical gradient methods rather than global-optimum guarantees.",
+  "keyPoints": [
+    "Convex set/function",
+    "Local vs global optimum",
+    "Learning rate",
+    "Conditioning"
+  ],
+  "resources": [
+    "stanford-cs229",
+    "mit-linear-algebra",
+    "3b1b-linear-algebra"
+  ],
+  "featured": false,
+  "why": "Convexity explains why some optimization problems are globally well-behaved while deep-network training is not.",
+  "intuition": "A convex bowl has no deceptive local valleys: the line segment between two points stays above the function, and any local minimum is global.",
+  "deepDive": "For differentiable convex f, f(y)≥f(x)+∇f(x)ᵀ(y-x). Strong convexity gives curvature bounds and faster guarantees. Linear/logistic regression with suitable losses can be convex in parameters, while neural networks are highly non-convex. Non-convex does not mean impossible; gradient methods can still find useful solutions in overparameterized landscapes.",
+  "math": "Convex: f(θx+(1-θ)y) ≤ θf(x)+(1-θ)f(y), θ∈[0,1]",
+  "workedExample": "Least-squares linear regression has a convex quadratic objective; changing initialization does not create distinct bad local minima in the same way a deep network can.",
+  "commonMistakes": [
+    "Saying convex functions are always easy regardless of conditioning/scale.",
+    "Calling every smooth loss convex.",
+    "Assuming non-convex training necessarily gets stuck in poor local minima."
+  ],
+  "followUps": [
+    "Convex vs strongly convex?",
+    "Why is linear regression convex?",
+    "Is logistic regression convex?",
+    "What does condition number affect?"
+  ],
+  "production": "Convex baselines are valuable for reliability and debugging; if a complex model barely beats one, production complexity may not be justified.",
+  "editorial": {
+    "status": "summary"
+  }
+}

@@ -1,0 +1,50 @@
+{
+  "slug": "cdc",
+  "title": "Change Data Capture (CDC)",
+  "module": "data-eng",
+  "priority": "high",
+  "roles": [
+    "de",
+    "mle"
+  ],
+  "interviewAnswer": "CDC captures inserts, updates and deletes from source systems so downstream stores can update incrementally without repeated full extracts. Log-based CDC is common for low-latency replication.",
+  "keyPoints": [
+    "Ordering and schema changes matter.",
+    "Deletes/tombstones need explicit handling.",
+    "Exactly-once downstream effects require idempotency/transactions."
+  ],
+  "resources": [
+    "confluent-kafka",
+    "dbt-docs"
+  ],
+  "featured": false,
+  "why": "Change Data Capture (CDC) is a recurring foundation across data science and machine learning because it affects both theoretical correctness and practical system behavior.",
+  "intuition": "Ordering and schema changes matter.",
+  "deepDive": "CDC captures inserts, updates and deletes from source systems so downstream stores can update incrementally without repeated full extracts. Log-based CDC is common for low-latency replication. Deletes/tombstones need explicit handling. Exactly-once downstream effects require idempotency/transactions. The interview-level skill is not merely recalling the definition: explain the assumptions, what diagnostic evidence you would inspect, and what alternative you would choose when those assumptions fail.",
+  "workedExample": "Stream database order changes into a warehouse/lake rather than reloading the entire orders table nightly.",
+  "commonMistakes": [
+    "Using the concept mechanically without checking assumptions or data semantics.",
+    "Reporting one metric/result without examining uncertainty, slices or failure modes."
+  ],
+  "followUps": [
+    "What assumptions or limitations does Change Data Capture (CDC) have?",
+    "How would you validate Change Data Capture (CDC) on a real dataset?"
+  ],
+  "production": "In production, make assumptions explicit, validate on representative slices, compare with a simple baseline and monitor the signals that can drift.",
+  "visual": {
+    "type": "flow",
+    "title": "Change data capture",
+    "items": [
+      "Operational DB log",
+      "CDC connector",
+      "Event stream",
+      "Downstream lake/warehouse/cache"
+    ],
+    "caption": "CDC publishes inserts/updates/deletes incrementally instead of repeatedly rescanning entire source tables.",
+    "accent": 2,
+    "orientation": "horizontal"
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

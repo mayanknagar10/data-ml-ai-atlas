@@ -1,0 +1,69 @@
+{
+  "slug": "production-ml-pipeline",
+  "title": "Production ML Pipeline",
+  "module": "mlops",
+  "priority": "very-high",
+  "roles": [
+    "mle",
+    "aie",
+    "ds"
+  ],
+  "interviewAnswer": "A production ML pipeline reliably connects data ingestion and validation to preprocessing, training, evaluation, model registration, deployment, inference and monitoring. The key difference from a notebook is repeatability, observability and failure handling.",
+  "keyPoints": [
+    "Data → train → registry → deploy",
+    "Reproducibility",
+    "Automation",
+    "Monitoring"
+  ],
+  "resources": [
+    "stanford-cs329s",
+    "fsdl",
+    "made-with-ml",
+    "google-rules-ml"
+  ],
+  "featured": true,
+  "why": "This is the bridge from “I can train a model” to “I can operate a reliable ML product.”",
+  "intuition": "Think of two connected loops: the training loop produces a versioned model artifact; the serving loop loads that artifact to produce predictions. Monitoring feeds evidence back into the next training iteration.",
+  "deepDive": "A mature pipeline covers ingestion/validation, preprocessing, training, evaluation gates, experiment tracking, model registry, packaging, deployment, inference, observability and rollback. Some systems add feature stores, labeling queues and automated retraining; only add complexity when requirements justify it.",
+  "math": "No single equation—the key is interface contracts and reproducibility across stages.",
+  "code": "# Conceptual stages\nvalidate_data()\nX = preprocess(raw)\nmodel = train(X)\nmetrics = evaluate(model, validation)\nif passes_gate(metrics):\n    version = registry.register(model, metrics)\n    deploy(version)\nmonitor(version)",
+  "commonMistakes": [
+    "Drawing a pipeline that ends at “deploy model” with no monitoring/rollback.",
+    "Putting training notebooks directly behind an API.",
+    "Recomputing preprocessing differently at serving time."
+  ],
+  "followUps": [
+    "Batch vs online serving?",
+    "Where does Docker fit?",
+    "How do you version data/model/code?",
+    "How do you detect drift?"
+  ],
+  "production": "Keep training and serving contracts explicit. Version artifacts, define SLOs, centralize logs/metrics, and design rollback before the first risky release.",
+  "workedExample": "For a heavy 3D reconstruction model, the production serving path may be an asynchronous GPU batch job rather than a low-latency endpoint.",
+  "lab": {
+    "goal": "Sketch a reproducible train/register/serve contract with explicit artifacts.",
+    "language": "python",
+    "buildIt": "from dataclasses import dataclass\n@dataclass\nclass ModelArtifact:\n    version:str; feature_schema:str; metric:float; uri:str\n\ndef promote(a, min_metric=.80):\n    if a.metric < min_metric: raise ValueError('quality gate failed')\n    return {'production_version':a.version,'artifact_uri':a.uri}\n",
+    "useIt": "a=ModelArtifact('v17','features-v3',.84,'s3://models/v17/model.pt')\nprint(promote(a))\n",
+    "verifyIt": "try: promote(ModelArtifact('bad','v3',.4,'x'))\nexcept ValueError: pass\nelse: raise AssertionError('quality gate should fail')\n"
+  },
+  "visual": {
+    "type": "flow",
+    "title": "Production ML lifecycle",
+    "items": [
+      "Data ingestion",
+      "Validation / features",
+      "Train + evaluate",
+      "Registry",
+      "Deploy",
+      "Monitor",
+      "Feedback / retrain"
+    ],
+    "caption": "Production ML is a continuous system around the model, not only a training script.",
+    "accent": 3,
+    "orientation": "horizontal"
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

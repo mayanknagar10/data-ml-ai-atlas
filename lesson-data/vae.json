@@ -1,0 +1,60 @@
+{
+  "slug": "vae",
+  "title": "Autoencoders & VAEs",
+  "module": "genai",
+  "priority": "high",
+  "roles": [
+    "genai",
+    "cv",
+    "as"
+  ],
+  "interviewAnswer": "A standard autoencoder learns a compressed code for reconstruction. A VAE regularizes the latent distribution and samples from it, enabling generation but introducing a reconstruction–regularization trade-off.",
+  "keyPoints": [
+    "Encoder/decoder",
+    "Latent variable",
+    "KL term",
+    "Reparameterization"
+  ],
+  "resources": [
+    "mit-6s191",
+    "statquest",
+    "stanford-cs336",
+    "deep-learning-book"
+  ],
+  "featured": false,
+  "why": "VAEs introduce probabilistic latent-variable models, reconstruction–regularization trade-offs and the reparameterization trick.",
+  "intuition": "An encoder predicts a distribution over latent codes rather than one fixed code. Sample a latent, decode it, and regularize the latent distribution so nearby codes form a usable generative space.",
+  "deepDive": "The VAE maximizes an evidence lower bound: expected reconstruction log-likelihood minus KL divergence between approximate posterior q(z|x) and prior p(z). Reparameterization z=μ+σ⊙ε makes sampling differentiable with respect to μ/σ. Strong KL pressure can cause posterior collapse; weak pressure yields poor prior sampling. Output likelihood determines the reconstruction term.",
+  "math": "ELBO = E_{q(z|x)}[log p(x|z)] - KL(q(z|x)||p(z))\nz=μ+σ⊙ε, ε~N(0,I)",
+  "workedExample": "A VAE can interpolate smoothly between latent codes and sample from a known prior, but reconstructions may be blurrier than adversarial/perceptual models.",
+  "code": "mu, logvar = encoder(x)\nstd=(0.5*logvar).exp(); z=mu+std*torch.randn_like(std)\nxhat=decoder(z)",
+  "commonMistakes": [
+    "Calling a VAE deterministic.",
+    "Forgetting the KL term/why it exists.",
+    "Using MSE reconstruction blindly without considering data likelihood."
+  ],
+  "followUps": [
+    "Why reparameterization?",
+    "What is KL divergence doing?",
+    "VAE vs autoencoder?",
+    "What is posterior collapse?"
+  ],
+  "production": "VAEs provide compact latent representations and uncertainty-friendly generation, but validate latent stability and reconstruction quality under domain shift.",
+  "visual": {
+    "type": "flow",
+    "title": "Variational autoencoder",
+    "items": [
+      "Input x",
+      "Encoder → μ,σ",
+      "Sample latent z",
+      "Decoder",
+      "Reconstruction"
+    ],
+    "caption": "A VAE learns a structured latent distribution by combining reconstruction quality with a KL regularization term.",
+    "accent": 2,
+    "orientation": "horizontal"
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

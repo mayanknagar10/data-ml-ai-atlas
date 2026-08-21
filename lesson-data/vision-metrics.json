@@ -1,0 +1,55 @@
+{
+  "slug": "vision-metrics",
+  "title": "PSNR, SSIM, LPIPS & FID",
+  "module": "cv",
+  "priority": "very-high",
+  "roles": [
+    "cv",
+    "genai",
+    "as"
+  ],
+  "interviewAnswer": "PSNR measures pixel-level fidelity, SSIM compares structural similarity, LPIPS uses deep features for perceptual similarity, and FID compares distributions of generated and real features. No single metric captures physical correctness.",
+  "keyPoints": [
+    "Pairwise vs distributional metrics",
+    "Metric/task alignment",
+    "Human/domain evaluation",
+    "Do not overinterpret FID"
+  ],
+  "resources": [
+    "stanford-cs231n",
+    "mit-6s191"
+  ],
+  "featured": false,
+  "why": "Image reconstruction/generation interviews often probe whether you know that pixel similarity, perceptual quality and distributional realism are different objectives.",
+  "intuition": "PSNR asks how close pixels are, SSIM compares local structural patterns, LPIPS compares deep perceptual features, and FID compares feature distributions across sets of images.",
+  "deepDive": "PSNR is a logarithmic transform of MSE and rewards pixel fidelity. SSIM uses luminance/contrast/structure comparisons. LPIPS measures distance in pretrained deep feature spaces and often aligns better with perception. FID fits Gaussians to Inception features of real/generated image sets and compares their means/covariances; it is distribution-level and sensitive to sample size/domain mismatch. None guarantees physical correctness for scientific images.",
+  "math": "PSNR = 10 log10(MAX²/MSE)\nFID = ||μ_r-μ_g||² + Tr(Σ_r+Σ_g-2(Σ_rΣ_g)^{1/2})",
+  "workedExample": "A slightly shifted reconstruction can have poor PSNR despite looking perceptually similar; a generative model can have good FID while failing to reproduce the exact input. Choose metrics to match the task.",
+  "code": "# PSNR from MSE for images normalized to [0,1]\nimport math\npsnr = 10*math.log10(1.0/mse)",
+  "commonMistakes": [
+    "Using FID for one image pair.",
+    "Interpreting high PSNR as proof of physical validity.",
+    "Comparing FID values computed with different feature pipelines/sample counts as if directly equivalent."
+  ],
+  "followUps": [
+    "PSNR vs SSIM?",
+    "Why can diffusion have low PSNR but useful samples?",
+    "What does FID actually compare?",
+    "What metric would you use for scientific microstructures?"
+  ],
+  "production": "Define task-specific acceptance metrics alongside generic image metrics. For scientific/engineering vision, validate domain properties and downstream simulations, not aesthetics alone.",
+  "visual": {
+    "type": "concept-map",
+    "title": "PSNR, SSIM, LPIPS & FID",
+    "items": [
+      "Pairwise vs distributional metrics",
+      "Metric/task alignment",
+      "Human/domain evaluation",
+      "Do not overinterpret FID"
+    ],
+    "caption": "A compact concept map for the most important ideas in this lesson."
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

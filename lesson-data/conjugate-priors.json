@@ -1,0 +1,36 @@
+{
+  "slug": "conjugate-priors",
+  "title": "Conjugate Priors",
+  "module": "bayesian",
+  "priority": "medium",
+  "roles": [
+    "ds",
+    "as"
+  ],
+  "interviewAnswer": "A conjugate prior is chosen so the posterior remains in the same distribution family, giving closed-form updates. It is useful pedagogically and computationally for simple models, though modern Bayesian modeling often uses numerical inference.",
+  "keyPoints": [
+    "Beta-Binomial and Normal-Normal are classic pairs.",
+    "Conjugacy simplifies algebra.",
+    "Convenience should not override sensible prior modeling."
+  ],
+  "resources": [
+    "think-bayes"
+  ],
+  "featured": false,
+  "why": "Conjugate Priors appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
+  "intuition": "Beta-Binomial and Normal-Normal are classic pairs.",
+  "deepDive": "A conjugate prior is chosen so the posterior remains in the same distribution family, giving closed-form updates. It is useful pedagogically and computationally for simple models, though modern Bayesian modeling often uses numerical inference. Conjugacy simplifies algebra. Convenience should not override sensible prior modeling. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
+  "workedExample": "Use Beta prior with Bernoulli conversions to update a conversion-rate posterior analytically.",
+  "commonMistakes": [
+    "Applying the method without checking its assumptions or data-generating process.",
+    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+  ],
+  "followUps": [
+    "What assumptions does Conjugate Priors make?",
+    "How would you validate or debug Conjugate Priors in practice?"
+  ],
+  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "editorial": {
+    "status": "summary"
+  }
+}

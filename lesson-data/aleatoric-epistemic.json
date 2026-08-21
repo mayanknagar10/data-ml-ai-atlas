@@ -1,0 +1,42 @@
+{
+  "slug": "aleatoric-epistemic",
+  "title": "Aleatoric vs Epistemic Uncertainty",
+  "module": "probabilistic-ml",
+  "priority": "high",
+  "roles": [
+    "ds",
+    "as",
+    "mle",
+    "aie"
+  ],
+  "interviewAnswer": "Aleatoric uncertainty comes from irreducible data noise; epistemic uncertainty comes from limited model knowledge and can often be reduced with better data.",
+  "keyPoints": [
+    "Data noise",
+    "Model uncertainty",
+    "OOD behavior",
+    "Decision risk"
+  ],
+  "resources": [
+    "probml-book",
+    "stanford-stats315a"
+  ],
+  "featured": false,
+  "why": "Production systems often need to know when a prediction is uncertain and why.",
+  "intuition": "A noisy sensor can remain ambiguous with infinite data; a model seeing a new population is uncertain because it lacks knowledge.",
+  "deepDive": "The decomposition is model-dependent. Heteroscedastic likelihoods can model aleatoric noise; ensembles/Bayesian methods can approximate epistemic uncertainty.",
+  "math": "",
+  "code": "",
+  "commonMistakes": [
+    "Equating softmax confidence with epistemic uncertainty.",
+    "Claiming all uncertainty disappears with more data."
+  ],
+  "followUps": [
+    "How do ensembles help?",
+    "What happens under shift?"
+  ],
+  "production": "Use uncertainty to trigger abstention, human review or safe fallback.",
+  "workedExample": "A medical model may be uncertain because the scan itself is ambiguous or because the patient population differs from training.",
+  "editorial": {
+    "status": "summary"
+  }
+}

@@ -1,0 +1,57 @@
+{
+  "slug": "data-leakage",
+  "title": "Data Leakage",
+  "module": "evaluation",
+  "priority": "very-high",
+  "roles": [
+    "all"
+  ],
+  "interviewAnswer": "Leakage occurs when training uses information that would not be available at prediction time or when related samples cross data splits. It produces deceptively good offline metrics and poor production performance.",
+  "keyPoints": [
+    "Target leakage",
+    "Temporal leakage",
+    "Preprocessing leakage",
+    "Group leakage"
+  ],
+  "resources": [
+    "google-mlcc",
+    "made-with-ml",
+    "statquest",
+    "sklearn",
+    "google-rules-ml"
+  ],
+  "featured": false,
+  "why": "Leakage creates impressive offline scores and disappointing production models, so interviewers often test whether you can detect it before modeling.",
+  "intuition": "Ask one question for every feature and preprocessing step: would I truly know this information at the exact moment the prediction must be made?",
+  "deepDive": "Target leakage uses information caused by or derived from the outcome. Temporal leakage uses future information. Preprocessing leakage occurs when transformations are fit using validation/test data. Group leakage places correlated samples from the same entity in different splits. Leakage can also enter through data joins, labels created after the event, or duplicate records.",
+  "workedExample": "Predicting hospital readmission using a discharge code written after the patient leaves is target/temporal leakage even if the column looks highly predictive.",
+  "code": "# Safer pattern: split first, fit preprocessing only on train\nfrom sklearn.pipeline import make_pipeline\npipe = make_pipeline(preprocessor, model)\npipe.fit(X_train, y_train)",
+  "commonMistakes": [
+    "Doing feature selection before splitting.",
+    "Allowing future records into training for a historical prediction task.",
+    "Randomly splitting repeated measurements from the same entity."
+  ],
+  "followUps": [
+    "How would you detect leakage?",
+    "What is group leakage?",
+    "Can one-hot encoding leak information?",
+    "How do feature stores prevent point-in-time leakage?"
+  ],
+  "production": "Use point-in-time correct feature generation, lineage, feature timestamps and realistic backtests. Data pipelines should make it hard to accidentally join future information.",
+  "visual": {
+    "type": "flow",
+    "title": "Leakage path",
+    "items": [
+      "Future / target-derived information",
+      "Training features",
+      "Model",
+      "Artificially high validation"
+    ],
+    "caption": "Leakage occurs when information unavailable at prediction time enters training or validation features.",
+    "accent": 0,
+    "orientation": "horizontal"
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

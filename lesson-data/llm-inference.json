@@ -1,0 +1,58 @@
+{
+  "slug": "llm-inference",
+  "title": "LLM Inference: Temperature, Top-p, KV Cache",
+  "module": "llm",
+  "priority": "high",
+  "roles": [
+    "aie"
+  ],
+  "interviewAnswer": "Temperature and top-p affect sampling randomness; the KV cache reuses attention keys/values from previous tokens to avoid recomputing the entire prefix during autoregressive generation.",
+  "keyPoints": [
+    "Sampling vs greedy",
+    "Determinism",
+    "KV memory cost",
+    "Latency"
+  ],
+  "resources": [
+    "stanford-cs336",
+    "hf-llm",
+    "openai-cookbook",
+    "langchain-academy"
+  ],
+  "featured": false,
+  "why": "Inference controls explain output randomness and runtime cost. Temperature/top-p affect token sampling, while KV cache and batching affect performance.",
+  "intuition": "The model produces logits for the next token. Decoding converts logits to probabilities and selects a token; caching reuses attention states from previous tokens so generation does not recompute the whole history.",
+  "deepDive": "Temperature rescales logits before softmax: lower values sharpen the distribution; higher values flatten it. Top-p samples from the smallest token set whose cumulative probability reaches p. Greedy decoding chooses the max token. KV cache stores prior key/value projections for autoregressive attention, reducing repeated compute but consuming memory proportional to layers, sequence length, batch and head dimensions.",
+  "math": "p_i = softmax(z_i / T). Lower T → sharper distribution.",
+  "workedExample": "For deterministic structured extraction, use low temperature and schema constraints. For creative generation, moderate sampling may help. Large context + many concurrent requests can become KV-cache-memory bound even if model weights fit comfortably.",
+  "code": "# conceptual generation settings\ngenerate(temperature=0.2, top_p=0.9, max_new_tokens=300)",
+  "commonMistakes": [
+    "Saying temperature changes model knowledge.",
+    "Treating top-p and temperature as equivalent controls.",
+    "Ignoring KV-cache memory when estimating serving capacity."
+  ],
+  "followUps": [
+    "Temperature 0 vs greedy decoding?",
+    "What does top-p do?",
+    "Why KV cache speeds decoding?",
+    "Prefill vs decode?"
+  ],
+  "production": "Monitor time-to-first-token, tokens/sec, context length, KV-cache utilization and batching efficiency. Decode settings should be task-specific and regression-tested.",
+  "visual": {
+    "type": "flow",
+    "title": "LLM inference path",
+    "items": [
+      "Prompt tokens",
+      "Prefill attention",
+      "KV cache",
+      "Autoregressive decode",
+      "Stream tokens"
+    ],
+    "caption": "Serving separates prompt prefill from token-by-token decode; KV caching avoids recomputing past attention states.",
+    "accent": 2,
+    "orientation": "horizontal"
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

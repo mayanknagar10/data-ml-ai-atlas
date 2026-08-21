@@ -1,0 +1,48 @@
+{
+  "slug": "image-augmentation",
+  "title": "Image Preprocessing & Data Augmentation",
+  "module": "cv",
+  "priority": "very-high",
+  "roles": [
+    "cv",
+    "mle",
+    "as"
+  ],
+  "interviewAnswer": "Image preprocessing standardizes model inputs; augmentation creates plausible label-preserving variation to improve generalization. Augmentations must respect task semantics—horizontal flips are not universally valid.",
+  "keyPoints": [
+    "Normalize consistently between train/serve.",
+    "Geometric/color transforms have domain assumptions.",
+    "Validation/test data should not receive stochastic training augmentation."
+  ],
+  "resources": [
+    "stanford-cs231n",
+    "pytorch"
+  ],
+  "featured": true,
+  "why": "Image Preprocessing & Data Augmentation is a standard part of a broad data/ML curriculum because it changes how models are selected, evaluated or operated in real systems.",
+  "intuition": "Normalize consistently between train/serve.",
+  "deepDive": "Image preprocessing standardizes model inputs; augmentation creates plausible label-preserving variation to improve generalization. Augmentations must respect task semantics—horizontal flips are not universally valid. Geometric/color transforms have domain assumptions. Validation/test data should not receive stochastic training augmentation. A strong answer connects the formal idea to validation, data requirements and failure modes instead of treating the method as a recipe.",
+  "workedExample": "Use crop/color jitter for natural-image classification but avoid flips if left/right orientation carries medical meaning.",
+  "commonMistakes": [
+    "Choosing the technique without checking whether its assumptions match the problem.",
+    "Optimizing an offline metric without checking realistic validation slices or operational constraints."
+  ],
+  "followUps": [
+    "When would you not use Image Preprocessing & Data Augmentation?",
+    "How would you validate or tune Image Preprocessing & Data Augmentation?"
+  ],
+  "production": "In production, validate on realistic slices, track latency/cost when relevant, and monitor for distribution changes or failure modes that the offline metric can hide.",
+  "visual": {
+    "type": "concept-map",
+    "title": "Image Preprocessing & Data Augmentation",
+    "items": [
+      "Normalize consistently between train/serve.",
+      "Geometric/color transforms have domain assumptions.",
+      "Validation/test data should not receive stochastic training augmentation."
+    ],
+    "caption": "A compact concept map for the most important ideas in this lesson."
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

@@ -1,0 +1,104 @@
+{
+  "slug": "compose",
+  "title": "Docker Compose",
+  "module": "cloud",
+  "priority": "high",
+  "roles": [
+    "mle",
+    "de",
+    "aie"
+  ],
+  "interviewAnswer": "Compose defines a multi-container application—such as API, database, Kafka, Redis and workers—in one declarative file. Multiple containers may reuse the same image with different commands.",
+  "keyPoints": [
+    "Services",
+    "Networks",
+    "Volumes",
+    "Depends_on is not readiness"
+  ],
+  "resources": [
+    "docker",
+    "aws-sagemaker",
+    "azure-ml"
+  ],
+  "featured": false,
+  "why": "Docker Compose is a simple way to define and run multi-container applications locally or in small environments.",
+  "intuition": "One YAML file describes services, images/builds, environment variables, networks, volumes and dependencies so the whole stack starts consistently.",
+  "deepDive": "Each service usually runs one container role, but multiple services can share the same image with different commands. Compose creates a default network and DNS by service name. Volumes persist data. depends_on controls startup ordering but does not automatically guarantee application readiness unless health checks/conditions are used appropriately.",
+  "workedExample": "A real-time telemetry platform can run Kafka, Redis, Flink JobManager/TaskManager, a producer, backend API and frontend as separate services; JobManager and TaskManager can still use the same Flink image with different commands.",
+  "code": "services:\n  api:\n    build: ./backend\n    ports: [\"8000:8000\"]\n  redis:\n    image: redis:7",
+  "commonMistakes": [
+    "Assuming one container always requires one unique image.",
+    "Using depends_on as a readiness check.",
+    "Persisting state only inside a container writable layer."
+  ],
+  "followUps": [
+    "Image vs container?",
+    "Compose vs Kubernetes?",
+    "How services communicate?",
+    "What are volumes?"
+  ],
+  "production": "Compose is excellent for local integration/testing; large production systems usually need an orchestrator/platform for health, scaling and rollout.",
+  "visual": {
+    "type": "network",
+    "title": "Docker Compose services",
+    "nodes": [
+      {
+        "id": "ui",
+        "label": "frontend",
+        "x": 0.15,
+        "y": 0.25
+      },
+      {
+        "id": "api",
+        "label": "API",
+        "x": 0.45,
+        "y": 0.25
+      },
+      {
+        "id": "db",
+        "label": "database",
+        "x": 0.78,
+        "y": 0.25
+      },
+      {
+        "id": "worker",
+        "label": "worker",
+        "x": 0.45,
+        "y": 0.72
+      },
+      {
+        "id": "queue",
+        "label": "queue",
+        "x": 0.78,
+        "y": 0.72
+      }
+    ],
+    "edges": [
+      [
+        "ui",
+        "api"
+      ],
+      [
+        "api",
+        "db"
+      ],
+      [
+        "api",
+        "queue"
+      ],
+      [
+        "queue",
+        "worker"
+      ],
+      [
+        "worker",
+        "db"
+      ]
+    ],
+    "caption": "Compose defines multiple containers, networks, volumes and startup dependencies as one local application stack.",
+    "directed": true
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

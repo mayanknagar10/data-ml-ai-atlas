@@ -1,0 +1,50 @@
+{
+  "slug": "partitioning-sharding",
+  "title": "Partitioning & Sharding",
+  "module": "distributed",
+  "priority": "high",
+  "roles": [
+    "de",
+    "mle"
+  ],
+  "interviewAnswer": "Partitioning divides data/work across machines so systems scale. A good partition key balances load and supports common access patterns; skew creates hot partitions.",
+  "keyPoints": [
+    "Hash vs range partitioning.",
+    "Rebalancing has operational cost.",
+    "Cross-partition operations are harder."
+  ],
+  "resources": [
+    "mit-6824",
+    "spark"
+  ],
+  "featured": false,
+  "why": "Partitioning & Sharding appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
+  "intuition": "Hash vs range partitioning.",
+  "deepDive": "Partitioning divides data/work across machines so systems scale. A good partition key balances load and supports common access patterns; skew creates hot partitions. Rebalancing has operational cost. Cross-partition operations are harder. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
+  "workedExample": "Shard event data by hashed customer ID, but watch for a few giant tenants creating skew.",
+  "commonMistakes": [
+    "Applying the method without checking its assumptions or data-generating process.",
+    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+  ],
+  "followUps": [
+    "What assumptions does Partitioning & Sharding make?",
+    "How would you validate or debug Partitioning & Sharding in practice?"
+  ],
+  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "visual": {
+    "type": "flow",
+    "title": "Horizontal sharding",
+    "items": [
+      "Global key space",
+      "Shard function",
+      "Shard A / B / C",
+      "Local storage"
+    ],
+    "caption": "Sharding spreads data across machines by key/range/hash; poor keys create hotspots or cross-shard work.",
+    "accent": 1,
+    "orientation": "horizontal"
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

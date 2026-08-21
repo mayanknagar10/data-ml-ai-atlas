@@ -1,0 +1,59 @@
+{
+  "slug": "aws-ml-map",
+  "title": "Cloud Primitives for Production ML",
+  "module": "cloud",
+  "priority": "very-high",
+  "roles": [
+    "mle",
+    "aie"
+  ],
+  "interviewAnswer": "Cloud ML systems are easier to reason about by capability: object storage for data/artifacts, a container registry, scalable compute, managed training/serving, orchestration, observability, identity/networking and a model/metadata layer. AWS, Azure and GCP expose different products for these same architectural needs.",
+  "keyPoints": [
+    "Object storage",
+    "Container registry",
+    "Training/serving compute",
+    "Observability & identity"
+  ],
+  "resources": [
+    "aws-sagemaker",
+    "aws-ml",
+    "azure-ml",
+    "gcp-vertex",
+    "docker"
+  ],
+  "featured": true,
+  "why": "Cloud architecture becomes portable when you understand capabilities and trade-offs instead of memorizing one provider’s product catalog.",
+  "intuition": "Start from the workload: where data lives, how code is packaged, where training/inference runs, how jobs are triggered, how the system is observed and how access is controlled. Only then choose provider-specific services.",
+  "deepDive": "A production ML stack typically needs durable object storage, a container/image registry, CPU/GPU compute, orchestration, model artifacts/registry, online or batch serving, metrics/logs/traces, IAM/secrets and networking. AWS might use S3/ECR/SageMaker/ECS/EKS/CloudWatch; Azure can combine Blob/ACR/Azure ML/AKS/Monitor; Google Cloud can combine Cloud Storage/Artifact Registry/Vertex AI/GKE or Cloud Run/Cloud Monitoring. These mappings are conceptual, not exact one-to-one equivalents. Managed ML platforms reduce operational burden but may constrain runtime choices or increase platform coupling.",
+  "math": "Capability map: Data/Artifacts → object storage; Images → container registry; Train/Serve → managed ML or container compute; Orchestration → workflow service; Observe → logs/metrics/traces; Secure → IAM/secrets/network policies.",
+  "code": "# Provider-neutral architecture thinking\nrequirements = [\n    \"object_storage\", \"container_registry\", \"training_compute\",\n    \"serving\", \"orchestration\", \"observability\", \"identity\"\n]\n# Choose services only after latency, scale, GPU, governance and cost requirements are known.",
+  "commonMistakes": [
+    "Treating cloud providers as only different user interfaces.",
+    "Choosing a managed ML service before clarifying workload requirements.",
+    "Ignoring IAM, networking, data residency and observability when drawing the ML architecture."
+  ],
+  "followUps": [
+    "When would you use managed ML serving versus Kubernetes/container compute?",
+    "Where should model checkpoints and large artifacts live?",
+    "How would you design rollback across providers?",
+    "Which parts of the architecture should remain portable?"
+  ],
+  "production": "Prefer explicit interfaces between storage, training, serving and monitoring; use least-privilege identities, versioned artifacts, infrastructure-as-code where appropriate, deployment guardrails and cost/latency observability. Portability is a trade-off—use native managed capabilities where they provide clear operational value.",
+  "workedExample": "An image model can store training data and versioned checkpoints in object storage, keep its inference image in a registry, run GPU inference on a managed endpoint or container platform, expose predictions through an API, and send latency/error/model metrics to the cloud observability stack.",
+  "visual": {
+    "type": "schema",
+    "title": "AWS ML platform map",
+    "center": "ML workload",
+    "satellites": [
+      "S3 · data/artifacts",
+      "ECR · images",
+      "SageMaker · train/serve",
+      "ECS/EKS · containers",
+      "CloudWatch · logs/metrics"
+    ],
+    "caption": "Cloud services are building blocks; choose the minimum set that matches the workload rather than memorizing product names."
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

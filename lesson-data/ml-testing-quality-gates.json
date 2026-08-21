@@ -1,0 +1,43 @@
+{
+  "slug": "ml-testing-quality-gates",
+  "title": "ML Testing & Quality Gates",
+  "module": "mlops",
+  "priority": "high",
+  "roles": [
+    "mle",
+    "de",
+    "ds",
+    "aie"
+  ],
+  "interviewAnswer": "ML systems need software tests plus data/model checks such as schema invariants, leakage tests, slice metrics, baseline comparison, latency bounds and deployment gates.",
+  "keyPoints": [
+    "Unit/integration tests",
+    "Data tests",
+    "Model gates",
+    "Critical slices"
+  ],
+  "resources": [
+    "google-rules-ml",
+    "stanford-cs329s",
+    "made-with-ml"
+  ],
+  "featured": false,
+  "why": "Many ML failures are data/interface failures rather than architecture failures.",
+  "intuition": "A service can be healthy while receiving impossible feature values, so API tests alone are insufficient.",
+  "deepDive": "Promotion gates can require schema compatibility, baseline improvement, minimum critical-slice metrics and system constraints before a model becomes deployable.",
+  "math": "",
+  "code": "",
+  "commonMistakes": [
+    "Testing only model code.",
+    "Promoting because one aggregate metric improved."
+  ],
+  "followUps": [
+    "Unit vs integration tests?",
+    "How test nondeterministic training?"
+  ],
+  "production": "Run cheap deterministic checks in CI and heavier validation inside train/deploy pipelines.",
+  "workedExample": "Block a new model if aggregate AUC rises but recall on a critical rare-event slice falls below policy.",
+  "editorial": {
+    "status": "summary"
+  }
+}

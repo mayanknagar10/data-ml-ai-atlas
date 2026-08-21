@@ -1,0 +1,49 @@
+{
+  "slug": "isolation-levels",
+  "title": "Transactions & Isolation Levels",
+  "module": "sql",
+  "priority": "high",
+  "roles": [
+    "de",
+    "mle",
+    "da"
+  ],
+  "interviewAnswer": "Isolation levels trade concurrency against anomalies such as dirty reads, non-repeatable reads and phantoms. Serializable provides the strongest familiar abstraction but may cost throughput/retries.",
+  "keyPoints": [
+    "ACID terms describe different guarantees.",
+    "MVCC is a common implementation technique.",
+    "Application invariants may require stronger handling than default isolation."
+  ],
+  "resources": [
+    "cmu-db",
+    "postgres"
+  ],
+  "featured": false,
+  "why": "Transactions & Isolation Levels is a recurring foundation across data science and machine learning because it affects both theoretical correctness and practical system behavior.",
+  "intuition": "ACID terms describe different guarantees.",
+  "deepDive": "Isolation levels trade concurrency against anomalies such as dirty reads, non-repeatable reads and phantoms. Serializable provides the strongest familiar abstraction but may cost throughput/retries. MVCC is a common implementation technique. Application invariants may require stronger handling than default isolation. The interview-level skill is not merely recalling the definition: explain the assumptions, what diagnostic evidence you would inspect, and what alternative you would choose when those assumptions fail.",
+  "workedExample": "Two concurrent inventory reservations can oversell stock if reads/writes are not coordinated correctly.",
+  "commonMistakes": [
+    "Using the concept mechanically without checking assumptions or data semantics.",
+    "Reporting one metric/result without examining uncertainty, slices or failure modes."
+  ],
+  "followUps": [
+    "What assumptions or limitations does Transactions & Isolation Levels have?",
+    "How would you validate Transactions & Isolation Levels on a real dataset?"
+  ],
+  "production": "In production, make assumptions explicit, validate on representative slices, compare with a simple baseline and monitor the signals that can drift.",
+  "visual": {
+    "type": "layers",
+    "title": "Isolation spectrum",
+    "items": [
+      "Read uncommitted",
+      "Read committed",
+      "Repeatable read",
+      "Serializable"
+    ],
+    "caption": "Higher isolation prevents more anomalies but can reduce concurrency."
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

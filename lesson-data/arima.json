@@ -1,0 +1,61 @@
+{
+  "slug": "arima",
+  "title": "ARIMA / SARIMA",
+  "module": "time-series",
+  "priority": "high",
+  "roles": [
+    "ds",
+    "da",
+    "as"
+  ],
+  "interviewAnswer": "ARIMA combines autoregression, differencing and moving-average error terms. The p,d,q orders control lagged values, differencing and lagged forecast errors; SARIMA adds seasonal equivalents. I use it as a strong interpretable baseline when temporal dependence is meaningful.",
+  "keyPoints": [
+    "AR(p)",
+    "I(d)",
+    "MA(q)",
+    "seasonal extension"
+  ],
+  "resources": [
+    "fpp3",
+    "fpppy",
+    "statsmodels-tsa"
+  ],
+  "featured": false,
+  "why": "ARIMA remains a valuable baseline: transparent, data-efficient and excellent for understanding whether complex models truly add value.",
+  "intuition": "ARIMA predicts the present from a cleaned-up version of the past: first make the series sufficiently stable, then explain it with previous values and previous surprises.",
+  "deepDive": "AR terms model dependence on lagged observations; MA terms model dependence on lagged innovations/residuals. Model selection should combine diagnostics, validation and domain knowledge, not just minimize AIC. Seasonal structure can be represented explicitly with SARIMA.",
+  "workedExample": "If weekly demand depends strongly on the previous two weeks and residual shocks persist one step, ARIMA(2,1,1) might be a candidate after differencing a trend. Validate it against naive seasonal baselines.",
+  "commonMistakes": [
+    "Thinking MA(q) means moving-average smoothing of observations.",
+    "Selecting p,d,q only from ACF/PACF and skipping backtesting."
+  ],
+  "followUps": [
+    "What is the difference between AR and MA?",
+    "Why can a seasonal naive baseline beat ARIMA?"
+  ],
+  "production": "ARIMA is cheap to retrain and explain, making it a useful fallback/baseline even when a production stack later adopts boosted trees or neural forecasting.",
+  "math": "ARIMA(p,d,q): apply d differences, then model with p autoregressive lags and q lagged innovations.",
+  "lab": {
+    "goal": "Fit an ARIMA baseline and inspect forecasts/residuals.",
+    "language": "python",
+    "buildIt": "import numpy as np\nfrom statsmodels.tsa.arima.model import ARIMA\nrng=np.random.default_rng(0); y=np.cumsum(rng.normal(size=120))\ntrain,test=y[:100],y[100:]\nfit=ARIMA(train,order=(1,1,1)).fit(); pred=fit.forecast(len(test))\nprint(pred[:3])\n",
+    "useIt": "from sklearn.metrics import mean_absolute_error\nnaive=np.repeat(train[-1],len(test))\nprint('ARIMA MAE',mean_absolute_error(test,pred),'naive',mean_absolute_error(test,naive))\n",
+    "verifyIt": "assert len(pred)==len(test)\nassert np.isfinite(pred).all()\n"
+  },
+  "visual": {
+    "type": "flow",
+    "title": "ARIMA reasoning",
+    "items": [
+      "Difference if needed",
+      "Model autoregressive lags",
+      "Model lagged errors",
+      "Forecast recursively"
+    ],
+    "caption": "ARIMA combines autoregression, differencing and moving-average error structure.",
+    "accent": 1,
+    "orientation": "horizontal"
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

@@ -1,0 +1,55 @@
+{
+  "slug": "eigen-svd",
+  "title": "Eigenvalues, Eigenvectors & SVD",
+  "module": "math",
+  "priority": "high",
+  "roles": [
+    "ds",
+    "mle",
+    "aie",
+    "as"
+  ],
+  "interviewAnswer": "Eigenvectors are directions preserved by a linear transformation up to scaling. SVD decomposes any matrix into orthogonal directions and singular values, making it useful for compression, PCA intuition and low-rank approximation.",
+  "keyPoints": [
+    "Eigen equation Av=λv",
+    "SVD works for rectangular matrices",
+    "Low-rank approximation",
+    "Connection to PCA"
+  ],
+  "resources": [
+    "mit-linear-algebra",
+    "3b1b-linear-algebra"
+  ],
+  "featured": false,
+  "why": "Eigenvectors/SVD underpin PCA, low-rank approximation, conditioning and many representation/compression methods.",
+  "intuition": "An eigenvector is a direction a square matrix transforms without changing direction, only scale. SVD decomposes any matrix into orthogonal input/output directions with nonnegative strengths.",
+  "deepDive": "For square A, Av=λv. SVD exists for any m×n matrix: A=UΣVᵀ. Singular values rank directions by how strongly the transformation acts. Truncating small singular values gives the best low-rank approximation under common norms and reveals effective dimensionality. For symmetric covariance matrices, PCA eigenvectors correspond to right singular vectors of centered data.",
+  "math": "Av=λv\nA=UΣVᵀ\nRank-k approximation: A_k=U_k Σ_k V_kᵀ",
+  "workedExample": "A dataset with 100 correlated features may have most variance captured by the first 10 singular directions, enabling compression or visualization.",
+  "code": "import numpy as np\nU,S,Vt=np.linalg.svd(X_centered,full_matrices=False)\nX_rank10=U[:,:10]@np.diag(S[:10])@Vt[:10]",
+  "commonMistakes": [
+    "Assuming every matrix has a full set of real eigenvectors.",
+    "Confusing eigenvalues with singular values.",
+    "Using PCA without centering or considering scale."
+  ],
+  "followUps": [
+    "Why does SVD work for rectangular matrices?",
+    "How does SVD relate to PCA?",
+    "What does a small singular value mean?",
+    "What is condition number?"
+  ],
+  "production": "Low-rank methods reduce storage/compute and diagnose redundant representations, but truncation can remove rare yet important directions—validate downstream impact.",
+  "visual": {
+    "type": "layers",
+    "title": "SVD decomposition",
+    "items": [
+      "Vᵀ · input basis",
+      "Σ · scale singular directions",
+      "U · output basis"
+    ],
+    "caption": "SVD decomposes a linear map into orthogonal directions and axis-wise scaling."
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

@@ -1,0 +1,42 @@
+{
+  "slug": "time-series-foundation-models",
+  "title": "Time-Series Foundation Models",
+  "module": "time-series",
+  "priority": "medium",
+  "roles": [
+    "ds",
+    "as",
+    "mle",
+    "aie"
+  ],
+  "interviewAnswer": "Time-series foundation models pretrain on large collections of sequences and adapt or zero-shot forecast new series. They can reduce per-series modeling work, but still need comparison with strong naive/statistical baselines and careful domain-shift evaluation.",
+  "keyPoints": [
+    "Pretraining across series",
+    "Zero/few-shot forecasting",
+    "Probabilistic outputs",
+    "Baseline discipline"
+  ],
+  "resources": [
+    "stanford-cs229",
+    "fpp3"
+  ],
+  "featured": false,
+  "why": "Foundation-model ideas have moved into forecasting and are increasingly relevant to modern applied ML.",
+  "intuition": "Instead of fitting one model from scratch for each SKU or sensor, pretrain broad temporal patterns and adapt to new series.",
+  "deepDive": "Architectures vary—tokenized patches, transformers or pretrained probabilistic decoders—but evaluation must preserve time order and account for horizon, scale and domain mismatch.",
+  "math": "",
+  "code": "",
+  "commonMistakes": [
+    "Assuming a foundation model automatically beats statistical forecasting.",
+    "Evaluating with random splits or mismatched horizons."
+  ],
+  "followUps": [
+    "Global model vs local model?",
+    "How would you fine-tune without leakage?"
+  ],
+  "production": "Benchmark latency/cost, calibration and per-segment accuracy; keep simple fallback forecasts for failure cases.",
+  "workedExample": "A global pretrained model can forecast a newly introduced product with little history, then be compared against seasonal-naive/ETS baselines.",
+  "editorial": {
+    "status": "summary"
+  }
+}

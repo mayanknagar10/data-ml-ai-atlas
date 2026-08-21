@@ -1,0 +1,43 @@
+{
+  "slug": "missing-values",
+  "title": "Missing Values & Outliers",
+  "module": "evaluation",
+  "priority": "high",
+  "roles": [
+    "ds"
+  ],
+  "interviewAnswer": "First ask why values are missing or extreme. Choose deletion, imputation, missingness indicators or robust transformations based on the data-generating process and model, not a blanket rule.",
+  "keyPoints": [
+    "MCAR/MAR/MNAR intuition",
+    "Median vs mean",
+    "Model-specific handling",
+    "Fit preprocessing on train only"
+  ],
+  "resources": [
+    "sklearn",
+    "pandas",
+    "statquest",
+    "google-mlcc"
+  ],
+  "featured": false,
+  "why": "Missing values and outliers are not just cleaning tasks; they often reveal how the data was collected and can encode important operational behavior.",
+  "intuition": "A missing value can mean “measurement failed,” “not applicable,” “user skipped it,” or “data was never collected.” Those meanings lead to different treatments. Outliers can be errors or the most important rare cases.",
+  "deepDive": "MCAR means missingness is unrelated to observed/unobserved values; MAR means missingness can be explained by observed variables; MNAR means it depends on the missing value or unobserved factors. Mean imputation is sensitive to outliers and shrinks variance; median is more robust. Tree models may handle missingness natively. Always fit imputation and outlier thresholds on training data only.",
+  "workedExample": "A missing income field might be informative if high-income users are less likely to disclose it. Blindly filling every missing value with the global mean can erase that signal and create unrealistic data.",
+  "code": "from sklearn.impute import SimpleImputer\nfrom sklearn.pipeline import make_pipeline\npipe=make_pipeline(SimpleImputer(strategy='median', add_indicator=True), model)",
+  "commonMistakes": [
+    "Dropping all rows with any missing value without checking the missingness pattern.",
+    "Using the full dataset to compute imputation values.",
+    "Deleting every statistical outlier even when rare extremes are valid business cases."
+  ],
+  "followUps": [
+    "Mean vs median imputation?",
+    "What are MCAR, MAR and MNAR?",
+    "Would you add a missingness indicator?",
+    "How do tree models handle missing values?"
+  ],
+  "production": "Monitor missingness rates and feature ranges as data-quality signals. A sudden increase can indicate a broken upstream source even before model metrics degrade.",
+  "editorial": {
+    "status": "summary"
+  }
+}

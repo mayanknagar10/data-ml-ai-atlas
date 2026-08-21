@@ -1,0 +1,42 @@
+{
+  "slug": "gaussian-processes",
+  "title": "Gaussian Processes",
+  "module": "probabilistic-ml",
+  "priority": "high",
+  "roles": [
+    "ds",
+    "as",
+    "mle"
+  ],
+  "interviewAnswer": "A Gaussian process defines a distribution over functions using a mean and kernel; conditioning on observations produces a posterior predictive distribution with both mean and uncertainty.",
+  "keyPoints": [
+    "Kernel covariance",
+    "Posterior prediction",
+    "Uncertainty",
+    "Cubic exact scaling"
+  ],
+  "resources": [
+    "stanford-cs229",
+    "probml-book",
+    "sklearn"
+  ],
+  "featured": false,
+  "why": "GPs are canonical nonparametric probabilistic models and useful for small-data uncertainty-aware regression and Bayesian optimization.",
+  "intuition": "Instead of fitting one curve, a GP reasons over many plausible functions and narrows uncertainty near observations.",
+  "deepDive": "Every finite collection of function values is jointly Gaussian; the kernel defines covariance. Exact training solves an n×n covariance system and scales roughly O(n³).",
+  "math": "",
+  "code": "",
+  "commonMistakes": [
+    "Saying GP means Gaussian input features.",
+    "Ignoring kernel choice and scaling."
+  ],
+  "followUps": [
+    "What does the kernel control?",
+    "How do sparse GPs scale?"
+  ],
+  "production": "Use GPs where calibrated local uncertainty matters and data size permits; monitor kernel fit and numerical conditioning.",
+  "workedExample": "With an RBF kernel, uncertainty is narrow near data and widens far from observed inputs.",
+  "editorial": {
+    "status": "summary"
+  }
+}

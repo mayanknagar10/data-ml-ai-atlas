@@ -1,0 +1,176 @@
+{
+  "slug": "python-testing",
+  "title": "Testing ML / Data Code",
+  "module": "python",
+  "priority": "high",
+  "roles": [
+    "mle",
+    "aie"
+  ],
+  "interviewAnswer": "Test ML and data systems in layers: unit-test deterministic transforms and edge cases; validate schemas and invariants on representative data; test numerical properties with justified tolerances; regression-test model outputs or metrics on frozen slices; and integration-test serialization, feature parity, and serving paths. Control randomness and external dependencies, but do not replace production monitoring. A good test names the risk it catches and fails with enough evidence to diagnose it.",
+  "keyPoints": [
+    "Test risks, not implementation trivia",
+    "Tiny adversarial fixtures",
+    "Approximate numerical invariants",
+    "Separate code, data, and model checks",
+    "Monitoring covers what tests cannot"
+  ],
+  "resources": [
+    "pytest-docs",
+    "python-unittest",
+    "made-with-ml",
+    "fsdl"
+  ],
+  "featured": false,
+  "why": "Data code often runs successfully while producing incorrect data. Models can satisfy shape checks while degrading a minority slice. Serialization or preprocessing differences can make offline evaluation irrelevant to serving. A suite therefore needs semantic assertions: row and key contracts, absence of leakage, finiteness, monotonicity, invariance, and metric thresholds with uncertainty. Interviews probe testing because production ML combines conventional software failure with data drift and statistical variation. A precise answer distinguishes deterministic tests from noisy evaluation and explains why tests before deployment and monitoring after deployment are complementary controls.",
+  "intuition": "A test is a small experiment against a claim. Unit tests isolate a deterministic claim; integration tests check contracts between parts; model evaluations estimate behavior over a dataset; monitoring observes the real environment. Use the narrowest experiment that can falsify the risk. A tiny table containing a duplicate key, null, unseen category, boundary timestamp, and constant column often teaches more than a large random fixture whose failure is hard to understand.",
+  "deepDive": "The full explanation is organized into the structured sections below.",
+  "workedExample": "Test a fitted column standardizer for shape, finite output, constant columns, training-only statistics, and a serialization round-trip.",
+  "code": "def test_normalize_constant_column():\n    out=normalize([3.,3.,3.])\n    assert all(np.isfinite(out))\n\ndef test_model_shape(model):\n    y=model(torch.zeros(2,10))\n    assert tuple(y.shape)==(2,1)",
+  "commonMistakes": [
+    {
+      "mistake": "High line coverage means the ML system is well tested.",
+      "correction": "Coverage only reports execution. It does not prove assertions cover leakage, data contracts, numerical properties, model slices, or integration boundaries."
+    },
+    {
+      "mistake": "Set one global seed and every result becomes deterministic.",
+      "correction": "Seeds control specific random streams; parallel hardware, libraries, data order, and external services can remain nondeterministic."
+    },
+    {
+      "mistake": "Mock every dependency in unit tests and integration is covered.",
+      "correction": "Mocks can drift from real contracts. Use local fakes for speed plus contract and integration tests against actual boundaries."
+    }
+  ],
+  "followUps": [
+    {
+      "question": "How do you test a model when exact predictions legitimately change?",
+      "answer": "Test stable invariants and signatures, then compare approved metrics and slices on versioned data with justified tolerances or uncertainty rather than exact arrays everywhere."
+    },
+    {
+      "question": "Where should monkeypatch be applied?",
+      "answer": "Patch the symbol where the code under test looks it up. Prefer explicit dependency injection when the dependency is part of the design."
+    },
+    {
+      "question": "What is a metamorphic test?",
+      "answer": "It checks a known relationship between transformed inputs and outputs when an exact expected result is hard to specify, such as permutation invariance or monotonicity."
+    }
+  ],
+  "production": "Gate releases with fast deterministic tests, schema and lineage checks, artifact compatibility, frozen-slice evaluation, and limited end-to-end paths. Separate slow/GPU suites while ensuring they run before release. Store failure seeds and version every input artifact. After deployment, use shadow or canary comparisons, monitor data and model slices, enforce latency/error budgets, and rehearse rollback. Convert incidents into regression tests and operational monitors with clear owners.",
+  "editorial": {
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "Testing data and machine-learning software requires more than checking a few expected numbers. A useful suite separates deterministic transformation behavior, data contracts, numerical properties, model behavior, component integration, and end-to-end system paths. It also controls nondeterminism without pretending stochastic systems are bit-for-bit stable. This chapter develops a risk-based test strategy using plain assertions and pytest concepts: arrange-act-assert, fixtures with scoped cleanup, parametrization, temporary resources, monkeypatching at the lookup site, approximate comparisons, property and metamorphic checks, golden artifacts, and model regression tests. You will learn why test data should be tiny but adversarial, how to avoid leakage between tests, how to choose tolerances, and how to keep slow or flaky external dependencies out of unit tests. The worked example tests a normalization transform against shape, finiteness, constant-column, and training-statistic invariants. The production perspective connects local tests to schema validation, shadow evaluation, canaries, monitoring, rollback, and incident reproduction. The aim is evidence about failure risk, not a high coverage percentage detached from behavior.",
+  "prerequisites": [
+    "python-data-structures",
+    "numpy-vectorization",
+    "pandas-core"
+  ],
+  "learningObjectives": [
+    "Map risks in data, numerical, model, and system behavior to the cheapest reliable test layer.",
+    "Use fixtures, parametrization, dependency seams, approximate assertions, and metamorphic properties without shared-state leakage.",
+    "Design regression and integration checks that remain deterministic, interpretable, and useful during deployment and rollback."
+  ],
+  "deepSections": [
+    {
+      "id": "test-pyramid",
+      "title": "A risk-based test portfolio",
+      "body": "Unit tests cover pure parsing, feature calculations, shape transformations, loss helpers, and decision rules. They should be fast, deterministic, and local. Contract tests validate interfaces: schema, dtype, units, nullability, ordering, model signature, and serialized format. Integration tests exercise real boundaries such as database adapters, object storage, a feature service, or model loading. A small number of end-to-end tests verify the critical path in an environment close to production.\n\nData validation is not simply another unit assertion. It evaluates a dataset or batch against constraints and distribution expectations. Model regression tests use a frozen dataset and artifact to detect unintended changes in predictions, metrics, calibration, latency, or size. They should not freeze improvement: thresholds and reviewed golden changes distinguish intended updates from accidents. Slice tests expose failures hidden by an aggregate metric.\n\nPrioritize by impact, likelihood, and detectability. Test leakage, label alignment, join cardinality, preprocessing parity, and rollback before cosmetic formatting. Coverage can reveal unexecuted code but does not prove behavioral adequacy. Mutation testing or deliberate fault injection can show whether assertions actually notice a broken branch. Every production incident should yield the cheapest reproducible test or monitor that would have detected it."
+    },
+    {
+      "id": "pytest-mechanics",
+      "title": "Fixtures, parametrization, and dependency control",
+      "body": "pytest discovers test functions and rewrites plain `assert` statements to provide useful failure detail. Parametrization runs one behavior across explicit cases, making boundaries visible without copy-paste. Parameters are passed as-is, so mutable values can leak changes between cases; create fresh objects when mutation is part of the test. Give cases readable IDs so failures identify the scenario.\n\nFixtures provide explicit setup dependencies and can yield a value, then perform teardown. Scope controls lifetime: function scope maximizes isolation; broader scopes can speed expensive stable setup but increase coupling and contamination risk. Prefer small composable fixtures over a global environment. Temporary-path fixtures avoid collisions, and cleanup must run on failures. Use factories when each test needs multiple independently configured objects.\n\nMonkeypatch the name looked up by the code under test, not the function's original definition in an unrelated module. Better still, inject clocks, random generators, clients, and repositories through explicit seams. Fake deterministic boundaries locally; keep separate contract/integration tests against real services. An over-mocked test can pass while components cannot work together. Assert observable results and important interactions, not every internal call sequence, so refactoring does not create noise."
+    },
+    {
+      "id": "numerical-model-tests",
+      "title": "Numerical, stochastic, and model behavior tests",
+      "body": "Floating-point results should usually be compared with absolute and relative tolerances tied to scale, dtype, and algorithm, not an arbitrary large epsilon. Assert shape, dtype, finiteness, and domain bounds before value closeness. Test constant inputs, empty permitted inputs, large magnitude, missing values, and near-boundary decisions. Numerical algorithms often have properties stronger than fixtures: normalized probabilities sum to one, a distance is nonnegative and symmetric, a permutation-equivariant transform changes correspondingly, or increasing a threshold cannot increase the accepted set.\n\nProperty-based tests generate inputs across a domain; metamorphic tests verify relationships when an exact oracle is difficult. They supplement carefully selected examples. Fix a random seed for reproducibility, pass an explicit generator, and store failure seeds. A fixed seed does not make GPU kernels, distributed reductions, or external models universally deterministic. Define acceptable variability and separate a deterministic smoke check from a statistical evaluation repeated over enough examples or seeds.\n\nModel tests can verify signature, serialization round-trip, preprocessing parity, prediction range, known examples, slice metrics, and comparison with an approved baseline. A single metric threshold may be noisy or encourage overfitting to the test set. Record dataset version, confidence or uncertainty, and multiple safety-critical metrics. Never use the test suite's frozen evaluation set to repeatedly tune the model without accounting for adaptive overfitting."
+    },
+    {
+      "id": "maintainable-production-tests",
+      "title": "Maintaining tests across the ML lifecycle",
+      "body": "A test should be independent, deterministic within its stated contract, and diagnostic. Name the behavior and scenario. Arrange only the data needed, perform one meaningful action, and assert invariants with messages or rich comparisons. Avoid time sleeps, live network calls, global random state, and dependence on test order. Quarantine is not a permanent solution for flakiness; classify whether the cause is a race, nondeterminism, environment, timeout, or an invalid assertion and fix the source.\n\nGolden files are useful for complex structured outputs when reviewed diffs are meaningful. Normalize volatile IDs and timestamps and avoid blindly accepting snapshots. Large model artifacts do not belong in every unit test; use a tiny deterministic substitute plus separate artifact compatibility tests. Mark slow, GPU, and external integration suites and run them at an appropriate CI stage. Cache dependencies without sharing mutable outputs.\n\nDeployment adds checks tests cannot simulate completely: shadow comparisons, canary metrics, feature distribution and missingness monitoring, latency and error budgets, human review, and rollback drills. Link a release to code, data, feature, configuration, and model versions so a regression is reproducible. Alerts require ownership and playbooks. Testing reduces known risk; monitoring detects environmental change and unknown failure modes."
+    }
+  ],
+  "math": "For floating results x and y, a common closeness rule is |x-y| ≤ atol + rtol·|y|, with tolerances justified by dtype and scale. For a metric estimate p over n independent binary outcomes, sampling uncertainty is on the order of sqrt(p(1-p)/n); therefore tiny evaluation sets cannot support narrow regression thresholds.",
+  "workedExamples": [
+    {
+      "title": "Verify a normalization component beyond one expected array",
+      "setup": "A transformer fits per-feature mean and scale on training rows, maps constant columns safely, then is serialized for serving.",
+      "walkthrough": "Use a tiny non-square matrix with one varying and one constant column. Assert fitted statistic shapes, unchanged sample/feature shape, finite output, zero mean and unit standard deviation only for the varying training feature, and zeros for the centered constant feature. Transform a validation row using stored training statistics and assert fit state does not change. Parametrize float32 and float64 with appropriate tolerances. Round-trip the artifact and compare outputs. Add invalid-shape and non-finite-policy cases.",
+      "conclusion": "The suite checks mathematical properties, state ownership, leakage prevention, dtype behavior, error paths, and serving compatibility rather than one happy-path snapshot."
+    }
+  ],
+  "exercises": [
+    {
+      "difficulty": "recall",
+      "prompt": "Why should floating-point tests use both relative and absolute tolerances?",
+      "solution": "Relative tolerance scales with magnitude, while absolute tolerance handles expected values near zero where a purely relative bound becomes ineffective."
+    },
+    {
+      "difficulty": "application",
+      "prompt": "Design three cases for a many-to-one feature join.",
+      "solution": "Include a normal match, an unmatched left record with explicit missing policy, and a duplicated right key that must fail cardinality validation."
+    },
+    {
+      "difficulty": "diagnosis",
+      "prompt": "A unit test patches `requests.get`, but the module imported `get` directly and still calls the network. Why?",
+      "solution": "The module looks up its own imported name. Patch that lookup site or inject a client into the function."
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "pytest-docs",
+      "contribution": "Defines assertion rewriting, fixture lifecycle, parametrization, monkeypatching, temporary resources, and current pytest behavior."
+    },
+    {
+      "resource": "python-unittest",
+      "contribution": "Provides framework-independent standard-library foundations for cases, setup and teardown, discovery, and test doubles."
+    },
+    {
+      "resource": "made-with-ml",
+      "contribution": "Connects code tests with data, model, evaluation, and production ML lifecycle checks."
+    },
+    {
+      "resource": "fsdl",
+      "contribution": "Provides production-oriented context for model evaluation, deployment validation, monitoring, and iteration."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "layers",
+      "title": "ML testing layers",
+      "items": [
+        "Pure logic and numerical properties",
+        "Data and interface contracts",
+        "Component integration",
+        "Model and slice regression",
+        "End-to-end and deployment checks"
+      ],
+      "caption": "Use many fast local checks and fewer expensive environment-dependent checks, chosen by risk.",
+      "afterSection": "test-pyramid"
+    },
+    {
+      "type": "flow",
+      "title": "Evidence across the release lifecycle",
+      "items": [
+        "Unit and contract tests",
+        "Offline evaluation",
+        "Artifact integration",
+        "Shadow or canary",
+        "Monitoring and rollback"
+      ],
+      "caption": "Pre-release tests and production monitoring cover different sources of uncertainty.",
+      "afterSection": "maintainable-production-tests"
+    }
+  ],
+  "lab": {
+    "goal": "Test a numerical transformer with example, property, error-path, state, and round-trip assertions.",
+    "language": "python",
+    "buildIt": "class Standardizer:\n    def fit(self, X):\n        import numpy as np\n        X = np.asarray(X, dtype=float)\n        if X.ndim != 2:\n            raise ValueError('expected 2D input')\n        self.mean_ = X.mean(axis=0, keepdims=True)\n        scale = X.std(axis=0, keepdims=True)\n        self.scale_ = np.where(scale == 0, 1.0, scale)\n        return self\n    def transform(self, X):\n        import numpy as np\n        X = np.asarray(X, dtype=float)\n        if X.ndim != 2 or X.shape[1] != self.mean_.shape[1]:\n            raise ValueError('feature mismatch')\n        return (X - self.mean_) / self.scale_",
+    "useIt": "import numpy as np\nX = np.array([[1., 5.], [3., 5.], [5., 5.]])\ntransformer = Standardizer().fit(X)\nZ = transformer.transform(X)\nvalidation = transformer.transform([[7., 5.]])",
+    "verifyIt": "assert Z.shape == X.shape\nassert np.isfinite(Z).all()\nassert np.allclose(Z[:, 0].mean(), 0.0)\nassert np.allclose(Z[:, 0].std(), 1.0)\nassert np.allclose(Z[:, 1], 0.0)\nbefore = transformer.mean_.copy()\ntransformer.transform([[9., 5.]])\nassert np.array_equal(before, transformer.mean_)\ntry:\n    transformer.transform([[1., 2., 3.]])\nexcept ValueError:\n    pass\nelse:\n    raise AssertionError('feature mismatch must fail')",
+    "shipIt": "Run fast checks per change, version golden datasets and artifacts, separate environment suites, record seeds and tolerances, and combine pre-release regression with canary monitoring and rollback."
+  }
+}

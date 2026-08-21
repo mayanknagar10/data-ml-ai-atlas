@@ -1,0 +1,59 @@
+{
+  "slug": "oltp-olap",
+  "title": "OLTP vs OLAP",
+  "module": "analytics-eng",
+  "priority": "very-high",
+  "roles": [
+    "de",
+    "ds",
+    "da"
+  ],
+  "interviewAnswer": "OLTP systems optimize many small transactional reads/writes with strong consistency; OLAP systems optimize scans and aggregations over large historical datasets. Modeling and storage choices differ because workloads differ.",
+  "keyPoints": [
+    "Row-oriented often suits OLTP; columnar often suits analytics.",
+    "Do not run heavy analytical scans on critical transactional DBs.",
+    "Data freshness requirements drive architecture."
+  ],
+  "resources": [
+    "cmu-db",
+    "duckdb"
+  ],
+  "featured": true,
+  "why": "OLTP vs OLAP appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
+  "intuition": "Row-oriented often suits OLTP; columnar often suits analytics.",
+  "deepDive": "OLTP systems optimize many small transactional reads/writes with strong consistency; OLAP systems optimize scans and aggregations over large historical datasets. Modeling and storage choices differ because workloads differ. Do not run heavy analytical scans on critical transactional DBs. Data freshness requirements drive architecture. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
+  "workedExample": "Orders are written to an OLTP database, then replicated/loaded into a warehouse for cohort analysis.",
+  "commonMistakes": [
+    "Applying the method without checking its assumptions or data-generating process.",
+    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+  ],
+  "followUps": [
+    "What assumptions does OLTP vs OLAP make?",
+    "How would you validate or debug OLTP vs OLAP in practice?"
+  ],
+  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "visual": {
+    "type": "compare",
+    "title": "OLTP vs OLAP",
+    "left": {
+      "title": "OLTP",
+      "items": [
+        "Many small reads/writes",
+        "Normalized schemas",
+        "Low-latency transactions"
+      ]
+    },
+    "right": {
+      "title": "OLAP",
+      "items": [
+        "Large scans/aggregations",
+        "Columnar storage",
+        "Analytics-oriented models"
+      ]
+    },
+    "caption": "Operational and analytical workloads optimize for different access patterns."
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

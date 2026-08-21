@@ -1,0 +1,49 @@
+{
+  "slug": "star-schema",
+  "title": "Star Schemas, Facts & Dimensions",
+  "module": "analytics-eng",
+  "priority": "high",
+  "roles": [
+    "de",
+    "ds",
+    "da"
+  ],
+  "interviewAnswer": "A star schema separates measurable events in fact tables from descriptive entities in dimensions. Grain must be defined first; many analytical errors come from joining tables at inconsistent grain.",
+  "keyPoints": [
+    "Declare fact-table grain explicitly.",
+    "Dimensions describe who/what/where.",
+    "Slowly changing dimensions preserve history."
+  ],
+  "resources": [
+    "dbt-docs"
+  ],
+  "featured": false,
+  "why": "Star Schemas, Facts & Dimensions appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
+  "intuition": "Declare fact-table grain explicitly.",
+  "deepDive": "A star schema separates measurable events in fact tables from descriptive entities in dimensions. Grain must be defined first; many analytical errors come from joining tables at inconsistent grain. Dimensions describe who/what/where. Slowly changing dimensions preserve history. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
+  "workedExample": "One row per order-line fact joined to customer/product/date dimensions.",
+  "commonMistakes": [
+    "Applying the method without checking its assumptions or data-generating process.",
+    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+  ],
+  "followUps": [
+    "What assumptions does Star Schemas, Facts & Dimensions make?",
+    "How would you validate or debug Star Schemas, Facts & Dimensions in practice?"
+  ],
+  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "visual": {
+    "type": "schema",
+    "title": "Star schema",
+    "center": "Fact table",
+    "satellites": [
+      "Dim customer",
+      "Dim product",
+      "Dim date",
+      "Dim geography"
+    ],
+    "caption": "A fact table captures events/measures; dimensions provide descriptive context for slicing and grouping."
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

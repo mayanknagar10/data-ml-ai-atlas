@@ -1,0 +1,40 @@
+{
+  "slug": "kl-divergence",
+  "title": "KL Divergence",
+  "module": "info-theory",
+  "priority": "high",
+  "roles": [
+    "all"
+  ],
+  "interviewAnswer": "KL divergence measures how poorly distribution Q approximates P. It is non-negative but asymmetric, so it is not a distance metric.",
+  "keyPoints": [
+    "Direction matters",
+    "Non-negative",
+    "Asymmetric",
+    "Variational inference / VAEs"
+  ],
+  "resources": [
+    "mit-info-theory",
+    "probml-book",
+    "d2l"
+  ],
+  "featured": false,
+  "why": "KL appears in VAEs, variational inference, distillation and policy optimization.",
+  "intuition": "Think of P as what you care about and Q as your approximation; KL penalizes Q where it fails to represent probability mass used by P.",
+  "deepDive": "D_KL(P||Q)=E_P[log P-log Q]. Forward and reverse directions produce different approximation behavior, especially for multimodal distributions.",
+  "math": "D_KL(P||Q)=Σp(x)log[p(x)/q(x)]",
+  "code": "",
+  "commonMistakes": [
+    "Calling KL symmetric.",
+    "Treating KL as bounded between 0 and 1."
+  ],
+  "followUps": [
+    "Why does KL appear in VAEs?",
+    "Forward vs reverse KL?"
+  ],
+  "production": "Check support and numerical smoothing because zero probabilities can create infinite/unstable values.",
+  "workedExample": "Approximating a bimodal target with one Gaussian can cover modes or concentrate on one depending on KL direction.",
+  "editorial": {
+    "status": "summary"
+  }
+}

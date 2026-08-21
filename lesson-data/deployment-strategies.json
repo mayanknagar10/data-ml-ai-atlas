@@ -1,0 +1,60 @@
+{
+  "slug": "deployment-strategies",
+  "title": "Canary, Blue/Green & Shadow Deployment",
+  "module": "mlops",
+  "priority": "high",
+  "roles": [
+    "mle"
+  ],
+  "interviewAnswer": "Canary sends a small share of live traffic to the new model, blue/green switches between parallel environments, and shadow deployment mirrors traffic to a new model without using its outputs for users.",
+  "keyPoints": [
+    "Risk control",
+    "Traffic split",
+    "Rollback",
+    "Online comparison"
+  ],
+  "resources": [
+    "made-with-ml",
+    "fsdl",
+    "stanford-cs329s"
+  ],
+  "featured": false,
+  "why": "Safe deployment patterns reduce risk when a new model or service version behaves differently in production.",
+  "intuition": "Blue/green keeps old and new environments side-by-side; canary sends a small fraction of real traffic to the new version; shadow mirrors traffic to the new version without using its response.",
+  "deepDive": "Blue/green enables fast switch/rollback but duplicates capacity. Canary progressively increases exposure while monitoring metrics. Shadow tests production inputs safely but cannot fully measure user/business outcomes because responses are not served. A/B experiments are for causal product comparison, not just deployment safety. Model changes may require feature/schema compatibility across versions.",
+  "workedExample": "Deploy v13 to 5% canary traffic, compare latency/errors and quality proxies to v12, then ramp 25→50→100% if gates pass; otherwise route all traffic back to v12.",
+  "commonMistakes": [
+    "Calling a canary an A/B test automatically.",
+    "Running shadow traffic with side-effecting tools/actions.",
+    "Planning rollback without keeping the previous artifact/config ready."
+  ],
+  "followUps": [
+    "Canary vs blue/green?",
+    "What does shadow deployment measure?",
+    "What metrics gate rollout?",
+    "How do database/schema changes complicate rollback?"
+  ],
+  "production": "Automate health gates and traffic rollback, but keep human approval for high-risk models. Ensure observability distinguishes metrics by model version.",
+  "visual": {
+    "type": "compare",
+    "title": "Deployment strategies",
+    "left": {
+      "title": "Canary / shadow",
+      "items": [
+        "Expose a small share first",
+        "Observe metrics before full rollout"
+      ]
+    },
+    "right": {
+      "title": "Blue–green",
+      "items": [
+        "Old and new stacks coexist",
+        "Fast switch / rollback"
+      ]
+    },
+    "caption": "Safe model releases separate deployment from full traffic exposure."
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

@@ -1,0 +1,59 @@
+{
+  "slug": "bootstrap",
+  "title": "Bootstrap & Resampling",
+  "module": "stat-inference",
+  "priority": "high",
+  "roles": [
+    "ds",
+    "da",
+    "as"
+  ],
+  "interviewAnswer": "The bootstrap approximates an estimator’s sampling distribution by repeatedly resampling the observed dataset with replacement. It is useful when analytic standard errors are difficult but the sample is reasonably representative.",
+  "keyPoints": [
+    "Resample rows with replacement.",
+    "Recompute the statistic each time.",
+    "Use the empirical distribution for uncertainty."
+  ],
+  "resources": [
+    "stanford-stats200",
+    "isl"
+  ],
+  "featured": false,
+  "why": "Bootstrap & Resampling appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
+  "intuition": "Resample rows with replacement.",
+  "deepDive": "The bootstrap approximates an estimator’s sampling distribution by repeatedly resampling the observed dataset with replacement. It is useful when analytic standard errors are difficult but the sample is reasonably representative. Recompute the statistic each time. Use the empirical distribution for uncertainty. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
+  "workedExample": "Bootstrap the difference in median delivery times between two methods to form an interval.",
+  "commonMistakes": [
+    "Applying the method without checking its assumptions or data-generating process.",
+    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+  ],
+  "followUps": [
+    "What assumptions does Bootstrap & Resampling make?",
+    "How would you validate or debug Bootstrap & Resampling in practice?"
+  ],
+  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "lab": {
+    "goal": "Estimate uncertainty with a nonparametric bootstrap.",
+    "language": "python",
+    "buildIt": "import numpy as np\nrng=np.random.default_rng(0)\nx=np.array([2.,3.,4.,5.,8.,9.])\nstats=np.array([rng.choice(x,len(x),replace=True).mean() for _ in range(5000)])\nci=np.quantile(stats,[.025,.975])\nprint(ci)",
+    "useIt": "from scipy.stats import bootstrap\nres=bootstrap((x,),np.mean,random_state=0)\nprint(res.confidence_interval)",
+    "shipIt": "Package bootstrap configuration with the estimator definition and random seed; use it when analytic uncertainty is unavailable and monitor whether the production sample remains representative.",
+    "verifyIt": "assert ci[0] < x.mean() < ci[1]"
+  },
+  "visual": {
+    "type": "flow",
+    "title": "Bootstrap workflow",
+    "items": [
+      "Observed sample",
+      "Resample with replacement",
+      "Recompute statistic",
+      "Use bootstrap distribution"
+    ],
+    "caption": "Bootstrap approximates sampling uncertainty using repeated resamples of the observed data.",
+    "accent": 1,
+    "orientation": "horizontal"
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

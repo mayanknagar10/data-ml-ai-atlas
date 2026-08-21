@@ -1,0 +1,41 @@
+{
+  "slug": "spatial-indexing",
+  "title": "Spatial Indexes, Geohash & H3",
+  "module": "geospatial",
+  "priority": "medium",
+  "roles": [
+    "de",
+    "ds",
+    "mle"
+  ],
+  "interviewAnswer": "Spatial indexes reduce expensive geometry comparisons by pruning candidates. R-trees organize bounding boxes; hierarchical grids such as geohash/H3 encode locations into cells.",
+  "keyPoints": [
+    "R-tree",
+    "Bounding boxes",
+    "Hierarchical grids",
+    "Candidate pruning"
+  ],
+  "resources": [
+    "geopandas-docs",
+    "geodata-science-book"
+  ],
+  "featured": false,
+  "why": "Without indexing, many spatial queries become expensive all-pairs operations.",
+  "intuition": "Use a cheap spatial partition to find candidates before exact geometry checks.",
+  "deepDive": "Tree and grid indexes optimize different workloads; grid resolution controls aggregation/detail and partition size.",
+  "math": "",
+  "code": "",
+  "commonMistakes": [
+    "Treating cell distance as exact geodesic distance.",
+    "Using one grid resolution for every task."
+  ],
+  "followUps": [
+    "R-tree vs H3?",
+    "How does indexing help kNN?"
+  ],
+  "production": "Choose index/resolution based on workload and update pattern.",
+  "workedExample": "A ride-sharing system can aggregate demand by H3 cell while an R-tree accelerates polygon queries.",
+  "editorial": {
+    "status": "summary"
+  }
+}

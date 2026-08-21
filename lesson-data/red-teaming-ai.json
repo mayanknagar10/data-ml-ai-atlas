@@ -1,0 +1,38 @@
+{
+  "slug": "red-teaming-ai",
+  "title": "AI Red Teaming & Adversarial Testing",
+  "module": "ai-safety",
+  "priority": "medium",
+  "roles": [
+    "aie",
+    "mle"
+  ],
+  "interviewAnswer": "Red teaming deliberately searches for failure modes outside normal test cases: prompt injection, harmful outputs, data leakage, jailbreaks, tool misuse and robustness failures. I convert discovered attacks into repeatable regression tests.",
+  "keyPoints": [
+    "threat model",
+    "adversarial testing",
+    "attack library",
+    "regression suite"
+  ],
+  "resources": [
+    "mitre-atlas",
+    "owasp-llm"
+  ],
+  "featured": false,
+  "why": "Average-case evaluation misses exactly the weird inputs attackers and real users will discover.",
+  "intuition": "Test the system like someone actively trying to make it fail, then preserve those failures as permanent tests.",
+  "deepDive": "Red teaming combines automated attack generation, curated scenarios and human exploration. Severity depends on capabilities and context; a harmless chatbot and an agent with write access need different threat models.",
+  "workedExample": "For a tool-using assistant, test malicious document instructions, malformed tool arguments, repeated retries, cross-tenant data requests and attempts to bypass confirmation.",
+  "commonMistakes": [
+    "Treating red teaming as a one-off demo before launch.",
+    "Counting “attack success rate” without severity/context."
+  ],
+  "followUps": [
+    "How is red teaming different from normal evaluation?",
+    "How do you prioritize discovered issues?"
+  ],
+  "production": "Run security/evaluation suites before model/prompt/tool changes are promoted, and track risk regressions like software bugs.",
+  "editorial": {
+    "status": "summary"
+  }
+}

@@ -1,0 +1,40 @@
+{
+  "slug": "distribution-shift-generalization",
+  "title": "Generalization Under Distribution Shift",
+  "module": "learning-theory",
+  "priority": "high",
+  "roles": [
+    "all"
+  ],
+  "interviewAnswer": "IID test performance can fail under covariate, label or concept shift. Use time/geography/group-aware validation, shift diagnostics and post-deployment monitoring when future data differs from training.",
+  "keyPoints": [
+    "IID assumption",
+    "Covariate shift",
+    "Label shift",
+    "Concept shift"
+  ],
+  "resources": [
+    "stanford-cs229",
+    "google-rules-ml",
+    "stanford-cs329s"
+  ],
+  "featured": false,
+  "why": "Distribution shift is one of the most common reasons production performance differs from offline evaluation.",
+  "intuition": "A model trained on one year, hospital or country may see systematically different deployment inputs.",
+  "deepDive": "Different shifts change p(x), p(y) or p(y|x). Some shifts can be reweighted; concept shift usually requires adaptation/retraining.",
+  "math": "",
+  "code": "",
+  "commonMistakes": [
+    "Calling every change concept drift.",
+    "Randomly splitting temporal data and claiming future generalization."
+  ],
+  "followUps": [
+    "How do you detect shift?",
+    "When does importance weighting help?"
+  ],
+  "production": "Design validation to mimic deployment and monitor performance by important slices.",
+  "workedExample": "Fraud strategies evolve after a detector is deployed, changing p(y|x).",
+  "editorial": {
+    "status": "summary"
+  }
+}

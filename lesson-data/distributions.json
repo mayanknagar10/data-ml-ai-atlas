@@ -1,0 +1,119 @@
+{
+  "slug": "distributions",
+  "title": "Common Probability Distributions",
+  "module": "probability",
+  "priority": "high",
+  "roles": [
+    "ds",
+    "mle",
+    "as"
+  ],
+  "interviewAnswer": "Know when Bernoulli, Binomial, Poisson, Normal and related distributions are appropriate. The distribution is a model for the data-generating process, not merely a curve-fitting choice.",
+  "keyPoints": [
+    "Support",
+    "Parameters",
+    "Expectation/variance",
+    "When each model makes sense"
+  ],
+  "resources": [
+    "harvard-stat110",
+    "statquest"
+  ],
+  "featured": false,
+  "why": "Interviewers use distributions to test whether you can connect a mathematical model to how data is generated instead of selecting a curve by habit.",
+  "intuition": "A distribution describes the values a random variable can take and how probability is allocated across them. Choose the family from the mechanism: binary event → Bernoulli, number of successes in fixed trials → Binomial, event counts in an interval → Poisson, continuous additive noise → often approximately Normal.",
+  "deepDive": "Bernoulli models one binary trial; Binomial sums independent Bernoulli trials with constant success probability; Poisson models counts under a constant event-rate approximation; Normal is continuous and symmetric and often appears through aggregation; Exponential models waiting time between Poisson-process events. Real data may violate independence, constant rate, or symmetry assumptions, so goodness-of-fit and domain reasoning matter.",
+  "math": "Bernoulli: P(X=x)=p^x(1-p)^(1-x)\nBinomial: P(X=k)=C(n,k)p^k(1-p)^(n-k)\nPoisson: P(X=k)=e^{-λ} λ^k/k!\nNormal: X ~ N(μ,σ²)",
+  "workedExample": "Number of support tickets per hour might be modeled as Poisson only if arrivals are roughly independent with a stable rate. If ticket volume has strong time-of-day effects or bursts, a single Poisson model is a poor description.",
+  "code": "import numpy as np\nrng=np.random.default_rng(0)\nprint(rng.binomial(n=20,p=.1,size=5))\nprint(rng.poisson(lam=3,size=5))",
+  "commonMistakes": [
+    "Assuming every continuous variable should be Normal.",
+    "Using a distribution without checking its support or assumptions.",
+    "Confusing probability density with probability for continuous variables."
+  ],
+  "followUps": [
+    "When is Poisson a reasonable model?",
+    "What is the relationship between Bernoulli and Binomial?",
+    "Why does the Normal distribution appear so often?",
+    "What distribution would you use for waiting times?"
+  ],
+  "production": "Distribution assumptions influence uncertainty estimates, anomaly thresholds, simulation, forecasting, and likelihood-based losses. Monitor whether the production distribution still resembles the one used during modeling.",
+  "visual": {
+    "type": "curve",
+    "title": "Distribution shapes",
+    "series": [
+      {
+        "label": "narrow",
+        "points": [
+          [
+            0,
+            0.02
+          ],
+          [
+            0.2,
+            0.1
+          ],
+          [
+            0.35,
+            0.36
+          ],
+          [
+            0.5,
+            0.93
+          ],
+          [
+            0.65,
+            0.36
+          ],
+          [
+            0.8,
+            0.1
+          ],
+          [
+            1,
+            0.02
+          ]
+        ]
+      },
+      {
+        "label": "wide",
+        "points": [
+          [
+            0,
+            0.14
+          ],
+          [
+            0.2,
+            0.3
+          ],
+          [
+            0.4,
+            0.55
+          ],
+          [
+            0.5,
+            0.62
+          ],
+          [
+            0.6,
+            0.55
+          ],
+          [
+            0.8,
+            0.3
+          ],
+          [
+            1,
+            0.14
+          ]
+        ]
+      }
+    ],
+    "caption": "Different distributions encode different assumptions about uncertainty and tail behavior.",
+    "xLabel": "value",
+    "yLabel": "density"
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

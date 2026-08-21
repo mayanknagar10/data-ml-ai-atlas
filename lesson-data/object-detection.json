@@ -1,0 +1,51 @@
+{
+  "slug": "object-detection",
+  "title": "Object Detection: Boxes, Anchors & Modern Detectors",
+  "module": "cv",
+  "priority": "high",
+  "roles": [
+    "cv",
+    "mle",
+    "as"
+  ],
+  "interviewAnswer": "Object detection predicts both classes and locations. Two-stage detectors separate proposals and classification; one-stage detectors predict densely. Modern detectors may be anchor-based or anchor-free, but all require localization and classification reasoning.",
+  "keyPoints": [
+    "Bounding-box regression and classification are separate losses/signals.",
+    "NMS or set-prediction logic resolves duplicate detections.",
+    "Small-object performance depends on resolution/features."
+  ],
+  "resources": [
+    "stanford-cs231n"
+  ],
+  "featured": false,
+  "why": "Object Detection: Boxes, Anchors & Modern Detectors is a standard part of a broad data/ML curriculum because it changes how models are selected, evaluated or operated in real systems.",
+  "intuition": "Bounding-box regression and classification are separate losses/signals.",
+  "deepDive": "Object detection predicts both classes and locations. Two-stage detectors separate proposals and classification; one-stage detectors predict densely. Modern detectors may be anchor-based or anchor-free, but all require localization and classification reasoning. NMS or set-prediction logic resolves duplicate detections. Small-object performance depends on resolution/features. A strong answer connects the formal idea to validation, data requirements and failure modes instead of treating the method as a recipe.",
+  "workedExample": "Detect construction tools in site images with class labels and bounding boxes rather than one label per image.",
+  "commonMistakes": [
+    "Choosing the technique without checking whether its assumptions match the problem.",
+    "Optimizing an offline metric without checking realistic validation slices or operational constraints."
+  ],
+  "followUps": [
+    "When would you not use Object Detection: Boxes, Anchors & Modern Detectors?",
+    "How would you validate or tune Object Detection: Boxes, Anchors & Modern Detectors?"
+  ],
+  "production": "In production, validate on realistic slices, track latency/cost when relevant, and monitor for distribution changes or failure modes that the offline metric can hide.",
+  "visual": {
+    "type": "flow",
+    "title": "Object detection pipeline",
+    "items": [
+      "Image",
+      "Backbone features",
+      "Box / class predictions",
+      "NMS",
+      "Final detections"
+    ],
+    "caption": "Detection combines localization and classification; NMS removes redundant overlapping boxes.",
+    "accent": 2,
+    "orientation": "horizontal"
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

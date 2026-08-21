@@ -1,0 +1,37 @@
+{
+  "slug": "nlp-evaluation",
+  "title": "NLP Generation Metrics: BLEU, ROUGE & Beyond",
+  "module": "nlp",
+  "priority": "high",
+  "roles": [
+    "ds",
+    "as"
+  ],
+  "interviewAnswer": "BLEU measures n-gram precision with brevity handling, ROUGE emphasizes overlap/recall; both are limited proxies for semantic quality. Modern evaluation often combines task metrics, learned metrics and human judgment.",
+  "keyPoints": [
+    "Metric suitability depends on task.",
+    "Lexical overlap can punish valid paraphrases.",
+    "Human/LLM evaluation needs rubrics and reliability checks."
+  ],
+  "resources": [
+    "stanford-cs224n",
+    "hf-llm"
+  ],
+  "featured": false,
+  "why": "NLP Generation Metrics: BLEU, ROUGE & Beyond is a recurring foundation across data science and machine learning because it affects both theoretical correctness and practical system behavior.",
+  "intuition": "Metric suitability depends on task.",
+  "deepDive": "BLEU measures n-gram precision with brevity handling, ROUGE emphasizes overlap/recall; both are limited proxies for semantic quality. Modern evaluation often combines task metrics, learned metrics and human judgment. Lexical overlap can punish valid paraphrases. Human/LLM evaluation needs rubrics and reliability checks. The interview-level skill is not merely recalling the definition: explain the assumptions, what diagnostic evidence you would inspect, and what alternative you would choose when those assumptions fail.",
+  "workedExample": "A summarizer can be factually wrong while achieving decent ROUGE due to overlapping words.",
+  "commonMistakes": [
+    "Using the concept mechanically without checking assumptions or data semantics.",
+    "Reporting one metric/result without examining uncertainty, slices or failure modes."
+  ],
+  "followUps": [
+    "What assumptions or limitations does NLP Generation Metrics: BLEU, ROUGE & Beyond have?",
+    "How would you validate NLP Generation Metrics: BLEU, ROUGE & Beyond on a real dataset?"
+  ],
+  "production": "In production, make assumptions explicit, validate on representative slices, compare with a simple baseline and monitor the signals that can drift.",
+  "editorial": {
+    "status": "summary"
+  }
+}

@@ -1,0 +1,45 @@
+{
+  "slug": "knn",
+  "title": "k-Nearest Neighbors",
+  "module": "ml",
+  "priority": "medium",
+  "roles": [
+    "ds",
+    "as"
+  ],
+  "interviewAnswer": "k-NN predicts using nearby training examples. It is simple and non-parametric but sensitive to feature scaling, irrelevant dimensions and inference cost on large datasets.",
+  "keyPoints": [
+    "Distance metric",
+    "Scaling",
+    "Choice of k",
+    "Curse of dimensionality"
+  ],
+  "resources": [
+    "sklearn",
+    "statquest",
+    "stanford-cs229",
+    "google-mlcc",
+    "isl"
+  ],
+  "featured": false,
+  "why": "k-NN is a simple non-parametric method that exposes distance metrics, scaling, curse of dimensionality and latency trade-offs.",
+  "intuition": "To predict a new point, find the nearest training examples and let their labels/values vote. The model stores data rather than learning many parameters.",
+  "deepDive": "Small k gives flexible high-variance boundaries; large k smooths predictions and increases bias. Feature scaling is critical because distance is coordinate-dependent. In high dimensions, distances concentrate and nearest-neighbor meaning degrades. Exact search is expensive for large datasets, motivating trees or approximate nearest-neighbor indexes.",
+  "workedExample": "If one feature ranges 0–1 and another 0–100000, Euclidean distance is dominated by the large-scale feature unless you normalize appropriately.",
+  "code": "from sklearn.pipeline import make_pipeline\nfrom sklearn.preprocessing import StandardScaler\nfrom sklearn.neighbors import KNeighborsClassifier\nm=make_pipeline(StandardScaler(),KNeighborsClassifier(n_neighbors=7))",
+  "commonMistakes": [
+    "Using raw unscaled features with heterogeneous units.",
+    "Assuming k-NN training is expensive—it is inference/storage that often dominates.",
+    "Ignoring high-dimensional distance concentration."
+  ],
+  "followUps": [
+    "How choose k?",
+    "Why scale features?",
+    "What is curse of dimensionality?",
+    "How does ANN search relate?"
+  ],
+  "production": "k-NN can be latency/memory heavy at scale; vector indexes and embedding retrieval are modern relatives with similar distance/index concerns.",
+  "editorial": {
+    "status": "summary"
+  }
+}

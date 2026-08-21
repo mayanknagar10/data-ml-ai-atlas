@@ -1,0 +1,36 @@
+{
+  "slug": "hierarchical-bayes",
+  "title": "Hierarchical / Multilevel Models",
+  "module": "bayesian",
+  "priority": "high",
+  "roles": [
+    "ds",
+    "as"
+  ],
+  "interviewAnswer": "Hierarchical models partially pool related groups, sharing statistical strength while allowing group-specific effects. They are often better than either one global estimate or completely independent estimates for sparse groups.",
+  "keyPoints": [
+    "Partial pooling reduces noisy extreme group estimates.",
+    "Hyperparameters describe population-level variation.",
+    "Useful for stores, regions, users or experiments."
+  ],
+  "resources": [
+    "pymc"
+  ],
+  "featured": false,
+  "why": "Hierarchical / Multilevel Models appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
+  "intuition": "Partial pooling reduces noisy extreme group estimates.",
+  "deepDive": "Hierarchical models partially pool related groups, sharing statistical strength while allowing group-specific effects. They are often better than either one global estimate or completely independent estimates for sparse groups. Hyperparameters describe population-level variation. Useful for stores, regions, users or experiments. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
+  "workedExample": "Estimate store conversion rates where small stores borrow strength from the overall population.",
+  "commonMistakes": [
+    "Applying the method without checking its assumptions or data-generating process.",
+    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+  ],
+  "followUps": [
+    "What assumptions does Hierarchical / Multilevel Models make?",
+    "How would you validate or debug Hierarchical / Multilevel Models in practice?"
+  ],
+  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "editorial": {
+    "status": "summary"
+  }
+}

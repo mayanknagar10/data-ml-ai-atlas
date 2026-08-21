@@ -1,0 +1,90 @@
+{
+  "slug": "change-point-detection",
+  "title": "Change-point Detection",
+  "module": "anomaly",
+  "priority": "medium",
+  "roles": [
+    "ds"
+  ],
+  "interviewAnswer": "Change-point detection looks for structural shifts in a sequence—mean, variance or distribution changes—rather than isolated anomalous points. It is useful for regime changes, deployments and sensor failures.",
+  "keyPoints": [
+    "Online vs offline detection differ.",
+    "Control false alarms vs detection delay.",
+    "Seasonality/trend should be modeled first."
+  ],
+  "resources": [
+    "fpp3",
+    "statsmodels-tsa"
+  ],
+  "featured": false,
+  "why": "Change-point Detection is a recurring foundation across data science and machine learning because it affects both theoretical correctness and practical system behavior.",
+  "intuition": "Online vs offline detection differ.",
+  "deepDive": "Change-point detection looks for structural shifts in a sequence—mean, variance or distribution changes—rather than isolated anomalous points. It is useful for regime changes, deployments and sensor failures. Control false alarms vs detection delay. Seasonality/trend should be modeled first. The interview-level skill is not merely recalling the definition: explain the assumptions, what diagnostic evidence you would inspect, and what alternative you would choose when those assumptions fail.",
+  "workedExample": "Detect when a service latency baseline permanently shifts after a deployment.",
+  "commonMistakes": [
+    "Using the concept mechanically without checking assumptions or data semantics.",
+    "Reporting one metric/result without examining uncertainty, slices or failure modes."
+  ],
+  "followUps": [
+    "What assumptions or limitations does Change-point Detection have?",
+    "How would you validate Change-point Detection on a real dataset?"
+  ],
+  "production": "In production, make assumptions explicit, validate on representative slices, compare with a simple baseline and monitor the signals that can drift.",
+  "visual": {
+    "type": "curve",
+    "title": "Change-point detection",
+    "series": [
+      {
+        "label": "series",
+        "points": [
+          [
+            0,
+            0.3
+          ],
+          [
+            0.12,
+            0.33
+          ],
+          [
+            0.24,
+            0.29
+          ],
+          [
+            0.36,
+            0.35
+          ],
+          [
+            0.48,
+            0.31
+          ],
+          [
+            0.52,
+            0.65
+          ],
+          [
+            0.64,
+            0.69
+          ],
+          [
+            0.76,
+            0.66
+          ],
+          [
+            0.88,
+            0.71
+          ],
+          [
+            1,
+            0.68
+          ]
+        ]
+      }
+    ],
+    "caption": "A change point marks a structural shift in level, trend, variance or another generating-process property.",
+    "xLabel": "time",
+    "yLabel": "value"
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}

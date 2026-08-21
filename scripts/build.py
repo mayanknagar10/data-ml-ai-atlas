@@ -5,32 +5,64 @@ import json
 from pathlib import Path
 from collections import Counter
 
+try:
+    from .chapter_contract import editorial_status, lesson_index_record, lesson_visuals
+except ImportError:  # Support `python scripts/build.py` as well as package imports.
+    from chapter_contract import editorial_status, lesson_index_record, lesson_visuals
+
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / 'source' / 'atlas.json'
 
-DEEP_FIELDS = ['why','intuition','deepDive','workedExample','commonMistakes','followUps','production']
-
 def deep_ready(lesson: dict) -> bool:
-    return all(lesson.get(k) for k in DEEP_FIELDS)
+    return editorial_status(lesson) in {'chapter-complete', 'verified'}
 
-def normalize(data: dict) -> dict:
-    for lesson in data['lessons']:
-        lesson['status'] = 'deep-complete' if deep_ready(lesson) else 'interview-ready'
-    return data
+
+LEGACY_DETAIL_FIELDS = (
+    'why',
+    'intuition',
+    'deepDive',
+    'workedExample',
+    'commonMistakes',
+    'followUps',
+    'production',
+)
+
+
+def has_lesson_detail(lesson: dict) -> bool:
+    return all(lesson.get(field) for field in LEGACY_DETAIL_FIELDS)
+
+def build_index(data: dict) -> dict:
+    return {
+        'modules': data['modules'],
+        'lessons': [lesson_index_record(lesson) for lesson in data['lessons']],
+        'resources': data['resources'],
+    }
+
 
 def write_data_js(data: dict):
-    text = 'const ATLAS = ' + json.dumps(data, ensure_ascii=False, indent=2) + ';\n'
+    text = 'const ATLAS = ' + json.dumps(build_index(data), ensure_ascii=False, indent=2) + ';\n'
     (ROOT / 'data.js').write_text(text, encoding='utf-8')
 
 def write_curriculum_json(data: dict):
-    slim = {
-        'modules': data['modules'],
-        'lessons': [
-            {k:v for k,v in l.items() if k not in {'why','intuition','deepDive','math','code','lab','commonMistakes','followUps','production','workedExample'}}
-            for l in data['lessons']
-        ]
-    }
+    slim = build_index(data)
+    slim.pop('resources')
     (ROOT / 'curriculum.json').write_text(json.dumps(slim, ensure_ascii=False, indent=2), encoding='utf-8')
+
+
+def write_lesson_data(data: dict, root: Path = ROOT) -> None:
+    target = root / 'lesson-data'
+    target.mkdir(exist_ok=True)
+    expected = set()
+    for lesson in data['lessons']:
+        path = target / f"{lesson['slug']}.json"
+        path.write_text(
+            json.dumps(lesson, ensure_ascii=False, indent=2) + '\n',
+            encoding='utf-8',
+        )
+        expected.add(path.name)
+    for path in target.glob('*.json'):
+        if path.name not in expected:
+            path.unlink()
 
 def write_resources_json(data: dict):
     (ROOT / 'resources.json').write_text(json.dumps(data['resources'], ensure_ascii=False, indent=2), encoding='utf-8')
@@ -40,12 +72,12 @@ def write_curriculum_md(data: dict):
     for idx, module in enumerate(data['modules'], 1):
         lessons=[l for l in data['lessons'] if l['module']==module['slug']]
         deep=sum(deep_ready(l) for l in lessons)
-        visual_count=sum(bool(l.get('visual')) for l in lessons)
+        visual_count=sum(len(lesson_visuals(l)) for l in lessons)
         lines += [f"## {idx:02d}. {module['icon']} {module['title']}", '', module['description'], '', f"Deep-complete: **{deep}/{len(lessons)}** · Visual models: **{visual_count}/{len(lessons)}**", '']
         for l in lessons:
             p={'very-high':'🔥','high':'⬆️','medium':'•'}.get(l['priority'],'•')
             status='✅ deep' if deep_ready(l) else '◻ interview-ready'
-            visual=' · 🖼 visual' if l.get('visual') else ''
+            visual=' · 🖼 visual' if lesson_visuals(l) else ''
             lines.append(f"- {p} **{l['title']}** — {status}{visual}")
         lines.append('')
     (ROOT / 'CURRICULUM.md').write_text('\n'.join(lines)+'\n', encoding='utf-8')
@@ -138,13 +170,13 @@ def _svg_wrap(text, x, y, max_chars=18, anchor='middle', cls='viz-text'):
         tsp.append(f'<tspan x="{x}" dy="{14 if i else 0}">{html.escape(line)}</tspan>')
     return f'<text x="{x}" y="{start}" text-anchor="{anchor}" class="{cls}">{"".join(tsp)}</text>'
 
-def render_visual(lesson: dict) -> str:
-    v=lesson.get('visual')
+def render_visual(lesson: dict, visual: dict | None = None, visual_index: int = 0) -> str:
+    v=visual or lesson.get('visual')
     if not v: return ''
     title=html.escape(v.get('title') or lesson.get('title','Visual'))
     caption=html.escape(v.get('caption','Conceptual illustration.'))
     colors=['var(--viz-1)','var(--viz-2)','var(--viz-3)','var(--viz-4)']
-    marker='arrow-'+lesson.get('slug','visual').replace('_','-')
+    marker='arrow-'+lesson.get('slug','visual').replace('_','-')+f'-{visual_index}'
     arrow=f'<marker id="{marker}" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L0,6 L9,3 z" fill="var(--viz-line)"/></marker>'
     body=[]; typ=v.get('type')
     if typ=='flow':
@@ -250,26 +282,67 @@ def render_visual(lesson: dict) -> str:
 def render_lesson(data, lesson, chapter_no, lesson_no):
     esc=html.escape
     deep=deep_ready(lesson)
+    detailed=has_lesson_detail(lesson) or bool(lesson.get('deepSections'))
+    paragraph=lambda value: ''.join(
+        f'<p>{esc(block.strip())}</p>'
+        for block in str(value or '').split('\n\n') if block.strip()
+    )
+    visuals=lesson_visuals(lesson)
     sections=[]
-    sections.append(f'''<section class="answer-box"><div class="eyebrow">45–60 SECOND INTERVIEW ANSWER</div><p>{esc(lesson['interviewAnswer'])}</p></section>''')
+    if lesson.get('description'):
+        sections.append(f'<section class="book-description"><h3>Topic overview</h3>{paragraph(lesson["description"])}</section>')
+    if lesson.get('prerequisites'):
+        sections.append('<section><h3>Prerequisites</h3><ul>'+''.join(f'<li>{esc(x)}</li>' for x in lesson['prerequisites'])+'</ul></section>')
+    if lesson.get('learningObjectives'):
+        sections.append('<section><h3>Learning objectives</h3><ul>'+''.join(f'<li>{esc(x)}</li>' for x in lesson['learningObjectives'])+'</ul></section>')
+    sections.append(f'''<section class="answer-box"><div class="eyebrow">45–60 SECOND INTERVIEW ANSWER</div>{paragraph(lesson['interviewAnswer'])}</section>''')
     sections.append('<section><h3>What you must know</h3><ul>'+''.join(f'<li>{esc(x)}</li>' for x in lesson['keyPoints'])+'</ul></section>')
-    if deep:
-        sections += [
-            f'<section><h3>Why this matters</h3><p>{esc(lesson["why"])}</p></section>',
-            f'<section><h3>Intuition</h3><p>{esc(lesson["intuition"])}</p></section>',
-            render_visual(lesson),
-            f'<section><h3>Deep explanation</h3><p>{esc(lesson["deepDive"])}</p></section>',
-        ]
+    if detailed:
+        if lesson.get('why'): sections.append(f'<section><h3>Why this matters</h3>{paragraph(lesson["why"])}</section>')
+        if lesson.get('intuition'): sections.append(f'<section><h3>Intuition</h3>{paragraph(lesson["intuition"])}</section>')
+        if visuals: sections.append(render_visual(lesson, visuals[0], 0))
+        if lesson.get('deepSections'):
+            for part in lesson['deepSections']:
+                sections.append(f'<section><h3>{esc(part.get("title", "Deep explanation"))}</h3>{paragraph(part.get("body", ""))}</section>')
+        elif lesson.get('deepDive'):
+            sections.append(f'<section><h3>Deep explanation</h3>{paragraph(lesson["deepDive"])}</section>')
+        for index, visual in enumerate(visuals[1:], 1):
+            sections.append(render_visual(lesson, visual, index))
         if lesson.get('math'): sections.append(f'<section><h3>Math / formal view</h3><div class="math">{esc(lesson["math"])}</div></section>')
-        if lesson.get('workedExample'): sections.append(f'<section><h3>Worked example</h3><p>{esc(lesson["workedExample"])}</p></section>')
+        if lesson.get('workedExamples'):
+            for example in lesson['workedExamples']:
+                body=''.join([
+                    f'<h4>Setup</h4>{paragraph(example.get("setup"))}' if example.get('setup') else '',
+                    '<ol>'+''.join(f'<li>{esc(step)}</li>' for step in example.get('steps', []))+'</ol>' if example.get('steps') else '',
+                    paragraph(example.get('walkthrough') or example.get('body')),
+                    f'<h4>Result</h4>{paragraph(example.get("result"))}' if example.get('result') else '',
+                    f'<h4>Conclusion</h4>{paragraph(example.get("conclusion"))}' if example.get('conclusion') else '',
+                ])
+                sections.append(f'<section class="worked-example"><h3>{esc(example.get("title", "Worked example"))}</h3>{body}</section>')
+        elif lesson.get('workedExample'): sections.append(f'<section><h3>Worked example</h3>{paragraph(lesson["workedExample"])}</section>')
         if lesson.get('lab'): sections.append(render_lab(lesson))
         elif lesson.get('code'): sections.append(f'<section><h3>Quick code / pseudocode</h3><pre>{esc(lesson["code"])}</pre></section>')
         if lesson.get('commonMistakes'):
-            sections.append('<section class="mistakes"><h3>Common mistakes</h3><ul>'+''.join(f'<li>{esc(x)}</li>' for x in lesson['commonMistakes'])+'</ul></section>')
+            mistake_items=[]
+            for item in lesson['commonMistakes']:
+                if isinstance(item, dict):
+                    mistake_items.append(f'<li><strong>{esc(item.get("mistake", ""))}</strong>{paragraph(item.get("correction", ""))}</li>')
+                else: mistake_items.append(f'<li>{esc(item)}</li>')
+            sections.append('<section class="mistakes"><h3>Common mistakes</h3><ul>'+''.join(mistake_items)+'</ul></section>')
         if lesson.get('followUps'):
-            sections.append('<section><h3>Likely follow-ups</h3><ul>'+''.join(f'<li>{esc(x)}</li>' for x in lesson['followUps'])+'</ul></section>')
+            follow_items=[]
+            for item in lesson['followUps']:
+                if isinstance(item, dict):
+                    follow_items.append(f'<li><strong>{esc(item.get("question", ""))}</strong>{paragraph(item.get("answer", ""))}</li>')
+                else: follow_items.append(f'<li>{esc(item)}</li>')
+            sections.append('<section><h3>Likely follow-ups</h3><ul>'+''.join(follow_items)+'</ul></section>')
         if lesson.get('production'):
-            sections.append(f'<section class="production"><h3>Production / system-design connection</h3><p>{esc(lesson["production"])}</p></section>')
+            sections.append(f'<section class="production"><h3>Production / system-design connection</h3>{paragraph(lesson["production"])}</section>')
+        if lesson.get('exercises'):
+            exercise_items=[]
+            for index, exercise in enumerate(lesson['exercises'], 1):
+                exercise_items.append(f'<li><strong>Exercise {index} · {esc(exercise.get("difficulty", "practice"))}</strong>{paragraph(exercise.get("prompt", ""))}<details><summary>Show solution</summary>{paragraph(exercise.get("solution", ""))}</details></li>')
+            sections.append('<section class="book-exercises"><h3>Exercises</h3><ol>'+''.join(exercise_items)+'</ol></section>')
     else:
         sections.append('''<section class="compact-depth"><h3>Depth checklist</h3><p>This lesson is interview-ready but not yet deep-complete. Before upgrading it, add first-principles intuition, a concrete worked example, at least one failure mode, likely follow-ups, and an engineering connection. Add math/code only where they genuinely improve understanding.</p></section>''')
         sections.append('<section><h3>Interview drill</h3><ul>'+''.join([
@@ -277,10 +350,16 @@ def render_lesson(data, lesson, chapter_no, lesson_no):
             f'<li>What is the most important trade-off, assumption, or failure mode in {esc(lesson["title"])}?</li>',
             f'<li>Give one concrete example of when {esc(lesson["title"])} matters in a real ML/AI system.</li>'
         ])+'</ul></section>')
+    if lesson.get('sourceNotes'):
+        sections.append('<section><h3>How the sources inform this chapter</h3><ul>'+''.join(
+            f'<li><strong>{esc(note.get("resource", ""))}</strong>{paragraph(note.get("contribution", ""))}</li>'
+            for note in lesson['sourceNotes']
+        )+'</ul></section>')
     if lesson.get('resources'):
         sections.append('<section><h3>Best references</h3><ul class="refs">'+res_cards(data,lesson['resources'])+'</ul></section>')
     pri=esc(lesson['priority'])
-    deep_badge='<span class="badge deep">deep complete</span>' if deep else '<span class="badge">interview-ready</span>'
+    status=editorial_status(lesson)
+    deep_badge=f'<span class="badge {"deep" if deep else ""}">{esc(status)}</span>'
     return f'''<article class="lesson {'deep-lesson' if deep else ''}" id="lesson-{esc(lesson['slug'])}">
       <div class="lesson-head"><div><div class="lesson-no">{chapter_no}.{lesson_no}</div><h2>{esc(lesson['title'])}</h2></div><div class="badges"><span class="badge priority-{pri}">{pri.replace('-', ' ')}</span>{deep_badge}</div></div>
       <div class="meta">Roles: {esc(', '.join(lesson['roles']))}</div>
@@ -295,14 +374,14 @@ def render_book(data: dict) -> str:
         toc.append(f'<a class="toc-module" href="#module-{esc(m["slug"])}"><span>{ci:02d}</span>{esc(m["title"])}</a>')
         for li,l in enumerate(ls,1): toc.append(f'<a class="toc-lesson" href="#lesson-{esc(l["slug"])}">{ci}.{li} {esc(l["title"])}</a>')
         deep=sum(deep_ready(l) for l in ls)
-        visual_count_ch=sum(bool(l.get('visual')) for l in ls)
+        visual_count_ch=sum(len(lesson_visuals(l)) for l in ls)
         ch=[f'''<section class="module-cover" id="module-{esc(m['slug'])}"><div class="chapter-no">CHAPTER {ci:02d}</div><h1>{esc(m['icon'])} {esc(m['title'])}</h1><p>{esc(m['description'])}</p><div class="chapter-meta">{len(ls)} lessons · {deep} deep-complete · {visual_count_ch} visuals</div><div class="chapter-goal"><strong>Study order.</strong> Learn the interview answer first. Then make sure you can explain every key point without notes. Use the deep sections to understand trade-offs, failure modes, and production implications.</div></section>''']
         ch += [render_lesson(data,l,ci,li) for li,l in enumerate(ls,1)]
         chapters.append(''.join(ch))
     resources=''.join(f'''<div class="resource-entry"><h3><a href="{html.escape(r['url'])}" target="_blank" rel="noopener">{html.escape(r['title'])}</a></h3><div>{html.escape(r['provider'])} · {html.escape(r['kind'])} · {html.escape(r['level'])}</div><p>{html.escape(r['why'])}</p></div>''' for r in data['resources'].values())
     deep_count=sum(deep_ready(l) for l in data['lessons'])
     lab_count=sum(bool(l.get('lab')) for l in data['lessons'])
-    visual_count=sum(bool(l.get('visual')) for l in data['lessons'])
+    visual_count=sum(len(lesson_visuals(l)) for l in data['lessons'])
     styles='''
 :root{--ink:#121417;--muted:#5d6470;--line:#dfe3e8;--soft:#f6f7f8;--bg:#fff;--sidebar-bg:#fbfbfc;--hover:#eef2f7;--code-bg:#f2f3f5;--blue:#155eef;--blue-soft:#edf4ff;--green:#147d64;--amber:#9a6700;--red:#b42318;--warning-bg:#fff7f6;--warning-line:#f3ccc8;--prod-bg:#f1f8f5;--prod-line:#cce8dc;--sidebar:330px;color-scheme:light}
 html[data-theme="dark"]{--ink:#eef2f6;--muted:#a8b0ba;--line:#2b333d;--soft:#171d24;--bg:#0d1117;--sidebar-bg:#11161c;--hover:#1b2430;--code-bg:#0b0f14;--blue:#8fb4ff;--blue-soft:#10203b;--green:#63d3ae;--amber:#e7bd68;--red:#ff8a80;--warning-bg:#2a1718;--warning-line:#6f3035;--prod-bg:#10231d;--prod-line:#255846;color-scheme:dark}html[data-theme="dark"] .toc-module{color:var(--ink)}html[data-theme="dark"] .toc-lesson,html[data-theme="dark"] .lead,html[data-theme="dark"] .module-cover>p,html[data-theme="dark"] .ref-card p,html[data-theme="dark"] .resource-entry p{color:var(--muted)}html[data-theme="dark"] .search{background:var(--soft);color:var(--ink);border-color:var(--line)}html[data-theme="dark"] .notice{background:#2a2414;border-color:#67552a;color:var(--ink)}html[data-theme="dark"] .badge{background:#252c34;color:var(--muted)}html[data-theme="dark"] .badge.deep{background:#123129;color:var(--green)}html[data-theme="dark"] .priority-very-high{background:#3b1d1b;color:var(--red)}html[data-theme="dark"] .priority-high{background:#352a12;color:var(--amber)}
@@ -352,16 +431,15 @@ def write_book(data: dict):
 
 def main():
     data=json.loads(SOURCE.read_text(encoding='utf-8'))
-    normalize(data)
-    SOURCE.write_text(json.dumps(data,ensure_ascii=False,indent=2),encoding='utf-8')
     write_data_js(data)
+    write_lesson_data(data)
     write_curriculum_json(data)
     write_resources_json(data)
     write_curriculum_md(data)
     write_coverage_md(data)
     write_book(data)
     write_labs(data)
-    c=Counter(l['status'] for l in data['lessons'])
+    c=Counter(editorial_status(l) for l in data['lessons'])
     print(f"Built {len(data['lessons'])} lessons, {len(data['resources'])} resources: {dict(c)}")
 
 if __name__=='__main__':

@@ -1,0 +1,40 @@
+{
+  "slug": "topic-modeling-lda",
+  "title": "Topic Modeling & LDA",
+  "module": "nlp",
+  "priority": "medium",
+  "roles": [
+    "ds",
+    "as"
+  ],
+  "interviewAnswer": "Latent Dirichlet Allocation is a probabilistic topic model where documents are mixtures of latent topics and topics are distributions over words.",
+  "keyPoints": [
+    "Document-topic mixture",
+    "Topic-word distribution",
+    "Latent variables",
+    "Bag-of-words"
+  ],
+  "resources": [
+    "probml-book",
+    "stanford-cs229"
+  ],
+  "featured": false,
+  "why": "Topic models remain useful for interpretable exploratory structure in corpora.",
+  "intuition": "A document may combine several themes rather than belong to one hard cluster.",
+  "deepDive": "LDA uses Dirichlet priors over document-topic and topic-word distributions; inference estimates hidden topic assignments.",
+  "math": "",
+  "code": "",
+  "commonMistakes": [
+    "Confusing topic-model LDA with Linear Discriminant Analysis.",
+    "Treating topics as objective ground truth."
+  ],
+  "followUps": [
+    "How choose number of topics?",
+    "LDA vs embedding clustering?"
+  ],
+  "production": "Check topic stability and human usefulness; embeddings can capture richer semantics but have different interpretability.",
+  "workedExample": "Customer feedback can be summarized into recurring themes before labels exist.",
+  "editorial": {
+    "status": "summary"
+  }
+}

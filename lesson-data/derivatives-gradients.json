@@ -1,0 +1,58 @@
+{
+  "slug": "derivatives-gradients",
+  "title": "Derivatives, Gradients & Chain Rule",
+  "module": "math",
+  "priority": "very-high",
+  "roles": [
+    "all",
+    "as"
+  ],
+  "interviewAnswer": "A derivative measures local change; a gradient collects partial derivatives and points toward steepest increase. Backpropagation efficiently applies the chain rule through a computation graph.",
+  "keyPoints": [
+    "Partial derivatives",
+    "Gradient direction",
+    "Chain rule",
+    "Jacobian intuition"
+  ],
+  "resources": [
+    "mit-6s191",
+    "3b1b-neural",
+    "mit-linear-algebra",
+    "3b1b-linear-algebra"
+  ],
+  "featured": false,
+  "why": "Gradients connect loss functions to parameter updates. Backpropagation is just efficient chain-rule application over a computation graph.",
+  "intuition": "A derivative tells how much an output changes when one input changes slightly. A gradient collects that sensitivity for every input dimension. The chain rule propagates sensitivity through composed operations.",
+  "deepDive": "For a scalar loss L(θ), the gradient ∇θL points in the direction of steepest local increase. Gradient descent moves in the negative direction. The chain rule multiplies local derivatives along computational paths, and reverse-mode autodiff reuses intermediate values efficiently when a scalar loss depends on many parameters.",
+  "math": "If y=f(g(x)), dy/dx = f'(g(x)) g'(x)\nGradient: ∇f=[∂f/∂x₁,...,∂f/∂x_d]\nUpdate: θ ← θ - η∇θL",
+  "workedExample": "For L=(wx-y)², dL/dw = 2(wx-y)x. If the prediction is too high and x is positive, the gradient is positive, so gradient descent reduces w.",
+  "code": "import torch\nw=torch.tensor(2.0,requires_grad=True)\nx=torch.tensor(3.0); y=torch.tensor(5.0)\nloss=(w*x-y)**2\nloss.backward()\nprint(w.grad)",
+  "commonMistakes": [
+    "Saying the gradient always points toward the minimum; it points toward local increase.",
+    "Confusing derivative computation with the optimizer update.",
+    "Ignoring non-differentiable points or numerical issues."
+  ],
+  "followUps": [
+    "Why does backprop use reverse mode?",
+    "What is a Jacobian?",
+    "What causes vanishing gradients?",
+    "Why can gradient descent get stuck or oscillate?"
+  ],
+  "production": "Gradient health is a debugging signal. Track exploding/vanishing norms, NaNs, mixed-precision scaling and whether the intended parameters actually receive gradients.",
+  "visual": {
+    "type": "flow",
+    "title": "Gradient as local direction",
+    "items": [
+      "Current parameters",
+      "Compute gradient",
+      "Step opposite gradient",
+      "Lower loss"
+    ],
+    "caption": "The gradient points toward steepest local increase; optimization usually moves in the negative-gradient direction.",
+    "accent": 1,
+    "orientation": "horizontal"
+  },
+  "editorial": {
+    "status": "summary"
+  }
+}
