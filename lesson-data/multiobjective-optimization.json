@@ -7,69 +7,233 @@
     "ds",
     "as"
   ],
-  "interviewAnswer": "Many real systems optimize several conflicting objectives. Pareto-optimal solutions cannot improve one objective without worsening another; teams often scalarize objectives or impose constraints/guardrails.",
+  "interviewAnswer": "In multi-objective optimization, a feasible point dominates another if it is no worse on every objective and strictly better on at least one. Pareto-optimal points are not dominated, so the result is generally a frontier rather than one answer. Weighted sums are simple and can recover supported points on convex fronts, but may miss nonconvex regions and hide stakeholder preferences. Epsilon constraints or lexicographic rules are often clearer for hard limits and priorities; evolutionary algorithms such as NSGA-II approximate broader fronts. I normalize only with declared meaning, include uncertainty and feasibility, evaluate coverage/diversity, and treat selection from the frontier as a separate governed decision.",
   "keyPoints": [
-    "Weighted sums encode preferences but can hide trade-offs.",
-    "Constraints are often clearer for safety/SLA requirements.",
-    "Pareto frontier communicates choices."
+    "Pareto optimal means not dominated, not universally best",
+    "Decision space and objective space are different",
+    "Scalarization embeds preferences and can miss parts of a front",
+    "Front quality requires convergence and diversity evidence",
+    "Choosing one point is a policy decision after optimization"
   ],
   "resources": [
     "boyd-convex",
-    "ortools"
+    "nsga2-paper",
+    "pymoo-docs",
+    "botorch-docs",
+    "scipy-optimize"
   ],
   "featured": false,
-  "why": "Multi-objective Optimization & Pareto Trade-offs is a recurring foundation across data science and machine learning because it affects both theoretical correctness and practical system behavior.",
-  "intuition": "Weighted sums encode preferences but can hide trade-offs.",
-  "deepDive": "Many real systems optimize several conflicting objectives. Pareto-optimal solutions cannot improve one objective without worsening another; teams often scalarize objectives or impose constraints/guardrails. Constraints are often clearer for safety/SLA requirements. Pareto frontier communicates choices. The interview-level skill is not merely recalling the definition: explain the assumptions, what diagnostic evidence you would inspect, and what alternative you would choose when those assumptions fail.",
-  "workedExample": "Optimize recommendation relevance while requiring latency <100 ms and minimum catalog diversity.",
+  "why": "A model can improve accuracy by adding latency, a supply plan can cut cost by increasing risk, and a ranking system can increase engagement while worsening fairness or user welfare. Collapsing these outcomes into one unreviewed score hides value judgments and enables compensation that stakeholders may reject. Multi-objective methods expose feasible alternatives and marginal trade-offs. They are also useful for architecture search and engineering design. Yet a giant approximate frontier can overwhelm decision makers, and poorly normalized metrics or noisy evaluations can manufacture dominance. Interviews test whether candidates can distinguish optimization mechanics from stakeholder choice. Production systems need a stable metric contract and explicit guardrails before a frontier is trusted.",
+  "intuition": "Plot two objectives to minimize. Points toward the lower-left are better. A point is dominated when another lies no higher and no farther right, with at least one strict improvement. The nondominated boundary is the Pareto front: moving along it improves one objective only by sacrificing another. A weighted sum rolls a straight contour line toward the feasible objective set and touches a supported point; concave inward portions may never be touched. Epsilon constraints instead cap one objective and optimize the other, making limits explicit. After computing alternatives, humans or a policy still choose a point based on budgets, thresholds, risk, and accountability.",
+  "deepDive": "Multi-objective optimization preserves conflict until preferences are declared. It produces an evidence-backed set of efficient alternatives; decision analysis then maps that set to one action under values and uncertainty.",
+  "workedExample": "Four classifiers have (error, latency ms): A=(0.12,20), B=(0.10,35), C=(0.09,70), D=(0.13,50). D is dominated by A because A has lower error and latency. A, B, and C form a front. If production requires latency<=40, C is infeasible and B has the lowest error among allowed models. A weighted sum could choose differently depending on scaling and weight, but the latency constraint expresses the policy more clearly. Fairness and memory can be added as guardrails or objectives; uncertainty intervals from repeated evaluation may make A and B statistically indistinguishable, motivating a simpler or cheaper selection.",
   "commonMistakes": [
-    "Using the concept mechanically without checking assumptions or data semantics.",
-    "Reporting one metric/result without examining uncertainty, slices or failure modes."
+    {
+      "mistake": "Calling every nondominated point equally good",
+      "correction": "They are efficient under modeled objectives, but feasibility, uncertainty, stakeholder preferences, and risk still determine suitability."
+    },
+    {
+      "mistake": "Adding unscaled metrics with arbitrary weights",
+      "correction": "Weights and normalization encode units and values; document them and test sensitivity."
+    },
+    {
+      "mistake": "Assuming weighted sums recover the whole front",
+      "correction": "Linear scalarization can miss unsupported points on nonconvex fronts; use epsilon constraints or suitable front methods."
+    },
+    {
+      "mistake": "Optimizing many redundant objectives",
+      "correction": "Dominance loses discrimination; remove redundancy or turn nonnegotiable measures into explicit constraints."
+    }
   ],
   "followUps": [
-    "What assumptions or limitations does Multi-objective Optimization & Pareto Trade-offs have?",
-    "How would you validate Multi-objective Optimization & Pareto Trade-offs on a real dataset?"
+    {
+      "question": "What is Pareto optimality?",
+      "answer": "A feasible decision is Pareto optimal if no other feasible decision is at least as good in every objective and strictly better in one."
+    },
+    {
+      "question": "Why can weighted sums miss solutions?",
+      "answer": "A linear scalarization exposes supported boundary points; efficient points in nonconvex portions of objective space may never minimize any positive weighted sum."
+    },
+    {
+      "question": "What does hypervolume depend on?",
+      "answer": "Objective orientation/scaling and a chosen worse reference point. It combines convergence and diversity but is not preference-free."
+    }
   ],
-  "production": "In production, make assumptions explicit, validate on representative slices, compare with a simple baseline and monitor the signals that can drift.",
-  "visual": {
-    "type": "curve",
-    "title": "Pareto frontier",
-    "series": [
-      {
-        "label": "feasible trade-offs",
-        "points": [
-          [
-            0.1,
-            0.88
-          ],
-          [
-            0.2,
-            0.76
-          ],
-          [
-            0.34,
-            0.61
-          ],
-          [
-            0.5,
-            0.48
-          ],
-          [
-            0.68,
-            0.37
-          ],
-          [
-            0.86,
-            0.29
-          ]
-        ]
-      }
-    ],
-    "caption": "Pareto-optimal solutions improve one objective only by worsening another.",
-    "xLabel": "objective 1",
-    "yLabel": "objective 2"
-  },
+  "production": "Create versioned metric contracts for direction, unit, population, horizon, uncertainty, guardrail, and owner. Persist decision variables, constraints, raw objective outcomes, transformations, seeds, algorithm budget, termination, approximate front, dominance rules, reference point, and final preference decision. Validate known small fronts and invariance to candidate ordering; rerun stochastic algorithms and compare simple scalarization or random baselines. Monitor frontier drift, dominated-selection rate, constraint violations, hypervolume under a fixed reference, objective calibration, stakeholder overrides, and realized post-deployment outcomes. Restrict sensitive fairness or cost slices. If metric data are stale or guardrails fail, keep the last approved feasible point or conservative policy. Rollback includes both deployed configuration and the decision record that justified it.",
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "Multi-objective optimization handles decisions where several criteria conflict and no single scalar score is scientifically or organizationally sufficient. Rather than pretending one configuration is universally best, it identifies feasible trade-offs through dominance, Pareto optimality, fronts, scalarization, epsilon constraints, lexicographic priorities, evolutionary methods, hypervolume, and multi-criteria decision analysis. This chapter develops decision space versus objective space, weak and strict dominance, supported and unsupported Pareto points, normalization, preference elicitation, constraints, uncertainty, many-objective difficulties, and post-optimization selection. You will learn why weighted sums expose only part of a nonconvex front, why objectives should preserve units until preferences are explicit, how NSGA-II uses nondominated sorting and crowding distance, and why optimizing a frontier is separate from choosing a policy. A worked model-selection example balances error, latency, cost, and fairness guardrails. The lab implements nondominated filtering and hypervolume in two dimensions, uses a SciPy epsilon-constraint sweep, and verifies invariance and known fronts. Production guidance covers stakeholder governance, metric drift, robust feasibility, monitoring, rollback, and transparent decision records.",
+  "prerequisites": [
+    "convexity",
+    "linear-programming",
+    "experiment-design"
+  ],
+  "learningObjectives": [
+    "Define dominance, Pareto optimality, Pareto sets, and fronts with consistent objective directions and constraints.",
+    "Use weighted sums, epsilon constraints, and lexicographic priorities while stating which trade-offs each method can or cannot recover.",
+    "Explain nondominated sorting, diversity preservation, hypervolume, and the limitations of evolutionary approximations.",
+    "Separate frontier generation from preference-based selection and audit the final decision under uncertainty."
+  ],
+  "deepSections": [
+    {
+      "id": "dominance",
+      "title": "Dominance, Pareto sets, and objective direction",
+      "body": "Let F(x)=(f_1(x),...,f_m(x)) for feasible x, with all objectives converted consistently to minimization or maximization. For minimization, a dominates b if f_j(a)<=f_j(b) for every j and strict inequality holds for at least one. A Pareto-optimal decision is not dominated by another feasible decision. The Pareto set lives in decision space; its image is the Pareto front in objective space. Weak dominance, strict dominance, and epsilon-dominance differ and should be named. Constraints determine feasibility before dominance. Duplicate objective vectors, ties, missing values, and stochastic estimates need explicit handling."
+    },
+    {
+      "id": "scalarization",
+      "title": "Weighted sums, epsilon constraints, and priorities",
+      "body": "A weighted sum minimizes sum_j w_j f_j(x) with nonnegative weights, after any necessary scaling. Weights encode both units and preference; they are not objective facts. For convex achievable objective sets, varying positive weights finds supported Pareto points, but nonconvex fronts can contain efficient unsupported points never optimal for any linear weight. The epsilon-constraint method optimizes one objective while bounding others and can trace such regions. Lexicographic optimization enforces strict priority by optimizing objectives sequentially while preserving earlier optima within tolerances. Goal programming minimizes deviations from targets. Each method should match how stakeholders actually express trade-offs."
+    },
+    {
+      "id": "front-algorithms",
+      "title": "Front construction and NSGA-II intuition",
+      "body": "Exact scalarization sweeps suit tractable mathematical programs. Population-based evolutionary algorithms are useful for nonconvex, discontinuous, mixed, or black-box problems but yield approximations, not proof by default. NSGA-II combines parent and offspring populations, sorts candidates into nondomination ranks, and fills the next generation front by front. When a front must be split, crowding distance favors isolated points to preserve spread, while extreme points receive priority. Selection compares rank then crowding; crossover and mutation explore decisions. Results depend on population, operators, budget, constraints, seed, and representation, so repeated runs and baseline fronts are essential."
+    },
+    {
+      "id": "quality-selection",
+      "title": "Measuring a front and choosing one point",
+      "body": "Convergence asks whether candidates approach the true or best-known front; diversity asks whether useful regions are covered. Hypervolume measures objective-space volume dominated by a front relative to a stated worse reference point, rewarding both convergence and spread but becoming expensive and reference-sensitive in many objectives. Generational distance, epsilon indicators, and coverage add other views. A knee point may offer a favorable marginal trade-off but is not automatically the stakeholder choice. Post-optimization decision methods should expose normalized values, hard constraints, uncertainty, dominated alternatives removed, and how the selected point changes under plausible weights or thresholds."
+    },
+    {
+      "id": "uncertainty-governance",
+      "title": "Uncertainty, many objectives, and governance",
+      "body": "Estimated objectives have sampling, simulation, or model uncertainty. Point-estimate dominance can flip under noise, so use replication, posterior/interval comparisons, robust or chance constraints, and sensitivity analysis. With many objectives, most points become nondominated and visualization plus selection degrade; reduce redundant metrics, promote nonnegotiable outcomes to guardrails, or use reference directions and preference-guided search. Objectives are vulnerable to gaming and distribution shift. Define owners, populations, time horizons, denominators, floors, and refresh cadence. Preserve the frontier considered, stakeholder input, rejected alternatives, and revisit triggers so optimization does not launder an opaque value choice into mathematics."
+    }
+  ],
+  "math": "For minimization, x dominates y when f_j(x)<=f_j(y) for all j and f_k(x)<f_k(y) for some k. The Pareto set P={x in X: no feasible y dominates x}; front is F(P). Weighted sum minimizes w^T F(x), w>=0. Epsilon constraint minimizes f_1(x) subject to f_j(x)<=epsilon_j for j>1. In two dimensions with worse reference r, hypervolume is the area of the union of rectangles [f_1(x),r_1]x[f_2(x),r_2] for nondominated feasible x, after consistent minimization orientation.",
+  "workedExamples": [
+    {
+      "title": "Accuracy-latency model selection",
+      "body": "Remove dominated candidates, apply an explicit latency constraint, compare surviving trade-offs with uncertainty, and document why the chosen model follows policy rather than an arbitrary score."
+    }
+  ],
+  "exercises": [
+    {
+      "prompt": "For minimization, do (2,5) and (3,4) dominate each other?",
+      "solution": "No. The first is better on objective one and worse on objective two, so both can be nondominated."
+    },
+    {
+      "prompt": "Why might latency become a constraint rather than an objective?",
+      "solution": "If there is a hard service-level limit, allowing accuracy to compensate for violation misrepresents policy; an explicit constraint states nonnegotiability."
+    },
+    {
+      "prompt": "What happens as objective count grows?",
+      "solution": "A larger fraction of points tends to be nondominated, weakening selection pressure and interpretability; reduce redundancy or add preferences/reference directions."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "scatter",
+      "title": "Conceptual Pareto front",
+      "series": [
+        {
+          "label": "nondominated",
+          "points": [
+            [
+              0.15,
+              0.8
+            ],
+            [
+              0.28,
+              0.58
+            ],
+            [
+              0.45,
+              0.4
+            ],
+            [
+              0.68,
+              0.25
+            ],
+            [
+              0.88,
+              0.14
+            ]
+          ]
+        },
+        {
+          "label": "dominated",
+          "points": [
+            [
+              0.4,
+              0.75
+            ],
+            [
+              0.58,
+              0.62
+            ],
+            [
+              0.75,
+              0.5
+            ],
+            [
+              0.9,
+              0.35
+            ]
+          ]
+        }
+      ],
+      "xLabel": "objective 1 (lower is better)",
+      "yLabel": "objective 2 (lower is better)",
+      "caption": "Conceptual minimization objective space: front points trade one objective for another; dominated points are worse in both than at least one alternative.",
+      "afterSection": "dominance"
+    },
+    {
+      "type": "compare",
+      "title": "Preference methods expose different information",
+      "left": {
+        "title": "Scalar score",
+        "items": [
+          "Compact single optimization",
+          "Weights mix units + values",
+          "Can miss nonconvex front",
+          "Easy to hide compensation"
+        ]
+      },
+      "right": {
+        "title": "Explicit constraints/front",
+        "items": [
+          "Shows efficient alternatives",
+          "Hard limits remain visible",
+          "Requires selection process",
+          "More governance and computation"
+        ]
+      },
+      "caption": "No method removes value judgments; it determines where those judgments enter and how auditable they remain.",
+      "afterSection": "scalarization"
+    }
+  ],
+  "lab": {
+    "language": "python",
+    "goal": "Implement nondominated filtering and two-dimensional hypervolume, use SciPy for an epsilon-constraint sweep, and verify known fronts plus invariants.",
+    "buildIt": "def dominates(a,b):\n    return all(x<=y for x,y in zip(a,b)) and any(x<y for x,y in zip(a,b))\ndef pareto(points):\n    return [p for i,p in enumerate(points) if not any(j!=i and dominates(q,p) for j,q in enumerate(points))]\ndef hypervolume_2d(front,reference):\n    pts=sorted(pareto(front),key=lambda p:p[0])\n    area=0.0; previous_y=reference[1]\n    for x,y in pts:\n        if y<previous_y:\n            area+=(reference[0]-x)*(previous_y-y); previous_y=y\n    return area\npoints=[(0.12,0.20),(0.10,0.35),(0.09,0.70),(0.13,0.50)]\nfront=pareto(points); hv=hypervolume_2d(front,(0.2,1.0))",
+    "useIt": "from math import sqrt\nfrom scipy.optimize import minimize\n# Trace f1=x^2 versus f2=(x-1)^2 by bounding f2 at several epsilons.\nlibrary_front=[]\nfor epsilon in (0.04,0.16,0.36,0.64,1.0):\n    result=minimize(lambda z:z[0]**2,[max(0.0,1-sqrt(epsilon))],bounds=[(0,1)],constraints=[{'type':'ineq','fun':lambda z,e=epsilon:e-(z[0]-1)**2}],method='SLSQP')\n    assert result.success\n    x=float(result.x[0]); library_front.append((x*x,(x-1)**2))",
+    "verifyIt": "assert set(front)=={(0.12,0.20),(0.10,0.35),(0.09,0.70)}\nassert (0.13,0.50) not in front\nassert pareto(list(reversed(points)))==list(reversed(front))\nassert hv>0\nassert len(library_front)==5\nassert all(not dominates(a,b) for i,a in enumerate(library_front) for j,b in enumerate(library_front) if i!=j)\nassert all(0<=a<=1 and 0<=b<=1 for a,b in library_front)\nassert hypervolume_2d(front,(0.25,1.1))>hv",
+    "shipIt": "Version objective contracts, constraints, normalization, seeds, budget and reference point; repeat stochastic runs, audit front coverage and uncertainty, record stakeholder selection, monitor realized trade-offs, and retain the prior approved feasible choice for rollback."
+  },
+  "sourceNotes": [
+    {
+      "resource": "boyd-convex",
+      "contribution": "Provides vector optimization, Pareto optimality, scalarization, convex-front, and dual trade-off foundations."
+    },
+    {
+      "resource": "nsga2-paper",
+      "contribution": "Introduces the fast nondominated sorting, elitism, and crowding-distance method underlying NSGA-II."
+    },
+    {
+      "resource": "pymoo-docs",
+      "contribution": "Documents the current NSGA-II implementation, operators, constraint handling, indicators, and multi-criteria decision workflow discussed in the chapter."
+    },
+    {
+      "resource": "botorch-docs",
+      "contribution": "Documents current constrained multi-objective Bayesian optimization for costly noisy objectives and hypervolume-based acquisitions."
+    },
+    {
+      "resource": "scipy-optimize",
+      "contribution": "Documents the constrained numerical optimization interface used for the executable epsilon-constraint sweep in the lab."
+    }
+  ]
 }

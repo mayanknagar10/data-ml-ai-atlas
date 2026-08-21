@@ -7,40 +7,186 @@
     "ds",
     "da"
   ],
-  "interviewAnswer": "Good metrics reflect user/business value, respond to meaningful product changes, and resist gaming. Pair primary outcomes with driver diagnostics and guardrails for harmful side effects.",
+  "interviewAnswer": "I start from the decision and long-term user/business objective, then create an OEC or primary metric whose direction is credibly aligned with that objective. I add driver metrics for the causal mechanism and guardrails for reliability, safety, fairness, cost, and ecosystem harm. Every metric has a contract: population, unit, numerator, denominator, time window, attribution, aggregation, missingness, direction, and version. I validate sensitivity on historical experiments and directionality against long-term outcomes and known bad changes. I avoid arbitrary composites and average-of-averages, report uncertainty, and treat metric changes like schema migrations because they alter historical and experimental meaning.",
   "keyPoints": [
-    "Define denominator and attribution precisely.",
-    "Avoid proxy metrics that are easy to move but disconnected from value.",
-    "Use guardrails for latency, quality, safety or churn."
+    "Metrics operationalize values and assumptions",
+    "OEC, drivers, diagnostics, and guardrails serve different roles",
+    "Directionality and sensitivity must both be validated",
+    "Population, unit, denominator, and window define the estimand",
+    "Metric versions and lineage are part of scientific reproducibility"
   ],
   "resources": [
+    "trustworthy-oce-metrics",
+    "metric-development-kdd",
+    "dirty-dozen-metrics",
     "microsoft-experimentation"
   ],
   "featured": true,
-  "why": "Metric Design: North Star, Driver & Guardrail Metrics appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
-  "intuition": "Define denominator and attribution precisely.",
-  "deepDive": "Good metrics reflect user/business value, respond to meaningful product changes, and resist gaming. Pair primary outcomes with driver diagnostics and guardrails for harmful side effects. Avoid proxy metrics that are easy to move but disconnected from value. Use guardrails for latency, quality, safety or churn. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
-  "workedExample": "For search ranking, clicks may be a driver metric while successful task completion is closer to value and latency is a guardrail.",
+  "why": "Teams optimize what dashboards reward. A click metric can encourage clickbait, time spent can reward confusion, short-term revenue can damage retention, and an average can improve by losing low-performing users. Even perfect randomization estimates the causal effect on the metric that was defined, not the value stakeholders intended. Research on online experimentation emphasizes directionality and sensitivity and documents recurring interpretation pitfalls. Interviews test whether a candidate can turn a vague goal into measurable components without laundering value judgments. In production, metrics are shared software artifacts whose bugs propagate to experiments, alerts, forecasts, and executive decisions.",
+  "intuition": "Think of a metric system as an instrument panel. The primary gauge answers whether the product is moving toward durable value. Driver gauges reveal how the change worked. Guardrails light up when the route creates unacceptable damage. A single speedometer cannot show overheating, fuel, or collision risk; a wall of gauges without a decision hierarchy is equally useless. Each gauge needs calibration: it should move when the underlying property changes, stay stable when nothing changes, and not reward a shortcut that violates the real objective. Its denominator decides who counts and can change the story as much as its numerator.",
+  "deepDive": "Metric design is measurement theory plus causal and operational reasoning. A metric is a versioned estimand computed from event data, not merely a SQL expression or a label on a chart.",
+  "workedExample": "A recommender team proposes watch time as its North Star. A new ranker increases watch time 4% but also increases autoplay, complaint rate, and creator concentration while seven-day satisfied return falls. The metric tree is revised: satisfied sessions per assigned user is primary; successful content discovery and completion are drivers; complaints, latency, diversity, creator supply, and compute cost are guardrails. Raw watch time remains diagnostic. Each metric uses assignment-unit denominators and fixed windows. Long-term holdouts validate that satisfied return predicts retention better than minutes alone. The scorecard blocks the ranker despite its attractive engagement number.",
   "commonMistakes": [
-    "Applying the method without checking its assumptions or data-generating process.",
-    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+    {
+      "mistake": "Choosing the easiest metric to move",
+      "correction": "Sensitivity without directionality rewards proxy gaming; validate relationship to durable user and business value."
+    },
+    {
+      "mistake": "Averaging pre-aggregated rates",
+      "correction": "Preserve numerators and denominators or define the intended unit weights; average-of-averages usually changes the estimand."
+    },
+    {
+      "mistake": "Making every metric a success criterion",
+      "correction": "Use a hierarchy: primary/OEC, drivers, diagnostics, and guardrails with prespecified decision roles."
+    },
+    {
+      "mistake": "Silently changing a denominator",
+      "correction": "Definition changes are versioned migrations and invalidate direct historical or experimental comparison unless dual-run and reconciled."
+    }
   ],
   "followUps": [
-    "What assumptions does Metric Design: North Star, Driver & Guardrail Metrics make?",
-    "How would you validate or debug Metric Design: North Star, Driver & Guardrail Metrics in practice?"
+    {
+      "question": "What makes a good OEC?",
+      "answer": "It is directionally aligned with long-term value, sensitive within experiment duration, computable and reliable, difficult to game, and paired with explicit guardrails."
+    },
+    {
+      "question": "Why can per-active-user metrics mislead?",
+      "answer": "Treatment can change who becomes active, so conditioning on activity is post-treatment selection and denominator composition can drive the result."
+    },
+    {
+      "question": "Should guardrails be included in a composite?",
+      "answer": "Usually severe noncompensable harms are clearer as constraints or decision gates; a composite can let primary gains conceal unacceptable damage."
+    }
   ],
-  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
-  "visual": {
-    "type": "concept-map",
-    "title": "Metric Design: North Star, Driver & Guardrail Metrics",
-    "items": [
-      "Define denominator and attribution precisely.",
-      "Avoid proxy metrics that are easy to move but disconnected from value.",
-      "Use guardrails for latency, quality, safety or churn."
-    ],
-    "caption": "A compact concept map for the most important ideas in this lesson."
-  },
+  "production": "Store metrics in a governed semantic layer with source lineage, SQL or transformation version, population, unit, windows, numerator/denominator, attribution, missingness, direction, owner, tests, and access policy. Materialize additive components so totals reconcile across slices. Validate schema, uniqueness, coverage, lateness, denominator positivity, range, and invariant relationships. Dual-run definition changes and compare experiment decisions before migration. Monitor drift, sensitivity, correlation with long-term outcomes, guardrail breach rate, and metric gaming signals. Restrict sensitive user and fairness slices. On a bug, freeze affected decisions, identify every dashboard and experiment version, backfill under a new label, publish corrections, and roll back the semantic model without erasing historical definitions.",
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "Metric design translates a product objective into a measurable, sensitive, directionally trustworthy decision system. A North Star or Overall Evaluation Criterion (OEC) should predict long-term value closely enough to guide short experiments, driver metrics explain mechanisms, and guardrails prevent unacceptable harm. This chapter develops metric contracts, populations, units, numerators, denominators, windows, attribution, directionality, sensitivity, validity, reliability, gaming, ratio estimands, heavy tails, missingness, delayed outcomes, composite scores, proxy risk, and metric lifecycle governance. You will learn why more activity is not always better, why per-user and per-event averages answer different questions, how denominator changes can reverse a result, and how to validate short-term proxies against long-term outcomes and known interventions. A worked recommendation-system scorecard separates engagement from satisfaction and ecosystem health. The lab builds a semantic metric contract and ratio-of-sums calculator, rejects grain and denominator errors, and verifies invariants against pandas. Production guidance covers lineage, versioning, backfills, dashboards, experiment inference, access control, alerts, deprecation, correction, and rollback. The goal is not one magical number; it is an auditable map from user and business value to decisions under uncertainty.",
+  "prerequisites": [
+    "experiment-design",
+    "groupby-pivot",
+    "causal-inference"
+  ],
+  "learningObjectives": [
+    "Define a metric through population, unit, event, numerator, denominator, window, attribution, direction, and missingness semantics.",
+    "Construct primary, driver, diagnostic, and guardrail metrics that map to a causal product theory rather than a dashboard inventory.",
+    "Evaluate directionality, sensitivity, validity, reliability, robustness, gaming risk, and long-term proxy quality.",
+    "Implement and test ratio metrics with grain, denominator, reconciliation, and versioning invariants."
+  ],
+  "deepSections": [
+    {
+      "id": "metric-tree",
+      "title": "From objective to OEC, drivers, and guardrails",
+      "body": "Write the long-term objective and stakeholder before choosing observables. The OEC combines or selects near-term measures believed to causally predict that objective and must have a clear preferred direction. Driver metrics correspond to mechanisms in a product theory: discoverability, activation, task success, or repeat value. Diagnostic metrics explain implementation and segments but do not automatically become claims. Guardrails encode noncompensable or constrained outcomes such as crashes, latency, complaints, fairness gaps, creator supply, privacy incidents, and cost. Draw edges between intervention, drivers, primary outcome, guardrails, and long-term value; mark assumptions and expected time lags. Avoid adding metrics simply because data exist."
+    },
+    {
+      "id": "contract",
+      "title": "The semantic metric contract",
+      "body": "Specify metric name and version; target population and eligibility; analysis unit; observation and attribution windows; event sources and accepted versions; numerator and denominator; aggregation order; deduplication and identity; timezone; late-data policy; missingness; outlier treatment; direction; owner; and quality tests. A conversion rate among exposed users differs from ITT conversion among assigned eligible users. Sessions per active user conditions on activity and can improve if low-activity users disappear. Per-user mean, ratio of totals, mean of user ratios, and average of group averages are different estimands. Include sample rows and reconciliation identities so reviewers can test meaning without reading every query."
+    },
+    {
+      "id": "quality",
+      "title": "Directionality, sensitivity, validity, and reliability",
+      "body": "Directionality asks whether an increase consistently represents improvement in the target objective. Validate with domain theory, known harmful and beneficial launches, long-term holdouts, and downstream outcomes. Sensitivity asks whether the metric detects decision-relevant changes with acceptable variance; estimate standard error, MDE, and experiment hit rate without favoring noisy false positives. Construct validity asks whether it measures the intended concept; criterion validity compares trusted outcomes. Reliability asks whether repeated equivalent measurement is stable. Robustness covers heavy tails, bots, missing data, seasonality, and implementation changes. An easy-to-move but weak proxy is dangerous; a perfect long-term outcome arriving too late may be unusable for iteration."
+    },
+    {
+      "id": "ratios-composites",
+      "title": "Ratios, transforms, and composite scores",
+      "body": "For a ratio metric, state whether the estimand is total numerator divided by total denominator or average of unit-level ratios; they weight units differently. Denominator treatment effects can make relative movements hard to interpret. Use influence-function, delta-method, bootstrap, or unit-level analysis consistent with randomization. Winsorization and log transforms change the estimand and must be prespecified. Composite scores require direction alignment, scaling, weights, and missing-component rules; weights express value trade-offs, not statistical truth. A composite can hide a severe loss behind compensation, so preserve component reporting and keep true guardrails outside the compensating score."
+    },
+    {
+      "id": "lifecycle",
+      "title": "Gaming, drift, and metric lifecycle",
+      "body": "Goodhart's law warns that an optimized proxy can decouple from its target. Perform threat modeling: how could a feature increase the metric without helping users, exclude difficult cases, shift cost, or delay harm? Monitor component and population drift, metric correlation with long-term outcomes, missingness, event coverage, and conflicting movements. Use immutable versions for definition changes and dual-run old/new metrics through backfills and live experiments. Recompute historical series only under explicit version labels. Document known limitations and deprecation reasons. When a metric bug is found, identify affected experiments and decisions, publish corrections, and prevent silent dashboard rewrites."
+    }
+  ],
+  "math": "A ratio-of-sums estimand is R=sum_i A_i/sum_i B_i, while a mean-of-ratios is n^{-1}sum_i A_i/B_i; they are equal only in special cases. For experiment arms, Delta=R_T-R_C and uncertainty can use the influence value psi_i=(A_i-R B_i)/E[B] at the randomization unit. A composite S=sum_j w_j s_j requires defined scaling s_j and weights w_j. Sensitivity can be summarized by standard error or MDE, while directionality is a substantive claim requiring external or longitudinal validation.",
+  "workedExamples": [
+    {
+      "title": "Replacing raw engagement with a value-and-health scorecard",
+      "body": "Trace the proxy's gaming path, define a directionally stronger primary outcome, separate drivers from diagnostics, and make ecosystem and reliability harms noncompensable guardrails."
+    }
+  ],
+  "exercises": [
+    {
+      "prompt": "Why does average session duration sometimes rise after a bad change?",
+      "solution": "If the change causes short-session users to leave, the remaining-session denominator selects longer sessions; the average can rise while total user value falls."
+    },
+    {
+      "prompt": "Give a ratio-of-sums example.",
+      "solution": "Click-through rate as total clicks divided by total eligible impressions; preserve both components and define deduplication and attribution."
+    },
+    {
+      "prompt": "How do you validate directionality?",
+      "solution": "Use product theory, known interventions, long-term holdouts or downstream outcomes, component analysis, and attempts to find changes that game the proxy."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "flow",
+      "title": "Metric decision hierarchy",
+      "items": [
+        "Long-term objective",
+        "OEC / primary metric",
+        "Causal driver metrics",
+        "Diagnostics and slices",
+        "Guardrails / constraints",
+        "Decision + long-term validation"
+      ],
+      "caption": "Metrics have different evidentiary roles; a diagnostic movement does not automatically become a launch criterion.",
+      "afterSection": "metric-tree"
+    },
+    {
+      "type": "compare",
+      "title": "Two plausible rate estimands",
+      "left": {
+        "title": "Ratio of sums",
+        "items": [
+          "sum numerator / sum denominator",
+          "Weights denominator opportunities",
+          "Additive components reconcile",
+          "Useful for system-wide rate"
+        ]
+      },
+      "right": {
+        "title": "Mean of unit ratios",
+        "items": [
+          "Average each unit equally",
+          "Needs zero-denominator rule",
+          "Sensitive to small denominators",
+          "Answers unit-average question"
+        ]
+      },
+      "caption": "Neither is universally correct; the contract must name which population weighting matches the decision.",
+      "afterSection": "ratios-composites"
+    }
+  ],
+  "lab": {
+    "language": "python",
+    "goal": "Validate a semantic metric contract, compute a ratio of sums at user grain, and verify that aggregation, denominators, and pandas results reconcile.",
+    "buildIt": "REQUIRED=['name','version','population','unit','numerator','denominator','window','direction','owner']\ndef validate_contract(contract):\n    errors=[k for k in REQUIRED if not contract.get(k)]\n    if contract.get('direction') not in ('up','down','target'):errors.append('direction')\n    return errors\ndef ratio_of_sums(rows):\n    ids=[r['unit_id'] for r in rows]\n    if len(ids)!=len(set(ids)):raise ValueError('duplicate analysis unit')\n    numerator=sum(r['numerator'] for r in rows); denominator=sum(r['denominator'] for r in rows)\n    if denominator<=0:raise ValueError('nonpositive denominator')\n    return numerator/denominator,numerator,denominator\ncontract={'name':'eligible_ctr','version':'v2','population':'assigned eligible users','unit':'user','numerator':'eligible clicks','denominator':'eligible impressions','window':'7 days','direction':'up','owner':'search'}\nrows=[{'unit_id':1,'numerator':1,'denominator':2},{'unit_id':2,'numerator':1,'denominator':8},{'unit_id':3,'numerator':0,'denominator':5}]\nmetric,total_clicks,total_impressions=ratio_of_sums(rows)",
+    "useIt": "import pandas as pd\ndf=pd.DataFrame(rows)\npandas_metric=df['numerator'].sum()/df['denominator'].sum()\nmean_user_ratio=(df['numerator']/df['denominator']).mean()",
+    "verifyIt": "assert validate_contract(contract)==[]\nassert total_clicks==2 and total_impressions==15\nassert abs(metric-pandas_metric)<1e-12\nassert abs(metric-mean_user_ratio)>0.05\nbad=dict(contract); bad['denominator']=''; assert 'denominator' in validate_contract(bad)\ntry: ratio_of_sums(rows+[dict(rows[0])])\nexcept ValueError as e: assert 'duplicate' in str(e)\nelse: raise AssertionError('duplicate grain not rejected')",
+    "shipIt": "Version the complete metric contract and additive components, run grain/coverage/reconciliation tests, dual-run migrations, monitor proxy drift and guardrails, and freeze affected decisions when lineage or semantics fail."
+  },
+  "sourceNotes": [
+    {
+      "resource": "trustworthy-oce-metrics",
+      "contribution": "Provides the OEC, metric hierarchy, sensitivity, directionality, and guardrail framework from the canonical experimentation text."
+    },
+    {
+      "resource": "metric-development-kdd",
+      "contribution": "Provides peer-reviewed lessons for data-driven metric directionality and sensitivity development."
+    },
+    {
+      "resource": "dirty-dozen-metrics",
+      "contribution": "Documents recurring metric interpretation failures observed across thousands of online experiments."
+    },
+    {
+      "resource": "microsoft-experimentation",
+      "contribution": "Provides platform-scale metric governance, alerting, and decision-practice context."
+    }
+  ]
 }

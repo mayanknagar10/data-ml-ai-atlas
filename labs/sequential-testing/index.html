@@ -1,0 +1,20 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Sequential Testing, Peeking &amp; Early Stopping — Code Lab</title><script>(()=>{const s=localStorage.getItem('atlas-theme');const t=s||((matchMedia('(prefers-color-scheme: dark)').matches)?'dark':'light');document.documentElement.dataset.theme=t})()</script><style>:root{--bg:#fff;--text:#121417;--muted:#5d6470;--line:#dfe3e8;--soft:#f6f7f8;--blue:#155eef;--code:#0d1117;color-scheme:light}html[data-theme=dark]{--bg:#0d1117;--text:#eef2f6;--muted:#a8b0ba;--line:#2b333d;--soft:#171d24;--blue:#8fb4ff;--code:#070a0e;color-scheme:dark}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.6 Inter,system-ui,sans-serif}main{max-width:980px;margin:auto;padding:44px 22px 80px}a{color:var(--blue)}h1{font-size:42px;line-height:1.05;margin:8px 0 12px}.k{font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--blue);font-weight:800}.lead{color:var(--muted);font-size:17px}.top{display:flex;justify-content:space-between;gap:16px}button{border:1px solid var(--line);background:var(--soft);color:var(--text);border-radius:8px;padding:7px 9px;cursor:pointer}section{border-top:1px solid var(--line);padding-top:22px;margin-top:26px}pre{background:var(--code);color:#e6edf3;padding:18px;border-radius:12px;overflow:auto;font:13px/1.55 ui-monospace,monospace}.links{display:flex;gap:12px;flex-wrap:wrap;margin:18px 0}.links a{border:1px solid var(--line);border-radius:8px;padding:7px 9px;text-decoration:none;font-size:12px}@media(max-width:600px){h1{font-size:34px}.top{display:block}}</style></head><body><main><div class="top"><div><div class="k">Data, ML & AI Atlas · Runnable Lab</div><h1>Sequential Testing, Peeking &amp; Early Stopping</h1></div><button id="t">◐ Theme</button></div><p class="lead">Simulate false-positive inflation from naive peeking and verify family-wise control from a planned Bonferroni group-sequential design.</p><div class="links"><a href="../../index.html#/lesson/sequential-testing">← Full lesson</a><a href="lab.py">Combined Python file</a><a href="README.md">README</a></div><section><h2>1 · Build it</h2><p>Minimal implementation with as little framework abstraction as practical.</p><pre>import numpy as np
+from math import erf,sqrt
+def pvalue(x,y):
+    n=len(x); effect=x.mean()-y.mean(); se=sqrt(x.var(ddof=1)/n+y.var(ddof=1)/n)
+    z=effect/se; return 2*(1-0.5*(1+erf(abs(z)/sqrt(2))))
+def simulate(rule,runs=3000,seed=7):
+    rng=np.random.default_rng(seed); rejected=0; looks=(40,80,120,160,200)
+    for _ in range(runs):
+        x=rng.normal(size=looks[-1]); y=rng.normal(size=looks[-1])
+        if any(pvalue(x[:n],y[:n])&lt;=rule(len(looks),i) for i,n in enumerate(looks,1)):rejected+=1
+    return rejected/runs
+naive=simulate(lambda k,i:0.05)
+controlled=simulate(lambda k,i:0.05/k)</pre></section><section><h2>2 · Use it</h2><p>The same idea through a common library or practical API.</p><pre>from scipy.stats import norm
+bonferroni_z=float(norm.ppf(1-0.05/(2*5)))
+fixed_z=float(norm.ppf(1-0.05/2))</pre></section><section><h2>3 · Ship it</h2><p>Encode the monitoring method and information schedule immutably, record every look and remaining alpha/evidence, simulate production false positives, separate safety kills from efficacy claims, and restart rather than improvise after invalid data.</p></section><section><h2>4 · Verify it</h2><p>Assertions and sanity checks that catch conceptual or implementation mistakes.</p><pre>assert naive&gt;0.10
+assert controlled&lt;0.065
+assert controlled&gt;0
+assert bonferroni_z&gt;fixed_z
+assert abs(simulate(lambda k,i:0.05,seed=7)-naive)&lt;1e-12
+assert 0&lt;=naive&lt;=1 and 0&lt;=controlled&lt;=1</pre></section></main><script>const b=document.getElementById('t');function u(){b.textContent=document.documentElement.dataset.theme==='dark'?'☀ Light':'☾ Dark'}u();b.onclick=()=>{const n=document.documentElement.dataset.theme==='dark'?'light':'dark';document.documentElement.dataset.theme=n;localStorage.setItem('atlas-theme',n);u()}</script></body></html>

@@ -1,6 +1,6 @@
 # Linear Programming — Code Lab
 
-Solve a small constrained allocation problem with linear programming.
+Enumerate a two-variable LP's vertices from first principles, compare with SciPy linprog, and verify primal feasibility plus objective agreement.
 
 ## 1. Build it
 

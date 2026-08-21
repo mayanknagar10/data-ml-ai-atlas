@@ -8,46 +8,176 @@
     "de",
     "da"
   ],
-  "interviewAnswer": "EDA should answer what the rows/columns mean, whether values are valid, how variables are distributed, how missingness occurs, and which relationships or subgroups deserve deeper investigation before modeling.",
+  "interviewAnswer": "A systematic EDA starts with the business question, target population, unit/grain, time window, and source lineage. Then validate schema, keys, row counts, joins, duplicates, missingness, ranges, and reconciliation totals. Inspect univariate distributions, time patterns, relationships and subgroups on raw and meaningful transformed scales, while checking leakage and collection artifacts. Log observations and hypotheses separately, avoid causal or confirmatory claims from exploration, and turn the result into reproducible code, data-quality assertions, and a documented validation plan.",
   "keyPoints": [
-    "Start with schema, units and provenance.",
-    "Inspect distributions and missingness.",
-    "Check duplicates, impossible values and leakage.",
-    "Segment by relevant groups/time."
+    "Question and grain come before plots",
+    "Data contracts and reconciliation precede statistical summaries",
+    "Exploration is multiplicity-rich and hypothesis-generating",
+    "Time, subgroup, and collection processes can dominate patterns",
+    "A reproducible audit is a deliverable, not a disposable notebook"
   ],
   "resources": [
+    "nist-eda",
     "berkeley-data100",
-    "pandas-user-guide"
+    "pandas-user-guide",
+    "seaborn-tutorial"
   ],
   "featured": true,
-  "why": "A Systematic EDA Workflow appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
-  "intuition": "Start with schema, units and provenance.",
-  "deepDive": "EDA should answer what the rows/columns mean, whether values are valid, how variables are distributed, how missingness occurs, and which relationships or subgroups deserve deeper investigation before modeling. Inspect distributions and missingness. Check duplicates, impossible values and leakage. Segment by relevant groups/time. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
-  "workedExample": "Before modeling churn, inspect whether labels are future-derived, whether tenure changes the base rate, and whether missing fields cluster by customer type.",
+  "why": "Most downstream modeling failures begin as unnoticed data failures: duplicated joins overweight customers, timestamp fields leak outcomes, sentinel values masquerade as real measurements, or a sample excludes the population named in the report. A sophisticated model can fit all of these perfectly. NIST describes EDA as an approach to uncover structure, anomalies, and assumptions, not merely a list of charts. Interviews test whether candidates move beyond `.describe()` to grain, provenance, and leakage. In production, EDA becomes the first version of data contracts, monitoring rules, and incident hypotheses. It must be broad enough to discover surprises yet disciplined enough not to turn every surprise into a claim.",
+  "intuition": "Treat a new dataset like a scene whose evidence chain matters. First ask who and what could appear, how records were created, and what one row means. Then count and reconcile before interpreting. Scan each variable for support, shape, missingness, and suspicious values. Compare variables and groups only after confirming that the same units and time periods are being compared. Follow time because pipelines, policies, seasonality, and outages leave temporal fingerprints. Every surprising pattern creates at least two hypotheses: a real-world mechanism and a data-generation artifact. The job is to design checks that discriminate between them. A notebook is useful for discovery, but the final audit should run deterministically and fail when foundational assumptions change.",
+  "deepDive": "EDA alternates between top-down questions and bottom-up surprises. The workflow is iterative, but ordering protects against wasted interpretation: provenance and grain, structural validity, marginal behavior, relationships, time/subgroups, sensitivity, then documentation and confirmation.",
+  "workedExample": "An orders table has 100,000 rows and unique `order_id`; a customer snapshot has 22,000 rows but only 20,000 unique `customer_id` because two monthly versions were concatenated. A left join produces 108,400 rows and inflates revenue 8.6%. A naive EDA finds premium customers spend more, but premium customers are more likely to have duplicate snapshots. The correct workflow catches key nonuniqueness before the plot, selects the version valid at order time or defines an as-of rule, reruns reconciliation to exactly 100,000 orders and source revenue, then examines spending by acquisition cohort and time with uncertainty. The join incident becomes a uniqueness and temporal-overlap test.",
   "commonMistakes": [
-    "Applying the method without checking its assumptions or data-generating process.",
-    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+    "Starting with correlations or model features before confirming grain, keys, joins, population, and time.",
+    "Treating missingness, outliers, duplicates, or impossible values as cleaning chores without investigating their generating mechanisms.",
+    "Using a single histogram, mean, or correlation as a complete distributional description.",
+    "Making confirmatory or causal claims after trying many slices, transformations, and filters on the same data.",
+    "Leaving important checks in an irreproducible notebook with hidden state and no source snapshot."
   ],
   "followUps": [
-    "What assumptions does A Systematic EDA Workflow make?",
-    "How would you validate or debug A Systematic EDA Workflow in practice?"
+    {
+      "question": "What is the first thing you check in a new dataset?",
+      "answer": "Clarify the question, target population, unit/grain, time window, lineage, and key contract. A row count or summary has no stable meaning until those are known."
+    },
+    {
+      "question": "How do you prevent EDA from becoming p-hacking?",
+      "answer": "Label it hypothesis-generating, keep a log of views and choices, avoid thresholded claims, and use fresh holdout data or a preregistered confirmatory design with multiplicity control."
+    },
+    {
+      "question": "What should leave the notebook?",
+      "answer": "Data contracts, reconciliation checks, stable features/metrics, provenance, decision-relevant findings, limitations, and reproducible scripts or reports should become version-controlled pipeline artifacts."
+    }
   ],
-  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
-  "visual": {
-    "type": "flow",
-    "title": "EDA loop",
-    "items": [
-      "Understand grain",
-      "Check distributions",
-      "Inspect missingness/outliers",
-      "Explore relationships",
-      "Validate assumptions"
-    ],
-    "caption": "EDA is an iterative diagnostic process, not a collection of decorative plots.",
-    "accent": 2,
-    "orientation": "horizontal"
-  },
+  "production": "Run EDA against immutable or versioned snapshots, not a moving warehouse view. Parameterize dates and sources; log row counts, query hashes, schema, and package versions. Sample safely for expensive plots while computing reconciliation and tail diagnostics on full data when feasible. Redact PII and avoid exporting rare-group rows. Cache only with data/code hashes. Convert grain, key, range, freshness, missingness, category, and reconciliation findings into monitored contracts with owners and severity. Peer-review join and leakage decisions. Use deterministic seeds for sampling. Store report metadata and machine-readable summaries for comparison across runs. If foundational checks fail, stop downstream model training rather than decorating a broken dataset. Rollback restores the prior data snapshot, transformations, tests, and published findings together.",
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "Exploratory data analysis is a disciplined investigation of a dataset's provenance, structure, quality, distributions, relationships, time behavior, and fitness for a specific decision. It is not a hunt for attractive plots or significant correlations. This chapter builds a reproducible workflow from problem framing and grain through schema, joins, missingness, duplicates, ranges, univariate and multivariate views, target leakage, temporal splits, hypothesis logging, and handoff to confirmatory analysis. You will learn to distinguish discovery from validation, use invariants and reconciliation totals, inspect both raw and transformed scales, detect subpopulation and collection effects, and turn observations into testable follow-ups rather than causal claims. The worked example audits an orders-and-customers dataset whose duplicated join silently changes the business population. The lab builds a dependency-light profiling report, compares it with pandas, and verifies row, uniqueness, missingness, and range contracts. Production guidance covers snapshots, lineage, privacy, compute budgets, notebooks versus pipelines, review, monitoring, and rollback. The aim is an EDA artifact another analyst can reproduce, challenge, and safely build upon.",
+  "prerequisites": [
+    "pandas-core",
+    "probability-basics",
+    "sampling-design"
+  ],
+  "learningObjectives": [
+    "Frame EDA around a target population, estimand or decision, unit of analysis, and data-generating process.",
+    "Audit schema, grain, keys, joins, missingness, duplicates, ranges, distributions, dependence, and time before modeling.",
+    "Separate exploratory hypotheses from confirmatory evidence and prevent leakage, selection, and multiplicity from contaminating conclusions.",
+    "Produce a reproducible EDA report with invariants, lineage, limitations, and explicit next actions."
+  ],
+  "deepSections": [
+    {
+      "id": "frame-grain",
+      "title": "Frame the target, unit, and data-generating process",
+      "body": "Write the decision or learning goal, target population, eligibility, observation unit, unit of analysis, outcome horizon, and time cutoff. A row may represent an event while the inferential unit is a user; summarize both. Map source systems, extraction filters, sampling, consent, assignment, censoring, and joins. Name entities and candidate keys. Decide what missing rows would mean, not only missing cells. Draw a small lineage diagram from operational events to the analytical table. This frame prevents a convenient table from silently redefining the problem and reveals whether causal, predictive, descriptive, or operational questions require different populations."
+    },
+    {
+      "id": "structure-quality",
+      "title": "Audit structure before statistics",
+      "body": "Record row and column counts, dtypes, nullability, allowed categories, time zones, units, ranges, primary-key uniqueness, foreign-key coverage, duplicate classes, and cardinality. Reconcile counts and additive amounts against upstream control totals. For every join, predict output cardinality, validate relationship type, and compare unmatched keys in both directions. Distinguish exact duplicate rows from legitimate repeated events and conflicting duplicate keys. Check monotonic times, impossible event order, future timestamps, and sentinel codes. Fail loudly on schema drift instead of coercing invalid values. A distribution computed from a multiplied join is not a meaningful distribution."
+    },
+    {
+      "id": "marginals",
+      "title": "Univariate distributions on honest scales",
+      "body": "For numeric fields inspect count, missingness, min/max, quantiles, robust center/spread, zero/negative rates, histograms, ECDFs, and tail tables. Histograms depend on bin width; KDE depends on bandwidth and can leak density outside bounded support. ECDFs expose every observation without tuning. Inspect raw and domain-valid transforms such as log1p for nonnegative skew, while preserving zeros and units. For categories inspect frequency, rare levels, unknowns, entropy, and drift. For text and arrays inspect length and encoding. Compare summaries by source, time, and collection mode to distinguish population structure from pipeline artifacts."
+    },
+    {
+      "id": "relationships",
+      "title": "Relationships, confounding, and leakage",
+      "body": "Use scatterplots, hexbin/density for overplotting, conditional summaries, correlations with uncertainty, and small multiples. Linear correlation misses nonlinear or heteroskedastic relationships and is sensitive to outliers. Segment by plausible confounders and inspect whether aggregate patterns reverse. Do not control indiscriminately for colliders or consequences of the outcome. Search for leakage through post-outcome timestamps, target-derived aggregates, train/test duplication, future windows, and identifiers that proxy the label. Relationships discovered after many views are exploratory; hold out fresh data or preregister a confirmatory analysis before attaching error-controlled claims."
+    },
+    {
+      "id": "time-handoff",
+      "title": "Time, sensitivity, and the handoff to engineering",
+      "body": "Plot volume, missingness, quantiles, categories, and outcome rates by event and processing time. Overlay deployments, policy changes, holidays, outages, and backfills. Use chronological splits for forecasting or future prediction and fit preprocessing only on training periods. Test sensitivity to inclusion rules, winsorization, time windows, deduplication, and metric definitions. Convert stable assumptions into executable tests; turn open questions into named experiments or data requests. The final artifact should contain an executive summary, provenance, contracts, findings with evidence, alternative explanations, limitations, and links to reproducible code—not a screenshot dump.\n\nRecord negative findings as well as discoveries: a checked relationship that shows no material pattern can prevent repeated analysis and selective reporting. Give each check an owner, severity, and disposition. This turns exploration into cumulative organizational evidence rather than an ephemeral notebook whose reasoning disappears when its author moves on."
+    }
+  ],
+  "math": "For a field X, robust spread IQR=Q_0.75-Q_0.25 and MAD=median|X-median(X)| complement mean/SD. Missing rate is sum 1{X_i missing}/n, but condition it on source and time. Join multiplication factor is output rows divided by left rows, interpreted with relationship cardinality. Pairwise correlation r is a descriptive standardized covariance, not causal effect. For many exploratory comparisons, nominal p-values do not retain their advertised family error; confirmation requires a separate design or multiplicity plan.",
+  "workedExamples": [
+    {
+      "title": "A duplicated dimension that manufactures a segment effect",
+      "body": "Predict one-row-per-order grain, detect dimension-key duplication, measure join expansion and revenue inflation, repair with an explicit temporal rule, and convert the failure into permanent data-contract tests."
+    }
+  ],
+  "exercises": [
+    {
+      "prompt": "A left table has 10,000 unique IDs and a left join outputs 12,500 rows. What do you inspect first?",
+      "solution": "Inspect right-key multiplicity and the intended relationship. The 1.25 expansion may be valid one-to-many detail or an accidental duplicate dimension; reconcile the target grain before aggregation."
+    },
+    {
+      "prompt": "Why inspect missingness by time and source?",
+      "solution": "An overall rate can hide outages, schema changes, or selection concentrated in one source. Conditional patterns help distinguish mechanism and define monitoring."
+    },
+    {
+      "prompt": "You tried 50 segment correlations and one has p=0.03. What may you claim?",
+      "solution": "Treat it as exploratory evidence only. The nominal p-value ignores selection among 50 views; log the hypothesis and confirm on fresh data with a planned analysis."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "flow",
+      "title": "A reproducible EDA loop",
+      "items": [
+        "Frame target + grain",
+        "Validate structure",
+        "Inspect marginals",
+        "Explore relationships/time",
+        "Stress-test explanations",
+        "Promote checks + hypotheses"
+      ],
+      "caption": "Ordering prevents attractive downstream patterns from distracting from foundational data defects.",
+      "orientation": "horizontal",
+      "afterSection": "frame-grain"
+    },
+    {
+      "type": "compare",
+      "title": "Discovery and confirmation",
+      "left": {
+        "title": "Exploratory",
+        "items": [
+          "Many flexible views",
+          "Generate explanations",
+          "Log choices and anomalies",
+          "No isolated threshold claims"
+        ]
+      },
+      "right": {
+        "title": "Confirmatory",
+        "items": [
+          "Prespecified target",
+          "Fresh or protected data",
+          "Error/decision rule",
+          "Report all planned outcomes"
+        ]
+      },
+      "caption": "EDA becomes rigorous when its freedom is acknowledged and followed by an appropriate confirmation boundary.",
+      "afterSection": "relationships"
+    }
+  ],
+  "lab": {
+    "language": "python",
+    "goal": "Build a small reproducible table profiler, compare key summaries with pandas, and verify grain, missingness, range, and category contracts.",
+    "buildIt": "from collections import Counter\n\ndef profile(rows,key,numeric,categorical):\n    keys=[r.get(key) for r in rows]\n    values=[r.get(numeric) for r in rows if r.get(numeric) is not None]\n    categories=Counter(r.get(categorical) for r in rows)\n    return {\n        'rows':len(rows),'unique_keys':len(set(keys)),\n        'duplicate_keys':len(keys)-len(set(keys)),\n        'missing_numeric':sum(r.get(numeric) is None for r in rows),\n        'numeric_min':min(values),'numeric_max':max(values),\n        'categories':dict(categories),\n    }\n\nrows=[{'id':1,'amount':12.0,'channel':'web'},{'id':2,'amount':None,'channel':'store'},{'id':3,'amount':8.0,'channel':'web'}]\nreport=profile(rows,'id','amount','channel')",
+    "useIt": "import pandas as pd\ndf=pd.DataFrame(rows)\npandas_report={'rows':len(df),'unique_keys':df['id'].nunique(),'missing_numeric':int(df['amount'].isna().sum()),'numeric_min':float(df['amount'].min()),'numeric_max':float(df['amount'].max())}",
+    "verifyIt": "assert report['rows']==report['unique_keys']==3\nassert report['duplicate_keys']==0\nassert report['missing_numeric']==1\nassert report['numeric_min']>=0\nassert report['categories']=={'web':2,'store':1}\nfor k,v in pandas_report.items(): assert report[k]==v",
+    "shipIt": "Run profiles on versioned snapshots, preserve grain and lineage, fail on key/range/reconciliation violations, monitor trends by source/time, and redact sensitive or rare values from artifacts."
+  },
+  "sourceNotes": [
+    {
+      "resource": "nist-eda",
+      "contribution": "Defines EDA as a systematic approach to reveal structure, anomalies, assumptions, and parsimonious explanations."
+    },
+    {
+      "resource": "berkeley-data100",
+      "contribution": "Provides a rigorous end-to-end data science workflow connecting data preparation, visualization, inference, and modeling."
+    },
+    {
+      "resource": "pandas-user-guide",
+      "contribution": "Documents current tabular inspection, missing-data, grouping, joining, and dtype behavior used in reproducible analysis."
+    },
+    {
+      "resource": "seaborn-tutorial",
+      "contribution": "Documents current statistical visualization methods for distributions, relationships, categories, uncertainty, and faceting."
+    }
+  ]
 }

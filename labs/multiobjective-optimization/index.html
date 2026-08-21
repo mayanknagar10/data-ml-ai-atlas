@@ -1,0 +1,27 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Multi-objective Optimization &amp; Pareto Trade-offs — Code Lab</title><script>(()=>{const s=localStorage.getItem('atlas-theme');const t=s||((matchMedia('(prefers-color-scheme: dark)').matches)?'dark':'light');document.documentElement.dataset.theme=t})()</script><style>:root{--bg:#fff;--text:#121417;--muted:#5d6470;--line:#dfe3e8;--soft:#f6f7f8;--blue:#155eef;--code:#0d1117;color-scheme:light}html[data-theme=dark]{--bg:#0d1117;--text:#eef2f6;--muted:#a8b0ba;--line:#2b333d;--soft:#171d24;--blue:#8fb4ff;--code:#070a0e;color-scheme:dark}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.6 Inter,system-ui,sans-serif}main{max-width:980px;margin:auto;padding:44px 22px 80px}a{color:var(--blue)}h1{font-size:42px;line-height:1.05;margin:8px 0 12px}.k{font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--blue);font-weight:800}.lead{color:var(--muted);font-size:17px}.top{display:flex;justify-content:space-between;gap:16px}button{border:1px solid var(--line);background:var(--soft);color:var(--text);border-radius:8px;padding:7px 9px;cursor:pointer}section{border-top:1px solid var(--line);padding-top:22px;margin-top:26px}pre{background:var(--code);color:#e6edf3;padding:18px;border-radius:12px;overflow:auto;font:13px/1.55 ui-monospace,monospace}.links{display:flex;gap:12px;flex-wrap:wrap;margin:18px 0}.links a{border:1px solid var(--line);border-radius:8px;padding:7px 9px;text-decoration:none;font-size:12px}@media(max-width:600px){h1{font-size:34px}.top{display:block}}</style></head><body><main><div class="top"><div><div class="k">Data, ML & AI Atlas · Runnable Lab</div><h1>Multi-objective Optimization &amp; Pareto Trade-offs</h1></div><button id="t">◐ Theme</button></div><p class="lead">Implement nondominated filtering and two-dimensional hypervolume, use SciPy for an epsilon-constraint sweep, and verify known fronts plus invariants.</p><div class="links"><a href="../../index.html#/lesson/multiobjective-optimization">← Full lesson</a><a href="lab.py">Combined Python file</a><a href="README.md">README</a></div><section><h2>1 · Build it</h2><p>Minimal implementation with as little framework abstraction as practical.</p><pre>def dominates(a,b):
+    return all(x&lt;=y for x,y in zip(a,b)) and any(x&lt;y for x,y in zip(a,b))
+def pareto(points):
+    return [p for i,p in enumerate(points) if not any(j!=i and dominates(q,p) for j,q in enumerate(points))]
+def hypervolume_2d(front,reference):
+    pts=sorted(pareto(front),key=lambda p:p[0])
+    area=0.0; previous_y=reference[1]
+    for x,y in pts:
+        if y&lt;previous_y:
+            area+=(reference[0]-x)*(previous_y-y); previous_y=y
+    return area
+points=[(0.12,0.20),(0.10,0.35),(0.09,0.70),(0.13,0.50)]
+front=pareto(points); hv=hypervolume_2d(front,(0.2,1.0))</pre></section><section><h2>2 · Use it</h2><p>The same idea through a common library or practical API.</p><pre>from math import sqrt
+from scipy.optimize import minimize
+# Trace f1=x^2 versus f2=(x-1)^2 by bounding f2 at several epsilons.
+library_front=[]
+for epsilon in (0.04,0.16,0.36,0.64,1.0):
+    result=minimize(lambda z:z[0]**2,[max(0.0,1-sqrt(epsilon))],bounds=[(0,1)],constraints=[{&#x27;type&#x27;:&#x27;ineq&#x27;,&#x27;fun&#x27;:lambda z,e=epsilon:e-(z[0]-1)**2}],method=&#x27;SLSQP&#x27;)
+    assert result.success
+    x=float(result.x[0]); library_front.append((x*x,(x-1)**2))</pre></section><section><h2>3 · Ship it</h2><p>Version objective contracts, constraints, normalization, seeds, budget and reference point; repeat stochastic runs, audit front coverage and uncertainty, record stakeholder selection, monitor realized trade-offs, and retain the prior approved feasible choice for rollback.</p></section><section><h2>4 · Verify it</h2><p>Assertions and sanity checks that catch conceptual or implementation mistakes.</p><pre>assert set(front)=={(0.12,0.20),(0.10,0.35),(0.09,0.70)}
+assert (0.13,0.50) not in front
+assert pareto(list(reversed(points)))==list(reversed(front))
+assert hv&gt;0
+assert len(library_front)==5
+assert all(not dominates(a,b) for i,a in enumerate(library_front) for j,b in enumerate(library_front) if i!=j)
+assert all(0&lt;=a&lt;=1 and 0&lt;=b&lt;=1 for a,b in library_front)
+assert hypervolume_2d(front,(0.25,1.1))&gt;hv</pre></section></main><script>const b=document.getElementById('t');function u(){b.textContent=document.documentElement.dataset.theme==='dark'?'☀ Light':'☾ Dark'}u();b.onclick=()=>{const n=document.documentElement.dataset.theme==='dark'?'light':'dark';document.documentElement.dataset.theme=n;localStorage.setItem('atlas-theme',n);u()}</script></body></html>

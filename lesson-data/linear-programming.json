@@ -7,86 +7,186 @@
     "ds",
     "as"
   ],
-  "interviewAnswer": "Linear programming optimizes a linear objective under linear constraints. It is ideal for allocation, blending, planning and many operational decisions once predictions have been produced.",
+  "interviewAnswer": "An LP minimizes or maximizes c^T x subject to linear constraints and bounds. The feasible set is a convex polyhedron; if a finite optimum exists, at least one extreme point is optimal. Simplex moves among adjacent basic feasible solutions, while interior-point methods travel through the interior. Every LP has a dual whose feasible objective bounds the primal, and under standard feasibility conditions strong duality makes the gap zero. In practice I define variables and units carefully, inspect status, primal residuals, objective reconstruction, dual gap and sensitivity, and explicitly distinguish optimal, feasible-but-uncertified, infeasible, and unbounded results.",
   "keyPoints": [
-    "Decision variables, objective, constraints.",
-    "Feasible region is a polyhedron.",
-    "Sensitivity/shadow prices can be valuable."
+    "Variables and units determine whether the model represents the real decision",
+    "LP feasible regions are convex polyhedra",
+    "Simplex and interior-point methods exploit different geometry",
+    "The dual provides bounds and local resource values",
+    "Status, residuals, and dual evidence are part of the output"
   ],
   "resources": [
-    "scipy-optimize",
-    "ortools"
+    "boyd-convex",
+    "scipy-linprog",
+    "ortools-mathopt",
+    "stanford-ee364a"
   ],
   "featured": false,
-  "why": "Linear Programming appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
-  "intuition": "Decision variables, objective, constraints.",
-  "deepDive": "Linear programming optimizes a linear objective under linear constraints. It is ideal for allocation, blending, planning and many operational decisions once predictions have been produced. Feasible region is a polyhedron. Sensitivity/shadow prices can be valuable. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
-  "workedExample": "Allocate limited inventory across regions to maximize expected margin subject to stock and service constraints.",
+  "why": "Allocation, blending, transportation, network flow, staffing approximations, ad budgets, portfolio constraints, and production planning often reduce to LPs or LP relaxations. LPs solve at scales where enumerating combinations is impossible and provide unusually strong explanations through constraints and dual values. They are also the foundation of mixed-integer optimization: every branch-and-bound node typically solves an LP relaxation. A model can nevertheless optimize the wrong quantity perfectly because a coefficient has the wrong unit, a minimum became a maximum, or a missing constraint created unrealistic arbitrage. Interview questions test both formulation and geometry. Production systems require auditable data-to-coefficient pipelines and safe handling of infeasibility or stale inputs.",
+  "intuition": "In two dimensions, every linear inequality cuts the plane with a line and keeps one side. Their intersection is a polygon, possibly empty or unbounded. The objective assigns parallel contour lines; sliding one in the improving direction reaches the feasible polygon at a vertex or along an edge. Simplex follows edges from vertex to vertex, while an interior-point method approaches through the polygon's interior. The dual attaches a price to each resource boundary and combines those prices into a proof that no primal solution can do better. If the proof and a feasible plan have the same value, the plan is optimal without visiting every point.",
+  "deepDive": "LP modeling separates decisions from coefficients and then exploits polyhedral structure. The same formulation supports primal decisions, dual explanation, sensitivity, and a disciplined diagnosis of failure states.",
+  "workedExample": "A factory chooses chairs x and tables y. Profit is 30x+50y. Carpentry requires x+2y<=40 hours; finishing requires 3x+2y<=60; x,y>=0. Candidate vertices are (0,0), (20,0), (0,20), and the intersection (10,15). Profits are 0, 600, 1000, and 1050, so (10,15) is optimal and both resources bind. A solver should reproduce the objective and show negligible residuals. Dual prices solve y1+3y2>=30 and 2y1+2y2>=50; complementary slackness for positive x,y and binding rows gives y1=22.5 and y2=2.5, whose resource value 40(22.5)+60(2.5)=1050 certifies optimality.",
   "commonMistakes": [
-    "Applying the method without checking its assumptions or data-generating process.",
-    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+    {
+      "mistake": "Mixing maximization with a minimization API",
+      "correction": "Negate the objective consistently and reconstruct the original business objective after solving."
+    },
+    {
+      "mistake": "Relying on default nonnegative bounds without documenting them",
+      "correction": "Declare every variable domain and bound explicitly in the model specification."
+    },
+    {
+      "mistake": "Treating infeasible as solver failure",
+      "correction": "Use status details and conflict analysis to determine whether the mathematical constraints truly contradict."
+    },
+    {
+      "mistake": "Applying shadow prices far outside their range",
+      "correction": "They are local to the current basis; re-solve scenarios when material changes can alter the active set."
+    }
   ],
   "followUps": [
-    "What assumptions does Linear Programming make?",
-    "How would you validate or debug Linear Programming in practice?"
+    {
+      "question": "Why does an LP optimum occur at a vertex?",
+      "answer": "A linear objective over a polyhedron, if it has a finite optimum, has at least one optimal extreme point; if a face is optimal, its vertices are optimal too."
+    },
+    {
+      "question": "What does unbounded mean?",
+      "answer": "There is a feasible direction along which the objective improves without limit. In applications it often exposes a missing capacity, balance, or bound."
+    },
+    {
+      "question": "What is degeneracy?",
+      "answer": "A basic feasible solution has a basic variable at a bound, so multiple bases can represent one vertex; it can complicate pivots and sensitivity without changing feasibility."
+    }
   ],
-  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "production": "Generate models from validated, versioned coefficients with explicit units and time cutoffs. Record row/column counts, nonzeros, coefficient ranges, presolve changes, solver/version/options, time limit, status, objective, best bound, residuals, dual gap, active constraints, and sensitivity output. Use sparse matrices and parameterized models for repeated solves. Test tiny enumerated cases, historical instances, deliberate infeasibility/unboundedness, and sign/unit mutations. Monitor runtime, status mix, residuals, active-set and shadow-price drift, and decision discontinuities. Restrict access to sensitive costs and operational capacities. Never publish an interrupted incumbent as optimal. If the solve is infeasible, stale, or uncertified, activate an approved feasible heuristic or last safe plan, alert owners, and preserve full diagnostics for rollback.",
   "lab": {
-    "goal": "Solve a small constrained allocation problem with linear programming.",
     "language": "python",
-    "buildIt": "# Maximize 3*x + 2*y subject to x+y<=4, x<=2, x,y>=0\n# Inspect corner points for a tiny LP.\npts=[(0,0),(2,0),(0,4),(2,2)]\nbest=max(pts,key=lambda p:3*p[0]+2*p[1])\nprint(best,3*best[0]+2*best[1])",
-    "useIt": "from scipy.optimize import linprog\nres=linprog(c=[-3,-2],A_ub=[[1,1],[1,0]],b_ub=[4,2],bounds=[(0,None),(0,None)])\nprint(res.x,-res.fun)",
-    "shipIt": "Decision systems should version objective coefficients and constraints separately from predictive models and log infeasibility/override reasons.",
-    "verifyIt": "assert res.success and res.x.sum() <= 4.000001"
-  },
-  "visual": {
-    "type": "scatter",
-    "title": "Linear programming geometry",
-    "series": [
-      {
-        "label": "feasible vertices",
-        "points": [
-          [
-            0.18,
-            0.2
-          ],
-          [
-            0.18,
-            0.62
-          ],
-          [
-            0.56,
-            0.7
-          ],
-          [
-            0.78,
-            0.42
-          ],
-          [
-            0.6,
-            0.2
-          ]
-        ]
-      },
-      {
-        "label": "objective direction",
-        "points": [
-          [
-            0.2,
-            0.3
-          ],
-          [
-            0.82,
-            0.76
-          ]
-        ]
-      }
-    ],
-    "caption": "With a linear objective and linear constraints, an optimum occurs at a feasible-region vertex when one exists.",
-    "xLabel": "decision x₁",
-    "yLabel": "decision x₂"
+    "goal": "Enumerate a two-variable LP's vertices from first principles, compare with SciPy linprog, and verify primal feasibility plus objective agreement.",
+    "buildIt": "constraints=[(1.0,2.0,40.0),(3.0,2.0,60.0),(1.0,0.0,0.0),(0.0,1.0,0.0)]\n# Last two rows represent x=0 and y=0 candidate boundaries.\ndef intersect(a,b):\n    a1,a2,c1=a; b1,b2,c2=b; det=a1*b2-a2*b1\n    if abs(det)<1e-12:return None\n    return ((c1*b2-a2*c2)/det,(a1*c2-c1*b1)/det)\ndef feasible(p):\n    x,y=p; return x>=-1e-9 and y>=-1e-9 and x+2*y<=40+1e-9 and 3*x+2*y<=60+1e-9\npoints=[]\nfor i in range(len(constraints)):\n    for j in range(i):\n        p=intersect(constraints[i],constraints[j])\n        if p is not None and feasible(p):points.append(p)\nobjective=lambda p:30*p[0]+50*p[1]\nsolution=max(points,key=objective)",
+    "useIt": "from scipy.optimize import linprog\nresult=linprog(c=[-30,-50],A_ub=[[1,2],[3,2]],b_ub=[40,60],bounds=[(0,None),(0,None)],method='highs')",
+    "verifyIt": "assert feasible(solution)\nassert max(abs(solution[i]-[10,15][i]) for i in range(2))<1e-9\nassert abs(objective(solution)-1050)<1e-9\nassert result.success and result.status==0\nassert feasible(result.x)\nassert abs(-result.fun-objective(solution))<1e-7\ndual_prices=[22.5,2.5]\nassert abs(40*dual_prices[0]+60*dual_prices[1]-objective(solution))<1e-9",
+    "shipIt": "Version units and coefficients, record status/residuals/dual gap, test infeasible and unbounded controls, monitor active constraints and latency, and publish only certified solutions or an approved feasible fallback."
   },
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "Linear programming (LP) optimizes a linear objective over linear equality, inequality, and bound constraints. Its simple algebra hides a powerful geometry: feasible solutions form a convex polyhedron, optimal solutions occur on a face containing an extreme point when an optimum exists, and a dual program supplies bounds, shadow prices, and certificates of optimality or infeasibility. This chapter develops modeling from decisions and units through standard forms, slack variables, vertices, simplex intuition, interior-point methods, duality, sensitivity, degeneracy, alternate optima, infeasibility, unboundedness, and numerical scaling. You will learn to translate business rules without reversing signs or mixing units, distinguish model infeasibility from solver failure, and validate solutions using constraint residuals, objective reconstruction, and dual evidence. A worked production-planning example derives candidate vertices and a binding-capacity interpretation. The lab enumerates every 2D vertex from scratch, compares the optimum with SciPy's HiGHS-backed `linprog`, and verifies feasibility and objective agreement. Production guidance covers sparse models, solver statuses, tolerances, warm starts, time limits, security, drift, safe fallbacks, and rollback.",
+  "prerequisites": [
+    "convexity",
+    "vectors-matrices",
+    "lagrange-kkt"
+  ],
+  "learningObjectives": [
+    "Translate a decision problem into linear variables, an objective, constraints, bounds, units, and explicit assumptions.",
+    "Explain LP geometry, extreme points, simplex and interior-point intuitions, and the primal-dual certificate.",
+    "Diagnose optimal, infeasible, unbounded, degenerate, and multiple-optimum outcomes from evidence rather than guesswork.",
+    "Implement vertex enumeration for a small LP and validate a library solution using independent invariants."
+  ],
+  "deepSections": [
+    {
+      "id": "formulation",
+      "title": "From a real decision to linear algebra",
+      "body": "Define each decision variable with entity, time grain, domain, and unit. State whether the objective is cost minimization or value maximization and verify every term has the same unit. Translate resource limits, balances, demands, policy rules, and bounds row by row. A coefficient answers how one unit of a variable consumes or contributes to a constraint. Keep constants on the right and normalize signs for review. Linearity requires additivity and proportionality: doubling a decision doubles its modeled contribution, and cross-products or thresholds are absent. Fixed charges, either-or logic, and economies of scale require integer or piecewise formulations rather than being hidden in an LP."
+    },
+    {
+      "id": "geometry-bases",
+      "title": "Polyhedra, vertices, and basic feasible solutions",
+      "body": "The feasible set {x: Ax<=b, Aeq x=beq, l<=x<=u} is an intersection of halfspaces and affine sets, hence convex. A vertex is a point that cannot be expressed as a nontrivial mixture of other feasible points. In standard form Ax=b, x>=0, a basis selects enough linearly independent columns to solve for basic variables while nonbasic variables sit at bounds. Degeneracy occurs when a basic variable is also at a bound, so several bases can represent the same vertex. If a finite optimum exists, an extreme point is optimal, though an entire face may share the same objective."
+    },
+    {
+      "id": "algorithms",
+      "title": "Simplex, interior-point, presolve, and sparsity",
+      "body": "Simplex starts from or constructs a basic feasible solution, chooses an improving entering variable using reduced costs, and pivots to an adjacent basis while preserving feasibility. It can be exceptionally effective and yields a basis useful for sensitivity. Interior-point methods follow a barrier-controlled path through the interior and solve sparse linear systems; crossover can recover a basic solution. Modern solvers presolve fixed variables, redundant rows, singleton constraints, and obvious infeasibility, then map results back. Performance depends heavily on sparse structure, coefficient ranges, ordering, and formulation strength. The algorithm name alone says little without model dimensions, nonzeros, tolerances, and status."
+    },
+    {
+      "id": "dual-sensitivity",
+      "title": "Duality, reduced costs, and sensitivity",
+      "body": "For a primal max problem with Ax<=b and x>=0, the dual min problem uses y>=0, A^T y>=c, minimizing b^T y. Any dual-feasible y prices resources enough to cover every activity's return, so its value upper-bounds primal value. Strong duality makes optimal primal and dual values equal. Complementary slackness links positive variables to tight dual constraints and positive resource prices to tight primal constraints. Reduced cost measures how much a variable's objective coefficient must improve before entering under a fixed basis. Shadow prices and allowable ranges are local: changing coefficients can switch the basis and invalidate linear extrapolation."
+    },
+    {
+      "id": "failure-validation",
+      "title": "Statuses, pathologies, and independent validation",
+      "body": "Optimal means a feasible solution and certificate meet tolerances. Infeasible means no point satisfies every modeled constraint; inspect an irreducible inconsistent subsystem or feasibility relaxation, but do not automatically weaken policy. Unbounded means an improving feasible ray exists, often revealing a missing bound or conservation rule. Infeasible-or-unbounded can occur before enough analysis distinguishes them. Numerical difficulty is not a business conclusion. Validate dimensions, bounds, integrality assumptions, residuals, objective reconstruction, dual gap, complementary slackness, and known control cases. Reconcile totals against source systems and perturb key coefficients to expose unit or sign errors."
+    }
+  ],
+  "math": "A common primal form is max c^T x subject to Ax<=b and x>=0. Its dual is min b^T y subject to A^T y>=c and y>=0. Weak duality gives c^T x<=b^T y for every primal- and dual-feasible pair. Strong duality gives equality at optimal solutions when a finite optimum exists. Complementary slackness is y_i(b_i-a_i^T x)=0 and x_j((A^T y)_j-c_j)=0. A primal residual can be measured as max(0,Ax-b) together with equality and bound violations.",
+  "workedExamples": [
+    {
+      "title": "Two products sharing two capacities",
+      "body": "Enumerate vertices, select the best feasible plan, construct matching dual prices, and use zero duality gap as an independent certificate."
+    }
+  ],
+  "exercises": [
+    {
+      "prompt": "Maximize 2x+y with x+y<=4, x<=3, x,y>=0. What vertices matter?",
+      "solution": "(0,0), (3,0), (3,1), and (0,4). Their objectives are 0, 6, 7, and 4, so (3,1) is optimal."
+    },
+    {
+      "prompt": "A primal feasible value is 90 and a dual feasible value is 94 in a maximization LP. What follows?",
+      "solution": "The optimum lies between 90 and 94; the absolute certificate gap is at most 4, subject to numerical tolerance."
+    },
+    {
+      "prompt": "A model becomes unbounded after adding a profitable activity. First diagnostic?",
+      "solution": "Check that the new activity has every required resource coefficient, balance relation, and upper bound with correct sign and units."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "flow",
+      "title": "LP solution and evidence",
+      "items": [
+        "Define variables + units",
+        "Assemble sparse objective/rows",
+        "Presolve + solve",
+        "Check status/residuals",
+        "Match primal and dual",
+        "Publish or safe fallback"
+      ],
+      "caption": "The decision is only production-ready after its mathematical and data certificates agree.",
+      "afterSection": "formulation"
+    },
+    {
+      "type": "compare",
+      "title": "Finite LP outcomes",
+      "left": {
+        "title": "Healthy outcomes",
+        "items": [
+          "Optimal: certified solution",
+          "Feasible: incumbent only",
+          "Alternate optima: optimal face",
+          "Degenerate: basis ambiguity"
+        ]
+      },
+      "right": {
+        "title": "Failure evidence",
+        "items": [
+          "Infeasible: contradictory rows",
+          "Unbounded: improving ray",
+          "Limit reached: incomplete search",
+          "Numerical issue: rescale/reformulate"
+        ]
+      },
+      "caption": "Solver outcomes must be translated into distinct operational behavior, not collapsed into success or failure.",
+      "afterSection": "failure-validation"
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "boyd-convex",
+      "contribution": "Provides LP geometry, standard forms, duality, certificates, and sensitivity foundations."
+    },
+    {
+      "resource": "scipy-linprog",
+      "contribution": "Documents the current HiGHS-backed linear-programming interface, defaults, outputs, and status semantics used in the lab."
+    },
+    {
+      "resource": "ortools-mathopt",
+      "contribution": "Documents current solver-independent LP/MIP modeling, termination reasons, rays, duals, warm starts, and switching solvers."
+    },
+    {
+      "resource": "stanford-ee364a",
+      "contribution": "Provides rigorous university exercises connecting polyhedral geometry, duality, algorithms, and applications."
+    }
+  ]
 }

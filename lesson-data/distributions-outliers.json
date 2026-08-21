@@ -7,94 +7,204 @@
     "ds",
     "da"
   ],
-  "interviewAnswer": "Outliers are not automatically bad data. I first determine whether they are errors, rare but valid cases, or a separate population, then choose transformations, robust statistics or explicit modeling accordingly.",
+  "interviewAnswer": "I inspect distributions with quantiles, robust and classical summaries, histograms plus ECDFs, and relevant transformations, conditioned on time and groups. An outlier is unusual under a reference model; it may be an error, a valid rare event, a new regime, a leverage point, or the case we most care about. I validate source units and lineage, use domain bounds and robust diagnostics, inspect influence on conclusions, and report sensitivity with and without justified corrections. I never delete points solely because a z-score or IQR rule flags them.",
   "keyPoints": [
-    "Compare mean vs median under skew.",
-    "Use quantiles/IQR and domain constraints.",
-    "Log transforms can stabilize heavy right tails."
+    "Shape and support matter beyond mean and variance",
+    "Plot tuning can create or hide apparent structure",
+    "Outlier status depends on reference and context",
+    "Leverage and influence are model-relative",
+    "Treatment decisions require lineage, domain knowledge, and sensitivity"
   ],
   "resources": [
+    "nist-eda",
+    "seaborn-tutorial",
     "openintro-stats",
     "fundamentals-dataviz"
   ],
   "featured": true,
-  "why": "Distributions, Skewness & Outliers appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
-  "intuition": "Compare mean vs median under skew.",
-  "deepDive": "Outliers are not automatically bad data. I first determine whether they are errors, rare but valid cases, or a separate population, then choose transformations, robust statistics or explicit modeling accordingly. Use quantiles/IQR and domain constraints. Log transforms can stabilize heavy right tails. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
-  "workedExample": "A few enterprise customers may be legitimate extreme spenders; deleting them could destroy the business signal.",
+  "why": "Revenue, latency, claim size, session length, and model errors are rarely symmetric Gaussian variables. Means can be dominated by a handful of values, standard deviations can explode, and a linear-scale histogram can hide most observations. At the same time, deleting extremes can erase fraud, outages, safety failures, or best customers. Interviews ask outlier handling because it reveals whether a candidate confuses a detection heuristic with a data-cleaning decision. In production, tail behavior drives capacity and risk, while unit errors can corrupt training and dashboards. A good workflow preserves raw data, explains treatment, and makes the effect on decisions auditable.",
+  "intuition": "A distribution is a landscape, not a single address. Median tells where half the mass lies; quantiles map its terrain; IQR and MAD describe typical spread without letting distant peaks dominate. A histogram views the landscape through bins, so move the boundaries and some peaks change. An ECDF shows the fraction below every threshold and makes tail probabilities readable. Log scale can reveal multiplicative structure, but it changes distances and cannot be applied blindly to negatives or structural zeros. An outlier flag simply marks a point far from a chosen notion of typical. The next question is why it is there and whether the decision must handle it.",
+  "deepDive": "Distributional EDA combines descriptive geometry with a generating-process investigation. Robust summaries limit sensitivity to contamination, while tail and conditional views ensure robustness does not become blindness to meaningful rare events.",
+  "workedExample": "Order values are mostly €5–€500, with records €9,000, €12,000, and €1,500,000. The last record came from a source that stored cents while the pipeline interpreted euros; lineage confirms it should be €15,000 and a unit-normalization test is added. The €9,000 and €12,000 orders are verified enterprise purchases and remain. The raw mean, corrected mean, median, p95, p99, and total are reported. A log-scale ECDF shows the body, while a tail table preserves business magnitude. Fraud and capacity models retain verified rare orders, and sensitivity analysis shows how each treatment affects model thresholds.",
   "commonMistakes": [
-    "Applying the method without checking its assumptions or data-generating process.",
-    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+    "Deleting every point beyond 1.5 IQR or three SD as if the rule proved invalidity.",
+    "Using mean/SD alone for skewed or heavy-tailed variables and hiding the tail that drives risk.",
+    "Choosing histogram bins or KDE bandwidth to emphasize a preferred pattern.",
+    "Applying log transforms without handling zeros, negatives, units, and raw-scale interpretation.",
+    "Winsorizing or trimming before splitting data or without versioning the changed estimand."
   ],
   "followUps": [
-    "What assumptions does Distributions, Skewness & Outliers make?",
-    "How would you validate or debug Distributions, Skewness & Outliers in practice?"
+    {
+      "question": "Is an outlier necessarily bad data?",
+      "answer": "No. It can be a valid rare event, a new regime, or the most decision-relevant case. A flag triggers investigation under a stated reference; source evidence and context determine treatment."
+    },
+    {
+      "question": "When prefer median to mean?",
+      "answer": "When the target is typical location under asymmetric loss or contamination. Use the mean when totals or expected value are the estimand, possibly with robust uncertainty and explicit tail analysis."
+    },
+    {
+      "question": "How do you assess whether a point is influential?",
+      "answer": "Refit or use influence diagnostics under the intended model and compare parameter, prediction, ranking, and decision changes. Extreme response or predictor value alone is not identical to influence."
+    }
   ],
-  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
-  "visual": {
-    "type": "scatter",
-    "title": "Outlier detection depends on context",
-    "series": [
-      {
-        "label": "main cloud",
-        "points": [
-          [
-            0.12,
-            0.22
-          ],
-          [
-            0.19,
-            0.3
-          ],
-          [
-            0.24,
-            0.25
-          ],
-          [
-            0.31,
-            0.37
-          ],
-          [
-            0.38,
-            0.33
-          ],
-          [
-            0.43,
-            0.46
-          ],
-          [
-            0.52,
-            0.48
-          ],
-          [
-            0.6,
-            0.57
-          ],
-          [
-            0.67,
-            0.6
-          ],
-          [
-            0.75,
-            0.68
-          ]
+  "production": "Preserve immutable raw values, correction reason, source record, reviewer, and transformed fields. Define unit/support contracts before outcomes are known. Monitor median, robust spread, tail quantiles, maximum, zero rates, flag rates, correction rates, and distributions by source/time. Avoid alert storms by combining statistical rarity with domain severity and recurrence. Use streaming sketches only with known approximation error and retain exact escalation paths. Protect rare records that may identify individuals. Fit robust or tail-aware models when operations must handle extremes. Version caps, transforms, and eligibility rules; never let dashboard and training pipelines apply different treatments. Roll back corrected datasets and dependent models together if a rule is wrong.",
+  "editorial": {
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "Distribution analysis describes where values concentrate, how they vary, whether they are bounded, skewed, heavy-tailed, multimodal, discrete, zero-inflated, censored, or contaminated, and how those features change across populations and time. Outliers are observations unusual relative to a stated reference—not automatically errors to delete. This chapter compares mean/SD with median/IQR/MAD, histograms with ECDFs and KDEs, raw with transformed scales, z-scores with robust rules, and univariate with multivariate or contextual anomalies. You will learn to distinguish data errors, rare valid cases, regime shifts, leverage points, influential observations, and extreme values created by aggregation or selection; to use tail diagnostics and domain bounds; and to analyze results with and without consequential points. The worked example separates a currency-unit error from valid high-value orders. The lab implements robust summaries and IQR/MAD flags, verifies affine behavior, and compares with NumPy/pandas. Production guidance covers raw-value preservation, winsorization contracts, robust models, alerting, privacy, drift, and rollback.",
+  "prerequisites": [
+    "eda-workflow",
+    "distributions",
+    "norms-distances"
+  ],
+  "learningObjectives": [
+    "Characterize center, spread, shape, tails, support, modality, discreteness, and conditional distribution shifts.",
+    "Choose robust and classical summaries according to contamination, skewness, and decision loss.",
+    "Classify unusual observations as errors, valid rare cases, contextual anomalies, leverage, or influence before treatment.",
+    "Design sensitivity analyses and production controls that preserve evidence while limiting operational harm from extremes."
+  ],
+  "deepSections": [
+    {
+      "id": "shape",
+      "title": "Support, skewness, tails, modality, and discreteness",
+      "body": "Start with domain support: bounded probabilities, nonnegative durations, integer counts, censored limits, and structural zeros. Skewness describes asymmetry but one coefficient can hide multimodality. Heavy tails mean extreme observations are more common than a Gaussian reference; finite-sample mean and variance may be unstable, and some theoretical moments may not exist. Multiple modes can reflect subpopulations, rounding, policy thresholds, or batch artifacts. Spikes at zero may be genuine no-event outcomes or missing values encoded as zero. Inspect frequency tables, ECDF, quantile spacing, complementary tail plots, and conditional distributions before selecting a parametric family."
+    },
+    {
+      "id": "summaries",
+      "title": "Classical and robust summaries",
+      "body": "Mean minimizes squared error and uses every magnitude; median minimizes absolute error and has high resistance to extreme contamination. SD measures root mean squared deviation; IQR covers the middle half; MAD is median absolute deviation and can be scaled for Normal consistency. Trimmed and winsorized means trade robustness and efficiency but change the estimand. Geometric mean suits positive multiplicative processes, not arbitrary data. Report domain-relevant quantiles and thresholds alongside center. Robust does not mean unbiased for every target: if total revenue matters, the genuine tail belongs in the total even when the median is stable."
+    },
+    {
+      "id": "visuals-transforms",
+      "title": "Histograms, ECDFs, density estimates, and transforms",
+      "body": "Histogram bin width balances variance and resolution; inspect several defensible widths and keep common bins for group comparisons. KDE bandwidth controls smoothness and can imply impossible mass beyond boundaries; boundary corrections or ECDFs may be safer. Boxplots compress shape and can label many valid tail points in large skewed samples. Violin plots depend on density settings. Log1p can spread small nonnegative values and compress tails; Box–Cox requires positive values, while Yeo–Johnson handles signs under conventions. Always label transformed axes and show an interpretable raw-scale summary so the transformation does not hide operational magnitude."
+    },
+    {
+      "id": "outlier-types",
+      "title": "Error, rarity, context, leverage, and influence",
+      "body": "A syntactic error violates schema or units; a semantic error is plausible in type but impossible in context. A global extreme may be normal for one segment. A contextual anomaly is unusual given time, location, or covariates. In regression, leverage concerns unusual predictors; an influential point materially changes fitted results and depends on residual and leverage. Multivariate anomalies can look ordinary in every marginal. Validate against source records, neighboring events, device or operator patterns, and duplicate logic. Document a taxonomy and route errors for correction while retaining valid rare cases for tail-aware analysis."
+    },
+    {
+      "id": "treatment",
+      "title": "Treatment and sensitivity rather than automatic deletion",
+      "body": "Correct values only with evidence and preserve raw plus corrected fields. Exclude records when eligibility or measurement invalidity is defined independently of outcomes. Winsorization caps influence but piles mass at bounds and changes totals; trimming changes population. Robust losses, quantile models, heavy-tailed likelihoods, and transformations can reduce sensitivity without deleting cases. Fit analyses with raw data and defensible alternatives; compare coefficients, rankings, tail risk, and decisions. If one point reverses a conclusion, report fragility and investigate rather than choosing the version that tells the preferred story.\n\nFor streaming or distributed systems, define approximation error for quantiles and sketches before adopting them. Validate tail summaries against exact computations on controlled samples, monitor saturation and merge behavior, and retain enough lineage to distinguish a genuine tail shift from a change in sampling, units, truncation, or sketch configuration."
+    }
+  ],
+  "math": "IQR=Q3-Q1; Tukey fences Q1-1.5 IQR and Q3+1.5 IQR are exploratory flags, not probabilistic laws. MAD=median_i|x_i-median(x)|; multiplying by about 1.4826 estimates sigma under a Normal reference. Classical z=(x-mean)/SD is itself distorted by extremes. A robust modified z can use 0.6745(x-median)/MAD when MAD>0. Influence is change in an estimator under perturbation; it cannot be inferred from value magnitude alone.",
+  "workedExamples": [
+    {
+      "title": "One unit error and two valid enterprise orders",
+      "body": "Use source evidence to correct the unit error, keep valid rare cases, report both robust and total-sensitive summaries, and turn the incident into a schema/unit contract rather than a blanket cap."
+    }
+  ],
+  "exercises": [
+    {
+      "prompt": "Data are [1,2,3,4,100]. Compare mean and median.",
+      "solution": "Mean is 22; median is 3. The gap signals strong right-skew/influence, but it does not prove 100 is erroneous."
+    },
+    {
+      "prompt": "Why can a boxplot flag many valid observations in a large lognormal sample?",
+      "solution": "The 1.5-IQR fence is a generic rule based on middle spread, not the lognormal tail probability. With large n and true skew, many legitimate values exceed it."
+    },
+    {
+      "prompt": "A point has unusual predictors but lies exactly on the fitted regression line. Is it necessarily influential?",
+      "solution": "No. It has leverage potential, but influence also depends on residual and model. Diagnose the change in fit when perturbing or removing it."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "compare",
+      "title": "Unusual observations need classification",
+      "left": {
+        "title": "Potential data defect",
+        "items": [
+          "Unit/parse violation",
+          "Impossible event order",
+          "Duplicate or corrupted source",
+          "Correct with evidence"
         ]
       },
-      {
-        "label": "possible outlier",
-        "points": [
-          [
-            0.89,
-            0.2
-          ]
+      "right": {
+        "title": "Potential real tail",
+        "items": [
+          "Valid rare customer/event",
+          "New regime or hazard",
+          "May drive risk/total",
+          "Model and monitor"
         ]
-      }
-    ],
-    "caption": "An unusual point may be an error, a rare valid case, or the most important observation in the dataset.",
-    "xLabel": "feature 1",
-    "yLabel": "feature 2"
+      },
+      "caption": "A numerical flag does not decide which side an observation belongs on.",
+      "afterSection": "outlier-types"
+    },
+    {
+      "type": "curve",
+      "title": "Body and tail on one conceptual ECDF",
+      "series": [
+        {
+          "label": "ECDF",
+          "points": [
+            [
+              0,
+              0
+            ],
+            [
+              0.12,
+              0.3
+            ],
+            [
+              0.25,
+              0.62
+            ],
+            [
+              0.42,
+              0.84
+            ],
+            [
+              0.6,
+              0.94
+            ],
+            [
+              0.82,
+              0.985
+            ],
+            [
+              1,
+              1.0
+            ]
+          ]
+        }
+      ],
+      "caption": "Conceptual: an ECDF exposes quantiles and tail mass without histogram bins, though the x-scale still needs domain interpretation.",
+      "xLabel": "value (possibly transformed)",
+      "yLabel": "fraction ≤ value",
+      "afterSection": "visuals-transforms"
+    }
+  ],
+  "lab": {
+    "language": "python",
+    "goal": "Compute classical and robust distribution summaries, flag—not delete—unusual values, and verify translation/scale behavior against NumPy.",
+    "buildIt": "import statistics\n\ndef quantile(xs,p):\n    ys=sorted(xs); pos=(len(ys)-1)*p; lo=int(pos); hi=min(lo+1,len(ys)-1); frac=pos-lo\n    return ys[lo]*(1-frac)+ys[hi]*frac\ndef robust_summary(xs):\n    med=statistics.median(xs); q1=quantile(xs,0.25); q3=quantile(xs,0.75)\n    mad=statistics.median([abs(x-med) for x in xs]); iqr=q3-q1\n    flags=[x for x in xs if x<q1-1.5*iqr or x>q3+1.5*iqr]\n    return {'mean':statistics.mean(xs),'median':med,'q1':q1,'q3':q3,'iqr':iqr,'mad':mad,'flags':flags}\n\nx=[5,7,8,9,10,11,12,13,14,15,80]\nreport=robust_summary(x)",
+    "useIt": "import numpy as np\na=np.asarray(x,float)\nnumpy_median=float(np.median(a))\nnumpy_q=np.quantile(a,[0.25,0.75])",
+    "verifyIt": "assert report['median']==numpy_median\nassert np.allclose([report['q1'],report['q3']],numpy_q)\nassert report['flags']==[80]\nshifted=robust_summary([v+100 for v in x])\nassert shifted['median']==report['median']+100\nscaled=robust_summary([v*3 for v in x])\nassert scaled['iqr']==report['iqr']*3\nassert 80 in x",
+    "shipIt": "Keep raw and corrected values, treat flags as investigation queues, version support/unit/capping rules, monitor tails by source/time, and sensitivity-test model and decision impact before changing records."
   },
-  "editorial": {
-    "status": "summary"
-  }
+  "sourceNotes": [
+    {
+      "resource": "nist-eda",
+      "contribution": "Provides official EDA techniques for distributions, assumptions, outliers, probability plots, and robust exploration."
+    },
+    {
+      "resource": "seaborn-tutorial",
+      "contribution": "Documents current histograms, KDEs, ECDFs, categorical distribution plots, and multivariate visual semantics."
+    },
+    {
+      "resource": "openintro-stats",
+      "contribution": "Provides statistical foundations for center, spread, skewness, transformations, and outlier interpretation."
+    },
+    {
+      "resource": "fundamentals-dataviz",
+      "contribution": "Provides principled guidance on honest distribution graphics, scales, density, and visual comparison."
+    }
+  ]
 }

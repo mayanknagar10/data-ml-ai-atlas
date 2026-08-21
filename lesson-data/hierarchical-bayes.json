@@ -7,30 +7,203 @@
     "ds",
     "as"
   ],
-  "interviewAnswer": "Hierarchical models partially pool related groups, sharing statistical strength while allowing group-specific effects. They are often better than either one global estimate or completely independent estimates for sparse groups.",
+  "interviewAnswer": "A hierarchical model assumes group parameters come from a shared population distribution, then learns both group effects and population hyperparameters. It partially pools: a group estimate is pulled toward the population mean in proportion to its uncertainty, so small noisy groups shrink more than large precise groups. This improves average estimation and handles multiplicity, but relies on exchangeability and a credible group distribution. Check hyperpriors, centered versus noncentered geometry, outliers, group count, fairness, and prediction for new groups.",
   "keyPoints": [
-    "Partial pooling reduces noisy extreme group estimates.",
-    "Hyperparameters describe population-level variation.",
-    "Useful for stores, regions, users or experiments."
+    "Partial pooling learns relatedness instead of choosing all-or-nothing pooling",
+    "Shrinkage strength follows relative within- and between-group precision",
+    "Exchangeability is a modeling claim",
+    "Hyperpriors regularize weakly identified group variation",
+    "New-group prediction integrates the population distribution"
   ],
   "resources": [
-    "pymc"
+    "pymc",
+    "stan-reference",
+    "bayesian-workflow",
+    "think-bayes"
   ],
   "featured": false,
-  "why": "Hierarchical / Multilevel Models appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
-  "intuition": "Partial pooling reduces noisy extreme group estimates.",
-  "deepDive": "Hierarchical models partially pool related groups, sharing statistical strength while allowing group-specific effects. They are often better than either one global estimate or completely independent estimates for sparse groups. Hyperparameters describe population-level variation. Useful for stores, regions, users or experiments. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
-  "workedExample": "Estimate store conversion rates where small stores borrow strength from the overall population.",
+  "why": "Products estimate metrics for stores, countries, sellers, models, cohorts, and annotators. Separate estimates make tiny groups look extreme by noise; one pooled estimate hides genuine heterogeneity. Hierarchical models offer a middle ground and reduce the need for ad hoc minimum-count thresholds. Interviews test partial pooling, while production requires more: groups change taxonomy, rare groups may be safety-critical, and automatic shrinkage toward a dominant population can hide inequity or local failure. A hierarchical posterior is not merely smoothing; it represents a generative assumption about how group effects relate. That assumption needs predictive checks and domain review.",
+  "intuition": "Imagine each store reports a conversion estimate with an error bar. A store with 20 visits has a wide bar, so the company-wide pattern should influence its estimate strongly. A store with 200,000 visits has a narrow bar and moves little. The population spread controls how similar stores are believed to be. If the learned between-store variance is near zero, pooling is strong; if stores genuinely vary greatly, shrinkage weakens. Unlike a fixed global penalty, the model propagates uncertainty about the population mean and spread. For a brand-new store, prediction starts from that population distribution rather than an arbitrary zero or a noisy nearest neighbor.",
+  "deepDive": "A basic model is y_ij~p(y|theta_j) with theta_j~p(theta|phi) and hyperprior p(phi). The posterior couples groups through shared phi. Conditional independence given hyperparameters does not mean groups are marginally independent.",
+  "workedExample": "Three stores estimate log-odds lift as 0.50±0.50, 0.20±0.10, and -0.40±0.60 (SEs). Suppose current population mean mu=0.10 and between-store SD tau=0.20. Shrinkage weights tau^2/(tau^2+s_j^2) are about 0.138, 0.80, and 0.10. Posterior means are about 0.155, 0.18, and 0.05. The two noisy extremes move strongly toward the population, while the precise middle store moves little. A full model estimates mu and tau and widens uncertainty accordingly. Before deployment, verify whether stores across markets are exchangeable and whether negative-lift stores are safety signals that should not be smoothed away.",
   "commonMistakes": [
-    "Applying the method without checking its assumptions or data-generating process.",
-    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+    "Calling hierarchical effects random because their realized values are unimportant or literally sampled at deployment.",
+    "Assuming every named group is exchangeable under one population distribution.",
+    "Using weak group-scale priors with few groups and ignoring funnel diagnostics.",
+    "Reading shrunken subgroup estimates without showing raw sample size, uncertainty, or shrinkage amount.",
+    "Treating varying observational slopes as causal heterogeneous treatment effects without identification."
   ],
   "followUps": [
-    "What assumptions does Hierarchical / Multilevel Models make?",
-    "How would you validate or debug Hierarchical / Multilevel Models in practice?"
+    {
+      "question": "Which groups shrink most?",
+      "answer": "Groups with high within-group uncertainty relative to estimated between-group variance. Large precise groups retain more local information; small noisy groups borrow more from the population."
+    },
+    {
+      "question": "What is prediction for a new group?",
+      "answer": "Draw hyperparameters from their posterior, then draw a new group effect from the population distribution and outcomes from the likelihood. It includes between-group and parameter uncertainty."
+    },
+    {
+      "question": "When use noncentered parameterization?",
+      "answer": "Often when group-level data are weak and the scale creates funnel geometry. Centering can work better with strongly informed groups; diagnostics and model geometry should guide the choice."
+    }
   ],
-  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "production": "Version the group taxonomy, nesting, covariates, exposure definition, outcome horizon, exchangeability rationale, population distribution, hyperpriors, and parameterization. Preserve group sample sizes and raw summaries alongside posterior estimates. Gate MCMC on R-hat, bulk/tail ESS, divergences, treedepth, and shrinkage sanity checks. Monitor group counts, new/retired levels, within-group variance, learned tau, shrinkage weights, outlier frequency, predictive calibration by group size, and protected-group harm. Avoid logging identifiable small-group draws; apply access and aggregation controls. Define cold-start behavior from posterior new-group prediction. Refit or discount when population structure drifts. If taxonomy mapping changes, rebuild rather than mixing incomparable levels. Rollback includes model, hyperpriors, group dictionary, posterior draws, and downstream decisions.",
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "Hierarchical Bayesian models represent related groups with group-specific parameters drawn from a population distribution whose hyperparameters are learned from all groups. The result is partial pooling: noisy groups shrink more toward the population pattern, while well-observed groups retain more local information. This chapter contrasts no pooling, complete pooling, and partial pooling; derives Normal–Normal shrinkage; explains exchangeability, hyperpriors, varying intercepts and slopes, cross-level interactions, centered and noncentered parameterizations, new-group prediction, and the distinction between population-level variation and residual noise. You will learn why shrinkage reduces winner's curse and multiple-comparison noise, when it can erase real subgroup structure, how weakly identified group scales create funnels, and why groups with few levels need careful priors. The worked example estimates conversion rates across stores with unequal traffic. The lab implements analytic partial pooling for known variances, verifies limiting cases, and expresses the equivalent PyMC model. Production guidance covers group taxonomy, cold start, fairness, drift, diagnostics, posterior storage, privacy, and rollback.",
+  "prerequisites": [
+    "bayes-update",
+    "conjugate-priors",
+    "mcmc"
+  ],
+  "learningObjectives": [
+    "Distinguish complete, no, and partial pooling and connect each to assumptions about group variation.",
+    "Derive shrinkage weights from within-group uncertainty and between-group variance.",
+    "Specify varying-intercept and varying-slope models with defensible exchangeability and hyperpriors.",
+    "Diagnose funnel geometry, sparse groups, taxonomy drift, overshrinkage, and new-group predictive behavior."
+  ],
+  "deepSections": [
+    {
+      "id": "pooling",
+      "title": "Complete, no, and partial pooling",
+      "body": "Complete pooling sets every theta_j equal, assuming no group heterogeneity. No pooling estimates each independently, discarding cross-group information and amplifying noise and winner's curse. Partial pooling places a population distribution on theta_j. In a Normal model with group estimate ybar_j variance s_j^2 and prior theta_j~N(mu,tau^2), conditional posterior mean is w_j ybar_j+(1-w_j)mu with w_j=tau^2/(tau^2+s_j^2). Large measurement uncertainty means smaller w and stronger shrinkage. Mu and tau are themselves uncertain in a full hierarchy, so actual shrinkage integrates over their posterior."
+    },
+    {
+      "id": "exchangeability",
+      "title": "Exchangeability and structured populations",
+      "body": "Exchangeability says group labels carry no predictive information beyond modeled covariates before observing group outcomes: permuting labels leaves the prior joint distribution unchanged. Stores in different countries, sizes, or product tiers may not be exchangeable under one distribution. Add group-level predictors, nested structures, correlated varying effects, mixtures, or separate populations when justified. Exchangeability is not identicality; individual theta_j may differ. A heavy-tailed population distribution can protect genuine outliers from excessive shrinkage. Post hoc splitting after seeing outcomes risks overfitting and should be validated."
+    },
+    {
+      "id": "slopes",
+      "title": "Varying intercepts, slopes, and correlations",
+      "body": "A varying-intercept model lets baseline outcomes differ by group. Varying slopes let treatment or feature effects differ, enabling partial pooling of heterogeneous effects. A multivariate population distribution can correlate intercepts and slopes, but correlation matrices and scales need regularizing priors. Cross-level interactions explain systematic heterogeneity through group covariates. Center predictors so intercepts have meaningful scales and priors. Random-slope models need enough within-group treatment variation; a slope is not identified in a group with one exposure level merely because a hierarchy exists. Causal interpretation still requires valid treatment design."
+    },
+    {
+      "id": "geometry-hyperpriors",
+      "title": "Hyperpriors, few groups, and sampler geometry",
+      "body": "With few groups, data weakly identify tau; a diffuse prior on group SD can put excessive mass on implausible heterogeneity or create computation problems. Use domain-scaled half-normal, half-t, or other defensible priors and sensitivity analysis. The centered parameterization theta_j~N(mu,tau) forms a funnel near tau=0 when group data are weak. Noncentering theta_j=mu+tau z_j, z_j~N(0,1), often improves geometry. Strongly informed groups may favor centering; mixed parameterizations can help. Inspect divergences, tail ESS, and posterior concentration of tau rather than trusting default sampling."
+    },
+    {
+      "id": "prediction-fairness",
+      "title": "New groups, outliers, and fairness",
+      "body": "Prediction for an unseen group draws a new theta from the posterior population distribution, which is wider than uncertainty for the average mu. Existing small groups borrow strength, but shrinkage can mask rare-group harms by pulling them toward the majority. Report raw data, partially pooled estimates, intervals, and shrinkage weights. Evaluate coverage and error by group size and protected attributes. If groups are policy-relevant rather than exchangeable random levels, fixed effects or structured priors may be more appropriate. Outlier handling should be modeled, not implemented by deleting groups whose posterior predictive checks fail."
+    },
+    {
+      "id": "identifiability",
+      "title": "Identifiability and information at each level",
+      "body": "A hierarchy cannot manufacture information absent from every level. The population mean is informed by the number and precision of groups; the population variance needs multiple groups with distinguishable effects; group slopes need within-group predictor variation. Confounding between residual noise, group variance, and measurement error can yield broad or prior-dominated posteriors. Plot prior-to-posterior movement for hyperparameters and perform simulated-data recovery over realistic group counts and imbalance. If a group-level predictor is constant within higher-level clusters, its effect may be confounded with cluster variation. Report which parameters are data identified, partially pooled, or principally regularized by priors. A stable sampler around a prior-dominated posterior is computational success, not evidence that the desired contrast was learned."
+    }
+  ],
+  "math": "For y_j|theta_j~N(theta_j,s_j^2) and theta_j|mu,tau~N(mu,tau^2) with mu,tau fixed, posterior variance v_j=(1/s_j^2+1/tau^2)^{-1} and mean m_j=v_j(y_j/s_j^2+mu/tau^2)=w_j y_j+(1-w_j)mu, where w_j=tau^2/(tau^2+s_j^2). As s_j^2→0, w_j→1 (local data dominate); as s_j^2→infinity, w_j→0 (population dominates). Prediction for a new group integrates mu and tau uncertainty as well as theta_new variation.",
+  "workedExamples": [
+    {
+      "title": "Unequal-information store effects",
+      "body": "Compute shrinkage weights from each store's standard error and the population spread, compare raw and pooled effects, then audit whether exchangeability and fairness justify borrowing strength."
+    }
+  ],
+  "exercises": [
+    {
+      "prompt": "If tau^2=1 and s_j^2=3, what is shrinkage weight on the group estimate?",
+      "solution": "w=1/(1+3)=0.25, so the posterior mean puts 25% weight on the group estimate and 75% on population mean, conditional on fixed hyperparameters."
+    },
+    {
+      "prompt": "What happens as between-group tau approaches zero?",
+      "solution": "Group effects become nearly identical under the population model, producing strong pooling toward mu and funnel geometry that can challenge centered MCMC."
+    },
+    {
+      "prompt": "Why can partial pooling help multiplicity?",
+      "solution": "Extreme noisy group estimates are selected partly because of chance; hierarchical shrinkage uses the ensemble to pull uncertain extremes inward, reducing winner's-curse exaggeration without a binary correction."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "compare",
+      "title": "Three pooling strategies",
+      "left": {
+        "title": "No / complete pooling",
+        "items": [
+          "Separate noisy estimates",
+          "or one shared value",
+          "Two extreme assumptions"
+        ]
+      },
+      "right": {
+        "title": "Partial pooling",
+        "items": [
+          "Shared population distribution",
+          "Data-dependent shrinkage",
+          "Uncertainty propagates"
+        ]
+      },
+      "caption": "Hierarchical modeling learns how much related groups should borrow from one another.",
+      "afterSection": "pooling"
+    },
+    {
+      "type": "curve",
+      "title": "Shrinkage weight versus group uncertainty",
+      "series": [
+        {
+          "label": "weight on group",
+          "points": [
+            [
+              0,
+              1.0
+            ],
+            [
+              0.2,
+              0.8
+            ],
+            [
+              0.4,
+              0.5
+            ],
+            [
+              0.6,
+              0.31
+            ],
+            [
+              0.8,
+              0.2
+            ],
+            [
+              1.0,
+              0.14
+            ]
+          ]
+        }
+      ],
+      "caption": "Conceptual: with fixed between-group variance, noisier group estimates receive less weight and shrink more toward the population.",
+      "xLabel": "within-group variance",
+      "yLabel": "local-data weight",
+      "afterSection": "pooling"
+    }
+  ],
+  "lab": {
+    "language": "python",
+    "goal": "Implement Normal hierarchical shrinkage with known hyperparameters, verify limiting behavior, and express the equivalent PyMC model.",
+    "buildIt": "def normal_partial_pool(observed,se,mu,tau):\n    local_var=se*se; group_var=tau*tau\n    posterior_var=1/(1/local_var+1/group_var)\n    posterior_mean=posterior_var*(observed/local_var+mu/group_var)\n    weight=group_var/(group_var+local_var)\n    return posterior_mean,posterior_var,weight\n\nobserved=[0.50,0.20,-0.40]; ses=[0.50,0.10,0.60]\nresults=[normal_partial_pool(y,se,0.10,0.20) for y,se in zip(observed,ses)]",
+    "useIt": "import numpy as np\npooled=np.asarray([r[0] for r in results])\nweights=np.asarray([r[2] for r in results])\n# Equivalent PyMC structure:\n# with pm.Model():\n#   mu=pm.Normal('mu',0,1); tau=pm.HalfNormal('tau',0.5)\n#   z=pm.Normal('z',0,1,shape=3); theta=mu+tau*z\n#   y=pm.Normal('y',theta,sigma=ses,observed=observed)",
+    "verifyIt": "assert weights[1] > weights[0] > weights[2]\nassert abs(pooled[1]-observed[1]) < abs(pooled[0]-observed[0])\nnear_exact=normal_partial_pool(2.0,1e-6,0.0,1.0)[0]\nassert abs(near_exact-2.0) < 1e-8\nvery_noisy=normal_partial_pool(2.0,1e6,0.0,1.0)[0]\nassert abs(very_noisy) < 1e-8",
+    "shipIt": "Version group taxonomy and exchangeability assumptions, show shrinkage and raw support, use defensible hyperpriors/parameterization, gate diagnostics, and monitor calibration and harm by group size."
+  },
+  "sourceNotes": [
+    {
+      "resource": "pymc",
+      "contribution": "Provides current hierarchical model construction, coordinates, sampling, and posterior predictive APIs."
+    },
+    {
+      "resource": "stan-reference",
+      "contribution": "Documents centered/noncentered geometry, HMC diagnostics, constrained parameters, and posterior analysis."
+    },
+    {
+      "resource": "bayesian-workflow",
+      "contribution": "Provides workflow principles for hierarchical model building, checking, sensitivity, and revision."
+    },
+    {
+      "resource": "think-bayes",
+      "contribution": "Provides intuitive computational explanations of partial pooling and Bayesian estimation."
+    }
+  ]
 }

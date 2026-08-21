@@ -7,31 +7,186 @@
     "ds",
     "da"
   ],
-  "interviewAnswer": "Churn and LTV metrics require explicit definitions of active, retained, revenue horizon and censoring. Predictive accuracy is secondary if the metric definition does not match the decision.",
+  "interviewAnswer": "LTV is expected discounted future contribution margin over a stated horizon, conditional on current information and policy. In subscriptions, churn may be an observed cancellation or nonrenewal; in noncontractual products, inactivity is latent and needs a repeat-purchase/dropout model or an operational lapse rule. I handle right censoring, customer heterogeneity, refunds and variable costs, validate on mature chronological cohorts, and report cohort calibration and uncertainty rather than only individual rank. CAC comparison uses incremental fully loaded acquisition cost. A high predicted LTV does not imply targeting will cause value; intervention decisions need treatment effects and costs.",
   "keyPoints": [
-    "Logo vs revenue churn differ.",
-    "LTV can be historical or predictive.",
-    "Censoring and acquisition costs matter."
+    "LTV is a horizon- and policy-dependent expectation",
+    "Contribution margin differs from revenue",
+    "Churn is observed only in some business settings",
+    "Censoring and heterogeneity are central, not edge cases",
+    "Predictive value and incremental intervention value are different estimands"
   ],
   "resources": [
-    "berkeley-data100",
-    "lifelines"
+    "customer-base-models",
+    "fader-heterogeneity",
+    "lifelines",
+    "statsmodels-survival"
   ],
   "featured": false,
-  "why": "Churn, Lifetime Value & Unit Economics appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
-  "intuition": "Logo vs revenue churn differ.",
-  "deepDive": "Churn and LTV metrics require explicit definitions of active, retained, revenue horizon and censoring. Predictive accuracy is secondary if the metric definition does not match the decision. LTV can be historical or predictive. Censoring and acquisition costs matter. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
-  "workedExample": "Use contribution-margin LTV rather than gross revenue if the decision is how much to spend acquiring a customer.",
+  "why": "Acquisition bidding, onboarding, account management, and financial planning depend on future economics rather than today's purchase. Simple LTV formulas can be useful sanity checks but often assume constant retention, constant margin, homogeneous customers, and infinite horizons. They overstate value when high-risk customers disappear early, costs scale with usage, or the model ignores refunds and support. Customer-base research emphasizes different probability models for contractual and noncontractual settings. Interviews test whether candidates connect retention, survival, uncertainty, and unit economics. Production models also influence who receives offers, changing future data and creating feedback loops.",
+  "intuition": "Picture each future period as a possible cash-flow box. The chance a customer is still active shrinks with time, and a discount factor makes distant margin worth less today. Expected LTV adds survival probability times expected contribution margin in each box. In a subscription, cancellation may reveal the event time. In retail, silence does not prove permanent death; a customer may buy again, so frequency and dropout are latent processes. Customers differ, and mixing them into one retention rate can produce a curve that represents nobody. A prediction describes expected value under current policy, not the causal gain from contacting that customer.",
+  "deepDive": "LTV combines a behavioral event process, an economic cash-flow model, and a decision horizon. Every output inherits definitions and uncertainty from all three layers.",
+  "workedExample": "A subscription charges $20 monthly, but contribution margin after payment, support, and serving cost is $12. A naive formula uses 95% monthly retention forever and reports a large value. Cohort hazards show new customers have much higher first-three-month churn and long-tenure customers are heterogeneous; refunds also cluster early. A twelve-month survival-weighted contribution forecast gives $93 with an uncertainty interval, versus $150 gross-revenue arithmetic. Channel CAC is $70 but rises at the margin. The team uses payback and downside scenarios, then randomizes a retention offer because predicted churn risk alone cannot show who is persuadable.",
   "commonMistakes": [
-    "Applying the method without checking its assumptions or data-generating process.",
-    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+    {
+      "mistake": "Calling last activity the churn date",
+      "correction": "In noncontractual settings dropout is latent; use a lapse definition or probabilistic repeat-purchase/dropout model and allow resurrection."
+    },
+    {
+      "mistake": "Using revenue as LTV",
+      "correction": "Economic decisions need contribution margin after relevant variable costs, refunds, incentives, and service costs."
+    },
+    {
+      "mistake": "Dropping active customers from duration modeling",
+      "correction": "They are right-censored and contribute known survival time; deleting them biases lifetime downward."
+    },
+    {
+      "mistake": "Targeting the highest predicted risk",
+      "correction": "Risk is not treatment responsiveness; optimize incremental effect minus cost under policy and fairness constraints."
+    }
   ],
   "followUps": [
-    "What assumptions does Churn, Lifetime Value & Unit Economics make?",
-    "How would you validate or debug Churn, Lifetime Value & Unit Economics in practice?"
+    {
+      "question": "What is right censoring?",
+      "answer": "The event has not been observed by the cutoff, so lifetime is known only to exceed the observed follow-up; survival methods use that partial information."
+    },
+    {
+      "question": "How does LTV differ in contractual and noncontractual businesses?",
+      "answer": "Contractual churn can often be observed, while noncontractual dropout is latent and repeat-purchase plus dropout processes must be modeled or operationally defined."
+    },
+    {
+      "question": "How do you validate LTV?",
+      "answer": "Use chronological mature cohorts, aggregate and segment calibration, ranking and error, uncertainty coverage, financial baselines, and decision outcomes under the deployment policy."
+    }
   ],
-  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "production": "Version churn and resurrection rules, cohort/start, cutoff, horizon, margin and cost tables, discount rate, feature timestamps, model, policy, and calibration. Maintain censored duration data and label-maturity checks. Reconcile predicted aggregate value with realized cohort revenue and contribution, tracking refunds and service costs. Monitor survival calibration, hazard drift, channel mix, prediction intervals, ranking, LTV/CAC, payback, and targeting treatment effects. Use randomized holdouts to measure incremental interventions and prevent policy feedback. Protect financial and behavioral data, audit slice outcomes, and cap bids or incentives. On model or cost-pipeline failure, revert to conservative cohort baselines and prior bid caps while retaining predictions and decisions for audit.",
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "Customer lifetime value (LTV or CLV) is the discounted expected contribution margin generated by a customer or cohort over a declared future horizon, while churn describes a contractual cancellation or a modeled loss of future activity. Both are forecasts with behavioral, accounting, censoring, and policy assumptions; neither is a timeless label stored on a user. This chapter develops contractual versus noncontractual settings, retention and hazard, right censoring, revenue versus margin, discounting, acquisition cost, payback, cohort versus individual prediction, BG/NBD-style customer-base models, survival models, calibration, chronological validation, treatment effects, uncertainty, and decision use. You will learn why last activity is not observed churn, why a constant-retention formula can be dangerously optimistic, how heterogeneity changes aggregate value, and why marketing intervention can invalidate passive forecasts. A worked subscription example separates gross revenue from incremental contribution value. The lab implements Kaplan-Meier survival and discounted cohort LTV from first principles, compares grouped calculations with pandas, and verifies censoring and monotonicity invariants. Production guidance covers label maturity, leakage, policy feedback, monitoring, fairness, cost, rollback, and human review.",
+  "prerequisites": [
+    "cohort-retention",
+    "censoring-survival",
+    "probability-basics"
+  ],
+  "learningObjectives": [
+    "Define churn, survival, margin, horizon, discounting, and acquisition cost for contractual and noncontractual businesses.",
+    "Estimate retention under right censoring and translate survival or repeat-purchase forecasts into discounted expected contribution value.",
+    "Validate LTV models chronologically with calibration, ranking, aggregate value, policy, and uncertainty metrics.",
+    "Distinguish predictive customer value from incremental value caused by a retention or acquisition action."
+  ],
+  "deepSections": [
+    {
+      "id": "business-setting",
+      "title": "Contractual, noncontractual, and operational churn",
+      "body": "In a contractual business, cancellation or failure to renew can define churn, though pauses, delinquency, upgrades, and reactivation need rules. In a noncontractual setting there is no observed termination; a 90-day lapse is an operational label, not proof the customer will never return. Buy-till-you-die models jointly represent purchasing while alive and latent dropout. Define entity, cohort, start, event, grace period, resurrection, horizon, and policy. Avoid deriving a churn label using future inactivity beyond the prediction cutoff without accounting for label maturity. Different products or regions may require distinct definitions rather than one global threshold."
+    },
+    {
+      "id": "survival",
+      "title": "Retention, hazard, and censoring",
+      "body": "Survival S(t)=P(T>t) is the probability the event time exceeds t; hazard describes event risk among those still at risk. Kaplan-Meier multiplies conditional survival across observed event times and lets right-censored customers contribute until their last known follow-up. Its interpretation assumes censoring is independent of event time conditional on the analysis information; loss caused by treatment or data-source exit may violate this. Cohort retention at fixed periods is related but may define recurring activity rather than an absorbing event. Compare survival curves, hazards, and at-risk counts, and use Cox or parametric models only after checking proportionality or distributional assumptions."
+    },
+    {
+      "id": "economics",
+      "title": "Revenue, contribution margin, discounting, and CAC",
+      "body": "Forecast incremental contribution, not gross revenue, when evaluating economics. Subtract variable fulfillment, payment, service, promotion, returns, fraud, and support costs according to ownership. For period t, expected value combines survival/activity probability, expected transactions or revenue while active, margin, and discount factor 1/(1+r)^t. Use a finite policy horizon unless a defensible terminal value is modeled. Customer acquisition cost (CAC) includes the incremental channel spend and allocated costs relevant to the decision; blended averages hide channel and marginal-cost differences. Payback time and downside risk often matter alongside mean LTV/CAC."
+    },
+    {
+      "id": "models-validation",
+      "title": "Models and chronological validation",
+      "body": "Baselines include cohort curves, empirical Bayes shrinkage, and simple survival plus margin models. Contractual settings can use discrete-time hazard or survival regression; noncontractual repeat purchase may use Pareto/NBD or BG/NBD with a spend model under assumptions about frequency, dropout, and monetary value. Flexible ML can forecast horizon revenue but must respect censored labels and future leakage. Split by acquisition time, train only on information available at cutoff, and evaluate on mature future windows. Measure aggregate cohort calibration, MAE or deviance, quantile calibration, ranking, uncertainty coverage, and financial decision regret. Compare with simple recency-frequency-monetary baselines."
+    },
+    {
+      "id": "causal-policy",
+      "title": "Interventions, feedback, and responsible use",
+      "body": "High predicted value may identify customers who would remain anyway; high churn risk may identify users too late to help. Targeting should estimate incremental treatment effect or uplift, subtract contact and incentive cost, and honor eligibility and fairness constraints. Offers change observed retention and margin, so retraining on treated outcomes without policy features creates feedback. Maintain randomized holdouts or exploration to learn intervention effects. Avoid using value predictions to deny essential service or systematically exclude protected or low-income groups without governance. Report cohort-level economics and uncertainty, cap automated bids, and provide human review for material account actions."
+    }
+  ],
+  "math": "For discrete periods t=1..H, LTV=sum_t S(t) E[M_t|active at t]/(1+r)^t minus future incremental costs, where S(t) or purchase probability and margin M_t are model outputs. Kaplan-Meier is S_hat(t)=product_{u<=t}(1-d_u/n_u), with d_u events and n_u at risk just before u. For constant retention q and margin m starting next period over an infinite horizon, LTV=m q/(1+r-q), but this strong homogeneous stationary approximation should be a sanity check, not a default truth.",
+  "workedExamples": [
+    {
+      "title": "From headline revenue to incremental contribution value",
+      "body": "Estimate censored survival, apply period-specific margin and finite-horizon discounting, compare marginal CAC and payback, and test retention interventions rather than targeting on risk alone."
+    }
+  ],
+  "exercises": [
+    {
+      "prompt": "Why is a current active subscriber not missing data?",
+      "solution": "Their event time is right-censored: you know they survived through follow-up, which contributes information to survival estimation."
+    },
+    {
+      "prompt": "Revenue is $100 and variable cost $40. Which enters contribution LTV?",
+      "solution": "$60 before other relevant incremental costs and discounting, not the full $100 revenue."
+    },
+    {
+      "prompt": "Why can one constant retention rate mislead?",
+      "solution": "Customer hazards vary with tenure and latent segment; averaging heterogeneity can distort both curve shape and long-horizon value."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "flow",
+      "title": "LTV evidence chain",
+      "items": [
+        "Define churn / activity",
+        "Estimate survival or purchases",
+        "Forecast contribution margin",
+        "Discount finite horizon",
+        "Validate mature cohorts",
+        "Choose policy by incremental value"
+      ],
+      "caption": "Behavioral forecasts become decision value only after economic costs, uncertainty, and treatment effects are included.",
+      "afterSection": "business-setting"
+    },
+    {
+      "type": "compare",
+      "title": "Prediction versus intervention",
+      "left": {
+        "title": "Predictive LTV / churn",
+        "items": [
+          "Who is likely valuable or at risk",
+          "Under current observed policy",
+          "Useful for forecasting",
+          "Can reflect selection"
+        ]
+      },
+      "right": {
+        "title": "Incremental targeting value",
+        "items": [
+          "Who changes because contacted",
+          "Subtracts offer/contact cost",
+          "Needs experiments or causal design",
+          "Directly supports action"
+        ]
+      },
+      "caption": "The most valuable or highest-risk customer is not necessarily the best person to target.",
+      "afterSection": "causal-policy"
+    }
+  ],
+  "lab": {
+    "language": "python",
+    "goal": "Implement Kaplan-Meier survival and finite-horizon discounted contribution LTV, compare grouped risk calculations with pandas, and verify censoring and monotonicity.",
+    "buildIt": "def kaplan_meier(durations,events):\n    times=sorted(set(durations)); survival=1.0; curve=[]\n    for t in times:\n        at_risk=sum(d>=t for d in durations); failures=sum(d==t and e for d,e in zip(durations,events))\n        if failures:survival*=1-failures/at_risk\n        curve.append((t,survival,at_risk,failures))\n    return curve\ndef discounted_ltv(curve,margin,discount,horizon):\n    by_time=dict((t,s) for t,s,_,_ in curve); last=1.0; value=0.0\n    for t in range(1,horizon+1):\n        if t in by_time:last=by_time[t]\n        value+=last*margin/(1+discount)**t\n    return value\ndurations=[1,2,2,3,4,4]; events=[1,1,0,1,0,1]\ncurve=kaplan_meier(durations,events); ltv=discounted_ltv(curve,12,0.01,4)",
+    "useIt": "import pandas as pd\ndf=pd.DataFrame({'duration':durations,'event':events})\nsummary=df.groupby('duration')['event'].agg(['sum','count']).rename(columns={'sum':'failures'})\npandas_failures=summary['failures'].to_dict()",
+    "verifyIt": "survivals=[s for _,s,_,_ in curve]\nassert all(b<=a for a,b in zip(survivals,survivals[1:]))\nassert curve[0][2]==6 and curve[-1][2]==2\nassert pandas_failures=={1:1,2:1,3:1,4:1}\nassert 0<ltv<12*4\nno_events=kaplan_meier([1,2,3],[0,0,0])\nassert all(s==1 for _,s,_,_ in no_events)\nassert discounted_ltv(curve,12,0.05,4)<ltv",
+    "shipIt": "Version event and censoring semantics, margin/cost and horizon assumptions, validate on mature chronological cohorts, monitor calibration and policy feedback, and fall back to conservative cohort economics when model or cost inputs fail."
+  },
+  "sourceNotes": [
+    {
+      "resource": "customer-base-models",
+      "contribution": "Provides the contractual/noncontractual taxonomy and probability-model foundations for repeat purchase, dropout, and customer-base value."
+    },
+    {
+      "resource": "fader-heterogeneity",
+      "contribution": "Shows why ignoring customer heterogeneity can distort contractual customer-base valuation."
+    },
+    {
+      "resource": "lifelines",
+      "contribution": "Documents current survival, censoring, Kaplan-Meier, regression, and diagnostic implementations."
+    },
+    {
+      "resource": "statsmodels-survival",
+      "contribution": "Provides official duration-model and survival-analysis interfaces for independent verification and extensions."
+    }
+  ]
 }

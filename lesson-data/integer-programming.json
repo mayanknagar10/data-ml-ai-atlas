@@ -7,30 +7,186 @@
     "ds",
     "as"
   ],
-  "interviewAnswer": "Integer programs require some decision variables to be discrete, enabling assignment, routing and scheduling but making optimization computationally harder than continuous LPs.",
+  "interviewAnswer": "A mixed-integer program combines linear constraints and objective terms with some variables restricted to integers, often binary. The LP relaxation drops integrality and gives a bound. Branch-and-bound partitions the feasible set by branching on fractional variables, solves relaxations at nodes, prunes nodes whose bounds cannot beat the incumbent, and uses cuts and heuristics to tighten bounds or find feasible solutions. Rounding is not generally valid. In production I build tight formulations, use indicator constraints when available, set explicit time and gap limits, and report the feasible incumbent, best bound, relative gap, residuals, and solver status separately.",
   "keyPoints": [
-    "Integrality creates combinatorial search.",
-    "LP relaxation gives bounds.",
-    "Formulation quality strongly affects solve time."
+    "Integrality models choices and logic, not just rounded quantities",
+    "LP relaxations supply bounds but not necessarily feasible decisions",
+    "Branch-and-bound tracks incumbent and global bound",
+    "Strong formulations and symmetry breaking can dominate solver tuning",
+    "A time-limited feasible solution is not automatically optimal"
   ],
   "resources": [
-    "ortools"
+    "scipy-milp",
+    "ortools-cpsat",
+    "ortools-mathopt",
+    "boyd-convex"
   ],
   "featured": false,
-  "why": "Integer & Mixed-Integer Optimization appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
-  "intuition": "Integrality creates combinatorial search.",
-  "deepDive": "Integer programs require some decision variables to be discrete, enabling assignment, routing and scheduling but making optimization computationally harder than continuous LPs. LP relaxation gives bounds. Formulation quality strongly affects solve time. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
-  "workedExample": "Assign reviewers to PRs with capacity and expertise constraints while each PR receives an integer number of reviewers.",
+  "why": "Whether to open a facility, assign a person to a shift, choose features under a budget, route a vehicle, or activate a fixed-cost process is discrete. Replacing these decisions with fractions may create impossible answers such as 0.4 of a warehouse or overlapping assignments. Mixed-integer optimization can express the actual policy and provide a bound on missed value when exact proof is too expensive. But worst-case complexity is exponential, and a loose big-M or symmetric model can turn a useful problem into an overnight search. Interviews probe whether candidates understand the difference between modeling, relaxation, and search. Production use requires a declared latency-quality trade-off and an operationally feasible fallback.",
+  "intuition": "Imagine the LP feasible region as a continuous polygon and the true integer choices as lattice points inside it. The LP optimum may sit between lattice points and therefore supplies an optimistic bound for maximization. Branch-and-bound draws a search tree: choose a fractional variable, create child regions forcing it down or up, and solve a new relaxation in each. A feasible integer solution is the incumbent. If a node's optimistic bound cannot beat that incumbent, discard the entire region without enumerating its points. Cuts remove fractional regions without removing valid integer points. Better formulations make the continuous polygon hug the integer hull, shrinking the tree.",
+  "deepDive": "Discrete optimization is a collaboration between expressive modeling and bounded search. Relaxations explain what remains possible, incumbents show what is achievable, and the gap connects computational budget to decision quality.",
+  "workedExample": "Choose projects with sizes [21,11,15,9,34,25] and values [22,12,16,10,35,26] under capacity 60. Binary variables x_i enforce indivisibility. Enumeration shows projects with sizes 21,15, and 25 use 61 and are infeasible, while a best feasible subset must be found exactly rather than by value-density alone. The LP relaxation may take a fraction of a project and gives an optimistic bound. Rounding that fractional choice upward can exceed capacity; rounding downward can discard useful value. A MILP solver returns an incumbent plus a dual bound, and the model ships only after capacity, binary domains, reconstructed value, and gap are verified.",
   "commonMistakes": [
-    "Applying the method without checking its assumptions or data-generating process.",
-    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+    {
+      "mistake": "Solving the LP and rounding",
+      "correction": "Rounding can violate coupled constraints or lose large value; use a valid integer method or a verified repair heuristic."
+    },
+    {
+      "mistake": "Using an enormous big-M for safety",
+      "correction": "Derive the smallest valid bound or use native indicators; oversized M weakens relaxations and harms numerics."
+    },
+    {
+      "mistake": "Reporting FEASIBLE as optimal",
+      "correction": "Publish incumbent and best bound/gap with the exact termination reason."
+    },
+    {
+      "mistake": "Tuning the solver before strengthening the model",
+      "correction": "Tight bounds, symmetry breaking, and better formulations often reduce search far more than parameter changes."
+    }
   ],
   "followUps": [
-    "What assumptions does Integer & Mixed-Integer Optimization make?",
-    "How would you validate or debug Integer & Mixed-Integer Optimization in practice?"
+    {
+      "question": "What is an integrality gap?",
+      "answer": "It is the separation between the integer optimum and its continuous relaxation under a stated normalization; it reflects bound strength and search difficulty."
+    },
+    {
+      "question": "Why is big-M dangerous?",
+      "answer": "An invalid small M removes legitimate solutions, while an unnecessarily large M creates weak relaxations and numerical instability."
+    },
+    {
+      "question": "What can you return at a time limit?",
+      "answer": "Only a validated feasible incumbent, if one exists, together with the valid bound, gap, and limit status. Otherwise use a declared fallback."
+    }
   ],
-  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "production": "Version the full coefficient snapshot, domains, horizon, big-M derivations, solver and license, random seed, threads, options, and termination limits. Record incumbent, bound, gap definition, node count, runtime, row and integrality residuals, and whether repair was used. Benchmark representative and adversarial instances, including infeasible cases and horizon spikes. Monitor latency percentiles, gap, no-incumbent rate, fallback rate, constraint violations, value relative to baselines, and sensitivity to demand changes. Parallel search can affect reproducibility; preserve logs and model fingerprints. Restrict confidential costs, schedules, and bids. If no acceptable incumbent arrives, run a deterministic feasible heuristic or previous approved plan. Rollback must restore model formulation, data, solver settings, and operational decision together.",
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "Integer and mixed-integer optimization represents indivisible choices, logical rules, fixed costs, assignments, schedules, and network designs that continuous models cannot express faithfully. This chapter develops binary, integer, continuous, semi-continuous, and mixed variables; strong formulations; LP relaxations; integrality gaps; branch-and-bound; cutting planes; primal heuristics; constraint programming and CP-SAT; big-M, indicator, and logical constraints; symmetry; decomposition; and solver certificates. You will learn why rounding an LP solution can violate constraints or destroy value, how bounds turn exponential search into a quantifiable optimality gap, and how formulation strength often matters more than solver tuning. A worked knapsack example contrasts integer, relaxed, and rounded decisions. The lab enumerates a small binary portfolio from scratch, compares it with SciPy's `milp`, and verifies feasibility, optimality, and a nonzero relaxation gap. Production guidance covers time limits, incumbent-versus-bound semantics, deterministic replay, solution pools, infeasibility, numerical scaling, licensing, monitoring, safe fallbacks, and rollback. The objective is to ship auditable discrete decisions, not merely obtain a solver vector.",
+  "prerequisites": [
+    "linear-programming",
+    "big-o",
+    "trees-graphs-algorithms"
+  ],
+  "learningObjectives": [
+    "Model discrete decisions and logical relationships with explicit variable domains and tight linear constraints.",
+    "Explain LP relaxation, branch-and-bound, cuts, heuristics, integrality gaps, and termination certificates.",
+    "Recognize weak big-M formulations, symmetry, scaling, and horizon choices that make otherwise correct models intractable.",
+    "Validate feasible incumbents and optimality gaps independently before operational use."
+  ],
+  "deepSections": [
+    {
+      "id": "modeling",
+      "title": "Variables, logic, and formulation choices",
+      "body": "Binary variables encode yes/no choices; general integers encode counts; continuous variables capture divisible quantities. Link activation y to flow x using bounds such as 0<=x<=U*y, where U must be valid and as tight as possible. Either-or rules can use binaries with indicator constraints or carefully derived big-M inequalities. Exactly-one, at-most-one, implications, precedence, and assignment constraints should be expressed directly when the solver supports them. Time-indexed formulations are intuitive but can grow with horizon. Network, set-cover, and scheduling structures may have specialized formulations. Every variable and constraint should map to an operational rule with units and ownership."
+    },
+    {
+      "id": "relaxation-gap",
+      "title": "LP relaxation and formulation strength",
+      "body": "Dropping x_j in Z to continuous bounds produces an LP relaxation containing every integer-feasible point. For minimization its optimum is a lower bound; for maximization it is an upper bound. The integrality gap measures separation from the integer optimum. A weak formulation has a large or uninformative gap, causing branch-and-bound to explore many nodes. Tight variable bounds, valid inequalities, extended formulations, and choosing the right representation strengthen the relaxation. Blindly rounding can violate capacity, exclusivity, balance, or precedence. Even feasible rounding can be arbitrarily poor, so it is a heuristic whose constraints and value must be checked."
+    },
+    {
+      "id": "branch-cut",
+      "title": "Branch-and-bound, cuts, and primal heuristics",
+      "body": "At each node, solve a relaxation. If it is infeasible, prune. If its bound cannot improve the incumbent within tolerance, prune. If the relaxation is integral, update the incumbent. Otherwise branch, often on a fractional variable, to create disjoint child regions. Node selection balances finding good incumbents and improving the global bound. Cutting planes add inequalities valid for all integer solutions but violated by the fractional relaxation. Presolve, propagation, diving, rounding-and-repair, local search, and large-neighborhood search can find incumbents. Branch-and-cut integrates these methods; progress is nonlinear, so elapsed time alone does not predict remaining proof effort."
+    },
+    {
+      "id": "cp-sat",
+      "title": "MIP versus constraint programming and CP-SAT",
+      "body": "Classical MIP excels when linear relaxations are informative. Constraint programming emphasizes domains, logical/global constraints, and propagation, often fitting scheduling and combinatorial feasibility. CP-SAT combines SAT-style Boolean reasoning, integer propagation, cutting planes, and search. Current OR-Tools CP-SAT models operate over integers, so decimal quantities require exact scaling with overflow and precision checks. Specialized routing and scheduling APIs may outperform generic encodings. Solver choice should follow structure, required certificates, licensing, scale, and operational support - not a universal claim that one family is fastest."
+    },
+    {
+      "id": "operations",
+      "title": "Gaps, limits, infeasibility, and robust operation",
+      "body": "For minimization, track feasible incumbent z_P and valid lower bound z_D; a normalized gap expresses remaining uncertainty but conventions near zero differ by solver. OPTIMAL means the requested gap/tolerance was proven, FEASIBLE means an incumbent exists without proof, INFEASIBLE is a proof for the model, and UNKNOWN or limit reached requires careful handling. Validate integrality and row residuals after numerical output. Use conflict refiners or irreducible inconsistent subsystems for infeasibility. Add time, node, memory, and gap limits; checkpoint incumbents if supported. Robust or scenario formulations may protect uncertainty but increase size. Always define which feasible heuristic runs when the exact service misses its latency budget."
+    }
+  ],
+  "math": "A MILP has min c^T x subject to l_c<=Ax<=u_c, l<=x<=u, and x_j integer for j in I. Its LP relaxation replaces integrality with intervals. For minimization, dual_bound<=z*<=incumbent whenever an integer-feasible incumbent exists. A common relative gap is |z_P-z_D|/max(1,|z_P|), though solver definitions vary. Big-M implication y=0 => a^T x<=b can be written a^T x<=b+My only when M is a valid tight bound under the rest of the model.",
+  "workedExamples": [
+    {
+      "title": "Budgeted project selection",
+      "body": "Compare exact binary enumeration, a fractional relaxation, and naive rounding to expose why feasibility and global bounds must be checked separately."
+    }
+  ],
+  "exercises": [
+    {
+      "prompt": "For maximization, is the LP relaxation an upper or lower bound?",
+      "solution": "An upper bound, because relaxing integrality enlarges the feasible set and cannot reduce the maximum."
+    },
+    {
+      "prompt": "Why can two identical machines slow search?",
+      "solution": "Swapping their labels creates symmetric solutions and redundant branches. Ordering or symmetry-breaking constraints can remove equivalent search."
+    },
+    {
+      "prompt": "A solver reports incumbent 120 and bound 125 for maximization. What is known?",
+      "solution": "The true optimum lies between 120 and 125, assuming valid statuses and tolerances; 120 is achievable and at most 5 absolute value remains."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "flow",
+      "title": "Branch-and-bound evidence loop",
+      "items": [
+        "Solve LP relaxation",
+        "Infeasible? prune",
+        "Bound worse? prune",
+        "Integral? update incumbent",
+        "Otherwise branch",
+        "Stop with gap certificate"
+      ],
+      "caption": "Each node either improves a feasible decision or rules out an entire region using a bound.",
+      "afterSection": "branch-cut"
+    },
+    {
+      "type": "compare",
+      "title": "Continuous relaxation versus discrete decision",
+      "left": {
+        "title": "LP relaxation",
+        "items": [
+          "Fractional variables allowed",
+          "Fast optimistic bound",
+          "Useful for pruning",
+          "May be operationally impossible"
+        ]
+      },
+      "right": {
+        "title": "Integer solution",
+        "items": [
+          "Domains respected",
+          "Operationally feasible",
+          "May require exponential search",
+          "Quality certified by bound gap"
+        ]
+      },
+      "caption": "Relaxation and incumbent answer different questions and must both appear in reporting.",
+      "afterSection": "relaxation-gap"
+    }
+  ],
+  "lab": {
+    "language": "python",
+    "goal": "Solve a binary knapsack by enumeration, compare it with SciPy milp, and verify domains, capacity, objective, and relaxation gap.",
+    "buildIt": "from itertools import product\nsizes=[21,11,15,9,34,25]\nvalues=[22,12,16,10,35,26]\ncapacity=60\ndef feasible(bits): return sum(s*b for s,b in zip(sizes,bits))<=capacity\ndef value(bits): return sum(v*b for v,b in zip(values,bits))\nsolutions=[bits for bits in product((0,1),repeat=len(sizes)) if feasible(bits)]\nbest=max(solutions,key=value)\nbest_value=value(best)",
+    "useIt": "import numpy as np\nfrom scipy.optimize import Bounds,LinearConstraint,milp\nresult=milp(c=-np.array(values,dtype=float),integrality=np.ones(len(values)),bounds=Bounds(0,1),constraints=LinearConstraint([sizes],0,capacity))\nrelaxation=milp(c=-np.array(values,dtype=float),integrality=np.zeros(len(values)),bounds=Bounds(0,1),constraints=LinearConstraint([sizes],0,capacity))",
+    "verifyIt": "assert feasible(best)\nassert all(b in (0,1) for b in best)\nassert result.success\nsolver_bits=tuple(int(round(x)) for x in result.x)\nassert feasible(solver_bits)\nassert value(solver_bits)==best_value\nassert abs(-result.fun-best_value)<1e-7\nassert -relaxation.fun>=best_value-1e-9\nassert -relaxation.fun>best_value",
+    "shipIt": "Version domains and big-M derivations, cap time/nodes/gap, persist incumbent and bound, verify every operational constraint, monitor fallback and gap, and return only a certified incumbent or an approved feasible heuristic."
+  },
+  "sourceNotes": [
+    {
+      "resource": "scipy-milp",
+      "contribution": "Documents the current HiGHS-backed MILP interface, integrality types, time/node/gap options, result statuses, and bound fields."
+    },
+    {
+      "resource": "ortools-cpsat",
+      "contribution": "Documents current integer-only CP-SAT modeling, solver statuses, and constraint-programming guidance."
+    },
+    {
+      "resource": "ortools-mathopt",
+      "contribution": "Documents solver-independent MIP models, termination evidence, warm starts, callbacks, and bounds."
+    },
+    {
+      "resource": "boyd-convex",
+      "contribution": "Provides LP relaxation and dual-bound foundations used to understand branch-and-bound certificates."
+    }
+  ]
 }

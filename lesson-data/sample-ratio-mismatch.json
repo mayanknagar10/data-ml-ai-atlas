@@ -7,30 +7,186 @@
     "ds",
     "da"
   ],
-  "interviewAnswer": "SRM occurs when observed treatment/control counts differ unexpectedly from the planned allocation. It is a diagnostic red flag for assignment, logging, eligibility or exposure bugs, so effect estimates should not be trusted until explained.",
+  "interviewAnswer": "SRM means the observed variant counts are inconsistent with the planned allocation beyond ordinary random fluctuation. I test assignment-unit counts against expected proportions, usually with a chi-square goodness-of-fit check, before looking at effects. A very small p-value is a smoke alarm, not an effect adjustment: I investigate assignment, eligibility, exposure delivery, missing telemetry, identity changes, redirects, filters, joins, bots, and time of onset. I also distinguish all-assigned SRM from triggered-population SRM. Until the root cause is explained and shown not to bias the estimand, I quarantine the result and normally fix and restart the experiment.",
   "keyPoints": [
-    "Test assignment counts against expected proportions.",
-    "SRM can signal instrumentation or filtering bugs.",
-    "Do not “fix” SRM by reweighting blindly."
+    "SRM tests allocation integrity, not treatment impact",
+    "Expected counts come from the actual design and ramp history",
+    "Assignment, exposure, and analysis populations need separate checks",
+    "The chi-square p-value detects a symptom but not its cause",
+    "A failed SRM gate blocks causal interpretation until diagnosed"
   ],
   "resources": [
-    "microsoft-experimentation"
+    "srm-taxonomy",
+    "microsoft-srm-guide",
+    "microsoft-experimentation",
+    "trustworthy-oce-survey"
   ],
   "featured": false,
-  "why": "Sample Ratio Mismatch (SRM) appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
-  "intuition": "Test assignment counts against expected proportions.",
-  "deepDive": "SRM occurs when observed treatment/control counts differ unexpectedly from the planned allocation. It is a diagnostic red flag for assignment, logging, eligibility or exposure bugs, so effect estimates should not be trusted until explained. SRM can signal instrumentation or filtering bugs. Do not “fix” SRM by reweighting blindly. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
-  "workedExample": "A 50/50 experiment producing 60/40 traffic may indicate a broken assignment path for one platform.",
+  "why": "A missing telemetry event can occur more often in one variant precisely because that variant crashes, redirects, or changes the code path. An analysis then drops affected units and turns harm into an apparent win. Duplicate identifiers, stale assignment cookies, inconsistent eligibility, or faulty joins can cause the same symptom. Because treatment effects are often small, even modest selective loss can dominate the signal. Microsoft's SRM taxonomy describes the diagnostic as analogous to fever: easy to detect, diverse in cause, and dangerous to ignore. Interviews ask SRM because it reveals whether a candidate trusts the experimental data-generating process before running inference.",
+  "intuition": "If a fair assignment service sends half of a large eligible population to each arm, arm counts wobble around fifty-fifty by chance. A difference of a few users is ordinary; a difference of thousands is not. The SRM statistic scales each squared deviation by its expected count, then asks how surprising the total would be under the design. But the alarm cannot tell whether the randomizer, treatment delivery, event logging, identity resolution, or analysis filter caused the loss. Build a chain of counts from eligible to assigned to delivered to exposed to measured, and find the first stage where arms diverge.",
+  "deepDive": "SRM is a model check on the experiment's allocation process. Its value comes from coupling a simple global test with stage-wise accounting and operational forensics, not from mechanically applying a significance threshold.",
+  "workedExample": "A 50/50 test records 510,000 assigned users per arm, so assignment SRM passes. The analysis table contains 505,000 control but only 482,000 treatment users. Stage reconciliation shows equal delivery but treatment users on app version 8.2 crash before emitting the exposure and purchase events. An inner join to exposure silently removed them; surviving treatment users appear to convert better. The correct response is not to scale treatment counts upward. The team quarantines the causal result, fixes crash and event parity, adds a left-join missingness guardrail, and restarts under a new version. The broken run remains evidence of treatment harm and platform failure.",
   "commonMistakes": [
-    "Applying the method without checking its assumptions or data-generating process.",
-    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+    {
+      "mistake": "Checking event counts instead of randomized units",
+      "correction": "Repeated activity differs by treatment; deduplicate the actual assignment unit for the allocation check."
+    },
+    {
+      "mistake": "Ignoring SRM because baseline covariates look balanced",
+      "correction": "Observed balance cannot rule out selective loss on unmeasured potential outcomes or broken telemetry."
+    },
+    {
+      "mistake": "Reweighting to 50/50",
+      "correction": "Count weights do not recover selectively missing outcomes; diagnose the generating defect first."
+    },
+    {
+      "mistake": "Testing only the final analysis table",
+      "correction": "Reconcile eligible, assigned, delivered, exposed, measured, and analyzed stages to localize the break."
+    }
   ],
   "followUps": [
-    "What assumptions does Sample Ratio Mismatch (SRM) make?",
-    "How would you validate or debug Sample Ratio Mismatch (SRM) in practice?"
+    {
+      "question": "Does unequal arm size always mean SRM?",
+      "answer": "No. Compare observed counts with the planned allocation, including ramp changes and capacity rules. SRM is implausible deviation from design, not inequality itself."
+    },
+    {
+      "question": "Can an experiment with SRM still be analyzed?",
+      "answer": "Only after the cause is fully understood and a defensible estimand and correction are established. The safe default is quarantine, fix, and restart."
+    },
+    {
+      "question": "Why can assignment SRM pass while analysis SRM fails?",
+      "answer": "Treatment-dependent delivery, event loss, filtering, identity, or joins can selectively remove units after correct assignment."
+    }
   ],
-  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "production": "Compute stage-wise unique-unit counts from immutable eligible, assignment, delivery, exposure, metric, and analysis snapshots. Derive expected counts from versioned allocation and ramp history. Alert with minimum-count and repeated-monitoring logic; route to an owner with experiment, slice, onset, residual, and lineage evidence. Automatically hide treatment effects behind a trust gate when SRM fails. Retain raw IDs under strict access and privacy controls for forensic joins, then aggregate incident artifacts. Version fixes and restart under a new experiment identifier. Monitor assignment-library versions, identifier churn, event parity, late arrival, and join attrition. Rollback treatment serving on correlated reliability harm, but never delete the malformed run that exposed the defect.",
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "Sample ratio mismatch (SRM) occurs when observed experiment allocation counts differ implausibly from the proportions specified by the randomization design. It is one of the highest-value trust diagnostics in online experimentation because many assignment, eligibility, exposure, identity, and logging defects first appear as unexpected arm counts. This chapter derives the multinomial chi-square check, explains its assumptions and scale sensitivity, distinguishes assignment-level from triggered-analysis SRM, and builds a root-cause taxonomy across randomization, delivery, telemetry, filtering, bots, joins, and time. You will learn why SRM is a symptom rather than a correction target, why balanced outcomes cannot rescue a failed trust check, how to localize onset and affected slices, and when unequal counts are expected by design. A worked redirect bug shows how treatment-dependent loss reverses an apparent effect. The lab implements the SRM statistic and p-value, compares it with SciPy, and diagnoses a time-slice failure using invariants. Production guidance covers continuous alerting, multiple looks, minimum counts, ownership, forensic snapshots, restart criteria, and rollback. The rule is simple: do not interpret treatment effects until the mismatch is understood and the causal sample is trustworthy.",
+  "prerequisites": [
+    "experiment-design",
+    "chi-square",
+    "missingness-mechanisms"
+  ],
+  "learningObjectives": [
+    "Compute an SRM goodness-of-fit statistic for arbitrary planned allocation proportions and interpret it as a trust diagnostic.",
+    "Separate valid random allocation fluctuation from assignment, delivery, exposure, logging, filtering, identity, and join failures.",
+    "Localize an SRM by event stage, time, platform, geography, eligibility, and identifier without outcome-driven fishing.",
+    "Define automated alert, investigation, restart, and evidence-preservation procedures for an experimentation platform."
+  ],
+  "deepSections": [
+    {
+      "id": "test",
+      "title": "Expected counts and the goodness-of-fit test",
+      "body": "For K variants with observed counts O_k, planned shares pi_k summing to one, and total N, expected counts are E_k=N*pi_k. Pearson's statistic is sum_k (O_k-E_k)^2/E_k and is approximately chi-square with K-1 degrees of freedom under independent assignment and sufficiently large expected counts. Use the assignment unit, not events or sessions, unless that is truly the randomized unit. Compute expectations from the allocation schedule when ramps changed over time. Tiny p-values are common for meaningful defects at scale, but fixed universal thresholds and repeated monitoring require an alerting design. Exact multinomial methods can handle small counts."
+    },
+    {
+      "id": "populations",
+      "title": "Assigned, exposed, triggered, and analyzed populations",
+      "body": "Run SRM first on all eligible assigned units from the authoritative assignment log. Then reconcile treatment delivery, exposure, outcome telemetry, and the final analysis population. A triggered analysis can legitimately change arm proportions only if triggering is pre-treatment or unaffected by assignment; treatment-dependent triggering is post-randomization selection. Counts of exposure events can differ because users generate repeated events, so deduplicate at the unit level. A test that passes at assignment but fails after a metric join points downstream. A test that fails at assignment points toward eligibility, randomizer, identity, namespace, or ramp logic."
+    },
+    {
+      "id": "taxonomy",
+      "title": "Root-cause taxonomy",
+      "body": "Assignment causes include incorrect weights, inconsistent hashing libraries, overlapping experiments, missing salts, nonsticky IDs, and variant-specific eligibility. Delivery causes include redirects, caching, fail-open behavior, platform version gating, and capacity rejection. Instrumentation causes include variant-specific event paths, crashes before logging, schema drift, blocked scripts, and late events. Analysis causes include inner joins, asymmetric bot rules, timezone windows, deduplication, post-treatment filters, and incompatible snapshots. Identity causes include cookie deletion, device switching, merging, duplicate IDs, and logged-out users. External causes include crawlers or campaigns routed differently. The correction follows the first broken stage, not the final count table."
+    },
+    {
+      "id": "localization",
+      "title": "Localizing onset and affected slices",
+      "body": "Plot cumulative observed-minus-expected counts over assignment time and annotate ramps, releases, schema changes, outages, and redirects. Test coarse prespecified slices such as platform, app version, country, data center, eligibility path, and identifier type to locate concentration, while controlling alert multiplicity and avoiding outcome-driven selection. Reconstruct the same units through raw assignment, exposure, and outcome tables with left joins and reason-coded attrition. Compare treatment and control missingness at each stage. Validate a suspected root cause by reproducing it on affected records and showing that the divergence begins where predicted, not merely by finding a correlated slice."
+    },
+    {
+      "id": "response",
+      "title": "Quarantine, repair, restart, and prevention",
+      "body": "Do not reweight arm counts to the planned ratio and declare the bias solved; missing units may differ in outcomes. If the cause is fully known and independent of potential outcomes under a defensible estimand, a planned correction may be possible, but this is exceptional and documented. Usually stop or quarantine, fix the system, choose whether old evidence is unusable, and restart with a new experiment version. Preserve the broken run for platform learning. Add prevention through shared assignment libraries, immutable exposure contracts, left-join analyses, event parity tests, A/A tests, ramp gates, automated stage-wise reconciliation, and incident owners. A passed rerun does not retroactively validate contaminated data."
+    }
+  ],
+  "math": "Given planned probabilities pi_1,...,pi_K and N observed assignment units, E_k=N*pi_k and X^2=sum_k(O_k-E_k)^2/E_k. Under the null and regularity, X^2 is approximately chi-square_{K-1}; p=P(ChiSq>=X^2). For two 50/50 arms this is equivalent to checking a binomial count. Standardized cell residuals (O_k-E_k)/sqrt(E_k) show direction but are dependent. Repeated looks or many slice tests require an alert policy; a small p-value does not quantify outcome bias.",
+  "workedExamples": [
+    {
+      "title": "A downstream SRM that manufactures a conversion win",
+      "body": "Compare assignment and analysis counts, identify treatment-dependent event loss at the first divergent stage, reject reweighting as a causal repair, and restart after instrumentation and crash fixes."
+    }
+  ],
+  "exercises": [
+    {
+      "prompt": "A 90/10 design observes 9000 and 1000 users. Is unequal size an SRM?",
+      "solution": "No; those counts exactly match the planned ratio. Test against 90/10, not 50/50."
+    },
+    {
+      "prompt": "Assignment counts pass but exposed counts fail. Where do you investigate?",
+      "solution": "Treatment delivery, redirects, caching, failures before exposure logging, identity, and exposure-event parity before downstream metric logic."
+    },
+    {
+      "prompt": "Why does a tiny SRM p-value not tell you effect bias magnitude?",
+      "solution": "It measures incompatibility of counts with allocation, not which outcomes are missing or how selection changes the treatment contrast."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "flow",
+      "title": "Localize an SRM by stage",
+      "items": [
+        "Eligible",
+        "Assigned",
+        "Delivered",
+        "Exposed",
+        "Outcome logged",
+        "Analysis joined"
+      ],
+      "caption": "The first stage with arm divergence sharply narrows the root-cause search.",
+      "afterSection": "populations"
+    },
+    {
+      "type": "compare",
+      "title": "SRM response",
+      "left": {
+        "title": "Trustworthy response",
+        "items": [
+          "Quarantine effects",
+          "Find first broken stage",
+          "Reproduce root cause",
+          "Fix + new experiment version"
+        ]
+      },
+      "right": {
+        "title": "Unsafe response",
+        "items": [
+          "Ignore small percentage gap",
+          "Reweight to target ratio",
+          "Filter suspicious slice",
+          "Report favorable effects"
+        ]
+      },
+      "caption": "SRM is an incident in the evidence pipeline, not a formatting problem in the result table.",
+      "afterSection": "response"
+    }
+  ],
+  "lab": {
+    "language": "python",
+    "goal": "Implement a multinomial SRM check, compare it with SciPy, and localize a treatment-specific count loss across time slices.",
+    "buildIt": "from math import exp\ndef srm_stat(observed,proportions):\n    total=sum(observed); expected=[total*p for p in proportions]\n    stat=sum((o-e)**2/e for o,e in zip(observed,expected))\n    return stat,expected\n# For two arms, chi-square survival is erfc(sqrt(x/2)).\nfrom math import erfc,sqrt\ndef srm_two_arm(observed,proportions=(0.5,0.5)):\n    stat,expected=srm_stat(observed,proportions)\n    return stat,erfc(sqrt(stat/2)),expected\nglobal_report=srm_two_arm([10000,9700])\nslices={'before':[5000,5002],'after':[5000,4698]}\nslice_reports={k:srm_two_arm(v) for k,v in slices.items()}",
+    "useIt": "from scipy.stats import chisquare\nscipy_result=chisquare([10000,9700],f_exp=global_report[2])",
+    "verifyIt": "stat,pvalue,expected=global_report\nassert abs(sum(expected)-19700)<1e-12\nassert abs(stat-scipy_result.statistic)<1e-12\nassert abs(pvalue-scipy_result.pvalue)<1e-12\nassert slice_reports['before'][1]>0.5\nassert slice_reports['after'][1]<1e-4\nassert srm_two_arm([9000,1000],(0.9,0.1))[1]>0.99\nassert pvalue<1e-6",
+    "shipIt": "Run unique-unit SRM at every evidence stage against versioned ramp expectations, gate effect visibility on trust, alert with onset and slices, preserve forensic snapshots, and restart rather than reweight when selective loss is plausible."
+  },
+  "sourceNotes": [
+    {
+      "resource": "srm-taxonomy",
+      "contribution": "Provides the KDD practitioner taxonomy, diagnosis rules, failure examples, and prevention guidance for sample ratio mismatch."
+    },
+    {
+      "resource": "microsoft-srm-guide",
+      "contribution": "Provides a deployed platform workflow that gates effect results, localizes causes, and treats SRM as a trust failure."
+    },
+    {
+      "resource": "microsoft-experimentation",
+      "contribution": "Provides broader online experimentation trust, alerting, assignment, and metric context."
+    },
+    {
+      "resource": "trustworthy-oce-survey",
+      "contribution": "Provides peer-reviewed foundations for random assignment, analysis populations, and common web-experiment pitfalls."
+    }
+  ]
 }

@@ -7,30 +7,195 @@
     "ds",
     "da"
   ],
-  "interviewAnswer": "A visualization can be numerically correct and still mislead through truncated axes, inappropriate aggregation, dual axes, area encodings or selective time windows.",
+  "interviewAnswer": "I audit a chart at four layers: data and population; transformation, aggregation, denominator and filters; visual encoding, scale and baseline; and annotation/context. Common traps are truncated bar axes, 3D or area distortion, dual axes, cherry-picked windows, unequal time spacing, changing denominators, misleading bins/colors, overplotting, omitted uncertainty, and causal wording. I reconstruct the underlying table, compare alternate honest views, quantify how the claim changes, and add semantic tests so the correction is reproducible.",
   "keyPoints": [
-    "Preserve meaningful baselines when magnitude comparisons matter.",
-    "Show uncertainty where relevant.",
-    "Avoid aggregation that hides heterogeneity."
+    "A chart inherits every upstream data and metric assumption",
+    "Visual geometry can amplify or suppress differences",
+    "Selection of windows, bins, groups, and annotations is analytical flexibility",
+    "Uncertainty and denominators are essential context",
+    "Semantic review complements pixel snapshots"
   ],
   "resources": [
-    "fundamentals-dataviz"
+    "visual-communication-science",
+    "fundamentals-dataviz",
+    "powerbi-dashboard-design",
+    "uncertainty-visualization"
   ],
   "featured": false,
-  "why": "Misleading Charts & Visualization Pitfalls appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
-  "intuition": "Preserve meaningful baselines when magnitude comparisons matter.",
-  "deepDive": "A visualization can be numerically correct and still mislead through truncated axes, inappropriate aggregation, dual axes, area encodings or selective time windows. Show uncertainty where relevant. Avoid aggregation that hides heterogeneity. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
-  "workedExample": "A conversion chart starting the y-axis at 49% makes a 49% to 50% increase look enormous.",
+  "why": "Dashboards often become the final authority for decisions, so a subtle denominator change can matter more than a code bug. Visual distortion is not limited to deliberate propaganda: BI defaults may truncate axes, auto-sort, smooth, or aggregate; filters can persist invisibly; and a technically accurate percentage can compare different populations. Interviews ask classic misleading charts, but senior practice requires tracing the entire semantic pipeline and establishing preventive controls. Correcting a chart without correcting its metric, query, or historical annotations leaves the incident unresolved.",
+  "intuition": "A visualization is an argument made with geometry. If the bar baseline begins at 95, a change from 96 to 98 occupies three times the visible height even though the actual ratio is 1.02. If bubble radius doubles, area quadruples. If two time series get independently chosen axes, almost any pair can look correlated. If only a favorable month is shown, the x-axis performs selection. Ask what physical screen distance the chart assigns to a numerical change, which observations are absent, and which alternative framing would reverse the impression. Then inspect whether the stated question actually needs that geometry.",
+  "deepDive": "Chart integrity is a chain property. Correct rendering of a wrong denominator is still wrong; correct data on a perceptually deceptive scale can still mislead. Audit from source to sentence, not just pixels.",
+  "workedExample": "A retention dashboard shows improvement from 96% to 98% using bars starting at 95%, so the new bar is three times the visible height. The old metric used all activated users; the new month excludes users whose events arrived after seven days, shrinking the denominator and preferentially dropping churners. Restoring a zero-baseline dot/bar alternative and a consistent matured cohort changes rates to 96.0% versus 96.4%, with interval spanning the business threshold. The correction notes the historical denominator bug, rebuilds all months, updates the metric contract, and invalidates decisions made from the old view.",
   "commonMistakes": [
-    "Applying the method without checking its assumptions or data-generating process.",
-    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+    "Auditing only axis labels while trusting filters, joins, denominators, and aggregation.",
+    "Treating every nonzero baseline as deceptive instead of distinguishing bars from positional charts and documenting task.",
+    "Using dual axes or 3D because defaults make unrelated trends look compelling.",
+    "Changing bins, windows, color limits, or smoothing until a desired pattern appears without disclosing selection.",
+    "Correcting the picture while leaving historical metrics, narrative text, exports, and downstream decisions unchanged."
   ],
   "followUps": [
-    "What assumptions does Misleading Charts & Visualization Pitfalls make?",
-    "How would you validate or debug Misleading Charts & Visualization Pitfalls in practice?"
+    {
+      "question": "Are truncated axes always wrong?",
+      "answer": "Truncated bar axes are usually misleading because length encodes magnitude. Focused dot/line charts can use nonzero ranges when ticks, context, and task make the positional difference explicit."
+    },
+    {
+      "question": "Why are dual axes risky?",
+      "answer": "Each series has an independent affine mapping to pixels, so origins/ranges can manufacture slope alignment. Use shared units, indexed change, or separate aligned panels."
+    },
+    {
+      "question": "How do you automate chart integrity?",
+      "answer": "Validate metric/denominator contracts, field types, baselines, time order, scale transforms, missing-value states, color accessibility, filter state, and snapshot rendering; combine with human semantic review."
+    }
   ],
-  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "production": "Require chart review to inspect query, semantic metric, population, numerator/denominator, filter defaults, data maturity, aggregation, scale, and annotation. Encode invariants in chart specs and metric tests: zero baseline for bars, monotonic time, stable denominator definition, explicit missing state, area proportionality, and uncertainty metadata. Snapshot across themes/devices but treat pixel tests as only layout evidence. Track dashboard versions, filter URLs, freshness, source lineage, and exports. Provide accessible tables and avoid sensitive small cells. When a misleading chart ships, assess affected decisions, rebuild history, publish correction and incident notes, and roll back metric/query/spec together. Monitor definition drift and stale annotations after schema changes.",
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "Misleading visualization can arise from incorrect data, dishonest transformations, perceptual distortion, omitted context, or interaction defaults that selectively reveal a story. This chapter analyzes truncated baselines, distorted area and 3D perspective, dual axes, unequal time spacing, cumulative-versus-period confusion, cherry-picked windows, inappropriate smoothing, bin and color manipulation, denominator changes, map-area bias, missing uncertainty, overplotting, and deceptive annotation. You will learn to audit a chart by reconstructing its data transformation, scale, baseline, aggregation, filters, and encoding; distinguish intentional deception from harmful defaults; and design automated semantic checks alongside human review. The worked example deconstructs a dashboard where a truncated axis and changing denominator exaggerate a retention improvement. The lab implements chart-integrity checks for baselines, time order, denominator consistency, and proportional areas, then verifies them against deliberately bad specs. Production guidance covers metric lineage, query review, accessible exports, snapshot testing, issue severity, monitoring, and correction/rollback communication. Every published view should remain reconstructable from its data and specification.",
+  "prerequisites": [
+    "visual-encoding",
+    "eda-workflow",
+    "effect-size"
+  ],
+  "learningObjectives": [
+    "Trace a visual claim back through filters, aggregation, denominators, transformations, scales, and source data.",
+    "Recognize perceptual distortions from baselines, area/volume, dual axes, color, bins, smoothing, and map geometry.",
+    "Detect selection and context failures involving time windows, missing groups, uncertainty, and annotation.",
+    "Implement semantic visualization checks and correction workflows without assuming every misleading chart is malicious."
+  ],
+  "deepSections": [
+    {
+      "id": "data-transform",
+      "title": "Population, filters, denominators, and aggregation",
+      "body": "Verify source snapshot, eligibility, deduplication, joins, time zones, and exclusions. Recompute numerator and denominator for every rate; inspect whether the population changes across periods or groups. A total can rise while per-user rate falls. Cumulative curves should not be compared with period flows as if equivalent. Weighted averages require weights and component denominators. Aggregation can hide subgroup reversals. Show sample sizes and missing categories, including zeros that a groupby dropped. A chart can faithfully display a query that silently excludes failed records or late outcomes, so query review is part of visualization review."
+    },
+    {
+      "id": "geometry",
+      "title": "Baselines, area, volume, and perspective",
+      "body": "Bar length encodes distance from baseline and should normally start at zero. Focused dot or line plots may truncate with clear ticks because position, not length, carries the comparison. Pictograms, bubbles, and maps must scale area proportional to value; scaling radius or diameter by value squares area distortion. 3D bars add perspective and occlusion without a useful variable, making back marks smaller. Choropleth land area visually dominates population; normalize rates and consider cartograms or dot density when appropriate. Aspect ratio can make slopes look dramatic or flat, so choose and document it for the task."
+    },
+    {
+      "id": "axes-time",
+      "title": "Dual axes, time spacing, and selected windows",
+      "body": "Dual y-axes have independently chosen origins and ranges, so visual correlation can be tuned. Prefer indexed values, standardized changes with caveats, or aligned panels. Time axes must preserve irregular gaps; categorical spacing can imply continuity where none exists. Starting after a decline or ending at a peak cherry-picks trend. Compare multiple defensible windows and annotate policy breaks. Seasonal data need year-over-year or seasonal context. Smoothing can lag turning points and conceal extremes; name the method/window and show raw data. Forecast lines need observed/predicted distinction and uncertainty."
+    },
+    {
+      "id": "bins-color",
+      "title": "Bins, color, missing data, and overplotting",
+      "body": "Histogram bins can split or merge modes; report rule and inspect sensitivity. Heatmap bin boundaries and color limits can saturate important differences or exaggerate noise. Diverging palettes require a meaningful midpoint; rainbow order is perceptually irregular. Mapping missing values to the minimum color falsely turns unknown into zero. Opacity and sampling can hide density; disclose sampling and use count-preserving alternatives. Category colors should remain stable across panels, and inaccessible red/green distinctions need redundant labels or shapes. Legends must include units, transformations, and out-of-range handling."
+    },
+    {
+      "id": "uncertainty-rhetoric",
+      "title": "Uncertainty, annotation, and causal rhetoric",
+      "body": "A point estimate without interval, sample size, or model uncertainty appears exact. Error bars must say what they represent. Selecting only significant or successful groups creates survivorship. Headlines and annotations can assert causation from observational association or call a tiny statistically precise change 'dramatic.' Decorative arrows and highlights steer attention; ensure they correspond to prespecified thresholds or complete context. Show benchmarks, practical thresholds, and adverse outcomes, not only headline wins. A narrative is unavoidable, so make selection criteria and limitations explicit rather than pretending a chart speaks for itself.\n\nMaintain a correction path for published graphics. Store the exact query, transformation, chart specification, data cutoff, and rendered artifact together; then a denominator or scale error can be reproduced, fixed, and compared. Corrections should state what changed and which earlier decisions may have been affected, not silently replace history."
+    }
+  ],
+  "math": "For a bar representing value v from baseline b, visible length is proportional to v-b, so ratios of visible lengths generally differ from ratios of values when b≠0. For bubble area A=pi r^2, encoding value v requires r=c sqrt(v); r proportional to v makes area proportional to v^2. A rate is numerator/denominator, and change in rates can be decomposed from numerator and population-composition changes. Dual-axis pixel mapping y_screen=a_j y+b_j for series j permits arbitrary apparent slope alignment.",
+  "workedExamples": [
+    {
+      "title": "Retention gain manufactured by baseline and denominator",
+      "body": "Reconstruct the denominator, enforce outcome maturity, compare honest geometry, add uncertainty and business thresholds, and publish a correction whose lineage reaches both data and chart spec."
+    }
+  ],
+  "exercises": [
+    {
+      "prompt": "Values 100 and 110 are bars from baseline 90. What visible-length ratio appears?",
+      "solution": "Lengths are 10 and 20, ratio 2, while value ratio is 1.1. The truncated baseline doubles the visual impression."
+    },
+    {
+      "prompt": "A bubble value is nine times another. What radius ratio encodes area correctly?",
+      "solution": "sqrt(9)=3. A radius ratio of nine would create an area ratio of 81."
+    },
+    {
+      "prompt": "Why can a retention rate rise after excluding late-arriving outcomes?",
+      "solution": "If late outcomes disproportionately belong to churners, the denominator/population changes selectively. The display then compares different matured cohorts rather than true improvement."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "compare",
+      "title": "Two layers of chart integrity",
+      "left": {
+        "title": "Semantic/data layer",
+        "items": [
+          "Population + grain",
+          "Filters + joins",
+          "Numerator/denominator",
+          "Aggregation + maturity"
+        ]
+      },
+      "right": {
+        "title": "Visual/rhetorical layer",
+        "items": [
+          "Scale + baseline",
+          "Marks + color",
+          "Uncertainty",
+          "Titles + annotations"
+        ]
+      },
+      "caption": "A chart is trustworthy only when both layers preserve the intended comparison.",
+      "afterSection": "data-transform"
+    },
+    {
+      "type": "matrix",
+      "title": "Common distortion mechanisms",
+      "rows": [
+        "Bar",
+        "Bubble",
+        "Time series",
+        "Heatmap"
+      ],
+      "cols": [
+        "Failure",
+        "Safer alternative"
+      ],
+      "cells": [
+        [
+          "Truncated length baseline",
+          "Zero bar or focused dot"
+        ],
+        [
+          "Radius scaled to value",
+          "Radius scaled to sqrt(value)"
+        ],
+        [
+          "Dual axes / selected window",
+          "Aligned panels + context"
+        ],
+        [
+          "Saturated or missing-as-zero",
+          "Declared limits + missing state"
+        ]
+      ],
+      "caption": "Different marks fail through different perceptual and semantic channels.",
+      "afterSection": "geometry"
+    }
+  ],
+  "lab": {
+    "language": "python",
+    "goal": "Implement semantic integrity checks for baselines, time order, denominator stability, and area encoding, then verify detection on bad chart specs.",
+    "buildIt": "import math\n\ndef audit(spec):\n    errors=[]\n    if spec['mark']=='bar' and spec.get('baseline',0)!=0: errors.append('truncated bar baseline')\n    times=spec.get('times',[])\n    if times and times!=sorted(times): errors.append('time not ordered')\n    if len(set(spec.get('denominator_definition',[])))>1: errors.append('denominator changed')\n    if spec.get('size_encoding')=='radius=value': errors.append('area distortion')\n    return errors\n\ngood={'mark':'bar','baseline':0,'times':[1,2,3],'denominator_definition':['eligible']*3}\nbad={'mark':'bar','baseline':95,'times':[1,3,2],'denominator_definition':['all','matured','matured'],'size_encoding':'radius=value'}",
+    "useIt": "import numpy as np\nvalues=np.asarray([1.0,4.0,9.0])\nradii=np.sqrt(values)\nareas=np.pi*radii**2",
+    "verifyIt": "assert audit(good)==[]\nissues=audit(bad)\nassert set(issues)=={'truncated bar baseline','time not ordered','denominator changed','area distortion'}\nassert np.allclose(areas/areas[0],values/values[0])\nassert len(issues)==4",
+    "shipIt": "Gate chart specs and semantic metrics together, preserve filter/denominator/freshness lineage, run accessibility and responsive snapshots, and publish full corrections when a misleading view affects decisions."
+  },
+  "sourceNotes": [
+    {
+      "resource": "visual-communication-science",
+      "contribution": "Provides research evidence on perceptual comparison, graph comprehension, context, and uncertainty failure modes."
+    },
+    {
+      "resource": "fundamentals-dataviz",
+      "contribution": "Provides practical examples of honest scales, proportional ink, color, distributions, and multi-panel alternatives."
+    },
+    {
+      "resource": "powerbi-dashboard-design",
+      "contribution": "Provides current official warnings about difficult chart types, clutter, hierarchy, and context in dashboards."
+    },
+    {
+      "resource": "uncertainty-visualization",
+      "contribution": "Documents why uncertainty is often omitted and the communication consequences of that omission."
+    }
+  ]
 }

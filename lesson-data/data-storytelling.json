@@ -7,44 +7,176 @@
     "da",
     "ds"
   ],
-  "interviewAnswer": "Data storytelling means structuring evidence around the decision: context, key finding, uncertainty, alternatives and recommended action. It is not decorating charts or hiding caveats.",
+  "interviewAnswer": "I start with the audience's decision and write one precise claim. Then I show the minimum evidence needed: population, denominator, baseline, absolute and relative magnitude, time, uncertainty, and relevant slices. I separate observation, explanation, and recommendation; avoid causal language unless design supports it; include alternative explanations and guardrails; and end with an action plus what would change it. The visual sequence should preserve context and link to definitions, code, and data lineage so the story is persuasive because it is auditable, not because uncertainty was removed.",
   "keyPoints": [
-    "Lead with the decision-relevant result.",
-    "Quantify uncertainty and practical magnitude.",
-    "Separate observed facts from interpretation."
+    "Decision and claim determine the evidence sequence",
+    "Observation, interpretation, and action are distinct layers",
+    "Uncertainty and counterevidence strengthen calibrated trust",
+    "Absolute magnitude and denominator prevent rhetorical inflation",
+    "Narratives need provenance, accessibility, and correction lifecycle"
   ],
   "resources": [
+    "visual-communication-science",
+    "uncertainty-visualization",
     "fundamentals-dataviz",
     "microsoft-experimentation"
   ],
   "featured": false,
-  "why": "Data Storytelling & Communicating Uncertainty is a standard part of a broad data/ML curriculum because it changes how models are selected, evaluated or operated in real systems.",
-  "intuition": "Lead with the decision-relevant result.",
-  "deepDive": "Data storytelling means structuring evidence around the decision: context, key finding, uncertainty, alternatives and recommended action. It is not decorating charts or hiding caveats. Quantify uncertainty and practical magnitude. Separate observed facts from interpretation. A strong answer connects the formal idea to validation, data requirements and failure modes instead of treating the method as a recipe.",
-  "workedExample": "Present an experiment as “+1.2pp conversion, 95% CI 0.4–2.0pp, no latency regression,” then explain expected annual impact and risks.",
+  "why": "An analysis creates value only when people understand what changed, how sure we are, why it may have happened, and what action is justified. But narrative pressure can turn association into causation, a relative lift into a dramatic headline, or a wide interval into a hidden footnote. Research shows uncertainty is often omitted despite its importance. Interviews ask how to present to executives; the mature answer does not mean 'simplify away caveats.' It means prioritize the decision, use concrete language, and layer detail so both fast readers and reviewers can evaluate evidence. In production, auto-updating narratives must not preserve yesterday's conclusion over today's data.",
+  "intuition": "A trustworthy story is a chain: because this population and metric changed by this amount relative to this baseline, within this uncertainty and these assumptions, this action has the best expected consequence. If any link is missing, rhetoric fills the gap. Sequence matters: begin with the decision context, reveal the central pattern, then show uncertainty and diagnostic evidence, then alternatives and action. A story can be concise while retaining honest qualifiers. 'Likely' should map to a defined probability or evidence standard, not mood. The audience should know what observation would overturn the recommendation.",
+  "deepDive": "Explanatory communication compresses an analysis while preserving its decision-relevant invariants: target population, estimand, comparison, magnitude, uncertainty, assumptions, provenance, and loss. Compression is successful when the action remains calibrated, not when every slide looks simple.",
+  "workedExample": "A slide claims 'Campaign doubled engagement' because click-through rose from 0.5% to 1.0% among email openers. The campaign also changed subject lines, so opener composition differs; delivered-email CTR rose from 0.20% to 0.26%, an absolute +0.06 points with interval [-0.01,+0.13]. Unsubscribe increased +0.08 points. Rewrite: 'Among delivered emails, estimated click-through rose 0.06 points; data remain compatible with slight harm to +0.13, while unsubscribe crossed its guardrail. Because exposure composition changed, causal attribution is unresolved. Do not roll out; run a randomized subject/body factorial test.' Link denominators, query, and cutoff.",
   "commonMistakes": [
-    "Choosing the technique without checking whether its assumptions match the problem.",
-    "Optimizing an offline metric without checking realistic validation slices or operational constraints."
+    "Starting with a dramatic headline and selecting evidence afterward.",
+    "Mixing observation, causal interpretation, and recommendation in one sentence.",
+    "Using relative change without baseline, absolute magnitude, population, or denominator.",
+    "Hiding uncertainty, counterevidence, excluded groups, or guardrail harm in notes or appendices.",
+    "Publishing static screenshots or dynamic prose without data cutoff, filters, definitions, provenance, and correction path."
   ],
   "followUps": [
-    "When would you not use Data Storytelling & Communicating Uncertainty?",
-    "How would you validate or tune Data Storytelling & Communicating Uncertainty?"
+    {
+      "question": "How do you simplify for executives without misleading?",
+      "answer": "Prioritize the decision and concrete magnitude, use plain language and one strong visual, place uncertainty beside the claim, and layer methods/diagnostics behind links rather than deleting them."
+    },
+    {
+      "question": "How do you communicate a nonsignificant result?",
+      "answer": "Describe the estimate and compatible range against practical harm/benefit thresholds. Say evidence is inconclusive or rules out specified magnitudes; do not equate failure to reject with no effect."
+    },
+    {
+      "question": "What makes a recommendation auditable?",
+      "answer": "It identifies population, metric, data cutoff, method, uncertainty, assumptions, alternatives, decision threshold, owner, action, guardrails, and evidence that would trigger revision."
+    }
   ],
-  "production": "In production, validate on realistic slices, track latency/cost when relevant, and monitor for distribution changes or failure modes that the offline metric can hide.",
-  "visual": {
-    "type": "map",
-    "title": "When geography is the story",
-    "regions": [
-      0.2,
-      0.58,
-      0.84,
-      0.33,
-      0.7,
-      0.46
-    ],
-    "caption": "Maps are useful when spatial pattern is part of the question; if the goal is precise ranking or magnitude comparison, a bar chart is often clearer."
-  },
+  "production": "Use a reviewed communication template with fields for audience, decision, claim, population, baseline, numerator/denominator, absolute/relative effect, uncertainty, practical thresholds, guardrails, alternative explanations, limitations, action, owner, and revisit condition. Generate tables/figures from versioned code and immutable data; prohibit manual value edits. Capture filters and freshness in exports. Test dynamic narrative logic for boundary, stale, missing, and contradictory states. Provide accessible text and localization review, including consistent probability terms. Protect sensitive slices and small cells. Link to metric/source lineage. When data or definitions change, invalidate affected claims, notify consumers, publish corrections, and retain previous versions rather than silently replacing history.",
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "Data storytelling is the disciplined communication of a decision-relevant claim through evidence, context, uncertainty, alternatives, and action. It is not the addition of a dramatic narrative to a chart. This chapter develops audience and decision framing, claim–evidence–reasoning structure, visual sequence, explanatory versus exploratory artifacts, annotations, uncertainty language, practical thresholds, causal humility, counterevidence, and reproducible handoff. You will learn to separate observation from interpretation and recommendation, quantify absolute and relative effects, communicate interval and scenario uncertainty in plain language, avoid cherry-picking and rhetorical overclaim, and design executive summaries that link to auditable detail. The worked example rewrites a misleading 'campaign doubled engagement' presentation into a population- and uncertainty-aware decision memo. The lab builds a structured evidence record and validates that claims include denominators, comparison, uncertainty, caveats, and source lineage. Production guidance covers templates, review, localization, accessibility, dynamic data, corrections, privacy, and rollback. A strong story makes its reasoning inspectable rather than merely memorable.",
+  "prerequisites": [
+    "visual-encoding",
+    "visualization-pitfalls",
+    "confidence-intervals"
+  ],
+  "learningObjectives": [
+    "Frame communication around audience knowledge, decision, stakes, alternatives, and time horizon.",
+    "Build a claim–evidence–reasoning chain that separates measured facts, interpretations, assumptions, and recommendations.",
+    "Communicate magnitude and uncertainty with calibrated language, numbers, visuals, and practical thresholds.",
+    "Create auditable, accessible, versioned narratives that include counterevidence, limitations, provenance, and correction paths."
+  ],
+  "deepSections": [
+    {
+      "id": "audience-decision",
+      "title": "Audience, stakes, and the one-sentence claim",
+      "body": "Identify what the audience already knows, what authority they have, costs of false action/inaction, and time available. Write a falsifiable one-sentence claim with population, metric, comparison, time, and magnitude. 'Retention improved' is incomplete; 'matured 30-day retention for new EU subscribers rose 1.2 percentage points versus the prior release cohort' is inspectable. Decide whether the goal is inform, diagnose, decide, or request resources. Tailor vocabulary and detail, not the underlying truth. Provide layered access: headline, annotated evidence, method/definitions, and reproducible appendix."
+    },
+    {
+      "id": "claim-evidence",
+      "title": "Observation, interpretation, and recommendation",
+      "body": "Observation reports measured patterns. Interpretation proposes mechanisms under assumptions. Recommendation combines evidence with costs, constraints, reversibility, and values. Keep them visually and verbally distinct. A randomized experiment can support causal attribution within its estimand; an observational trend usually cannot without design. Use annotations to point to evidence rather than state unsupported explanations. Include alternative mechanisms and tests that would distinguish them. Recommendations should specify owner, action, expected impact, guardrails, and stop/revisit conditions. This structure prevents a compelling chart from silently doing causal and decision work it cannot support."
+    },
+    {
+      "id": "magnitude-context",
+      "title": "Magnitude, baselines, and denominators",
+      "body": "Report absolute and relative change because each answers a different question. A risk moving 1% to 2% is +1 percentage point and +100%; the denominator and exposed population determine impact. Compare with seasonality, target, minimum worthwhile effect, historical variation, and operational cost. Show counts alongside rates and mature outcome windows. Avoid percent change when baseline is near zero, and avoid averaging ratios across incompatible groups. Use concrete natural frequencies for risk. If a model metric changes, translate it into error counts or decisions at representative thresholds where possible."
+    },
+    {
+      "id": "uncertainty-language",
+      "title": "Numbers, visuals, and calibrated uncertainty language",
+      "body": "State interval type, level, unit, and what it represents. Show distribution or scenarios when one interval hides skew or multimodality. Distinguish sampling, model, measurement, missingness, and scenario uncertainty; one error bar rarely includes all. Pair verbal terms such as likely with defined numerical ranges and use the same mapping consistently. Do not say 'no effect' for an interval that includes meaningful positive and negative values. Explain what remains compatible with data and whether harm or minimum benefit is ruled out. Uncertainty should sit near the claim, not in an appendix that fast readers never see."
+    },
+    {
+      "id": "sequence-integrity",
+      "title": "Narrative sequence, counterevidence, and auditability",
+      "body": "Use overview, central evidence, diagnostics, alternatives, and action. Small multiples and annotations can guide attention without changing scales. Include results that weaken the claim: guardrail harm, excluded populations, subgroup divergence, failed replications, or sensitivity to definitions. Avoid revealing only a favorable time window. Link every number to a metric definition, query/report version, data cutoff, and owner. Static exports need captured filters and freshness. Dynamic narrative text must recompute conclusions from current data and become unavailable when prerequisites fail. Corrections should be explicit and preserve prior versions for accountability.\n\nPreserve counterfactual decision logic in the artifact: what action would follow if the estimate, interval, cost, or constraint changed? This reveals whether the recommendation actually follows from evidence or was chosen first. It also gives future readers a principled way to update the conclusion when new data arrive."
+    }
+  ],
+  "math": "Absolute change Delta=p1-p0; relative change Delta/p0 when p0 is meaningful and nonzero. Expected incremental outcomes can be population N times Delta under a relevant causal/forecast assumption. An interval [L,U] can be compared with harm h and minimum worthwhile benefit b: whether U<h, L>=b, or the range crosses both yields different decisions. Natural-frequency communication converts probability p over N cases to approximately pN expected cases, while retaining uncertainty and denominator.",
+  "workedExamples": [
+    {
+      "title": "From 'doubled engagement' to a decision-calibrated memo",
+      "body": "Replace selected relative lift with the decision population, absolute effect and interval, surface guardrail harm and design limitations, then propose a confirmatory action with explicit owner and stopping condition."
+    }
+  ],
+  "exercises": [
+    {
+      "prompt": "A rate moves from 1% to 1.5%. Give absolute and relative change.",
+      "solution": "Absolute change is +0.5 percentage points; relative change is +50%. Report both with denominator and uncertainty."
+    },
+    {
+      "prompt": "An interval is [-2,+8] and worthwhile benefit is +5. What should you say?",
+      "solution": "Data are compatible with harm and worthwhile benefit; the result is decision-ambiguous. Do not call it no effect or a proven win."
+    },
+    {
+      "prompt": "Rewrite 'X caused sales to rise' for an observational time trend.",
+      "solution": "For example: 'Sales rose after X was introduced, but seasonality and concurrent changes remain alternative explanations; a causal effect is not identified by this trend alone.'"
+    }
+  ],
+  "visuals": [
+    {
+      "type": "flow",
+      "title": "Claim–evidence–action chain",
+      "items": [
+        "Audience decision",
+        "Precise claim",
+        "Magnitude + baseline",
+        "Uncertainty + counterevidence",
+        "Interpretation assumptions",
+        "Action + revisit rule"
+      ],
+      "caption": "A narrative is persuasive when every inference and decision link is visible and auditable.",
+      "orientation": "horizontal",
+      "afterSection": "claim-evidence"
+    },
+    {
+      "type": "compare",
+      "title": "Three statements that must not blur",
+      "left": {
+        "title": "Evidence layer",
+        "items": [
+          "Observation: what data show",
+          "Estimate + uncertainty",
+          "Population + denominator",
+          "Source + cutoff"
+        ]
+      },
+      "right": {
+        "title": "Judgment layer",
+        "items": [
+          "Interpretation: possible why",
+          "Recommendation: what to do",
+          "Costs and values",
+          "Revisit conditions"
+        ]
+      },
+      "caption": "Keeping layers distinct prevents charts from silently making causal or policy claims.",
+      "afterSection": "claim-evidence"
+    }
+  ],
+  "lab": {
+    "language": "python",
+    "goal": "Build and validate a structured evidence record so a decision claim cannot omit population, denominator, magnitude, uncertainty, limitations, and provenance.",
+    "buildIt": "REQUIRED=['claim','population','baseline','estimate','interval','denominator','limitations','action','source','data_cutoff']\ndef validate_story(story):\n    errors=[field for field in REQUIRED if not story.get(field)]\n    lo,hi=story.get('interval',(None,None))\n    if lo is not None and not lo<=story['estimate']<=hi: errors.append('estimate outside interval')\n    if story.get('causal') and story.get('design')!='randomized': errors.append('unsupported causal wording')\n    return errors\n\nstory={'claim':'Delivered-email CTR rose 0.06 percentage points','population':'delivered emails','baseline':'prior campaign','estimate':0.0006,'interval':(-0.0001,0.0013),'denominator':'all delivered emails','limitations':'subject line and audience composition changed','action':'run randomized factorial test','source':'campaign_metrics_v3','data_cutoff':'2026-08-20','causal':False}",
+    "useIt": "import pandas as pd\nrecord=pd.Series(story)\nsummary=f\"{record['claim']} (interval {record['interval']}); action: {record['action']}\"",
+    "verifyIt": "assert validate_story(story)==[]\nbad=dict(story); bad['denominator']=''; assert 'denominator' in validate_story(bad)\ncausal=dict(story); causal['causal']=True; causal['design']='observational'; assert 'unsupported causal wording' in validate_story(causal)\nassert story['interval'][0] <= story['estimate'] <= story['interval'][1]\nassert 'action:' in summary",
+    "shipIt": "Generate narratives from versioned evidence records, require uncertainty/denominator/provenance and calibrated causal language, test stale/missing states, review accessibility/privacy, and publish explicit corrections when evidence changes."
+  },
+  "sourceNotes": [
+    {
+      "resource": "visual-communication-science",
+      "contribution": "Provides research-backed guidance on graph comprehension, audience reasoning, uncertainty, and risk communication."
+    },
+    {
+      "resource": "uncertainty-visualization",
+      "contribution": "Provides empirical evidence about why communicators omit uncertainty and how rhetoric shapes interpretation."
+    },
+    {
+      "resource": "fundamentals-dataviz",
+      "contribution": "Provides practical explanatory-visualization, annotation, scale, color, and multi-panel communication techniques."
+    },
+    {
+      "resource": "microsoft-experimentation",
+      "contribution": "Connects experiment effects, guardrails, practical decisions, and communication in large-scale product settings."
+    }
+  ]
 }

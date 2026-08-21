@@ -7,50 +7,190 @@
     "ds",
     "da"
   ],
-  "interviewAnswer": "Choose charts based on the question: distributions, comparisons, relationships, composition or change over time. Favor position and length over harder-to-compare encodings and avoid decorative choices that distort magnitude.",
+  "interviewAnswer": "I start with the question: compare magnitude, see change over ordered time, inspect a distribution, relate variables, show composition, or locate geography. Then I map the most important quantitative comparison to aligned position or length; use lines only for ordered continuity, scatterplots for paired numeric observations, histograms/ECDFs for distributions, bars for category magnitudes, and small multiples for groups. I state aggregation and uncertainty, use honest scales and accessible redundant encodings, limit color, label units and denominators, and test the chart against raw data and audience decisions.",
   "keyPoints": [
-    "Histogram/ECDF for distributions.",
-    "Scatter for numeric relationships.",
-    "Bars for categorical comparisons.",
-    "Lines for ordered time."
+    "Task and data semantics determine the chart",
+    "Position and length support precise comparison",
+    "Aggregation and connection make statistical claims",
+    "Scales, baselines, and color carry meaning",
+    "Accessibility and uncertainty belong in the specification"
   ],
   "resources": [
+    "visual-communication-science",
     "fundamentals-dataviz",
+    "seaborn-tutorial",
     "berkeley-data100"
   ],
   "featured": false,
-  "why": "Choosing the Right Statistical Visualization appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
-  "intuition": "Histogram/ECDF for distributions.",
-  "deepDive": "Choose charts based on the question: distributions, comparisons, relationships, composition or change over time. Favor position and length over harder-to-compare encodings and avoid decorative choices that distort magnitude. Scatter for numeric relationships. Bars for categorical comparisons. Lines for ordered time. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
-  "workedExample": "Use an ECDF to compare latency distributions when tail behavior matters more than a single average.",
+  "why": "A chart can be numerically correct yet make the wrong question easy. A pie chart forces angle comparisons when stakeholders need precise ranking; a line connects unordered categories and invents continuity; a mean bar hides a bimodal distribution; a heatmap makes a color legend carry differences that a table would show more accurately. Interviews ask chart choice because it reveals analytical reasoning. In production, charts are interfaces over semantic models, and their defaults—aggregation, sorting, filtering, scale, missingness—can change decisions. Treating encoding as a formal mapping makes visualization testable and maintainable rather than subjective decoration.",
+  "intuition": "The eye is a measurement instrument with strengths and biases. It compares two marks along a common baseline quickly and accurately; it estimates angles, areas, and saturated colors less precisely. Put the decision's most important quantity on the strongest available channel. Every mark also implies a statistical object: one point can be an observation or a mean; a band can be spread or confidence; a line can be interpolation or mere connection. Labels and legends define those objects. Small multiples trade one overloaded view for repeated comparable panels, preserving a common scale so the eye can scan differences. Good design reduces the mental transformations required to answer the stated question.",
+  "deepDive": "Visualization design can be described as data fields plus transformations plus marks plus encodings plus scales plus guides plus interaction. Each layer should be justified by the task and auditable against the underlying data.",
+  "workedExample": "An executive chart uses clustered bars for monthly revenue, margin percentage, order count, and NPS on two axes across twelve regions, producing 576 marks and incomparable units. Redesign as a dashboard row: revenue trend with target and interval, margin small-multiple lines sharing a percent scale, ranked regional revenue dot plot, and NPS distribution with sample sizes. Use one highlight color for the selected region, direct labels, and a freshness timestamp. Each visual has one task, metric definition, unit, denominator, and uncertainty. The raw table is linked for lookup and accessibility.",
   "commonMistakes": [
-    "Applying the method without checking its assumptions or data-generating process.",
-    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+    "Choosing a chart type before defining the audience's comparison and the mark's statistical meaning.",
+    "Connecting unordered categories with lines or using area/angle when precise magnitude comparison matters.",
+    "Showing means without sample size, distribution, uncertainty, or aggregation definition.",
+    "Using truncated bar baselines, dual axes, rainbow scales, or 3D perspective to dramatize patterns.",
+    "Relying on color and hover alone, excluding color-vision, keyboard, mobile, print, or screen-reader users."
   ],
   "followUps": [
-    "What assumptions does Choosing the Right Statistical Visualization make?",
-    "How would you validate or debug Choosing the Right Statistical Visualization in practice?"
+    {
+      "question": "When should a bar chart start at zero?",
+      "answer": "Because length from a baseline encodes magnitude, quantitative bars generally require zero. If a narrow range matters, use dots or lines with clearly labeled axes and context instead of truncated bars."
+    },
+    {
+      "question": "How do you show many overlapping points?",
+      "answer": "Use transparency, small marks, jitter for discrete overlap, hexbin/density, stratified sampling with disclosure, or facets. Preserve totals and avoid a sample that distorts density."
+    },
+    {
+      "question": "What should an uncertainty band say?",
+      "answer": "State whether it is SD, SE, confidence, credible, prediction, or another interval; name the level, independent unit, method, and what the center line estimates."
+    }
   ],
-  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
-  "visual": {
-    "type": "bars",
-    "title": "Match mark to question",
-    "labels": [
-      "position",
-      "length",
-      "angle",
-      "area"
-    ],
-    "values": [
-      1,
-      0.82,
-      0.55,
-      0.4
-    ],
-    "caption": "Position and length are usually easier to compare accurately than angle or area; choose encodings to match the analytical task.",
-    "yLabel": "relative perceptual accuracy"
-  },
+  "production": "Store chart specifications beside metric contracts: field, grain, aggregation, filter, unit, scale, baseline, sort, palette, interval method, denominator, and empty/missing behavior. Validate spec/data type compatibility and snapshot outputs across light/dark, desktop/mobile, print, and localization. Run contrast and color-vision checks; provide keyboard navigation, alt summaries, and accessible tables. Track sampling and rendering thresholds for large data. Show freshness, source, filter state, and revision. Prevent sensitive small-cell disclosure in marks and tooltips. Monitor broken queries, stale data, clipped labels, and schema drift. Roll back metric and chart spec together; a visually unchanged chart over a redefined metric is a semantic incident.",
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "Statistical visualization maps data fields and uncertainty to visual channels—position, length, angle, area, color, shape, texture, and facets—so a specific comparison becomes perceptually accessible. The best chart follows the analytical task, variable type, data grain, and audience; it is not chosen from a gallery by aesthetics. This chapter develops a task-first selection framework for distributions, trends, relationships, rankings, parts-to-whole, flows, geospatial patterns, and uncertainty. It explains perceptual accuracy, scales and transforms, overplotting, aggregation, small multiples, color semantics, accessibility, annotations, interactivity, and the distinction between raw observations, estimates, and model outputs. You will learn why bars need meaningful baselines, why line connections imply order, why area and angle comparisons are difficult, and how uncertainty must be encoded and labeled. The worked example redesigns a crowded multi-metric executive chart. The lab builds a declarative chart-spec validator and verifies task/type constraints alongside a matplotlib implementation. Production guidance covers semantic chart contracts, responsive design, accessible alternatives, testing, rendering, data freshness, privacy, and rollback.",
+  "prerequisites": [
+    "eda-workflow",
+    "distributions-outliers",
+    "confidence-intervals"
+  ],
+  "learningObjectives": [
+    "Choose a chart from the analytical task, field type, grain, ordering, and uncertainty rather than decoration.",
+    "Map high-priority comparisons to perceptually accurate channels and use facets or aggregation without hiding structure.",
+    "Select scales, baselines, color systems, labels, and accessibility features that preserve data meaning.",
+    "Design and test chart specifications as versioned semantic interfaces backed by data and metric contracts."
+  ],
+  "deepSections": [
+    {
+      "id": "tasks-fields",
+      "title": "Task and field semantics first",
+      "body": "Identify whether the user needs lookup, comparison, rank, trend, distribution, correlation, composition, deviation, flow, or spatial pattern. Classify fields as quantitative, ordinal, nominal, temporal, geographic, or identifiers; distinguish event time from processing time. State grain and whether marks represent rows, bins, aggregates, estimates, or predictions. A user ID is nominal even if stored as an integer. A Likert category is ordered but unequal spacing may not be defensible. Time supports order and duration but irregular gaps must remain visible. One chart should have a primary task; secondary questions can use linked detail or additional views."
+    },
+    {
+      "id": "channels",
+      "title": "Perceptual channels and chart families",
+      "body": "Aligned position supports precise magnitude comparisons, followed by unaligned position and length; angle, area, volume, and color intensity are generally harder to compare exactly. Use bars for category magnitude with a meaningful zero baseline, dots for compact comparisons when zero is not essential, lines for ordered sequences, scatterplots for paired numeric values, ECDF/histogram for distributions, and matrices/heatmaps for dense two-dimensional patterns. Pie or donut charts may support a small simple part-to-whole message but perform poorly for close categories. 3D perspective and volume rarely improve quantitative judgment."
+    },
+    {
+      "id": "aggregation-uncertainty",
+      "title": "Raw observations, summaries, and uncertainty",
+      "body": "Overplotting can hide density; use transparency, jitter for discrete overlap, hexbin/binning, sampling with disclosure, or density contours. A line plot that averages repeated units must label its estimator and uncertainty; otherwise readers may interpret one trajectory. Error bars need definitions—SD, SE, CI, credible, or prediction interval—and a visible reference. Show raw points or distribution when sample size permits. For unequal group sizes, bar height alone conceals precision and support. Aggregation can trigger Simpson's paradox, so offer meaningful facets or stratified views and keep denominators visible."
+    },
+    {
+      "id": "scales-color",
+      "title": "Scales, baselines, color, and transforms",
+      "body": "Linear scales preserve additive differences; log scales preserve ratios and require positive support or a documented transform. Truncated bar baselines exaggerate length differences because bar length encodes magnitude; dot/line charts can use a focused range when clearly labeled. Dual axes invite arbitrary scaling and false correlation; prefer aligned panels. Sequential palettes encode ordered magnitude, diverging palettes require a meaningful midpoint, and qualitative palettes distinguish categories. Avoid rainbow palettes for ordered data. Use colorblind-safe contrast and redundant shape, text, or line style for critical categories. Missing values need an explicit visual state, not a misleading zero color."
+    },
+    {
+      "id": "facets-interaction",
+      "title": "Faceting, annotation, and interaction",
+      "body": "Small multiples reveal conditional patterns with repeated encodings; use shared scales for comparison or clearly flag free scales. Sort categories by task—value, natural order, or lookup order—not alphabetically by default. Direct labels reduce legend lookup. Annotations should state evidence and context without covering data. Interaction can reveal details, filters, and provenance, but default state must remain honest, URLs should preserve filters, and exports should include them. Tooltips are not an accessible substitute for visible labels or tables. Provide a text/table alternative and keyboard/focus support for essential information.\n\nTest perception with representative tasks, devices, and audiences rather than judging only the authoring monitor. A chart that works at desktop width may collapse labels, hover-only context, or small color differences on mobile. Preserve a textual table or summary so the encoded evidence remains accessible and auditable without the graphic."
+    }
+  ],
+  "math": "A visual encoding maps data value x through a scale s(x) to screen position, length, color, or size. For area encoding, radius must satisfy r proportional to sqrt(value) so area—not radius—represents magnitude. A log axis maps ratios to equal distances: s(x)=a log(x)+b. Aggregated mean at x is sum y_i/n_x, while uncertainty depends on independent units and design, not mark count. When sampling points for rendering, disclose the sampling scheme and retain aggregate invariants so visual density is not mistaken for population frequency.",
+  "workedExamples": [
+    {
+      "title": "Decompose an overloaded executive chart",
+      "body": "Separate trend, ranking, and distribution tasks; give each metric its own honest scale and uncertainty; reuse selection state; and provide a table so the interface supports both perception and exact lookup."
+    }
+  ],
+  "exercises": [
+    {
+      "prompt": "You need to compare seven category values accurately. Which basic chart and why?",
+      "solution": "A sorted bar or dot plot. Aligned position/length supports accurate comparison; direct labels can provide exact values."
+    },
+    {
+      "prompt": "Why is a line chart misleading for product categories A, B, C?",
+      "solution": "A connecting line implies ordered continuity and meaningful interpolation between categories. Use bars/dots unless the x variable has a defensible order and distance."
+    },
+    {
+      "prompt": "A bubble should represent four times another value. What radius ratio is needed?",
+      "solution": "Area must be four times, so radius ratio is sqrt(4)=2. Using four times radius would encode sixteen times area."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "compare",
+      "title": "Match the primary task",
+      "left": {
+        "title": "Observe distribution/relationship",
+        "items": [
+          "Histogram or ECDF",
+          "Scatter/hexbin",
+          "Raw points + summaries",
+          "Expose density and tails"
+        ]
+      },
+      "right": {
+        "title": "Compare trend/magnitude",
+        "items": [
+          "Line for ordered x",
+          "Bars/dots for categories",
+          "Shared scales",
+          "Label uncertainty"
+        ]
+      },
+      "caption": "Chart families are consequences of the question and field semantics, not stylistic preferences.",
+      "afterSection": "tasks-fields"
+    },
+    {
+      "type": "matrix",
+      "title": "Visual-channel strengths",
+      "rows": [
+        "Precise comparison",
+        "Ordered magnitude",
+        "Category identity"
+      ],
+      "cols": [
+        "Preferred",
+        "Use cautiously"
+      ],
+      "cells": [
+        [
+          "Aligned position / length",
+          "Angle / area"
+        ],
+        [
+          "Position / sequential lightness",
+          "Rainbow hue"
+        ],
+        [
+          "Distinct hue + label/shape",
+          "Color alone"
+        ]
+      ],
+      "caption": "The most decision-relevant variable should receive the most perceptually effective and accessible channel.",
+      "afterSection": "channels"
+    }
+  ],
+  "lab": {
+    "language": "python",
+    "goal": "Build a semantic chart-spec validator, reject misleading field/mark combinations, and render a verified bar chart with matplotlib.",
+    "buildIt": "def validate_chart(spec,fields):\n    errors=[]; mark=spec['mark']; x=fields[spec['x']]['type']; y=fields[spec['y']]['type']\n    if mark=='line' and x not in {'temporal','ordinal','quantitative'}: errors.append('line requires ordered x')\n    if mark=='bar' and y!='quantitative': errors.append('bar magnitude must be quantitative')\n    if mark=='bar' and spec.get('baseline',0)!=0: errors.append('bar baseline must be zero')\n    if spec.get('color_only_critical'): errors.append('critical distinction needs redundant encoding')\n    return errors\nfields={'region':{'type':'nominal'},'revenue':{'type':'quantitative'},'month':{'type':'temporal'}}\ngood={'mark':'bar','x':'region','y':'revenue','baseline':0}\nbad={'mark':'line','x':'region','y':'revenue'}",
+    "useIt": "import matplotlib.pyplot as plt\nlabels=['North','South','West']; values=[12,9,15]\nfig,ax=plt.subplots(); bars=ax.bar(labels,values); ax.set_ylim(bottom=0); ax.set_ylabel('Revenue (millions)'); ax.set_title('Revenue by region')",
+    "verifyIt": "assert validate_chart(good,fields)==[]\nassert 'line requires ordered x' in validate_chart(bad,fields)\ntruncated={'mark':'bar','x':'region','y':'revenue','baseline':8}\nassert 'bar baseline must be zero' in validate_chart(truncated,fields)\nassert ax.get_ylim()[0]==0\nassert len(bars)==len(values)",
+    "shipIt": "Version chart specs with metric semantics, validate scales/aggregations/types and accessibility in CI, render across themes/devices, expose freshness/filter state, and roll back chart plus metric together."
+  },
+  "sourceNotes": [
+    {
+      "resource": "visual-communication-science",
+      "contribution": "Synthesizes empirical evidence on perception, graph comprehension, data reasoning, uncertainty, and risk communication."
+    },
+    {
+      "resource": "fundamentals-dataviz",
+      "contribution": "Provides practical task-, scale-, color-, distribution-, and multi-panel visualization design guidance."
+    },
+    {
+      "resource": "seaborn-tutorial",
+      "contribution": "Documents current statistical chart semantics, estimators, uncertainty, faceting, and color/size/style encodings."
+    },
+    {
+      "resource": "berkeley-data100",
+      "contribution": "Connects visualization choices with data semantics, exploratory reasoning, and statistical analysis."
+    }
+  ]
 }

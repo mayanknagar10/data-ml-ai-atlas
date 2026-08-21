@@ -7,66 +7,216 @@
     "ds",
     "da"
   ],
-  "interviewAnswer": "Retention should compare users at the same age since cohort entry, not raw calendar activity. Cohort tables reveal whether product changes affect long-term engagement across acquisition periods.",
+  "interviewAnswer": "Retention starts with a fixed cohort, usually entities sharing a first value event or acquisition period, and asks what fraction performs a defined return behavior at each age. I specify exact-period versus rolling retention, interval boundaries, identity, denominator, resurrection, and observation cutoff. Recent cohorts do not have mature later ages, so I leave those cells unavailable rather than zero. I compare cohorts at the same age, inspect calendar effects and acquisition mix, and use survival or hazard methods when time-to-churn and censoring matter. A better curve is descriptive until an experiment or causal design supports attribution.",
   "keyPoints": [
-    "Define cohort entry event.",
-    "Choose retention event and time grain.",
-    "Account for right-censoring of recent cohorts."
+    "Cohort time and calendar time are separate axes",
+    "Retention depends on the value event and denominator contract",
+    "Recent cohort cells are censored, not zero",
+    "Exact, rolling, and survival retention answer different questions",
+    "Composition and identity changes can mimic product retention gains"
   ],
   "resources": [
+    "amplitude-experiment-metrics",
+    "mixpanel-retention",
+    "lifelines",
     "berkeley-data100"
   ],
   "featured": false,
-  "why": "Cohort Retention Analysis appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
-  "intuition": "Define cohort entry event.",
-  "deepDive": "Retention should compare users at the same age since cohort entry, not raw calendar activity. Cohort tables reveal whether product changes affect long-term engagement across acquisition periods. Choose retention event and time grain. Account for right-censoring of recent cohorts. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
-  "workedExample": "Compare week-4 retention for signup cohorts rather than comparing total active users this month vs last month.",
+  "why": "Aggregate active-user rates mix new, mature, resurrected, and seasonal users. Growth can make activity look healthy while every cohort decays, and acquisition quality can make a product change appear to improve retention. Cohorts align users by lifecycle age so teams can see activation and durable return patterns. Yet a signup cohort may include people who never experienced value, while an activated cohort conditions on a behavior treatment can change. Interviews test whether analysts handle denominator and censoring. In production, retention drives lifetime-value models and experiment decisions, so semantic drift creates large downstream errors.",
+  "intuition": "Imagine giving every user two clocks. The calendar clock says March or April; the lifecycle clock says week zero, one, or two since first value. A cohort matrix places acquisition time on rows and lifecycle age on columns. Comparing down a column asks whether newer cohorts retain better at the same age. Reading across a row shows decay for one cohort. The lower-right cells do not exist yet because those users have not aged enough. Exact retention asks for activity in one interval; rolling retention asks whether activity occurs on or after that age; survival retention asks whether a defined churn event has not yet occurred.",
+  "deepDive": "Retention is a longitudinal estimand over a cohort and behavior process. The matrix is a compact view of event histories, observation opportunity, and population composition.",
+  "workedExample": "A subscription product's month-one retention rises from 52% to 60% after a new onboarding launch. Cohort decomposition shows the launch coincided with ending a low-intent paid channel; within organic and partner channels, retention is unchanged. A diagonal dip across every cohort at calendar April reflects an outage, not lifecycle decay. The newest cohort's month-three cell was mistakenly recorded as zero despite only six weeks of follow-up. After correcting maturity and standardizing acquisition mix, the apparent improvement largely disappears. The team runs a randomized onboarding test with all assigned new users as denominator and a mature retention window.",
   "commonMistakes": [
-    "Applying the method without checking its assumptions or data-generating process.",
-    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+    {
+      "mistake": "Filling unavailable future cells with zero",
+      "correction": "They are right-censored because follow-up has not occurred; mark them unavailable and compare only mature ages."
+    },
+    {
+      "mistake": "Calling any return event retention",
+      "correction": "Choose a behavior that represents product value and specify exact or rolling semantics."
+    },
+    {
+      "mistake": "Comparing aggregate active rates",
+      "correction": "They mix cohort ages and acquisition volumes; align entities by lifecycle age."
+    },
+    {
+      "mistake": "Attributing activated-user retention to onboarding",
+      "correction": "Activation is selected and may be treatment-affected; use ITT in a randomized design to estimate causal impact."
+    }
   ],
   "followUps": [
-    "What assumptions does Cohort Retention Analysis make?",
-    "How would you validate or debug Cohort Retention Analysis in practice?"
+    {
+      "question": "What is rolling retention?",
+      "answer": "The fraction of the original cohort active at or after a given age; it differs from activity within exactly that interval and can revise as future data arrive."
+    },
+    {
+      "question": "Why is the cohort table triangular?",
+      "answer": "New cohorts have not existed long enough to reach later ages, so those cells lack observation opportunity."
+    },
+    {
+      "question": "When should you use survival analysis?",
+      "answer": "When the target is time to a defined event and right-censored entities should contribute their observed at-risk time under defensible censoring assumptions."
+    }
   ],
-  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
-  "visual": {
-    "type": "matrix",
-    "title": "Retention cohort heatmap",
-    "rows": [
-      "Jan cohort",
-      "Feb cohort",
-      "Mar cohort"
-    ],
-    "cols": [
-      "M0",
-      "M1",
-      "M2",
-      "M3"
-    ],
-    "cells": [
-      [
-        "100%",
-        "62%",
-        "48%",
-        "39%"
-      ],
-      [
-        "100%",
-        "66%",
-        "51%",
-        "—"
-      ],
-      [
-        "100%",
-        "69%",
-        "—",
-        "—"
-      ]
-    ],
-    "caption": "Cohort analysis separates lifecycle behavior from calendar-time effects."
-  },
+  "production": "Materialize an immutable cohort-membership table and a deduplicated entity-period activity table with source and identity versions. Compute additive cohort sizes and retained counts before percentages. Enforce one cohort per entity, nonnegative age, unique entity-period rows, mature-cell cutoff, late-event policy, and raw-event reconciliation. Monitor cohort volume, event coverage, identity merges, acquisition mix, calendar anomalies, and unexpected revisions. Attach minimum-support and privacy suppression. Version exact/rolling, start and return events, intervals, grace periods, and resurrection rules. On a definition or instrumentation bug, freeze downstream LTV and experiment decisions, publish affected dates, recompute under a new version, and retain the old series for audit and rollback.",
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "Cohort retention analysis follows entities from a common starting event and measures whether they return to a value-defining behavior at comparable ages. It separates lifecycle decay from calendar-time shocks, but only when cohort assignment, activity, interval boundaries, identity, denominator, and observation maturity are defined consistently. This chapter develops acquisition and behavioral cohorts, exact-period, rolling, and bracket retention, survival-style retention, resurrection, churn, cohort-age matrices, censoring, composition, seasonality, segmentation, uncertainty, and experimental interpretation. You will learn why recent cohorts form an incomplete triangle, why retention can rise when low-value users never enter the denominator, how identity and late events reshape curves, and when Kaplan-Meier or hazard analysis is more appropriate. A worked subscription example separates acquisition-mix change from product improvement. The lab builds a monthly exact-period retention matrix from first activity and later events, compares with pandas, and verifies cohort size, maturity, identity uniqueness, and denominator invariants. Production guidance covers semantic models, incremental updates, backfills, privacy, monitoring, causal tests, and rollback. The goal is a lifecycle measurement system that reveals durable value, not a color grid interpreted without population or time context.",
+  "prerequisites": [
+    "funnels",
+    "groupby-pivot",
+    "censoring-survival"
+  ],
+  "learningObjectives": [
+    "Define cohort membership, start event, retained behavior, age interval, denominator, and resurrection semantics.",
+    "Compute exact, rolling, and survival-style retention while handling right censoring and incomplete recent cohorts.",
+    "Decompose retention changes into cohort composition, lifecycle, calendar time, instrumentation, and product mechanisms.",
+    "Implement and validate a cohort matrix with maturity and reconciliation checks."
+  ],
+  "deepSections": [
+    {
+      "id": "contract",
+      "title": "Cohort and retained-behavior contract",
+      "body": "Choose the entity and immutable cohort anchor: signup, first purchase, activation, contract start, or first exposure answer different questions. Define timezone and interval boundaries, and assign one first qualifying cohort unless repeat journeys are intentionally modeled. Define retained behavior as a value event, not any telemetry heartbeat. The denominator can be all acquired users, activated users, payers, or eligible accounts; each changes the estimand. State treatment of internal users, bots, merged identities, deleted accounts, pauses, and resurrected users. Store cohort membership separately from mutable user profiles so later property changes do not rewrite history."
+    },
+    {
+      "id": "definitions",
+      "title": "Exact, rolling, bracket, and survival retention",
+      "body": "Exact-period retention at age k counts cohort entities active during that interval divided by original cohort size. Rolling retention at k counts those active at k or any later observed interval and can be monotone by construction, but future activity means values revise as data mature. Bracket retention groups multiple periods to reduce noise. Unbounded return within a window answers yet another question. Churn may mean contract cancellation, no activity for a grace period, or absorbing death; noncontractual inactivity is not directly observed churn. Kaplan-Meier estimates survival under censoring assumptions when a well-defined event time exists. Label the definition in every chart."
+    },
+    {
+      "id": "maturity",
+      "title": "Right censoring and the incomplete triangle",
+      "body": "A cohort entering near the data cutoff cannot contribute an observed month-six outcome. Mark cells beyond maximum observable age as unavailable. Even an age-k cell needs complete event ingestion through the interval end, including late-arrival allowance. Treating unavailable as not retained systematically makes recent cohorts look worse. Restrict comparisons to mature cells, use survival estimators for time-to-event, or model censoring under explicit assumptions. Administrative censoring at a common cutoff differs from loss to follow-up that may depend on outcome. Preserve cohort sizes and at-risk counts because percentages without support invite unstable rankings."
+    },
+    {
+      "id": "interpretation",
+      "title": "Lifecycle, calendar, composition, and causality",
+      "body": "A diagonal disturbance across cohorts often indicates a calendar outage or holiday; a horizontal row pattern can indicate a particular acquisition campaign; a vertical age effect suggests lifecycle behavior. Decompose changes by acquisition channel, country, platform, plan, and eligibility using pre-cohort attributes while protecting small cells and multiplicity. Simpson reversals arise when channel mix changes. Instrumentation releases can create false activity or loss. Correlation between an activation behavior and later retention reflects selection as well as mechanism. Use randomized interventions to test whether causing activation or onboarding changes retention, and measure ITT from assigned cohorts rather than only users who activated."
+    },
+    {
+      "id": "operation",
+      "title": "Uncertainty, forecasting, and metric operation",
+      "body": "Attach binomial or cluster-aware uncertainty to cohort-age rates and avoid overreacting to tiny cohorts. For forecasting, evaluate on chronological cohort cutoffs so future activity never leaks into features or labels. Retention curves feed LTV only after revenue, margin, churn, and discount assumptions are stated; a flat early curve does not prove a permanent plateau. Incremental pipelines must update mature cells for late events without changing cohort anchors. Reconcile active sets to raw events, monitor cohort-size and identity-link shifts, and dual-run definition migrations. Preserve old versions when return-event or grace-period semantics change."
+    }
+  ],
+  "math": "For cohort c with fixed member set C_c and exact retained set A_{c,k} active in age interval k, R_{c,k}=|C_c intersection A_{c,k}|/|C_c|. Rolling retention R^roll_{c,k}=|C_c intersection union_{j>=k}A_{c,j}|/|C_c| and may revise until follow-up closes. An available cell requires cohort_end(c)+end(k)<=data_cutoff-lateness. Approximate independent-binomial SE is sqrt(R(1-R)/n_c), but repeated users, clusters, and weighted populations need design-aware uncertainty.",
+  "workedExamples": [
+    {
+      "title": "A retention improvement created by acquisition mix",
+      "body": "Separate cohort age from calendar time, mark immature cells unavailable, stratify by pre-acquisition channel, standardize composition, and confirm onboarding causally with randomized assignment."
+    }
+  ],
+  "exercises": [
+    {
+      "prompt": "A cohort has 100 users; 40 are active in month two. Exact retention?",
+      "solution": "40%, provided all 100 had complete month-two observation and activity semantics are fixed."
+    },
+    {
+      "prompt": "Why can rolling month-two retention exceed exact month-two retention?",
+      "solution": "It also counts cohort members who return after month two even if inactive during month two itself."
+    },
+    {
+      "prompt": "How does a calendar outage appear in a cohort matrix?",
+      "solution": "Often as a diagonal pattern because different cohorts encounter the same calendar period at different lifecycle ages."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "matrix",
+      "title": "Conceptual cohort retention matrix",
+      "rows": [
+        "Jan cohort",
+        "Feb cohort",
+        "Mar cohort",
+        "Apr cohort"
+      ],
+      "cols": [
+        "M0",
+        "M1",
+        "M2",
+        "M3"
+      ],
+      "cells": [
+        [
+          "100%",
+          "61%",
+          "48%",
+          "42%"
+        ],
+        [
+          "100%",
+          "64%",
+          "50%",
+          "—"
+        ],
+        [
+          "100%",
+          "60%",
+          "—",
+          "—"
+        ],
+        [
+          "100%",
+          "—",
+          "—",
+          "—"
+        ]
+      ],
+      "caption": "Conceptual exact-period retention; em dashes are unavailable future ages, not zero retention.",
+      "afterSection": "maturity"
+    },
+    {
+      "type": "compare",
+      "title": "Three retention questions",
+      "left": {
+        "title": "Exact-period",
+        "items": [
+          "Active in age k",
+          "Stable after window closes",
+          "Can rise or fall by age",
+          "Good for periodic engagement"
+        ]
+      },
+      "right": {
+        "title": "Rolling / survival",
+        "items": [
+          "Active at-or-after / not churned",
+          "Uses future or at-risk time",
+          "Different monotonic behavior",
+          "Good for return or event timing"
+        ]
+      },
+      "caption": "The chart label must name the behavioral question rather than using retention as an ambiguous umbrella.",
+      "afterSection": "definitions"
+    }
+  ],
+  "lab": {
+    "language": "python",
+    "goal": "Build an exact monthly cohort-retention matrix, compare it with pandas, and verify cohort membership, maturity, uniqueness, and denominators.",
+    "buildIt": "from collections import defaultdict\nevents=[('u1',0),('u1',1),('u1',2),('u2',0),('u2',2),('u3',1),('u3',2),('u4',1),('u5',2)]\ndef retention(events,cutoff):\n    periods=defaultdict(set)\n    for user,period in events:periods[user].add(period)\n    cohort={u:min(ps) for u,ps in periods.items()}\n    sizes=defaultdict(int); retained=defaultdict(int)\n    for u,c in cohort.items():\n        sizes[c]+=1\n        for p in periods[u]:retained[(c,p-c)]+=1\n    rates={(c,age):retained[(c,age)]/sizes[c] for c in sizes for age in range(cutoff-c+1)}\n    return cohort,dict(sizes),rates\ncohort,sizes,rates=retention(events,2)",
+    "useIt": "import pandas as pd\ndf=pd.DataFrame(events,columns=['user','period']).drop_duplicates()\ndf['cohort']=df.groupby('user')['period'].transform('min')\ndf['age']=df['period']-df['cohort']\npandas_sizes=df.groupby('cohort')['user'].nunique().to_dict()\npandas_rates=(df.groupby(['cohort','age'])['user'].nunique()/df.groupby('cohort')['user'].nunique()).to_dict()",
+    "verifyIt": "assert cohort=={'u1':0,'u2':0,'u3':1,'u4':1,'u5':2}\nassert sizes==pandas_sizes=={0:2,1:2,2:1}\nassert rates==pandas_rates\nassert rates[(0,1)]==0.5 and rates[(0,2)]==1.0\nassert (1,2) not in rates and (2,1) not in rates\nassert all(0<=v<=1 for v in rates.values())\nassert all(rates[(c,0)]==1 for c in sizes)",
+    "shipIt": "Persist immutable cohort membership and unique entity-period activity, mark future ages unavailable, reconcile additive counts, monitor identity and acquisition mix, version retention semantics, and freeze dependent decisions when instrumentation fails."
+  },
+  "sourceNotes": [
+    {
+      "resource": "amplitude-experiment-metrics",
+      "contribution": "Documents explicit exposure, return-event, window, denominator, and retention calculation semantics in experiment analysis."
+    },
+    {
+      "resource": "mixpanel-retention",
+      "contribution": "Documents current product-retention cohort and return behavior concepts used in operational analytics."
+    },
+    {
+      "resource": "lifelines",
+      "contribution": "Provides official time-to-event, censoring, Kaplan-Meier, and survival-model implementation guidance for retention extensions."
+    },
+    {
+      "resource": "berkeley-data100",
+      "contribution": "Provides grouped event-table, cohort, visualization, sampling, and inference foundations."
+    }
+  ]
 }

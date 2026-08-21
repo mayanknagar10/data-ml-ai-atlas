@@ -1,0 +1,21 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Credible Intervals vs Confidence Intervals — Code Lab</title><script>(()=>{const s=localStorage.getItem('atlas-theme');const t=s||((matchMedia('(prefers-color-scheme: dark)').matches)?'dark':'light');document.documentElement.dataset.theme=t})()</script><style>:root{--bg:#fff;--text:#121417;--muted:#5d6470;--line:#dfe3e8;--soft:#f6f7f8;--blue:#155eef;--code:#0d1117;color-scheme:light}html[data-theme=dark]{--bg:#0d1117;--text:#eef2f6;--muted:#a8b0ba;--line:#2b333d;--soft:#171d24;--blue:#8fb4ff;--code:#070a0e;color-scheme:dark}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.6 Inter,system-ui,sans-serif}main{max-width:980px;margin:auto;padding:44px 22px 80px}a{color:var(--blue)}h1{font-size:42px;line-height:1.05;margin:8px 0 12px}.k{font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--blue);font-weight:800}.lead{color:var(--muted);font-size:17px}.top{display:flex;justify-content:space-between;gap:16px}button{border:1px solid var(--line);background:var(--soft);color:var(--text);border-radius:8px;padding:7px 9px;cursor:pointer}section{border-top:1px solid var(--line);padding-top:22px;margin-top:26px}pre{background:var(--code);color:#e6edf3;padding:18px;border-radius:12px;overflow:auto;font:13px/1.55 ui-monospace,monospace}.links{display:flex;gap:12px;flex-wrap:wrap;margin:18px 0}.links a{border:1px solid var(--line);border-radius:8px;padding:7px 9px;text-decoration:none;font-size:12px}@media(max-width:600px){h1{font-size:34px}.top{display:block}}</style></head><body><main><div class="top"><div><div class="k">Data, ML & AI Atlas · Runnable Lab</div><h1>Credible Intervals vs Confidence Intervals</h1></div><button id="t">◐ Theme</button></div><p class="lead">Compute a Beta credible interval, simulate its fixed-parameter coverage, and compare with a Wilson confidence interval.</p><div class="links"><a href="../../index.html#/lesson/credible-vs-confidence">← Full lesson</a><a href="lab.py">Combined Python file</a><a href="README.md">README</a></div><section><h2>1 · Build it</h2><p>Minimal implementation with as little framework abstraction as practical.</p><pre>import math
+
+def wilson_interval(k,n,z=1.959963984540054):
+    p=k/n; denom=1+z*z/n
+    center=(p+z*z/(2*n))/denom
+    half=z*math.sqrt(p*(1-p)/n+z*z/(4*n*n))/denom
+    return center-half,center+half
+
+k,n=3,10
+wilson=wilson_interval(k,n)</pre></section><section><h2>2 · Use it</h2><p>The same idea through a common library or practical API.</p><pre>import numpy as np
+from scipy.stats import beta
+credible=tuple(beta.ppf([0.025,0.975],4,8))
+rng=np.random.default_rng(23)
+true_p=0.30
+counts=rng.binomial(n,true_p,size=20000)
+credible_intervals=np.asarray([beta.ppf([0.025,0.975],1+c,1+n-c) for c in counts])
+coverage=np.mean((credible_intervals[:,0] &lt;= true_p) &amp; (true_p &lt;= credible_intervals[:,1]))</pre></section><section><h2>3 · Ship it</h2><p>Label interval framework and construction, version priors/design/stopping, coverage- and sensitivity-test decision-critical endpoints, and keep parameter, predictive, and practical-threshold uncertainty distinct in the UI.</p></section><section><h2>4 · Verify it</h2><p>Assertions and sanity checks that catch conceptual or implementation mistakes.</p><pre>assert 0 &lt; credible[0] &lt; credible[1] &lt; 1
+assert 0 &lt; wilson[0] &lt; wilson[1] &lt; 1
+assert 0.90 &lt; coverage &lt; 0.99
+logit_bounds=[math.log(x/(1-x)) for x in credible]
+assert logit_bounds[0] &lt; logit_bounds[1]</pre></section></main><script>const b=document.getElementById('t');function u(){b.textContent=document.documentElement.dataset.theme==='dark'?'☀ Light':'☾ Dark'}u();b.onclick=()=>{const n=document.documentElement.dataset.theme==='dark'?'light':'dark';document.documentElement.dataset.theme=n;localStorage.setItem('atlas-theme',n);u()}</script></body></html>

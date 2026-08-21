@@ -7,31 +7,186 @@
     "ds",
     "as"
   ],
-  "interviewAnswer": "Lagrange multipliers incorporate constraints into an objective; KKT conditions characterize optima for broad constrained problems under regularity assumptions. Duality can provide bounds and alternative formulations.",
+  "interviewAnswer": "For minimize f(x) subject to g_i(x)<=0 and h_j(x)=0, the Lagrangian is L=f+sum lambda_i g_i+sum nu_j h_j with lambda_i>=0. KKT requires primal feasibility, dual feasibility, stationarity of L, and complementary slackness lambda_i g_i=0. Under a constraint qualification KKT is necessary for a local optimum; for a convex problem it is sufficient, and with Slater's condition strong duality holds. Multipliers are shadow prices: locally they quantify how the optimal value changes when a constraint bound is tightened, but their interpretation depends on units, sign convention, degeneracy, and perturbation size.",
   "keyPoints": [
-    "Primal vs dual variables.",
-    "Complementary slackness links active constraints and multipliers.",
-    "Strong duality needs conditions."
+    "The Lagrangian prices constraint violation",
+    "KKT combines four conditions, not stationarity alone",
+    "Constraint qualifications prevent pathological necessity failures",
+    "Convexity turns a KKT point into a global optimum",
+    "Dual variables are local sensitivities with units and validity ranges"
   ],
   "resources": [
     "boyd-convex",
-    "stanford-ee364a"
+    "stanford-ee364a",
+    "cvxpy-guide",
+    "scipy-optimize"
   ],
   "featured": false,
-  "why": "Lagrange Multipliers, Duality & KKT Conditions appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
-  "intuition": "Primal vs dual variables.",
-  "deepDive": "Lagrange multipliers incorporate constraints into an objective; KKT conditions characterize optima for broad constrained problems under regularity assumptions. Duality can provide bounds and alternative formulations. Complementary slackness links active constraints and multipliers. Strong duality needs conditions. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
-  "workedExample": "Optimize allocation subject to a fixed budget and capacity constraints.",
+  "why": "Capacity, budgets, fairness limits, service levels, conservation laws, and risk constraints turn unconstrained models into decisions. Lagrange multipliers reveal which constraints actually determine the answer and what an extra unit of capacity is worth. Dual bounds also tell us how far a candidate may be from the best possible value. Yet careless sign conventions, inactive constraints, or nonconvexity can make a plausible multiplier story false. In interviews, KKT questions test calculus, geometry, and assumptions together. In deployed decision systems, residuals and dual gaps are among the most useful solver health signals, while shadow prices help prioritize investments and debug surprising regime changes.",
+  "intuition": "At a smooth constrained optimum, moving downhill may be blocked by the feasible boundary. The objective gradient is then balanced by normals to active constraints; the multipliers are the strengths of those normal forces. An inactive inequality has slack, exerts no force, and therefore has zero multiplier under complementary slackness. The dual problem asks for the best lower bound obtained by penalizing constraints. Weak duality says such a lower bound cannot exceed the primal minimum. When the two meet, the gap vanishes and the bound certifies optimality. A shadow price measures the slope of optimal value as a resource limit moves slightly, not the value of arbitrarily large expansion.",
+  "deepDive": "KKT conditions unify local geometry and primal-dual certificates. Their exact role depends on problem curvature and regularity: necessity needs constraint qualifications, sufficiency needs convex structure, and sensitivity needs a stable local solution.",
+  "workedExample": "Minimize (x-1)^2+(y-2)^2 subject to x+y>=4. Write g=4-x-y<=0 and L=(x-1)^2+(y-2)^2+lambda(4-x-y). The unconstrained point (1,2) is infeasible, so the boundary is active. Stationarity gives 2(x-1)-lambda=0 and 2(y-2)-lambda=0; with x+y=4, x=1.5, y=2.5, lambda=1. Primal and dual feasibility hold, and lambda*g=0. The convex objective and affine constraint make this the global optimum. Tightening the requirement from 4 to 4+delta increases optimal cost initially by about lambda*delta, but that linear sensitivity should be checked by re-solving for material delta.",
   "commonMistakes": [
-    "Applying the method without checking its assumptions or data-generating process.",
-    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+    {
+      "mistake": "Checking only stationarity",
+      "correction": "A stationary Lagrangian point may be infeasible or have invalid multiplier signs; verify all four KKT conditions."
+    },
+    {
+      "mistake": "Claiming KKT always proves a minimum",
+      "correction": "Necessity needs regularity and sufficiency needs convexity or appropriate second-order evidence."
+    },
+    {
+      "mistake": "Interpreting every active constraint as valuable",
+      "correction": "An active constraint can have zero or nonunique multiplier, especially under degeneracy or redundancy."
+    },
+    {
+      "mistake": "Extrapolating a shadow price indefinitely",
+      "correction": "It is a local sensitivity; large changes can switch the active set or, with discrete variables, create jumps."
+    }
   ],
   "followUps": [
-    "What assumptions does Lagrange Multipliers, Duality & KKT Conditions make?",
-    "How would you validate or debug Lagrange Multipliers, Duality & KKT Conditions in practice?"
+    {
+      "question": "What does complementary slackness mean?",
+      "answer": "For each inequality, multiplier times slack is zero. A strictly slack constraint has zero multiplier; a positive multiplier can occur only when the constraint binds."
+    },
+    {
+      "question": "When are KKT conditions sufficient?",
+      "answer": "For a convex differentiable problem with convex inequality constraints and affine equalities, any primal-dual KKT point is globally optimal."
+    },
+    {
+      "question": "What is Slater's condition used for?",
+      "answer": "A strictly feasible point is a common constraint qualification for convex problems; it supports strong duality and existence of useful multipliers under standard assumptions."
+    }
   ],
-  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "production": "Preserve the original constraint orientation and units in model metadata. Scale rows and variables, supply trustworthy derivatives, and record primal and dual statuses, objectives, gap, active set, multipliers, and normalized KKT residuals. Test analytic toy problems, perturb right-hand sides, and compare predicted shadow-price changes with re-solves. Time limits must distinguish a feasible incumbent from a certified optimum. Monitor active-set churn, infeasibility rate, residuals, multiplier spikes, solve time, and fallback use. Redundant constraints can destabilize prices; discrete models often lack smooth sensitivity. Protect confidential costs and capacities. If residual or status gates fail, return a previously approved feasible decision or a conservative rule, alert the owner, retain diagnostics, and roll back model/data/solver versions together.",
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "Lagrange multipliers, duality, and the Karush-Kuhn-Tucker (KKT) conditions connect constrained optimization to geometry, economic sensitivity, and verifiable optimality. This chapter derives the Lagrangian for equality and inequality constraints, explains feasible directions and active constraints, distinguishes primal and dual problems, and develops weak duality, strong duality, Slater's condition, complementary slackness, constraint qualifications, and dual sensitivity. You will learn when KKT conditions are necessary, when they are sufficient, why multiplier signs depend on convention, and why stationarity alone never proves feasibility or global optimality. A worked resource-allocation problem computes the primal solution and shadow price by hand. The lab builds KKT residual checks for a constrained quadratic, compares the result with SciPy's SLSQP interface, and verifies primal feasibility, dual feasibility, stationarity, and complementarity. Production guidance covers scaling, degeneracy, infeasibility, inaccurate multipliers, solver status, sensitivity ranges, observability, and safe fallbacks. The payoff is the ability to interpret a constrained solver result as a scientific decision and certificate rather than an unexplained vector.",
+  "prerequisites": [
+    "convexity",
+    "derivatives-gradients",
+    "vectors-matrices"
+  ],
+  "learningObjectives": [
+    "Construct a Lagrangian with consistent inequality signs and derive stationarity, feasibility, and complementary slackness conditions.",
+    "Explain weak versus strong duality and identify conditions under which KKT conditions are necessary or sufficient.",
+    "Interpret optimal multipliers as local value sensitivities while stating sign, units, and range limitations.",
+    "Diagnose candidate solutions through scaled KKT residuals and solver termination evidence."
+  ],
+  "deepSections": [
+    {
+      "id": "lagrangian",
+      "title": "Building the Lagrangian consistently",
+      "body": "Write a minimization problem as f(x) with inequalities g_i(x)<=0 and equalities h_j(x)=0. Define L(x,lambda,nu)=f(x)+lambda^T g(x)+nu^T h(x), with lambda>=0 and unrestricted nu. If an original constraint is a(x)>=b, rewrite it as b-a(x)<=0 before assigning the multiplier. Equality multipliers have no sign restriction because either direction can be violated. Units are informative: if f is dollars and a constraint is hours, its lambda is dollars per hour. A different sign convention is valid only if the dual-feasibility and sensitivity interpretations change consistently."
+    },
+    {
+      "id": "four-conditions",
+      "title": "The four KKT conditions",
+      "body": "Primal feasibility requires g_i(x*)<=0 and h_j(x*)=0. Dual feasibility requires lambda_i*>=0. Stationarity requires grad_x L(x*,lambda*,nu*)=0 for differentiable problems. Complementary slackness requires lambda_i* g_i(x*)=0: each inequality is either slack with zero price or active and possibly priced. Active does not imply a positive multiplier; degeneracy can produce active zero-price constraints or nonunique multipliers. For bounds, stationarity includes their normal cone. Nonsmooth convex problems replace gradients with subdifferentials. Check every condition numerically, because a small objective change can coexist with large feasibility error."
+    },
+    {
+      "id": "duality",
+      "title": "Dual functions, weak duality, and strong duality",
+      "body": "The dual function q(lambda,nu)=inf_x L(x,lambda,nu) is a lower bound on the primal optimum for every dual-feasible lambda. Maximizing q gives the tightest such bound, so d*<=p* is weak duality. The primal-dual gap p*-d* is nonnegative and becomes an optimality certificate when small. Equality of optimal values is strong duality. Convexity alone does not always guarantee it; Slater's condition - existence of a strictly feasible point for convex inequalities and affine equalities - is a common sufficient regularity condition. Infeasible or unbounded problems require careful status and ray interpretation rather than fabricated multipliers."
+    },
+    {
+      "id": "necessity-sufficiency",
+      "title": "Constraint qualifications and global guarantees",
+      "body": "At a local optimum of a differentiable nonlinear problem, KKT is generally necessary only under a constraint qualification such as linear independence of active constraint gradients or weaker regularity conditions. Without one, an optimum can exist with no multipliers satisfying stationarity. In convex problems with convex inequalities and affine equalities, any primal-dual point satisfying KKT is globally optimal; under Slater, optimal multipliers exist and KKT characterizes optimality. In nonconvex problems, a KKT point may be a local minimum, maximum, saddle, or neither. Second-order conditions examine curvature of the Lagrangian along feasible critical directions."
+    },
+    {
+      "id": "sensitivity-diagnostics",
+      "title": "Shadow prices, residuals, and diagnostics",
+      "body": "Suppose a constraint is a(x)<=b and v(b) is the optimal value. Under stable regularity, the multiplier relates to the local derivative of v with respect to b, with sign determined by formulation. A large magnitude identifies a binding, valuable resource, but only locally; basis changes, discrete decisions, and degeneracy create kinks. Report a sensitivity range or re-solve meaningful scenarios. Scale stationarity, feasibility, complementarity, and duality-gap residuals relative to coefficients and units. Compare analytic or automatic derivatives with finite differences. If multipliers jump while decisions barely change, inspect redundant constraints, scaling, and nonuniqueness before telling an economic story."
+    }
+  ],
+  "math": "For min f(x) subject to g(x)<=0 and h(x)=0, L=f+lambda^Tg+nu^Th with lambda>=0. KKT is g(x*)<=0, h(x*)=0, lambda*>=0, grad_x L=0, and lambda_i*g_i(x*)=0. The dual function q(lambda,nu)=inf_x L is concave and q<=p* for dual-feasible multipliers. Under convexity and an appropriate regularity condition such as Slater, p*=d*. Scaled residuals should separately measure primal violation, negative multipliers, stationarity, complementarity, and primal-dual gap.",
+  "workedExamples": [
+    {
+      "title": "A binding minimum-output constraint",
+      "body": "Write the sign-consistent Lagrangian, solve the active-boundary equations, verify every KKT condition, and interpret the multiplier as a local marginal cost."
+    }
+  ],
+  "exercises": [
+    {
+      "prompt": "For g(x)<0 at a KKT point, what is lambda?",
+      "solution": "Complementary slackness and dual feasibility imply lambda=0."
+    },
+    {
+      "prompt": "Why can a nonconvex KKT point fail to be a minimum?",
+      "solution": "First-order balance does not determine curvature; the point can be a maximum or saddle along feasible directions."
+    },
+    {
+      "prompt": "A capacity multiplier is 8 dollars per unit. What may you safely say?",
+      "solution": "Under the stated sign convention and stable regularity, a small one-unit relaxation changes optimal value by about 8 dollars. Verify units, direction, and a useful perturbation range by re-solving."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "flow",
+      "title": "From constrained model to certificate",
+      "items": [
+        "Normalize constraints",
+        "Build Lagrangian",
+        "Solve primal + dual",
+        "Check four KKT conditions",
+        "Inspect duality gap",
+        "Perturb and validate sensitivity"
+      ],
+      "caption": "A multiplier interpretation is credible only after the associated primal-dual certificate is checked.",
+      "afterSection": "four-conditions"
+    },
+    {
+      "type": "compare",
+      "title": "What KKT can establish",
+      "left": {
+        "title": "Convex + regular",
+        "items": [
+          "Necessary at optimum",
+          "Sufficient for global optimum",
+          "Strong duality under Slater",
+          "Dual gap certifies"
+        ]
+      },
+      "right": {
+        "title": "Nonconvex or irregular",
+        "items": [
+          "May not be necessary",
+          "Not sufficient alone",
+          "Dual gap may persist",
+          "Second-order/global checks needed"
+        ]
+      },
+      "caption": "The same equations have different evidential strength under different structural assumptions.",
+      "afterSection": "necessity-sufficiency"
+    }
+  ],
+  "lab": {
+    "language": "python",
+    "goal": "Compute and verify the KKT certificate for a binding convex inequality, then compare the candidate with a constrained SciPy solve.",
+    "buildIt": "def objective(z):\n    x,y=z; return (x-1)**2+(y-2)**2\ndef constraint(z):\n    x,y=z; return 4-x-y  # required <= 0\ndef kkt_residuals(z,lam):\n    x,y=z\n    stationarity=max(abs(2*(x-1)-lam),abs(2*(y-2)-lam))\n    return {'primal':max(0,constraint(z)),'dual':max(0,-lam),'stationarity':stationarity,'complementarity':abs(lam*constraint(z))}\nsolution=[1.5,2.5]; multiplier=1.0\ncertificate=kkt_residuals(solution,multiplier)",
+    "useIt": "from scipy.optimize import minimize\nresult=minimize(objective,[2.0,2.0],method='SLSQP',constraints=[{'type':'ineq','fun':lambda z:z[0]+z[1]-4}])",
+    "verifyIt": "assert max(certificate.values())<1e-12\nassert abs(objective(solution)-0.5)<1e-12\nassert result.success\nassert constraint(result.x)<=1e-7\nassert max(abs(result.x[i]-solution[i]) for i in range(2))<1e-5\nfor delta in (1e-4,1e-3):\n    tightened=[solution[0]+delta/2,solution[1]+delta/2]\n    observed=(objective(tightened)-objective(solution))/delta\n    assert abs(observed-multiplier)<delta",
+    "shipIt": "Record constraint signs, units, status, active set, dual gap, and scaled KKT residuals; validate shadow prices with perturbations; monitor multiplier instability; and use a safe feasible fallback when certification fails."
+  },
+  "sourceNotes": [
+    {
+      "resource": "boyd-convex",
+      "contribution": "Provides the canonical Lagrangian, duality, Slater, KKT, sensitivity, and convex sufficiency development."
+    },
+    {
+      "resource": "stanford-ee364a",
+      "contribution": "Provides rigorous constrained-optimization lectures and worked primal-dual exercises."
+    },
+    {
+      "resource": "cvxpy-guide",
+      "contribution": "Documents current access to constraint residuals, solver statuses, and dual variable values in a modeling system."
+    },
+    {
+      "resource": "scipy-optimize",
+      "contribution": "Documents current constrained minimization interfaces and numerical termination behavior used in the lab."
+    }
+  ]
 }

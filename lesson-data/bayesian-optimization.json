@@ -7,31 +7,259 @@
     "ds",
     "as"
   ],
-  "interviewAnswer": "Bayesian optimization fits a surrogate model of an expensive black-box objective and uses an acquisition function to choose promising evaluations, useful for costly hyperparameter or experiment tuning.",
+  "interviewAnswer": "Bayesian optimization is useful when objective evaluations are expensive and gradients are unavailable. It fits a probabilistic surrogate, commonly a Gaussian process, to observed configurations and outcomes. An acquisition function such as expected improvement or UCB combines predicted performance with uncertainty, is optimized cheaply to choose the next evaluation, and the posterior is updated after observing it. I define the search space and budget, seed with a space-filling design, model noise and constraints, compare against random search over repeated runs, and monitor regret, feasibility, cost, failed trials, and calibration. It is usually best in modest dimensions, not a default for cheap or massively high-dimensional objectives.",
   "keyPoints": [
-    "Surrogate captures uncertainty.",
-    "Acquisition balances exploration/exploitation.",
-    "Best when evaluations are expensive, not huge-dimensional."
+    "BO optimizes evaluation choice, not just a fitted response surface",
+    "Posterior uncertainty drives exploration",
+    "The acquisition is cheap to optimize but can itself be multimodal",
+    "Noise, constraints, batches, and fidelity change the correct decision rule",
+    "Repeated-budget comparisons against simple baselines are essential"
   ],
   "resources": [
+    "frazier-bo",
+    "botorch-docs",
     "sklearn",
-    "boyd-convex"
+    "probml-book"
   ],
   "featured": false,
-  "why": "Bayesian Optimization for Expensive Objectives appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
-  "intuition": "Surrogate captures uncertainty.",
-  "deepDive": "Bayesian optimization fits a surrogate model of an expensive black-box objective and uses an acquisition function to choose promising evaluations, useful for costly hyperparameter or experiment tuning. Acquisition balances exploration/exploitation. Best when evaluations are expensive, not huge-dimensional. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
-  "workedExample": "Tune a simulation parameter set when each experiment takes hours rather than brute-force grid search.",
+  "why": "A training run may take hours, a materials experiment may consume a sample, and an online product experiment may expose users. Grid search ignores what previous trials teach; random search is strong but does not adapt; gradients may not exist through the full system. BO uses all observations to choose informative or promising next trials. It can also incorporate evaluation cost, safety constraints, and multiple fidelities. However, its gains disappear when the surrogate is badly calibrated, the domain is too high-dimensional, trial bookkeeping is corrupted, or acquisition overhead exceeds evaluation cost. Interviews test whether candidates understand the closed loop and its operating regime rather than treating BO as a magic hyperparameter tuner.",
+  "intuition": "Draw a smooth unknown curve and place a few observed points on it. A Gaussian process fills in a mean curve plus a band of uncertainty that narrows near observations and widens away from them. Exploitation samples where the mean looks best; exploration samples where uncertainty leaves room for a surprise. An acquisition converts both into a common value-of-sampling score. Expected improvement asks how much a new observation is expected to beat the incumbent; UCB adds an uncertainty bonus to the mean. After paying for one evaluation, the band changes everywhere according to the kernel, and the decision repeats. The real asset is the sequential policy and evidence ledger, not the final surrogate alone.",
+  "deepDive": "BO is Bayesian decision making over experiments. Surrogate assumptions create a posterior over unobserved outcomes; acquisition functions approximate the downstream value of resolving uncertainty under a finite budget.",
+  "workedExample": "A team tunes learning rate and regularization, and each full training run takes four GPU-hours. Twelve space-filling initial trials reveal a smooth valley but with seed noise. A GP uses log-transformed learning rate, standardized loss, and an estimated observation-noise term. Noisy EI proposes a configuration with slightly worse posterior mean but much larger credible improvement than another exploitative candidate. Two configurations are evaluated asynchronously with pending-trial conditioning. The team recommends the configuration with best posterior expected validation loss subject to a latency constraint, then confirms it across fresh seeds. Reporting includes total GPU-hours and random-search regret, not only the best number discovered.",
   "commonMistakes": [
-    "Applying the method without checking its assumptions or data-generating process.",
-    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+    {
+      "mistake": "Using BO for a cheap objective",
+      "correction": "If thousands of evaluations are inexpensive, random, evolutionary, or gradient-based search may dominate BO overhead."
+    },
+    {
+      "mistake": "Treating posterior variance as guaranteed error",
+      "correction": "It is conditional on surrogate and hyperparameter assumptions; check calibration and misspecification."
+    },
+    {
+      "mistake": "Ignoring failed or pending trials",
+      "correction": "They affect feasibility, bias, and duplicate proposals; represent their state explicitly in the acquisition loop."
+    },
+    {
+      "mistake": "Evaluating one lucky BO run",
+      "correction": "Compare policies over repeated seeds and equal cost budgets using regret and feasibility, not only final best value."
+    }
   ],
   "followUps": [
-    "What assumptions does Bayesian Optimization for Expensive Objectives make?",
-    "How would you validate or debug Bayesian Optimization for Expensive Objectives in practice?"
+    {
+      "question": "Why not use grid search?",
+      "answer": "A grid spends evaluations uniformly and scales exponentially with dimension. BO adapts based on outcomes, while random search remains an important simple baseline."
+    },
+    {
+      "question": "What is expected improvement?",
+      "answer": "The posterior expectation of positive improvement over an incumbent (optionally with an exploration offset); it combines probability and magnitude of improvement."
+    },
+    {
+      "question": "How do constraints enter BO?",
+      "answer": "Model feasibility or constraint outcomes and optimize an acquisition weighted or restricted by probability of feasibility, with explicit safety rules for risky experiments."
+    }
   ],
-  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "production": "Use a transactional experiment registry with immutable configuration, input/code/data/model versions, fidelity, seeds, cost, status, constraint outcomes, and raw metrics. Prevent duplicate claims and account for pending, retried, failed, timed-out, censored, and manually stopped trials. Version search-space transformations, priors, kernels, acquisition, optimizer, random states, and recommendation logic. Monitor surrogate residuals and interval coverage, acquisition values, duplicate rate, boundary concentration, constraint violations, regret proxy, GPU/experiment cost, queue delay, and recommendation churn. Limit concurrency and external side effects; require human or safety-gate approval for risky designs. Preserve a random-search fallback. Rollback restores the previous experiment policy and recommended configuration, but never erases completed trial evidence.",
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "Bayesian optimization (BO) is a sequential strategy for optimizing a costly black-box objective when each evaluation consumes meaningful time, money, compute, or risk. It fits a probabilistic surrogate to observed evaluations, uses posterior uncertainty to score the value of candidate experiments, evaluates a selected candidate, and repeats. This chapter develops Gaussian-process surrogates, priors and kernels, noisy observations, exploration versus exploitation, probability of improvement, expected improvement, upper-confidence-bound and information-based acquisitions, acquisition optimization, initialization, constraints, batch and asynchronous experiments, multi-fidelity evaluation, high-dimensional and mixed spaces, stopping, and honest evaluation. You will learn when BO is preferable to random search or gradient methods, how model misspecification and overconfident uncertainty can waste a budget, and why the acquisition is a decision rule rather than the real objective. The lab implements a one-dimensional Gaussian-process posterior and expected-improvement loop, compares it with scikit-learn, and verifies uncertainty and simple-regret improvement. Production guidance covers experiment identity, failed trials, concurrency, reproducibility, cost, safety, monitoring, and rollback.",
+  "prerequisites": [
+    "gaussian-processes",
+    "probability-basics",
+    "hyperparameter-tuning"
+  ],
+  "learningObjectives": [
+    "Formulate costly black-box optimization as a sequential probabilistic decision problem with an explicit evaluation budget.",
+    "Compute and interpret Gaussian-process posterior mean, variance, and common acquisition functions.",
+    "Choose initialization, noise treatment, constraints, batching, fidelity, and stopping rules for a real experiment system.",
+    "Evaluate a BO policy without leakage using regret, cost, feasibility, and repeated-seed baselines."
+  ],
+  "deepSections": [
+    {
+      "id": "problem-setup",
+      "title": "Objective, search space, budget, and observations",
+      "body": "Define maximize f(x) or minimize it after a sign transformation over a bounded domain X. An observation is y=f(x)+epsilon and must include configuration, fidelity, seed, environment, data/code version, cost, start/end time, status, and constraint outcomes. Separate deterministic numerical objectives from noisy experiments. Encode continuous, ordinal, categorical, conditional, and forbidden regions faithfully; arbitrary integer labels do not make categories geometrically close. State total cost or wall-clock budget and concurrency, not only number of trials. Choose the recommendation rule: best observed feasible point, posterior-best design, or a robust risk-aware design can differ."
+    },
+    {
+      "id": "surrogate",
+      "title": "Gaussian-process posterior and uncertainty",
+      "body": "A Gaussian process prior specifies mean m(x) and kernel k(x,x'), inducing a joint normal distribution over any finite set of function values. Conditioning on observations yields posterior mean for interpolation/extrapolation and posterior variance for epistemic uncertainty. Observation noise enters the training covariance diagonal and should not be confused with uncertainty about the latent objective. Kernel length scales encode smoothness and relevance; automatic fitting can become overconfident with few points or boundary optima. Standardize inputs and outcomes, include known noise when available, inspect marginal likelihood and posterior predictive calibration, and use alternatives such as random forests or neural surrogates when GP assumptions and cubic scaling fail."
+    },
+    {
+      "id": "acquisition",
+      "title": "Improvement, optimism, and information",
+      "body": "Probability of improvement favors chances of beating a threshold but ignores improvement magnitude. Expected improvement (EI) averages positive improvement under the posterior, balancing mean and uncertainty automatically in a noiseless single-point setting. Upper confidence bound uses mean plus beta-scaled standard deviation for maximization, exposing an exploration control. Thompson sampling draws a posterior function and optimizes it. Entropy search, predictive entropy search, and knowledge gradient target information or future decision value more directly at greater computational cost. Acquisitions can be nonconvex; optimize them with multiple starts or discrete enumeration and never confuse their maximum with a guarantee about f."
+    },
+    {
+      "id": "real-experiments",
+      "title": "Noise, constraints, batches, and multiple fidelities",
+      "body": "With noisy observations, the best observed value is itself uncertain; noisy EI or posterior decision rules avoid chasing positive noise. Model feasibility or safety constraints and optimize expected utility only where probability of feasibility is acceptable. Batch BO selects jointly valuable points rather than taking the top independent acquisitions, which may be redundant. Asynchronous BO accounts for pending trials and avoids idle workers. Multi-fidelity methods trade cheap biased evaluations against expensive accurate ones by modeling correlation and cost. Replicates estimate noise but compete with exploration. Failed and censored trials carry information and need typed handling rather than silent deletion."
+    },
+    {
+      "id": "limits-evaluation",
+      "title": "Failure modes, stopping, and policy evaluation",
+      "body": "Classic GP BO is strongest for expensive objectives in modest effective dimension; Frazier's tutorial describes continuous domains below roughly twenty dimensions as a common regime, not a law. High-dimensional, conditional, combinatorial, or sharply discontinuous spaces need embeddings, trust regions, structured kernels, specialized optimizers, or another method. Stop on exhausted cost, negligible credible improvement, stable recommendation, or business threshold - not on a visually flat trace alone. Evaluate policies over repeated benchmark functions or historical simulators using simple/cumulative regret, feasible recommendation quality, cost, wall time, and failure rate. Compare random and expert baselines with identical initial designs and budgets."
+    }
+  ],
+  "math": "With observations y at X and noise variance sigma_n^2, GP posterior at x is mu(x)=m(x)+k_x^T(K+sigma_n^2 I)^{-1}(y-m_X) and variance s^2(x)=k(x,x)-k_x^T(K+sigma_n^2 I)^{-1}k_x. For noiseless maximization with incumbent f_best, z=(mu-f_best-xi)/s and EI=(mu-f_best-xi)Phi(z)+s phi(z), with EI=0 when s=0. UCB is mu+sqrt(beta)*s. Simple regret after T trials is f(x*)-max_{t<=T}f(x_t).",
+  "workedExamples": [
+    {
+      "title": "Costly hyperparameter tuning with seed noise",
+      "body": "Define a log-scaled domain, fit a noise-aware surrogate, select by credible improvement, account for pending trials, and confirm the recommended feasible design on fresh seeds."
+    }
+  ],
+  "exercises": [
+    {
+      "prompt": "Posterior mean is high and variance is near zero. What behavior does EI usually show?",
+      "solution": "If the mean does not exceed the incumbent, EI is near zero because little upside uncertainty remains; if it exceeds the incumbent, exploitation can still yield improvement."
+    },
+    {
+      "prompt": "Why standardize a log-scale hyperparameter?",
+      "solution": "The kernel distance should reflect meaningful multiplicative changes; log transform and scaling improve geometry and numerical conditioning."
+    },
+    {
+      "prompt": "How should a failed out-of-memory trial be handled?",
+      "solution": "Record it with configuration and failure type. It may define a feasibility boundary; silently deleting it biases the experiment history."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "flow",
+      "title": "Bayesian optimization closed loop",
+      "items": [
+        "Seed design",
+        "Fit probabilistic surrogate",
+        "Score acquisition",
+        "Optimize candidate",
+        "Run costly evaluation",
+        "Update evidence + stop check"
+      ],
+      "caption": "Every evaluation changes the posterior and therefore the value of the next experiment.",
+      "afterSection": "problem-setup"
+    },
+    {
+      "type": "curve",
+      "title": "Conceptual posterior and uncertainty",
+      "series": [
+        {
+          "label": "posterior mean",
+          "points": [
+            [
+              0.0,
+              0.35
+            ],
+            [
+              0.2,
+              0.55
+            ],
+            [
+              0.4,
+              0.48
+            ],
+            [
+              0.6,
+              0.75
+            ],
+            [
+              0.8,
+              0.62
+            ],
+            [
+              1.0,
+              0.7
+            ]
+          ]
+        },
+        {
+          "label": "upper credible band",
+          "points": [
+            [
+              0.0,
+              0.7
+            ],
+            [
+              0.2,
+              0.7
+            ],
+            [
+              0.4,
+              0.62
+            ],
+            [
+              0.6,
+              0.83
+            ],
+            [
+              0.8,
+              0.82
+            ],
+            [
+              1.0,
+              0.98
+            ]
+          ]
+        },
+        {
+          "label": "lower credible band",
+          "points": [
+            [
+              0.0,
+              0.05
+            ],
+            [
+              0.2,
+              0.4
+            ],
+            [
+              0.4,
+              0.34
+            ],
+            [
+              0.6,
+              0.67
+            ],
+            [
+              0.8,
+              0.42
+            ],
+            [
+              1.0,
+              0.35
+            ]
+          ]
+        }
+      ],
+      "xLabel": "design coordinate",
+      "yLabel": "objective belief",
+      "caption": "Conceptual curves: uncertainty narrows near evidence and can make an unexplored region valuable despite a lower current mean.",
+      "afterSection": "surrogate"
+    }
+  ],
+  "lab": {
+    "language": "python",
+    "goal": "Implement a one-dimensional Gaussian-process posterior and expected-improvement policy, compare with scikit-learn, and verify uncertainty plus regret behavior.",
+    "buildIt": "import numpy as np\nfrom math import erf,exp,pi,sqrt\ndef kernel(a,b,length=0.18):\n    a=np.asarray(a)[:,None]; b=np.asarray(b)[None,:]\n    return np.exp(-0.5*((a-b)/length)**2)\ndef posterior(train_x,train_y,test_x,noise=1e-8):\n    K=kernel(train_x,train_x)+noise*np.eye(len(train_x)); Ks=kernel(train_x,test_x)\n    alpha=np.linalg.solve(K,train_y)\n    mean=Ks.T@alpha\n    cov=kernel(test_x,test_x)-Ks.T@np.linalg.solve(K,Ks)\n    return mean,np.sqrt(np.maximum(0,np.diag(cov)))\ndef cdf(z): return 0.5*(1+erf(z/sqrt(2)))\ndef pdf(z): return exp(-0.5*z*z)/sqrt(2*pi)\ndef ei(mean,std,best):\n    out=[]\n    for m,s in zip(mean,std):\n        if s<1e-12:out.append(0.0)\n        else:\n            z=(m-best)/s; out.append((m-best)*cdf(z)+s*pdf(z))\n    return np.array(out)\nobjective=lambda x:np.sin(7*x)*(1-x)+0.6*x\ngrid=np.linspace(0,1,201); train_x=np.array([0.0,0.5,1.0]); train_y=objective(train_x)\ninitial_regret=float(objective(grid).max()-train_y.max())\nfor _ in range(6):\n    mean,std=posterior(train_x,train_y,grid); acquisition=ei(mean,std,train_y.max())\n    acquisition[np.isin(grid,train_x)]=-1\n    x_next=grid[int(np.argmax(acquisition))]\n    train_x=np.append(train_x,x_next); train_y=np.append(train_y,objective(x_next))\nfinal_regret=float(objective(grid).max()-train_y.max())",
+    "useIt": "from sklearn.gaussian_process import GaussianProcessRegressor\nfrom sklearn.gaussian_process.kernels import RBF\ngp=GaussianProcessRegressor(kernel=RBF(0.18),alpha=1e-8,optimizer=None,normalize_y=False).fit(train_x[:,None],train_y)\nsk_mean,sk_std=gp.predict(grid[:,None],return_std=True)",
+    "verifyIt": "assert final_regret<initial_regret\nassert len(set(np.round(train_x,12)))==len(train_x)\nassert np.all(np.isfinite(sk_mean)) and np.all(sk_std>=0)\nmanual_mean,manual_std=posterior(train_x,train_y,grid)\nassert np.max(np.abs(sk_mean-manual_mean))<1e-5\nassert np.max(manual_std[np.isin(grid,train_x)])<2e-4\nassert final_regret<0.03",
+    "shipIt": "Persist an immutable trial ledger, model failures and constraints, version the surrogate/acquisition/space, cap total cost and concurrency, monitor calibration and regret against random search, and retain the previous safe recommendation for rollback."
+  },
+  "sourceNotes": [
+    {
+      "resource": "frazier-bo",
+      "contribution": "Provides the rigorous sequential-decision tutorial, Gaussian-process basis, EI and information acquisitions, noise, batches, fidelity, constraints, and applicability limits."
+    },
+    {
+      "resource": "botorch-docs",
+      "contribution": "Documents the current modular posterior, acquisition, batch, constrained, and production-oriented Bayesian optimization interfaces."
+    },
+    {
+      "resource": "sklearn",
+      "contribution": "Documents the GaussianProcessRegressor implementation used for a small idiomatic comparison in the lab."
+    },
+    {
+      "resource": "probml-book",
+      "contribution": "Provides probabilistic modeling and Gaussian-process background needed to understand surrogate uncertainty assumptions."
+    }
+  ]
 }

@@ -1,3 +1,3 @@
 # Ship it
 
-Decision systems should version objective coefficients and constraints separately from predictive models and log infeasibility/override reasons.
+Version units and coefficients, record status/residuals/dual gap, test infeasible and unbounded controls, monitor active constraints and latency, and publish only certified solutions or an approved feasible fallback.

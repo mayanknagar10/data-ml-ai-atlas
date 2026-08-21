@@ -1,3 +1,3 @@
 # Ship it
 
-Production funnels need event contracts, idempotent logging, time windows, bot/test-user filtering and metric definitions versioned with dashboards.
+Version entity, step, order, window and identity semantics; build from entry with complete opportunity; persist additive counts and transition times; monitor event parity and monotonicity; and freeze decisions when instrumentation breaks.

@@ -1,6 +1,6 @@
 # A/B Testing & Statistical Power — Code Lab
 
-Estimate conversion uplift and a confidence interval before declaring an experiment winner.
+Implement a two-proportion A/B estimate, interval, null z-test, and approximate power calculation, then compare with statsmodels and verify invariants.
 
 ## 1. Build it
 

@@ -1,6 +1,6 @@
 # Data, ML & AI Atlas — Curriculum
 
-**45 modules · 394 topics · 164 curated resources**
+**45 modules · 394 topics · 199 curated resources**
 
 ## 01. 🐍 Python & Software Engineering
 
@@ -112,30 +112,30 @@ Deep-complete: **13/13** · Visual models: **26/13**
 
 Bayesian updating, priors, posterior computation, hierarchical modeling and diagnostics.
 
-Deep-complete: **0/6** · Visual models: **3/6**
+Deep-complete: **6/6** · Visual models: **12/6**
 
-- ⬆️ **Bayesian Updating: Prior, Likelihood & Posterior** — ◻ interview-ready · 🖼 visual
-- • **Conjugate Priors** — ◻ interview-ready
-- ⬆️ **Credible Intervals vs Confidence Intervals** — ◻ interview-ready · 🖼 visual
-- • **MCMC & Posterior Sampling** — ◻ interview-ready · 🖼 visual
-- ⬆️ **Hierarchical / Multilevel Models** — ◻ interview-ready
-- • **Posterior Predictive Checks & Bayesian Model Criticism** — ◻ interview-ready
+- ⬆️ **Bayesian Updating: Prior, Likelihood & Posterior** — ✅ deep · 🖼 visual
+- • **Conjugate Priors** — ✅ deep · 🖼 visual
+- ⬆️ **Credible Intervals vs Confidence Intervals** — ✅ deep · 🖼 visual
+- • **MCMC & Posterior Sampling** — ✅ deep · 🖼 visual
+- ⬆️ **Hierarchical / Multilevel Models** — ✅ deep · 🖼 visual
+- • **Posterior Predictive Checks & Bayesian Model Criticism** — ✅ deep · 🖼 visual
 
 ## 09. 🔎 EDA & Data Visualization
 
 Data quality, exploratory analysis and truthful statistical visualization.
 
-Deep-complete: **0/9** · Visual models: **5/9**
+Deep-complete: **9/9** · Visual models: **18/9**
 
-- 🔥 **A Systematic EDA Workflow** — ◻ interview-ready · 🖼 visual
-- 🔥 **Distributions, Skewness & Outliers** — ◻ interview-ready · 🖼 visual
-- ⬆️ **Missingness: MCAR, MAR & MNAR** — ◻ interview-ready
-- ⬆️ **Choosing the Right Statistical Visualization** — ◻ interview-ready · 🖼 visual
-- ⬆️ **Misleading Charts & Visualization Pitfalls** — ◻ interview-ready
-- ⬆️ **GroupBy, Pivot & Cohort Analysis** — ◻ interview-ready
-- ⬆️ **Dashboard & BI Design** — ◻ interview-ready
-- ⬆️ **Data Storytelling & Communicating Uncertainty** — ◻ interview-ready · 🖼 visual
-- ⬆️ **Simpson’s Paradox & Aggregation Bias** — ◻ interview-ready · 🖼 visual
+- 🔥 **A Systematic EDA Workflow** — ✅ deep · 🖼 visual
+- 🔥 **Distributions, Skewness & Outliers** — ✅ deep · 🖼 visual
+- ⬆️ **Missingness: MCAR, MAR & MNAR** — ✅ deep · 🖼 visual
+- ⬆️ **Choosing the Right Statistical Visualization** — ✅ deep · 🖼 visual
+- ⬆️ **Misleading Charts & Visualization Pitfalls** — ✅ deep · 🖼 visual
+- ⬆️ **GroupBy, Pivot & Cohort Analysis** — ✅ deep · 🖼 visual
+- ⬆️ **Dashboard & BI Design** — ✅ deep · 🖼 visual
+- ⬆️ **Data Storytelling & Communicating Uncertainty** — ✅ deep · 🖼 visual
+- ⬆️ **Simpson’s Paradox & Aggregation Bias** — ✅ deep · 🖼 visual
 
 ## 10. 📈 Regression & Generalized Linear Models
 
@@ -215,18 +215,18 @@ Deep-complete: **0/16** · Visual models: **12/16**
 
 A/B testing, metric design, power, sequential issues, funnels, cohorts and product decisions.
 
-Deep-complete: **0/10** · Visual models: **5/10**
+Deep-complete: **10/10** · Visual models: **20/10**
 
-- 🔥 **A/B Testing & Statistical Power** — ◻ interview-ready · 🖼 visual
-- 🔥 **Randomized Experiment Design** — ◻ interview-ready · 🖼 visual
-- ⬆️ **Sample Ratio Mismatch (SRM)** — ◻ interview-ready
-- • **Variance Reduction & CUPED** — ◻ interview-ready
-- ⬆️ **Sequential Testing, Peeking & Early Stopping** — ◻ interview-ready
-- 🔥 **Metric Design: North Star, Driver & Guardrail Metrics** — ◻ interview-ready · 🖼 visual
-- ⬆️ **Funnels & Conversion Analysis** — ◻ interview-ready · 🖼 visual
-- ⬆️ **Cohort Retention Analysis** — ◻ interview-ready · 🖼 visual
-- ⬆️ **Churn, Lifetime Value & Unit Economics** — ◻ interview-ready
-- • **Interference & Network Effects in Experiments** — ◻ interview-ready
+- 🔥 **A/B Testing & Statistical Power** — ✅ deep · 🖼 visual
+- 🔥 **Randomized Experiment Design** — ✅ deep · 🖼 visual
+- ⬆️ **Sample Ratio Mismatch (SRM)** — ✅ deep · 🖼 visual
+- • **Variance Reduction & CUPED** — ✅ deep · 🖼 visual
+- ⬆️ **Sequential Testing, Peeking & Early Stopping** — ✅ deep · 🖼 visual
+- 🔥 **Metric Design: North Star, Driver & Guardrail Metrics** — ✅ deep · 🖼 visual
+- ⬆️ **Funnels & Conversion Analysis** — ✅ deep · 🖼 visual
+- ⬆️ **Cohort Retention Analysis** — ✅ deep · 🖼 visual
+- ⬆️ **Churn, Lifetime Value & Unit Economics** — ✅ deep · 🖼 visual
+- • **Interference & Network Effects in Experiments** — ✅ deep · 🖼 visual
 
 ## 15. 🧷 Causal Inference
 
@@ -302,14 +302,14 @@ Deep-complete: **0/6** · Visual models: **2/6**
 
 Convex optimization, constraints, linear/integer programming and decision-making under limits.
 
-Deep-complete: **0/6** · Visual models: **2/6**
+Deep-complete: **6/6** · Visual models: **12/6**
 
-- ⬆️ **Convexity & Optimization Intuition** — ◻ interview-ready
-- • **Lagrange Multipliers, Duality & KKT Conditions** — ◻ interview-ready
-- ⬆️ **Linear Programming** — ◻ interview-ready · 🖼 visual
-- • **Integer & Mixed-Integer Optimization** — ◻ interview-ready
-- • **Bayesian Optimization for Expensive Objectives** — ◻ interview-ready
-- ⬆️ **Multi-objective Optimization & Pareto Trade-offs** — ◻ interview-ready · 🖼 visual
+- ⬆️ **Convexity & Optimization Intuition** — ✅ deep · 🖼 visual
+- • **Lagrange Multipliers, Duality & KKT Conditions** — ✅ deep · 🖼 visual
+- ⬆️ **Linear Programming** — ✅ deep · 🖼 visual
+- • **Integer & Mixed-Integer Optimization** — ✅ deep · 🖼 visual
+- • **Bayesian Optimization for Expensive Objectives** — ✅ deep · 🖼 visual
+- ⬆️ **Multi-objective Optimization & Pareto Trade-offs** — ✅ deep · 🖼 visual
 
 ## 20. ⭐ Recommender Systems & Ranking
 

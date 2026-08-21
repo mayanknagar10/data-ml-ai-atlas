@@ -1358,34 +1358,57 @@
         "ds",
         "as"
       ],
-      "interviewAnswer": "A convex objective has no bad local minima: any local minimum is global. Deep networks are non-convex, so optimization relies on practical gradient methods rather than global-optimum guarantees.",
+      "interviewAnswer": "A set is convex when every line segment between two of its points remains in the set. A function is convex when its graph lies below every chord, equivalently its epigraph is convex; for differentiable functions the tangent plane is a global underestimator, and twice-differentiable convex functions have positive-semidefinite Hessians. A convex optimization problem minimizes a convex objective over a convex feasible set, so every local minimum is global. Strong convexity can give uniqueness and smoothness controls safe gradient steps, but convexity alone does not guarantee strict uniqueness, fast convergence, good conditioning, or numerical correctness.",
       "keyPoints": [
-        "Convex set/function",
-        "Local vs global optimum",
-        "Learning rate",
-        "Conditioning"
+        "Convex combinations define both convex sets and Jensen's inequality",
+        "Local minima are global only when objective and feasible set form a convex problem",
+        "Positive-semidefinite Hessian is a second-order convexity test on a convex domain",
+        "Strong convexity and smoothness control uniqueness and optimization rates",
+        "A solver result still needs feasibility, stationarity, and numerical validation"
       ],
       "resources": [
-        "stanford-cs229",
-        "mit-linear-algebra",
-        "3b1b-linear-algebra"
+        "boyd-convex",
+        "stanford-ee364a",
+        "cvxpy-guide",
+        "scipy-optimize"
       ],
       "featured": false,
-      "editorial": {
-        "status": "summary"
-      },
-      "status": "summary",
-      "hasLab": false,
-      "labGoal": "",
-      "visualCount": 0,
-      "visualSummaries": [],
-      "followUpQuestions": [
-        "Convex vs strongly convex?",
-        "Why is linear regression convex?",
-        "Is logistic regression convex?",
-        "What does condition number affect?"
+      "description": "Convexity is the structural property that turns many optimization problems from a search for a lucky local solution into a problem with global guarantees. This chapter develops convex sets, convex combinations, convex functions, epigraphs, first- and second-order tests, strong convexity, smoothness, subgradients, projections, and the difference between convex problems and merely convex objectives. You will learn what convexity guarantees, what it does not guarantee, how objective geometry controls gradient methods, and how transformations or regularizers can preserve or destroy tractability. A worked quadratic example connects Hessian eigenvalues to contours, step sizes, conditioning, and convergence. The lab implements projected gradient descent for a box-constrained convex quadratic, compares it with SciPy, and checks feasibility, monotone descent, stationarity, and the known optimum. Production guidance covers scaling, stopping criteria, numerical precision, solver statuses, warm starts, reproducibility, monitoring, and rollback. The goal is not to memorize Jensen's inequality; it is to recognize when a model has exploitable global structure and verify that the implemented problem actually retains it.",
+      "prerequisites": [
+        "vectors-matrices",
+        "derivatives-gradients",
+        "norms-distances"
       ],
-      "estimatedMinutes": 1
+      "learningObjectives": [
+        "Prove or disprove convexity of common sets and functions using definitions, composition rules, gradients, and Hessians.",
+        "Distinguish a convex objective from a convex optimization problem and state the global-optimality consequences precisely.",
+        "Relate strong convexity, smoothness, and condition number to uniqueness, stable step sizes, and convergence speed.",
+        "Implement and verify projected gradient descent with feasibility, descent, and stationarity checks."
+      ],
+      "editorial": {
+        "status": "verified",
+        "verifiedOn": "2026-08-21"
+      },
+      "status": "verified",
+      "hasLab": true,
+      "labGoal": "Implement projected gradient descent for a strongly convex box-constrained quadratic, compare with SciPy, and verify descent, feasibility, and stationarity.",
+      "visualCount": 2,
+      "visualSummaries": [
+        {
+          "type": "curve",
+          "title": "Conceptual convex and nonconvex landscapes"
+        },
+        {
+          "type": "compare",
+          "title": "Geometry changes the guarantee"
+        }
+      ],
+      "followUpQuestions": [
+        "What is the difference between strict and strong convexity?",
+        "Can a nondifferentiable function be convex?",
+        "Why does feature scaling affect a convex problem?"
+      ],
+      "estimatedMinutes": 10
     },
     {
       "slug": "gradient-descent",
@@ -1807,39 +1830,57 @@
         "ds",
         "da"
       ],
-      "interviewAnswer": "A/B testing compares randomized groups to estimate causal treatment effects. Before running the test, define the primary metric, minimum detectable effect, significance level and required power to determine sample size.",
+      "interviewAnswer": "An A/B test randomly assigns eligible units to control or treatment, so treatment assignment is independent of potential outcomes in expectation. The intention-to-treat effect is the difference in arm means using every assigned unit under a prespecified analysis. Before launch I define the unit, population, primary metric, guardrails, alpha, power, MDE, duration, and stopping rule. During analysis I check assignment and exposure integrity, especially SRM, then report effect size and interval alongside p-value. I do not treat nonsignificance as no effect, peek with a fixed-horizon test, or ship a statistically significant but operationally harmful result.",
       "keyPoints": [
-        "Randomization",
-        "Power",
-        "Multiple testing",
-        "Guardrail metrics"
+        "Randomization identifies a causal intention-to-treat contrast",
+        "The randomization unit determines independence and effective sample size",
+        "Power depends on variance, baseline, allocation, alpha, and decision-relevant MDE",
+        "Effect size and uncertainty matter more than a significance label",
+        "Trust checks and guardrails precede launch interpretation"
       ],
       "resources": [
-        "statquest",
-        "google-mlcc",
-        "harvard-stat110"
+        "trustworthy-oce-survey",
+        "statsmodels-power",
+        "stanford-stats200",
+        "microsoft-experimentation"
       ],
       "featured": false,
+      "description": "A/B testing estimates the causal effect of a product or policy change by randomly assigning eligible experimental units to variants and comparing prespecified outcomes. This chapter connects potential outcomes, randomization, difference-in-means and difference-in-proportions estimators, confidence intervals, hypothesis tests, Type I and II errors, statistical power, minimum detectable effect (MDE), practical significance, multiple metrics, heterogeneous effects, and decision rules. You will learn why randomization identifies an intention-to-treat effect, why exposure logging and unit choice matter, how baseline rate and variance determine sample size, and why a nonsignificant result is not proof of equivalence. A worked checkout experiment translates a business threshold into power, duration, and interpretation. The lab implements a two-proportion effect estimate, standard error, interval, z-test, and approximate sample-size calculation; compares with statsmodels; and verifies invariants using deterministic data. Production guidance covers assignment, sample-ratio mismatch, novelty, interference, sequential monitoring, data quality, privacy, guardrails, rollout, and rollback. The aim is a trustworthy decision process, not a ritual that converts every p-value below 0.05 into a launch.",
+      "prerequisites": [
+        "hypothesis-testing",
+        "confidence-intervals",
+        "power-sample-size"
+      ],
+      "learningObjectives": [
+        "Define the estimand, eligible population, randomization unit, variants, outcomes, and decision threshold before observing results.",
+        "Compute and interpret treatment effects, uncertainty, p-values, power, and MDE for common independent-arm metrics.",
+        "Distinguish statistical significance, practical significance, equivalence, noninferiority, and inconclusive evidence.",
+        "Audit an online test for assignment, exposure, SRM, multiplicity, interference, and post-randomization bias."
+      ],
       "editorial": {
-        "status": "summary"
+        "status": "verified",
+        "verifiedOn": "2026-08-21"
       },
-      "status": "summary",
+      "status": "verified",
       "hasLab": true,
-      "labGoal": "Estimate conversion uplift and a confidence interval before declaring an experiment winner.",
-      "visualCount": 1,
+      "labGoal": "Implement a two-proportion A/B estimate, interval, null z-test, and approximate power calculation, then compare with statsmodels and verify invariants.",
+      "visualCount": 2,
       "visualSummaries": [
         {
           "type": "flow",
-          "title": "A/B experiment"
+          "title": "Trustworthy A/B test lifecycle"
+        },
+        {
+          "type": "compare",
+          "title": "Three evidence regions"
         }
       ],
       "followUpQuestions": [
-        "How do you choose sample size?",
-        "What is statistical power?",
-        "How would you handle multiple testing?",
-        "What if randomization must happen by store or company rather than user?"
+        "What is the difference between statistical and practical significance?",
+        "Why is 50/50 allocation common?",
+        "What does randomization guarantee?"
       ],
-      "estimatedMinutes": 2
+      "estimatedMinutes": 10
     },
     {
       "slug": "mle-map",
@@ -8262,36 +8303,57 @@
         "de",
         "da"
       ],
-      "interviewAnswer": "EDA should answer what the rows/columns mean, whether values are valid, how variables are distributed, how missingness occurs, and which relationships or subgroups deserve deeper investigation before modeling.",
+      "interviewAnswer": "A systematic EDA starts with the business question, target population, unit/grain, time window, and source lineage. Then validate schema, keys, row counts, joins, duplicates, missingness, ranges, and reconciliation totals. Inspect univariate distributions, time patterns, relationships and subgroups on raw and meaningful transformed scales, while checking leakage and collection artifacts. Log observations and hypotheses separately, avoid causal or confirmatory claims from exploration, and turn the result into reproducible code, data-quality assertions, and a documented validation plan.",
       "keyPoints": [
-        "Start with schema, units and provenance.",
-        "Inspect distributions and missingness.",
-        "Check duplicates, impossible values and leakage.",
-        "Segment by relevant groups/time."
+        "Question and grain come before plots",
+        "Data contracts and reconciliation precede statistical summaries",
+        "Exploration is multiplicity-rich and hypothesis-generating",
+        "Time, subgroup, and collection processes can dominate patterns",
+        "A reproducible audit is a deliverable, not a disposable notebook"
       ],
       "resources": [
+        "nist-eda",
         "berkeley-data100",
-        "pandas-user-guide"
+        "pandas-user-guide",
+        "seaborn-tutorial"
       ],
       "featured": true,
+      "description": "Exploratory data analysis is a disciplined investigation of a dataset's provenance, structure, quality, distributions, relationships, time behavior, and fitness for a specific decision. It is not a hunt for attractive plots or significant correlations. This chapter builds a reproducible workflow from problem framing and grain through schema, joins, missingness, duplicates, ranges, univariate and multivariate views, target leakage, temporal splits, hypothesis logging, and handoff to confirmatory analysis. You will learn to distinguish discovery from validation, use invariants and reconciliation totals, inspect both raw and transformed scales, detect subpopulation and collection effects, and turn observations into testable follow-ups rather than causal claims. The worked example audits an orders-and-customers dataset whose duplicated join silently changes the business population. The lab builds a dependency-light profiling report, compares it with pandas, and verifies row, uniqueness, missingness, and range contracts. Production guidance covers snapshots, lineage, privacy, compute budgets, notebooks versus pipelines, review, monitoring, and rollback. The aim is an EDA artifact another analyst can reproduce, challenge, and safely build upon.",
+      "prerequisites": [
+        "pandas-core",
+        "probability-basics",
+        "sampling-design"
+      ],
+      "learningObjectives": [
+        "Frame EDA around a target population, estimand or decision, unit of analysis, and data-generating process.",
+        "Audit schema, grain, keys, joins, missingness, duplicates, ranges, distributions, dependence, and time before modeling.",
+        "Separate exploratory hypotheses from confirmatory evidence and prevent leakage, selection, and multiplicity from contaminating conclusions.",
+        "Produce a reproducible EDA report with invariants, lineage, limitations, and explicit next actions."
+      ],
       "editorial": {
-        "status": "summary"
+        "status": "verified",
+        "verifiedOn": "2026-08-21"
       },
-      "status": "summary",
-      "hasLab": false,
-      "labGoal": "",
-      "visualCount": 1,
+      "status": "verified",
+      "hasLab": true,
+      "labGoal": "Build a small reproducible table profiler, compare key summaries with pandas, and verify grain, missingness, range, and category contracts.",
+      "visualCount": 2,
       "visualSummaries": [
         {
           "type": "flow",
-          "title": "EDA loop"
+          "title": "A reproducible EDA loop"
+        },
+        {
+          "type": "compare",
+          "title": "Discovery and confirmation"
         }
       ],
       "followUpQuestions": [
-        "What assumptions does A Systematic EDA Workflow make?",
-        "How would you validate or debug A Systematic EDA Workflow in practice?"
+        "What is the first thing you check in a new dataset?",
+        "How do you prevent EDA from becoming p-hacking?",
+        "What should leave the notebook?"
       ],
-      "estimatedMinutes": 1
+      "estimatedMinutes": 10
     },
     {
       "slug": "distributions-outliers",
@@ -8302,35 +8364,57 @@
         "ds",
         "da"
       ],
-      "interviewAnswer": "Outliers are not automatically bad data. I first determine whether they are errors, rare but valid cases, or a separate population, then choose transformations, robust statistics or explicit modeling accordingly.",
+      "interviewAnswer": "I inspect distributions with quantiles, robust and classical summaries, histograms plus ECDFs, and relevant transformations, conditioned on time and groups. An outlier is unusual under a reference model; it may be an error, a valid rare event, a new regime, a leverage point, or the case we most care about. I validate source units and lineage, use domain bounds and robust diagnostics, inspect influence on conclusions, and report sensitivity with and without justified corrections. I never delete points solely because a z-score or IQR rule flags them.",
       "keyPoints": [
-        "Compare mean vs median under skew.",
-        "Use quantiles/IQR and domain constraints.",
-        "Log transforms can stabilize heavy right tails."
+        "Shape and support matter beyond mean and variance",
+        "Plot tuning can create or hide apparent structure",
+        "Outlier status depends on reference and context",
+        "Leverage and influence are model-relative",
+        "Treatment decisions require lineage, domain knowledge, and sensitivity"
       ],
       "resources": [
+        "nist-eda",
+        "seaborn-tutorial",
         "openintro-stats",
         "fundamentals-dataviz"
       ],
       "featured": true,
+      "description": "Distribution analysis describes where values concentrate, how they vary, whether they are bounded, skewed, heavy-tailed, multimodal, discrete, zero-inflated, censored, or contaminated, and how those features change across populations and time. Outliers are observations unusual relative to a stated reference—not automatically errors to delete. This chapter compares mean/SD with median/IQR/MAD, histograms with ECDFs and KDEs, raw with transformed scales, z-scores with robust rules, and univariate with multivariate or contextual anomalies. You will learn to distinguish data errors, rare valid cases, regime shifts, leverage points, influential observations, and extreme values created by aggregation or selection; to use tail diagnostics and domain bounds; and to analyze results with and without consequential points. The worked example separates a currency-unit error from valid high-value orders. The lab implements robust summaries and IQR/MAD flags, verifies affine behavior, and compares with NumPy/pandas. Production guidance covers raw-value preservation, winsorization contracts, robust models, alerting, privacy, drift, and rollback.",
+      "prerequisites": [
+        "eda-workflow",
+        "distributions",
+        "norms-distances"
+      ],
+      "learningObjectives": [
+        "Characterize center, spread, shape, tails, support, modality, discreteness, and conditional distribution shifts.",
+        "Choose robust and classical summaries according to contamination, skewness, and decision loss.",
+        "Classify unusual observations as errors, valid rare cases, contextual anomalies, leverage, or influence before treatment.",
+        "Design sensitivity analyses and production controls that preserve evidence while limiting operational harm from extremes."
+      ],
       "editorial": {
-        "status": "summary"
+        "status": "verified",
+        "verifiedOn": "2026-08-21"
       },
-      "status": "summary",
-      "hasLab": false,
-      "labGoal": "",
-      "visualCount": 1,
+      "status": "verified",
+      "hasLab": true,
+      "labGoal": "Compute classical and robust distribution summaries, flag—not delete—unusual values, and verify translation/scale behavior against NumPy.",
+      "visualCount": 2,
       "visualSummaries": [
         {
-          "type": "scatter",
-          "title": "Outlier detection depends on context"
+          "type": "compare",
+          "title": "Unusual observations need classification"
+        },
+        {
+          "type": "curve",
+          "title": "Body and tail on one conceptual ECDF"
         }
       ],
       "followUpQuestions": [
-        "What assumptions does Distributions, Skewness & Outliers make?",
-        "How would you validate or debug Distributions, Skewness & Outliers in practice?"
+        "Is an outlier necessarily bad data?",
+        "When prefer median to mean?",
+        "How do you assess whether a point is influential?"
       ],
-      "estimatedMinutes": 1
+      "estimatedMinutes": 10
     },
     {
       "slug": "missingness-mechanisms",
@@ -8341,30 +8425,57 @@
         "ds",
         "da"
       ],
-      "interviewAnswer": "Missing values can be completely random, explainable by observed variables, or related to the missing value itself. The mechanism matters because naive imputation can bias estimates and hide useful missingness signals.",
+      "interviewAnswer": "Let R indicate whether a value is observed. MCAR means R is independent of observed and missing values; MAR means missingness may depend on observed data but not the missing value after conditioning; MNAR means it still depends on the unseen value or unobserved causes. These are assumptions about the data-generating process and MNAR versus MAR is generally not testable from observed data alone. I preserve missingness masks and reason codes, analyze patterns by time/source/covariates, choose design-consistent weighting or multiple imputation, prevent leakage, propagate uncertainty, and run MNAR sensitivity analyses.",
       "keyPoints": [
-        "MCAR: missing independent of data.",
-        "MAR: missingness depends on observed variables.",
-        "MNAR: missingness depends on unobserved/missing value."
+        "Missingness is data with a mechanism and provenance",
+        "MAR is conditional, not 'random-looking'",
+        "Observed data cannot generally distinguish MAR from MNAR",
+        "Imputation model and analysis model must be congenial",
+        "Production missingness can shift and become informative"
       ],
       "resources": [
-        "openintro-stats",
-        "stanford-stats200"
+        "rubin-missing",
+        "stanford-stats200",
+        "pandas-missing",
+        "openintro-stats"
       ],
       "featured": false,
-      "editorial": {
-        "status": "summary"
-      },
-      "status": "summary",
-      "hasLab": false,
-      "labGoal": "",
-      "visualCount": 0,
-      "visualSummaries": [],
-      "followUpQuestions": [
-        "What assumptions does Missingness: MCAR, MAR & MNAR make?",
-        "How would you validate or debug Missingness: MCAR, MAR & MNAR in practice?"
+      "description": "Missing data are generated by a process. MCAR, MAR, and MNAR describe conditional relationships between missingness indicators and data, not visual patterns a dataset can prove from observed cells alone. This chapter defines unit versus item nonresponse, structural versus censored missingness, Rubin's mechanisms, ignorability conditions, complete-case analysis, indicator methods, single and multiple imputation, inverse-probability weighting, likelihood-based estimation, and sensitivity analysis. You will learn why filling every null is not a solution, why outcome imputation must respect train/test and temporal boundaries, how missingness indicators can be predictive yet unstable, and why uncertainty from imputation must be propagated rather than treating guessed values as observed. The worked example contrasts lab tests ordered by severity with device-sensor outages. The lab simulates MCAR and outcome-related missingness, quantifies complete-case bias, applies a valid observed-covariate adjustment, and verifies assumptions. Production guidance covers reason codes, masks, imputation artifacts, monitoring, privacy, model serving, and rollback. The emphasis is defensible inference, not cosmetically complete tables.",
+      "prerequisites": [
+        "eda-workflow",
+        "joint-marginal-conditional",
+        "selection-nonresponse-bias"
       ],
-      "estimatedMinutes": 1
+      "learningObjectives": [
+        "Define MCAR, MAR, and MNAR using missingness indicators and observed/unobserved data.",
+        "Distinguish structural absence, censoring, item nonresponse, unit nonresponse, and pipeline failures before choosing treatment.",
+        "Select complete-case, weighting, likelihood, or multiple-imputation methods with explicit assumptions and uncertainty propagation.",
+        "Design missingness diagnostics, sensitivity analyses, and production monitoring without leaking future or target information."
+      ],
+      "editorial": {
+        "status": "verified",
+        "verifiedOn": "2026-08-21"
+      },
+      "status": "verified",
+      "hasLab": true,
+      "labGoal": "Simulate MCAR and covariate-dependent missingness, quantify complete-case bias, and verify an observed-stratum adjustment under its assumptions.",
+      "visualCount": 2,
+      "visualSummaries": [
+        {
+          "type": "matrix",
+          "title": "Missingness mechanisms"
+        },
+        {
+          "type": "flow",
+          "title": "Missing-data workflow"
+        }
+      ],
+      "followUpQuestions": [
+        "Can you test whether data are MNAR?",
+        "When is a missing indicator useful?",
+        "Why use multiple rather than single imputation?"
+      ],
+      "estimatedMinutes": 10
     },
     {
       "slug": "visual-encoding",
@@ -8375,36 +8486,57 @@
         "ds",
         "da"
       ],
-      "interviewAnswer": "Choose charts based on the question: distributions, comparisons, relationships, composition or change over time. Favor position and length over harder-to-compare encodings and avoid decorative choices that distort magnitude.",
+      "interviewAnswer": "I start with the question: compare magnitude, see change over ordered time, inspect a distribution, relate variables, show composition, or locate geography. Then I map the most important quantitative comparison to aligned position or length; use lines only for ordered continuity, scatterplots for paired numeric observations, histograms/ECDFs for distributions, bars for category magnitudes, and small multiples for groups. I state aggregation and uncertainty, use honest scales and accessible redundant encodings, limit color, label units and denominators, and test the chart against raw data and audience decisions.",
       "keyPoints": [
-        "Histogram/ECDF for distributions.",
-        "Scatter for numeric relationships.",
-        "Bars for categorical comparisons.",
-        "Lines for ordered time."
+        "Task and data semantics determine the chart",
+        "Position and length support precise comparison",
+        "Aggregation and connection make statistical claims",
+        "Scales, baselines, and color carry meaning",
+        "Accessibility and uncertainty belong in the specification"
       ],
       "resources": [
+        "visual-communication-science",
         "fundamentals-dataviz",
+        "seaborn-tutorial",
         "berkeley-data100"
       ],
       "featured": false,
+      "description": "Statistical visualization maps data fields and uncertainty to visual channels—position, length, angle, area, color, shape, texture, and facets—so a specific comparison becomes perceptually accessible. The best chart follows the analytical task, variable type, data grain, and audience; it is not chosen from a gallery by aesthetics. This chapter develops a task-first selection framework for distributions, trends, relationships, rankings, parts-to-whole, flows, geospatial patterns, and uncertainty. It explains perceptual accuracy, scales and transforms, overplotting, aggregation, small multiples, color semantics, accessibility, annotations, interactivity, and the distinction between raw observations, estimates, and model outputs. You will learn why bars need meaningful baselines, why line connections imply order, why area and angle comparisons are difficult, and how uncertainty must be encoded and labeled. The worked example redesigns a crowded multi-metric executive chart. The lab builds a declarative chart-spec validator and verifies task/type constraints alongside a matplotlib implementation. Production guidance covers semantic chart contracts, responsive design, accessible alternatives, testing, rendering, data freshness, privacy, and rollback.",
+      "prerequisites": [
+        "eda-workflow",
+        "distributions-outliers",
+        "confidence-intervals"
+      ],
+      "learningObjectives": [
+        "Choose a chart from the analytical task, field type, grain, ordering, and uncertainty rather than decoration.",
+        "Map high-priority comparisons to perceptually accurate channels and use facets or aggregation without hiding structure.",
+        "Select scales, baselines, color systems, labels, and accessibility features that preserve data meaning.",
+        "Design and test chart specifications as versioned semantic interfaces backed by data and metric contracts."
+      ],
       "editorial": {
-        "status": "summary"
+        "status": "verified",
+        "verifiedOn": "2026-08-21"
       },
-      "status": "summary",
-      "hasLab": false,
-      "labGoal": "",
-      "visualCount": 1,
+      "status": "verified",
+      "hasLab": true,
+      "labGoal": "Build a semantic chart-spec validator, reject misleading field/mark combinations, and render a verified bar chart with matplotlib.",
+      "visualCount": 2,
       "visualSummaries": [
         {
-          "type": "bars",
-          "title": "Match mark to question"
+          "type": "compare",
+          "title": "Match the primary task"
+        },
+        {
+          "type": "matrix",
+          "title": "Visual-channel strengths"
         }
       ],
       "followUpQuestions": [
-        "What assumptions does Choosing the Right Statistical Visualization make?",
-        "How would you validate or debug Choosing the Right Statistical Visualization in practice?"
+        "When should a bar chart start at zero?",
+        "How do you show many overlapping points?",
+        "What should an uncertainty band say?"
       ],
-      "estimatedMinutes": 1
+      "estimatedMinutes": 10
     },
     {
       "slug": "visualization-pitfalls",
@@ -8415,29 +8547,57 @@
         "ds",
         "da"
       ],
-      "interviewAnswer": "A visualization can be numerically correct and still mislead through truncated axes, inappropriate aggregation, dual axes, area encodings or selective time windows.",
+      "interviewAnswer": "I audit a chart at four layers: data and population; transformation, aggregation, denominator and filters; visual encoding, scale and baseline; and annotation/context. Common traps are truncated bar axes, 3D or area distortion, dual axes, cherry-picked windows, unequal time spacing, changing denominators, misleading bins/colors, overplotting, omitted uncertainty, and causal wording. I reconstruct the underlying table, compare alternate honest views, quantify how the claim changes, and add semantic tests so the correction is reproducible.",
       "keyPoints": [
-        "Preserve meaningful baselines when magnitude comparisons matter.",
-        "Show uncertainty where relevant.",
-        "Avoid aggregation that hides heterogeneity."
+        "A chart inherits every upstream data and metric assumption",
+        "Visual geometry can amplify or suppress differences",
+        "Selection of windows, bins, groups, and annotations is analytical flexibility",
+        "Uncertainty and denominators are essential context",
+        "Semantic review complements pixel snapshots"
       ],
       "resources": [
-        "fundamentals-dataviz"
+        "visual-communication-science",
+        "fundamentals-dataviz",
+        "powerbi-dashboard-design",
+        "uncertainty-visualization"
       ],
       "featured": false,
-      "editorial": {
-        "status": "summary"
-      },
-      "status": "summary",
-      "hasLab": false,
-      "labGoal": "",
-      "visualCount": 0,
-      "visualSummaries": [],
-      "followUpQuestions": [
-        "What assumptions does Misleading Charts & Visualization Pitfalls make?",
-        "How would you validate or debug Misleading Charts & Visualization Pitfalls in practice?"
+      "description": "Misleading visualization can arise from incorrect data, dishonest transformations, perceptual distortion, omitted context, or interaction defaults that selectively reveal a story. This chapter analyzes truncated baselines, distorted area and 3D perspective, dual axes, unequal time spacing, cumulative-versus-period confusion, cherry-picked windows, inappropriate smoothing, bin and color manipulation, denominator changes, map-area bias, missing uncertainty, overplotting, and deceptive annotation. You will learn to audit a chart by reconstructing its data transformation, scale, baseline, aggregation, filters, and encoding; distinguish intentional deception from harmful defaults; and design automated semantic checks alongside human review. The worked example deconstructs a dashboard where a truncated axis and changing denominator exaggerate a retention improvement. The lab implements chart-integrity checks for baselines, time order, denominator consistency, and proportional areas, then verifies them against deliberately bad specs. Production guidance covers metric lineage, query review, accessible exports, snapshot testing, issue severity, monitoring, and correction/rollback communication. Every published view should remain reconstructable from its data and specification.",
+      "prerequisites": [
+        "visual-encoding",
+        "eda-workflow",
+        "effect-size"
       ],
-      "estimatedMinutes": 1
+      "learningObjectives": [
+        "Trace a visual claim back through filters, aggregation, denominators, transformations, scales, and source data.",
+        "Recognize perceptual distortions from baselines, area/volume, dual axes, color, bins, smoothing, and map geometry.",
+        "Detect selection and context failures involving time windows, missing groups, uncertainty, and annotation.",
+        "Implement semantic visualization checks and correction workflows without assuming every misleading chart is malicious."
+      ],
+      "editorial": {
+        "status": "verified",
+        "verifiedOn": "2026-08-21"
+      },
+      "status": "verified",
+      "hasLab": true,
+      "labGoal": "Implement semantic integrity checks for baselines, time order, denominator stability, and area encoding, then verify detection on bad chart specs.",
+      "visualCount": 2,
+      "visualSummaries": [
+        {
+          "type": "compare",
+          "title": "Two layers of chart integrity"
+        },
+        {
+          "type": "matrix",
+          "title": "Common distortion mechanisms"
+        }
+      ],
+      "followUpQuestions": [
+        "Are truncated axes always wrong?",
+        "Why are dual axes risky?",
+        "How do you automate chart integrity?"
+      ],
+      "estimatedMinutes": 9
     },
     {
       "slug": "groupby-pivot",
@@ -8448,30 +8608,57 @@
         "ds",
         "da"
       ],
-      "interviewAnswer": "Grouping and pivoting turn event-level data into interpretable segment, cohort and time summaries. The key is choosing denominators and cohorts consistently.",
+      "interviewAnswer": "GroupBy is split–apply–combine: partition rows by keys, compute an operation per group, and return an output whose grain depends on aggregation, transformation, or filtering. I declare the output grain, null/category behavior, and additive components, then reconcile to source totals. Pivot reshapes a unique key combination; duplicates require an explicit aggregation, not accidental first value. For cohorts, assign each entity once, compute period age consistently, deduplicate entity-period activity, keep denominators tied to the original eligible cohort, and mark recent right-censored cells as unavailable rather than zero.",
       "keyPoints": [
-        "Define cohort entry date explicitly.",
-        "Do not mix counts and rates without denominators.",
-        "Check Simpson’s paradox across segments."
+        "Every grouped result has a grain and key contract",
+        "Ratios should aggregate numerator and denominator",
+        "Pivot duplicates require an explicit rule",
+        "Cohort and calendar time are distinct axes",
+        "Censoring and late data define which retention cells are observable"
       ],
       "resources": [
+        "pandas-groupby",
         "pandas-user-guide",
-        "berkeley-data100"
+        "berkeley-data100",
+        "openintro-stats"
       ],
       "featured": false,
-      "editorial": {
-        "status": "summary"
-      },
-      "status": "summary",
-      "hasLab": false,
-      "labGoal": "",
-      "visualCount": 0,
-      "visualSummaries": [],
-      "followUpQuestions": [
-        "What assumptions does GroupBy, Pivot & Cohort Analysis make?",
-        "How would you validate or debug GroupBy, Pivot & Cohort Analysis in practice?"
+      "description": "GroupBy and pivot operations transform event-level rows into metrics at a declared output grain. Cohort analysis adds two time axes—when an entity entered and how long it has progressed—so lifecycle behavior is separated from calendar conditions. This chapter develops split–apply–combine semantics, aggregation versus transformation, multi-key grouping, observed versus unobserved categories, null-key handling, weighted rates, ratios of sums, pivot uniqueness, margins, cohort assignment, age calculation, right censoring, retention denominators, and reconciliation. You will learn why average of averages is usually wrong, why groupby can silently drop null keys, how duplicate entity-period rows inflate retention, and why incomplete recent cohorts must not be compared with mature cohorts. The worked example builds a monthly signup-retention matrix and diagnoses a denominator bug. The lab implements grouping and cohort retention from first principles, compares with pandas, and verifies totals, grain, and monotonic eligibility. Production guidance covers semantic models, incremental recomputation, late events, time zones, sparse output, privacy, monitoring, and rollback.",
+      "prerequisites": [
+        "pandas-core",
+        "eda-workflow",
+        "sql-aggregation"
       ],
-      "estimatedMinutes": 1
+      "learningObjectives": [
+        "Declare input and output grain for groupby, aggregation, transformation, and pivot operations.",
+        "Compute weighted rates and ratios from additive components without averaging subgroup averages incorrectly.",
+        "Construct cohort and age indices with stable entity assignment, mature denominators, and late-event handling.",
+        "Verify grouped outputs through reconciliation, uniqueness, category/null semantics, and incremental consistency."
+      ],
+      "editorial": {
+        "status": "verified",
+        "verifiedOn": "2026-08-21"
+      },
+      "status": "verified",
+      "hasLab": true,
+      "labGoal": "Build grouped rate and cohort retention logic from first principles, compare with pandas, and verify grain, reconciliation, distinctness, and maturity bounds.",
+      "visualCount": 2,
+      "visualSummaries": [
+        {
+          "type": "flow",
+          "title": "Split–apply–combine with grain"
+        },
+        {
+          "type": "matrix",
+          "title": "Cohort retention geometry"
+        }
+      ],
+      "followUpQuestions": [
+        "What is the difference between aggregate and transform?",
+        "Why is average of averages wrong?",
+        "How do late events affect cohorts?"
+      ],
+      "estimatedMinutes": 9
     },
     {
       "slug": "sampling-distributions",
@@ -8967,35 +9154,57 @@
         "ds",
         "as"
       ],
-      "interviewAnswer": "Bayesian inference updates prior beliefs with evidence through the likelihood to produce a posterior distribution. The posterior represents uncertainty about parameters after observing data.",
+      "interviewAnswer": "Bayesian updating is posterior proportional to likelihood times prior: p(theta|y)=p(y|theta)p(theta)/p(y). The prior encodes assumptions before the current data, the likelihood is the data model, the evidence normalizes, and the posterior represents uncertainty conditional on both. Prediction integrates p(y_new|theta) over the posterior. Independent data batches can be updated sequentially, but duplicated or dependent evidence cannot be multiplied as if independent. Always check prior predictive implications, posterior sensitivity, model fit, and decision loss.",
       "keyPoints": [
-        "Posterior ∝ likelihood × prior.",
-        "Priors can regularize sparse/noisy problems.",
-        "Posterior predictive checks validate consequences of the model."
+        "Bayes reverses conditioning through a generative model",
+        "The evidence normalizes and supports model comparison",
+        "Posterior uncertainty is conditional on model and prior",
+        "Prediction integrates rather than plugs in one parameter",
+        "Sequential updating requires correct conditional independence"
       ],
       "resources": [
         "think-bayes",
-        "pymc"
+        "pymc",
+        "stan-predictive-checks",
+        "stan-reference"
       ],
       "featured": false,
+      "description": "Bayesian updating combines a prior distribution with a likelihood to produce a posterior distribution and then integrates that posterior to make predictions and decisions. The algebra is short, but responsible use requires clarity about what is conditioned on, how priors are chosen, which likelihood generated the data, and what uncertainty remains. This chapter develops Bayes' rule in odds and density form, separates prior predictive, posterior, posterior predictive, evidence, and likelihood, and explains sequential updating, exchangeability, sensitivity, and calibration. You will learn why the normalizing constant matters for model comparison but can be avoided by many samplers, why a posterior can be sharply wrong under misspecification, and how decision losses convert beliefs into actions. The worked example updates a Beta prior with conversion observations and computes the predictive chance of future successes. The lab implements a grid posterior from first principles, verifies it against the analytic Beta posterior, and checks normalization and sequential coherence. Production guidance covers prior governance, data lineage, numerical stability, monitoring, privacy, and rollback.",
+      "prerequisites": [
+        "probability-basics",
+        "joint-marginal-conditional",
+        "mle-map"
+      ],
+      "learningObjectives": [
+        "Apply Bayes' rule in probability, odds, and density form while keeping conditioning directions correct.",
+        "Distinguish prior, likelihood, evidence, posterior, and posterior predictive distributions.",
+        "Perform coherent sequential updates and diagnose when order, dependence, or data reuse breaks the calculation.",
+        "Evaluate prior sensitivity, model misspecification, predictive calibration, and decision consequences before deployment."
+      ],
       "editorial": {
-        "status": "summary"
+        "status": "verified",
+        "verifiedOn": "2026-08-21"
       },
-      "status": "summary",
-      "hasLab": false,
-      "labGoal": "",
-      "visualCount": 1,
+      "status": "verified",
+      "hasLab": true,
+      "labGoal": "Build a grid posterior for a Bernoulli rate, verify it against the analytic Beta posterior, and test normalization and sequential coherence.",
+      "visualCount": 2,
       "visualSummaries": [
         {
           "type": "flow",
-          "title": "Bayesian update"
+          "title": "Bayesian update and use"
+        },
+        {
+          "type": "compare",
+          "title": "Parameter and future uncertainty"
         }
       ],
       "followUpQuestions": [
-        "What assumptions does Bayesian Updating: Prior, Likelihood & Posterior make?",
-        "How would you validate or debug Bayesian Updating: Prior, Likelihood & Posterior in practice?"
+        "Why is the evidence often ignored in MCMC?",
+        "Does the prior always vanish with enough data?",
+        "What is the difference between posterior and posterior predictive?"
       ],
-      "estimatedMinutes": 1
+      "estimatedMinutes": 10
     },
     {
       "slug": "conjugate-priors",
@@ -9006,29 +9215,55 @@
         "ds",
         "as"
       ],
-      "interviewAnswer": "A conjugate prior is chosen so the posterior remains in the same distribution family, giving closed-form updates. It is useful pedagogically and computationally for simple models, though modern Bayesian modeling often uses numerical inference.",
+      "interviewAnswer": "A prior is conjugate when the posterior stays in the same family after multiplying by a likelihood. Beta with Bernoulli/Binomial updates successes and failures; Gamma with Poisson updates shape by total counts and rate by exposure; Normal with known-variance Normal likelihood combines means by precision. Conjugacy gives exact, fast, sequential updates and useful test fixtures, but the likelihood and prior still need to fit the domain. Check rate-versus-scale conventions, predictive calibration, and whether drift or hierarchy requires a richer model.",
       "keyPoints": [
-        "Beta-Binomial and Normal-Normal are classic pairs.",
-        "Conjugacy simplifies algebra.",
-        "Convenience should not override sensible prior modeling."
+        "Conjugacy is algebraic closure under updating",
+        "Sufficient statistics compress the evidence",
+        "Hyperparameters depend on parameterization conventions",
+        "Predictive distributions integrate parameter uncertainty",
+        "Computational convenience never replaces model criticism"
       ],
       "resources": [
-        "think-bayes"
+        "think-bayes",
+        "stan-reference",
+        "scipy-stats"
       ],
       "featured": false,
-      "editorial": {
-        "status": "summary"
-      },
-      "status": "summary",
-      "hasLab": false,
-      "labGoal": "",
-      "visualCount": 0,
-      "visualSummaries": [],
-      "followUpQuestions": [
-        "What assumptions does Conjugate Priors make?",
-        "How would you validate or debug Conjugate Priors in practice?"
+      "description": "A conjugate prior produces a posterior in the same distribution family as the prior for a chosen likelihood. Conjugacy turns Bayesian updating into hyperparameter arithmetic, making it valuable for intuition, streaming updates, exact benchmarks, and low-latency systems. It does not make a prior objectively correct or every model realistic. This chapter derives Beta–Binomial/Bernoulli, Gamma–Poisson, and Normal–Normal updates, interprets pseudo-counts and precision weighting carefully, and explains posterior predictive distributions, exponential-family structure, improper limits, and when conjugacy becomes a modeling trap. You will learn how parameterization conventions change formulas, why sufficient statistics enable constant-memory updates, how prior strength differs from sample size under heterogeneous data, and when mixtures or hierarchical priors preserve flexibility. The worked examples cover conversion and event-rate estimation. The lab implements Beta–Binomial and Gamma–Poisson updates, checks batch-order invariance, and verifies moments against SciPy. Production guidance covers parameterization tests, numerical bounds, nonstationarity, prior versioning, predictive calibration, and analytic fallbacks.",
+      "prerequisites": [
+        "bayes-update",
+        "distributions"
       ],
-      "estimatedMinutes": 1
+      "learningObjectives": [
+        "Derive posterior hyperparameter updates for common conjugate likelihood–prior pairs.",
+        "Interpret hyperparameters through sufficient statistics without overclaiming literal prior sample size.",
+        "Compute posterior predictive distributions and distinguish them from plug-in likelihood predictions.",
+        "Recognize parameterization, support, misspecification, and nonstationarity cases where conjugacy should not drive model choice."
+      ],
+      "editorial": {
+        "status": "verified",
+        "verifiedOn": "2026-08-21"
+      },
+      "status": "verified",
+      "hasLab": true,
+      "labGoal": "Implement Beta–Bernoulli and Gamma–Poisson conjugate updates, verify batch-order invariance, and compare posterior moments with SciPy.",
+      "visualCount": 2,
+      "visualSummaries": [
+        {
+          "type": "compare",
+          "title": "Three conjugate update patterns"
+        },
+        {
+          "type": "flow",
+          "title": "Conjugate streaming state"
+        }
+      ],
+      "followUpQuestions": [
+        "Why are conjugate updates easy to stream?",
+        "What is the predictive distribution for Beta–Bernoulli?",
+        "When should you leave conjugacy?"
+      ],
+      "estimatedMinutes": 9
     },
     {
       "slug": "credible-vs-confidence",
@@ -9039,35 +9274,57 @@
         "ds",
         "as"
       ],
-      "interviewAnswer": "A Bayesian credible interval is a probability statement about a parameter under the posterior; a frequentist confidence interval is a procedure that covers the fixed parameter at a stated long-run frequency.",
+      "interviewAnswer": "A 95% credible interval has 95% posterior probability for the parameter conditional on the model, prior, and observed data. A 95% confidence interval comes from a procedure that covers the fixed true parameter in 95% of repeated samples under its assumptions. The observed frequentist interval does not assign 95% probability to the parameter. Credible intervals may be equal-tailed or highest-density and depend on priors; confidence constructions differ too. Report the framework, estimand, method, assumptions, and practical thresholds, and evaluate both posterior sensitivity and repeated-sample calibration when useful.",
       "keyPoints": [
-        "Interpretations differ even when numerical intervals look similar.",
-        "Bayesian intervals depend on prior/model.",
-        "Frequentist coverage is about repeated procedures."
+        "Credible probability is conditional on model, prior, and data",
+        "Confidence is a property of a repeated-sampling procedure",
+        "Equal-tailed and highest-density sets answer different geometric summaries",
+        "Prediction includes observation noise beyond parameter uncertainty",
+        "Numerical similarity does not erase interpretive differences"
       ],
       "resources": [
+        "stanford-stats200",
         "think-bayes",
-        "stanford-stats200"
+        "stan-predictive-checks",
+        "scipy-stats"
       ],
       "featured": false,
+      "description": "Bayesian credible intervals and frequentist confidence intervals can have similar numerical endpoints while making different probability statements. A credible interval contains a specified posterior probability under a prior and likelihood. A confidence interval is generated by a procedure with stated repeated-sample coverage under a sampling model. This chapter builds both from the same binomial example, compares equal-tailed and highest-density credible sets, explains parameter transformations, nuisance parameters, posterior predictive intervals, and the circumstances in which Bayesian and frequentist intervals approximately agree. You will learn why neither framework is assumption-free, why optional stopping and selection require framework-specific care, how prior sensitivity affects sparse-data credible intervals, and why a 95% posterior interval is not automatically calibrated across repeated real datasets. The worked example contrasts a Beta posterior interval with Wilson confidence coverage. The lab computes equal-tailed posterior intervals, simulates frequentist coverage, and verifies transformation behavior. Production guidance covers naming, metadata, calibration, priors, sequential policies, decision thresholds, privacy, and communication.",
+      "prerequisites": [
+        "bayes-update",
+        "confidence-intervals",
+        "conjugate-priors"
+      ],
+      "learningObjectives": [
+        "State the probability interpretation of credible and confidence intervals without mixing frameworks.",
+        "Construct equal-tailed and highest-density credible sets and contrast them with score or likelihood-based confidence intervals.",
+        "Distinguish parameter uncertainty from posterior predictive uncertainty and transform intervals coherently.",
+        "Evaluate prior sensitivity, frequentist coverage, calibration, selection, and stopping for deployed interval procedures."
+      ],
       "editorial": {
-        "status": "summary"
+        "status": "verified",
+        "verifiedOn": "2026-08-21"
       },
-      "status": "summary",
-      "hasLab": false,
-      "labGoal": "",
-      "visualCount": 1,
+      "status": "verified",
+      "hasLab": true,
+      "labGoal": "Compute a Beta credible interval, simulate its fixed-parameter coverage, and compare with a Wilson confidence interval.",
+      "visualCount": 2,
       "visualSummaries": [
         {
           "type": "compare",
-          "title": "Credible vs confidence intervals"
+          "title": "Same percentage, different statement"
+        },
+        {
+          "type": "curve",
+          "title": "Skewed posterior interval choices"
         }
       ],
       "followUpQuestions": [
-        "What assumptions does Credible Intervals vs Confidence Intervals make?",
-        "How would you validate or debug Credible Intervals vs Confidence Intervals in practice?"
+        "Can a credible interval have 95% frequentist coverage?",
+        "Why might equal-tailed and highest-density intervals differ?",
+        "Which interval should a dashboard show?"
       ],
-      "estimatedMinutes": 1
+      "estimatedMinutes": 9
     },
     {
       "slug": "mcmc",
@@ -9078,35 +9335,57 @@
         "ds",
         "as"
       ],
-      "interviewAnswer": "MCMC constructs a Markov chain whose stationary distribution is the posterior, letting us approximate expectations when closed-form inference is unavailable. Diagnostics are essential because samples can be correlated or chains may not mix.",
+      "interviewAnswer": "MCMC constructs a Markov chain with the posterior as its stationary distribution, then estimates posterior expectations from retained dependent draws. Metropolis–Hastings accepts a proposal with the target-density and proposal-ratio correction; HMC uses gradients to propose distant moves and NUTS adapts trajectory length. Run multiple dispersed chains, separate warmup, and check rank-normalized split R-hat, bulk and tail ESS, Monte Carlo SE, trace plots, divergences, treedepth, and model-specific calibration. A high acceptance rate or long chain alone does not prove convergence, and thinning rarely fixes autocorrelation.",
       "keyPoints": [
-        "Burn-in/warmup is not a substitute for convergence diagnostics.",
-        "Check multiple chains, R-hat and effective sample size.",
-        "Posterior samples enable arbitrary derived quantities."
+        "Stationarity does not guarantee finite-chain exploration",
+        "Dependent draws reduce effective information",
+        "Multiple diagnostics target different failures",
+        "Geometry and parameterization dominate sampler performance",
+        "Computation must be validated against known and simulated truth"
       ],
       "resources": [
+        "stan-reference",
         "pymc",
-        "think-bayes"
+        "think-bayes",
+        "bayesian-workflow"
       ],
       "featured": false,
+      "description": "Markov chain Monte Carlo approximates posterior expectations by constructing dependent draws whose stationary distribution is the target posterior. The central promise is asymptotic, while every real analysis uses finite chains that can fail to explore relevant modes or geometry. This chapter develops Metropolis–Hastings, Gibbs sampling, Hamiltonian Monte Carlo, and the No-U-Turn Sampler; distinguishes warmup from retained sampling; and explains detailed balance, autocorrelation, effective sample size, Monte Carlo standard error, rank-normalized split R-hat, divergences, treedepth, energy diagnostics, and multimodality. You will learn why acceptance rate alone is not convergence, why thinning usually discards information, how centered versus noncentered parameterizations change hierarchical geometry, and how to validate an implementation against conjugate truth and simulation-based calibration. The worked example samples a one-dimensional Beta posterior, then contrasts its easy geometry with a funnel. The lab builds random-walk Metropolis, compares posterior moments with SciPy, and checks multiple-chain mixing. Production guidance covers deterministic seeds, chain parallelism, diagnostics gates, compute budgets, artifact storage, privacy, and safe failure behavior.",
+      "prerequisites": [
+        "bayes-update",
+        "conjugate-priors",
+        "numerical-stability"
+      ],
+      "learningObjectives": [
+        "Explain how a Markov transition kernel can leave a posterior invariant and why retained draws are dependent.",
+        "Implement Metropolis–Hastings and relate proposal scale to exploration, acceptance, and autocorrelation.",
+        "Interpret R-hat, bulk/tail ESS, Monte Carlo SE, divergences, treedepth, and trace diagnostics jointly.",
+        "Diagnose multimodality, funnels, constraints, initialization, and parameterization failures before using posterior summaries."
+      ],
       "editorial": {
-        "status": "summary"
+        "status": "verified",
+        "verifiedOn": "2026-08-21"
       },
-      "status": "summary",
-      "hasLab": false,
-      "labGoal": "",
-      "visualCount": 1,
+      "status": "verified",
+      "hasLab": true,
+      "labGoal": "Build random-walk Metropolis for a Beta target, verify moments and multiple-chain agreement, and quantify acceptance versus autocorrelation.",
+      "visualCount": 2,
       "visualSummaries": [
         {
           "type": "flow",
-          "title": "MCMC sampling"
+          "title": "Metropolis–Hastings transition"
+        },
+        {
+          "type": "compare",
+          "title": "Two kinds of uncertainty"
         }
       ],
       "followUpQuestions": [
-        "What assumptions does MCMC & Posterior Sampling make?",
-        "How would you validate or debug MCMC & Posterior Sampling in practice?"
+        "Why retain repeated states after rejection?",
+        "What is the difference between posterior SD and MCSE?",
+        "Why does noncentering help hierarchical models?"
       ],
-      "estimatedMinutes": 1
+      "estimatedMinutes": 10
     },
     {
       "slug": "hierarchical-bayes",
@@ -9117,29 +9396,57 @@
         "ds",
         "as"
       ],
-      "interviewAnswer": "Hierarchical models partially pool related groups, sharing statistical strength while allowing group-specific effects. They are often better than either one global estimate or completely independent estimates for sparse groups.",
+      "interviewAnswer": "A hierarchical model assumes group parameters come from a shared population distribution, then learns both group effects and population hyperparameters. It partially pools: a group estimate is pulled toward the population mean in proportion to its uncertainty, so small noisy groups shrink more than large precise groups. This improves average estimation and handles multiplicity, but relies on exchangeability and a credible group distribution. Check hyperpriors, centered versus noncentered geometry, outliers, group count, fairness, and prediction for new groups.",
       "keyPoints": [
-        "Partial pooling reduces noisy extreme group estimates.",
-        "Hyperparameters describe population-level variation.",
-        "Useful for stores, regions, users or experiments."
+        "Partial pooling learns relatedness instead of choosing all-or-nothing pooling",
+        "Shrinkage strength follows relative within- and between-group precision",
+        "Exchangeability is a modeling claim",
+        "Hyperpriors regularize weakly identified group variation",
+        "New-group prediction integrates the population distribution"
       ],
       "resources": [
-        "pymc"
+        "pymc",
+        "stan-reference",
+        "bayesian-workflow",
+        "think-bayes"
       ],
       "featured": false,
-      "editorial": {
-        "status": "summary"
-      },
-      "status": "summary",
-      "hasLab": false,
-      "labGoal": "",
-      "visualCount": 0,
-      "visualSummaries": [],
-      "followUpQuestions": [
-        "What assumptions does Hierarchical / Multilevel Models make?",
-        "How would you validate or debug Hierarchical / Multilevel Models in practice?"
+      "description": "Hierarchical Bayesian models represent related groups with group-specific parameters drawn from a population distribution whose hyperparameters are learned from all groups. The result is partial pooling: noisy groups shrink more toward the population pattern, while well-observed groups retain more local information. This chapter contrasts no pooling, complete pooling, and partial pooling; derives Normal–Normal shrinkage; explains exchangeability, hyperpriors, varying intercepts and slopes, cross-level interactions, centered and noncentered parameterizations, new-group prediction, and the distinction between population-level variation and residual noise. You will learn why shrinkage reduces winner's curse and multiple-comparison noise, when it can erase real subgroup structure, how weakly identified group scales create funnels, and why groups with few levels need careful priors. The worked example estimates conversion rates across stores with unequal traffic. The lab implements analytic partial pooling for known variances, verifies limiting cases, and expresses the equivalent PyMC model. Production guidance covers group taxonomy, cold start, fairness, drift, diagnostics, posterior storage, privacy, and rollback.",
+      "prerequisites": [
+        "bayes-update",
+        "conjugate-priors",
+        "mcmc"
       ],
-      "estimatedMinutes": 1
+      "learningObjectives": [
+        "Distinguish complete, no, and partial pooling and connect each to assumptions about group variation.",
+        "Derive shrinkage weights from within-group uncertainty and between-group variance.",
+        "Specify varying-intercept and varying-slope models with defensible exchangeability and hyperpriors.",
+        "Diagnose funnel geometry, sparse groups, taxonomy drift, overshrinkage, and new-group predictive behavior."
+      ],
+      "editorial": {
+        "status": "verified",
+        "verifiedOn": "2026-08-21"
+      },
+      "status": "verified",
+      "hasLab": true,
+      "labGoal": "Implement Normal hierarchical shrinkage with known hyperparameters, verify limiting behavior, and express the equivalent PyMC model.",
+      "visualCount": 2,
+      "visualSummaries": [
+        {
+          "type": "compare",
+          "title": "Three pooling strategies"
+        },
+        {
+          "type": "curve",
+          "title": "Shrinkage weight versus group uncertainty"
+        }
+      ],
+      "followUpQuestions": [
+        "Which groups shrink most?",
+        "What is prediction for a new group?",
+        "When use noncentered parameterization?"
+      ],
+      "estimatedMinutes": 9
     },
     {
       "slug": "bayesian-model-checking",
@@ -9150,30 +9457,57 @@
         "ds",
         "as"
       ],
-      "interviewAnswer": "Posterior predictive checks simulate data from the fitted model and compare it with observed patterns. They test whether the model can reproduce important features, not whether the model is “true.”",
+      "interviewAnswer": "Prior predictive checks sample parameters from the prior and then data, revealing whether assumptions imply plausible outcomes before fitting. Posterior predictive checks sample parameters from the posterior and replicated data from the likelihood, then compare summaries and structure with observations. They can reveal dispersion, tails, zeros, dependence, and subgroup failures but do not prove the model true. Also check MCMC diagnostics, prior sensitivity, simulation-based calibration for the algorithm, and held-out prediction. Predefine important checks, version revisions, and do not treat posterior predictive p-values like ordinary p-values.",
       "keyPoints": [
-        "Choose discrepancy statistics tied to the use case.",
-        "Good fit on one summary can hide poor fit elsewhere.",
-        "Model checking should inform revision."
+        "Prior predictive checks criticize assumptions before data conditioning",
+        "Posterior replication asks whether fitted models reproduce relevant structure",
+        "Computation and model fit are separate gates",
+        "Discrepancies should reflect decisions and failure modes",
+        "Checking drives revision, not certification of truth"
       ],
       "resources": [
+        "stan-predictive-checks",
         "pymc",
-        "think-bayes"
+        "bayesian-workflow",
+        "stan-reference"
       ],
       "featured": false,
-      "editorial": {
-        "status": "summary"
-      },
-      "status": "summary",
-      "hasLab": false,
-      "labGoal": "",
-      "visualCount": 0,
-      "visualSummaries": [],
-      "followUpQuestions": [
-        "What assumptions does Posterior Predictive Checks & Bayesian Model Criticism make?",
-        "How would you validate or debug Posterior Predictive Checks & Bayesian Model Criticism in practice?"
+      "description": "Bayesian model checking asks whether data generated from a fitted probability model resemble the observations in scientifically and operationally important ways. Prior predictive checks expose implications before fitting; posterior predictive checks compare replicated datasets with observed data after conditioning; simulation-based calibration audits inference algorithms; sensitivity analysis tests modeling choices; and held-out predictive evaluation measures generalization. This chapter explains what each check conditions on, how to choose discrepancy statistics and graphical diagnostics, why posterior predictive p-values are not ordinary uniform p-values, and how double use of data affects interpretation. You will learn to detect tail, dispersion, zero-inflation, dependence, subgroup, and calibration failures; separate computational from model criticism; compare models without treating one score as truth; and revise models without overfitting the checks. The worked example reveals overdispersion hidden by a Poisson mean fit. The lab generates prior and posterior predictive Beta–Binomial data, checks observed statistics, and verifies reproducibility. Production guidance covers check registries, acceptance gates, drift, privacy, reproducible artifacts, and rollback.",
+      "prerequisites": [
+        "bayes-update",
+        "mcmc",
+        "hierarchical-bayes"
       ],
-      "estimatedMinutes": 1
+      "learningObjectives": [
+        "Distinguish prior predictive, posterior predictive, simulation-based calibration, and held-out predictive checks by what is generated and conditioned on.",
+        "Design discrepancy statistics and plots that target domain-relevant aspects of the data rather than only global averages.",
+        "Separate sampler convergence from model adequacy and identify tail, dispersion, dependence, subgroup, and calibration failures.",
+        "Build a versioned model-revision workflow that avoids optimizing indefinitely against one reused check set."
+      ],
+      "editorial": {
+        "status": "verified",
+        "verifiedOn": "2026-08-21"
+      },
+      "status": "verified",
+      "hasLab": true,
+      "labGoal": "Generate prior and posterior predictive Bernoulli data, compare observed discrepancies, and verify reproducible predictive calibration checks.",
+      "visualCount": 2,
+      "visualSummaries": [
+        {
+          "type": "flow",
+          "title": "Bayesian model criticism loop"
+        },
+        {
+          "type": "compare",
+          "title": "Two simulators, different conditioning"
+        }
+      ],
+      "followUpQuestions": [
+        "What is the difference between prior and posterior predictive checks?",
+        "Does a good posterior predictive check prove the model?",
+        "What does simulation-based calibration test?"
+      ],
+      "estimatedMinutes": 10
     },
     {
       "slug": "regression-assumptions",
@@ -9615,35 +9949,57 @@
         "ds",
         "da"
       ],
-      "interviewAnswer": "A trustworthy experiment starts with a unit of randomization, eligibility criteria, treatment assignment, primary metric, guardrails and a pre-specified analysis plan. Randomization protects causal interpretation when implementation is correct.",
+      "interviewAnswer": "I start with the causal estimand and target population, then choose the unit at which treatment can be assigned without unacceptable spillover or carryover. I define eligibility before randomization, stable assignment, treatment versions, primary outcomes, guardrails, duration, and exclusions. I use blocking on strong pre-treatment predictors to improve balance and precision, cluster randomization when units interact, and switchbacks when treatment operates at a shared time-varying system level. Analysis follows the assignment mechanism and preserves ITT. I predeclare power, multiplicity, stopping, missingness, and noncompliance handling, then validate assignment and exposure before reading effects.",
       "keyPoints": [
-        "Choose user/session/cluster randomization deliberately.",
-        "Define exposure and sample ratio checks.",
-        "Primary metrics and guardrails should be decided before reading results."
+        "Design begins with estimand and interference structure",
+        "Randomization unit and analysis unit must remain aligned",
+        "Blocking can improve precision using pre-treatment information",
+        "Cluster and switchback designs trade bias control for effective sample size",
+        "ITT, missingness, and treatment versions must be specified before outcomes"
       ],
       "resources": [
+        "trustworthy-oce-survey",
+        "stanford-stats60",
         "microsoft-experimentation",
-        "stanford-stats60"
+        "network-experimentation-scale"
       ],
       "featured": true,
+      "description": "Randomized experiment design determines what causal question a test can answer before any statistical model is fit. This chapter develops experimental units, treatment versions, eligibility, potential outcomes, assignment mechanisms, complete and Bernoulli randomization, blocking and stratification, cluster and switchback designs, factorial experiments, unequal allocation, covariate balance, noncompliance, attrition, spillovers, exposure, power, preregistration, and analysis plans. You will learn to align randomization with the interference and delivery structure, separate design-stage balance from post-hoc adjustment, preserve intention-to-treat analysis, and avoid conditioning on variables affected by treatment. A worked marketplace example compares buyer-level, market-level, and time-block assignment under seller competition. The lab implements deterministic blocked randomization, checks allocation and balance invariants, and estimates a known treatment effect over repeated simulations. Production guidance covers assignment services, salts, mutual exclusion, ramps, identity changes, logging, privacy, monitoring, incident response, and rollback. A good design makes a simple estimator credible; no amount of downstream modeling can reconstruct counterfactual evidence destroyed by a flawed assignment or measurement process.",
+      "prerequisites": [
+        "ab-testing",
+        "sampling-design",
+        "causal-inference"
+      ],
+      "learningObjectives": [
+        "Choose an experimental unit and assignment mechanism that match treatment delivery, interference, carryover, and the target estimand.",
+        "Use blocking, clustering, factorial structure, and unequal allocation with correct analysis and power implications.",
+        "Specify intention-to-treat, exposure, attrition, noncompliance, and missing-outcome handling before observing effects.",
+        "Implement reproducible blocked assignment and verify determinism, allocation, covariate balance, and estimator behavior."
+      ],
       "editorial": {
-        "status": "summary"
+        "status": "verified",
+        "verifiedOn": "2026-08-21"
       },
-      "status": "summary",
-      "hasLab": false,
-      "labGoal": "",
-      "visualCount": 1,
+      "status": "verified",
+      "hasLab": true,
+      "labGoal": "Implement reproducible blocked assignment, verify allocation and pre-treatment balance, and confirm difference-in-means behavior across repeated randomized assignments.",
+      "visualCount": 2,
       "visualSummaries": [
         {
-          "type": "layers",
-          "title": "Experiment design checklist"
+          "type": "flow",
+          "title": "Design follows the causal system"
+        },
+        {
+          "type": "compare",
+          "title": "Common randomization structures"
         }
       ],
       "followUpQuestions": [
-        "What assumptions does Randomized Experiment Design make?",
-        "How would you validate or debug Randomized Experiment Design in practice?"
+        "When should you cluster-randomize?",
+        "Why block randomization?",
+        "What is a switchback experiment?"
       ],
-      "estimatedMinutes": 1
+      "estimatedMinutes": 9
     },
     {
       "slug": "sample-ratio-mismatch",
@@ -9654,29 +10010,57 @@
         "ds",
         "da"
       ],
-      "interviewAnswer": "SRM occurs when observed treatment/control counts differ unexpectedly from the planned allocation. It is a diagnostic red flag for assignment, logging, eligibility or exposure bugs, so effect estimates should not be trusted until explained.",
+      "interviewAnswer": "SRM means the observed variant counts are inconsistent with the planned allocation beyond ordinary random fluctuation. I test assignment-unit counts against expected proportions, usually with a chi-square goodness-of-fit check, before looking at effects. A very small p-value is a smoke alarm, not an effect adjustment: I investigate assignment, eligibility, exposure delivery, missing telemetry, identity changes, redirects, filters, joins, bots, and time of onset. I also distinguish all-assigned SRM from triggered-population SRM. Until the root cause is explained and shown not to bias the estimand, I quarantine the result and normally fix and restart the experiment.",
       "keyPoints": [
-        "Test assignment counts against expected proportions.",
-        "SRM can signal instrumentation or filtering bugs.",
-        "Do not “fix” SRM by reweighting blindly."
+        "SRM tests allocation integrity, not treatment impact",
+        "Expected counts come from the actual design and ramp history",
+        "Assignment, exposure, and analysis populations need separate checks",
+        "The chi-square p-value detects a symptom but not its cause",
+        "A failed SRM gate blocks causal interpretation until diagnosed"
       ],
       "resources": [
-        "microsoft-experimentation"
+        "srm-taxonomy",
+        "microsoft-srm-guide",
+        "microsoft-experimentation",
+        "trustworthy-oce-survey"
       ],
       "featured": false,
-      "editorial": {
-        "status": "summary"
-      },
-      "status": "summary",
-      "hasLab": false,
-      "labGoal": "",
-      "visualCount": 0,
-      "visualSummaries": [],
-      "followUpQuestions": [
-        "What assumptions does Sample Ratio Mismatch (SRM) make?",
-        "How would you validate or debug Sample Ratio Mismatch (SRM) in practice?"
+      "description": "Sample ratio mismatch (SRM) occurs when observed experiment allocation counts differ implausibly from the proportions specified by the randomization design. It is one of the highest-value trust diagnostics in online experimentation because many assignment, eligibility, exposure, identity, and logging defects first appear as unexpected arm counts. This chapter derives the multinomial chi-square check, explains its assumptions and scale sensitivity, distinguishes assignment-level from triggered-analysis SRM, and builds a root-cause taxonomy across randomization, delivery, telemetry, filtering, bots, joins, and time. You will learn why SRM is a symptom rather than a correction target, why balanced outcomes cannot rescue a failed trust check, how to localize onset and affected slices, and when unequal counts are expected by design. A worked redirect bug shows how treatment-dependent loss reverses an apparent effect. The lab implements the SRM statistic and p-value, compares it with SciPy, and diagnoses a time-slice failure using invariants. Production guidance covers continuous alerting, multiple looks, minimum counts, ownership, forensic snapshots, restart criteria, and rollback. The rule is simple: do not interpret treatment effects until the mismatch is understood and the causal sample is trustworthy.",
+      "prerequisites": [
+        "experiment-design",
+        "chi-square",
+        "missingness-mechanisms"
       ],
-      "estimatedMinutes": 1
+      "learningObjectives": [
+        "Compute an SRM goodness-of-fit statistic for arbitrary planned allocation proportions and interpret it as a trust diagnostic.",
+        "Separate valid random allocation fluctuation from assignment, delivery, exposure, logging, filtering, identity, and join failures.",
+        "Localize an SRM by event stage, time, platform, geography, eligibility, and identifier without outcome-driven fishing.",
+        "Define automated alert, investigation, restart, and evidence-preservation procedures for an experimentation platform."
+      ],
+      "editorial": {
+        "status": "verified",
+        "verifiedOn": "2026-08-21"
+      },
+      "status": "verified",
+      "hasLab": true,
+      "labGoal": "Implement a multinomial SRM check, compare it with SciPy, and localize a treatment-specific count loss across time slices.",
+      "visualCount": 2,
+      "visualSummaries": [
+        {
+          "type": "flow",
+          "title": "Localize an SRM by stage"
+        },
+        {
+          "type": "compare",
+          "title": "SRM response"
+        }
+      ],
+      "followUpQuestions": [
+        "Does unequal arm size always mean SRM?",
+        "Can an experiment with SRM still be analyzed?",
+        "Why can assignment SRM pass while analysis SRM fails?"
+      ],
+      "estimatedMinutes": 9
     },
     {
       "slug": "cuped",
@@ -9687,29 +10071,57 @@
         "ds",
         "da"
       ],
-      "interviewAnswer": "CUPED uses pre-experiment covariates correlated with the outcome to reduce variance without changing the treatment effect expectation under valid conditions, increasing experiment sensitivity.",
+      "interviewAnswer": "CUPED reduces experiment variance by subtracting the predictable part of an outcome from a pre-treatment covariate. With outcome Y and centered covariate X, define Y_adj=Y-theta(X-E[X]), where theta=Cov(Y,X)/Var(X). Because treatment is randomized and X is measured before treatment, arm means of X are equal in expectation, so the treatment contrast stays unbiased while residual variance falls; with an optimal single covariate the ideal reduction is rho squared. I freeze the pre-period cutoff, estimate theta without outcome-driven selection, handle missing X explicitly, preserve ITT, and verify the adjusted effect against the raw estimate and historical simulations.",
       "keyPoints": [
-        "Use pre-treatment covariates.",
-        "Correlation with outcome determines gain.",
-        "Avoid leakage from treatment-period features."
+        "CUPED removes outcome variation predictable before treatment",
+        "Pre-treatment timing protects the causal contrast",
+        "Ideal single-covariate variance reduction is governed by squared correlation",
+        "Regression adjustment generalizes CUPED but needs design-aware specification",
+        "Precision gains never excuse SRM, leakage, or post-treatment selection"
       ],
       "resources": [
-        "microsoft-experimentation"
+        "cuped-paper",
+        "trustworthy-oce-survey",
+        "microsoft-experimentation",
+        "statsmodels-power"
       ],
       "featured": false,
-      "editorial": {
-        "status": "summary"
-      },
-      "status": "summary",
-      "hasLab": false,
-      "labGoal": "",
-      "visualCount": 0,
-      "visualSummaries": [],
-      "followUpQuestions": [
-        "What assumptions does Variance Reduction & CUPED make?",
-        "How would you validate or debug Variance Reduction & CUPED in practice?"
+      "description": "Controlled-experiment variance reduction uses pre-treatment information to make treatment-effect estimates more precise without changing the randomized causal contrast. CUPED (Controlled-experiment Using Pre-Experiment Data) adjusts an outcome by a centered covariate measured before assignment, typically the same user metric in a historical window. This chapter derives the optimal linear coefficient, variance reduction factor, unbiasedness under randomization, cross-fitting and regression adjustment, missing pre-period data, triggered metrics, ratio metrics, multiple covariates, heterogeneity, and failure modes. You will learn why correlation determines precision gain, why post-treatment covariates create bias, why centering and a treatment interaction matter, and how to estimate gains on historical A/A-style data rather than selecting a favorable adjustment after seeing outcomes. A worked revenue experiment shows a large variance reduction with unchanged effect expectation. The lab implements CUPED from first principles, compares it with an OLS treatment coefficient, and verifies unbiased effect recovery plus reduced variance over repeated randomized trials. Production guidance covers cutoff enforcement, leakage checks, coefficient versioning, missingness, metric lineage, monitoring, fallback, and rollback. CUPED creates information by removing predictable noise; it cannot repair broken randomization or measurement.",
+      "prerequisites": [
+        "experiment-design",
+        "expectation-variance",
+        "linear-regression"
       ],
-      "estimatedMinutes": 1
+      "learningObjectives": [
+        "Derive the CUPED adjustment coefficient and variance reduction from covariance and correlation.",
+        "Choose covariates that are predictive, pre-treatment, consistently available, and unaffected by assignment or exposure.",
+        "Connect CUPED to regression adjustment, interactions, cross-fitting, and robust analysis for complex metrics.",
+        "Implement and validate an adjustment using unbiasedness, variance, leakage, missingness, and reproducibility checks."
+      ],
+      "editorial": {
+        "status": "verified",
+        "verifiedOn": "2026-08-21"
+      },
+      "status": "verified",
+      "hasLab": true,
+      "labGoal": "Implement CUPED adjustment, compare it with regression adjustment, and verify effect unbiasedness plus variance reduction over repeated randomized experiments.",
+      "visualCount": 2,
+      "visualSummaries": [
+        {
+          "type": "flow",
+          "title": "CUPED information path"
+        },
+        {
+          "type": "compare",
+          "title": "What CUPED changes"
+        }
+      ],
+      "followUpQuestions": [
+        "Why does CUPED remain unbiased?",
+        "How much variance can it remove?",
+        "What if theta is estimated from the experiment?"
+      ],
+      "estimatedMinutes": 10
     },
     {
       "slug": "sequential-testing",
@@ -9720,30 +10132,57 @@
         "ds",
         "da"
       ],
-      "interviewAnswer": "Repeatedly checking a fixed-horizon p-value and stopping when significant inflates false positives. Use precommitted horizons or valid sequential methods/alpha-spending when decisions are continuous.",
+      "interviewAnswer": "A fixed-horizon test controls Type I error only for its planned sample and analysis. If I repeatedly peek and stop when p<0.05, I give noise multiple chances to cross the threshold and inflate false positives. Valid options include prespecified group-sequential looks with alpha spending, a sequential probability ratio test for specified alternatives, or anytime-valid p-values, e-values, and confidence sequences. I define the stopping rule, information times, minimum duration, primary metric, multiplicity, and delayed-outcome handling before launch. Safety kill switches can stop exposure immediately, but confirmatory efficacy claims still follow their declared evidence procedure.",
       "keyPoints": [
-        "Optional stopping changes error rates.",
-        "Sequential designs can be valid when planned.",
-        "Operational urgency must not silently redefine statistics."
+        "Optional stopping changes the sampling distribution",
+        "Monitoring schedule and stopping rule are part of the design",
+        "Group-sequential methods spend a finite error budget across planned looks",
+        "Confidence sequences provide simultaneous coverage over time",
+        "Safety stopping and efficacy inference answer different questions"
       ],
       "resources": [
-        "microsoft-experimentation",
+        "confidence-sequences",
+        "enterprise-anytime-valid",
+        "trustworthy-oce-survey",
         "stanford-stats200"
       ],
       "featured": false,
-      "editorial": {
-        "status": "summary"
-      },
-      "status": "summary",
-      "hasLab": false,
-      "labGoal": "",
-      "visualCount": 0,
-      "visualSummaries": [],
-      "followUpQuestions": [
-        "What assumptions does Sequential Testing, Peeking & Early Stopping make?",
-        "How would you validate or debug Sequential Testing, Peeking & Early Stopping in practice?"
+      "description": "Sequential experimentation allows data-dependent monitoring or stopping while preserving a declared error guarantee. Repeatedly applying a fixed-horizon p-value whenever new data arrive does not do this: optional stopping selects unusually favorable noise and inflates false positives. This chapter develops fixed-horizon designs, group-sequential looks, alpha spending, sequential probability ratio tests, always-valid p-values, e-values, confidence sequences, futility, harm stopping, minimum run constraints, delayed outcomes, and decision-theoretic trade-offs. You will learn why stopping rules are part of the statistical procedure, how time-uniform intervals differ from ordinary intervals, how to choose between planned looks and continuous monitoring, and why operational kill switches should not be confused with efficacy claims. A worked product experiment contrasts naive peeking with an anytime-valid rule. The lab simulates false-positive inflation from fixed-horizon peeking and verifies control from a Bonferroni group-sequential design using SciPy. Production guidance covers dashboards, information time, alpha budgets, metric multiplicity, late data, restarts, safety escalation, audit logs, and rollback. Sequential methods provide flexibility only when the monitoring rule and evidence process are designed together.",
+      "prerequisites": [
+        "ab-testing",
+        "hypothesis-testing",
+        "confidence-intervals"
       ],
-      "estimatedMinutes": 1
+      "learningObjectives": [
+        "Explain mathematically and through simulation why optional stopping invalidates repeatedly viewed fixed-horizon p-values.",
+        "Choose and interpret fixed-horizon, group-sequential, alpha-spending, confidence-sequence, and e-value procedures.",
+        "Separate efficacy, futility, harm, operational, and business stopping rules with their distinct guarantees.",
+        "Implement and validate a planned-look design using family-wise error simulations and an immutable monitoring schedule."
+      ],
+      "editorial": {
+        "status": "verified",
+        "verifiedOn": "2026-08-21"
+      },
+      "status": "verified",
+      "hasLab": true,
+      "labGoal": "Simulate false-positive inflation from naive peeking and verify family-wise control from a planned Bonferroni group-sequential design.",
+      "visualCount": 2,
+      "visualSummaries": [
+        {
+          "type": "curve",
+          "title": "Conceptual monitoring boundaries"
+        },
+        {
+          "type": "compare",
+          "title": "Two monitoring systems"
+        }
+      ],
+      "followUpQuestions": [
+        "What is a confidence sequence?",
+        "What is alpha spending?",
+        "Can you always stop an experiment for harm?"
+      ],
+      "estimatedMinutes": 9
     },
     {
       "slug": "metric-design",
@@ -9754,34 +10193,57 @@
         "ds",
         "da"
       ],
-      "interviewAnswer": "Good metrics reflect user/business value, respond to meaningful product changes, and resist gaming. Pair primary outcomes with driver diagnostics and guardrails for harmful side effects.",
+      "interviewAnswer": "I start from the decision and long-term user/business objective, then create an OEC or primary metric whose direction is credibly aligned with that objective. I add driver metrics for the causal mechanism and guardrails for reliability, safety, fairness, cost, and ecosystem harm. Every metric has a contract: population, unit, numerator, denominator, time window, attribution, aggregation, missingness, direction, and version. I validate sensitivity on historical experiments and directionality against long-term outcomes and known bad changes. I avoid arbitrary composites and average-of-averages, report uncertainty, and treat metric changes like schema migrations because they alter historical and experimental meaning.",
       "keyPoints": [
-        "Define denominator and attribution precisely.",
-        "Avoid proxy metrics that are easy to move but disconnected from value.",
-        "Use guardrails for latency, quality, safety or churn."
+        "Metrics operationalize values and assumptions",
+        "OEC, drivers, diagnostics, and guardrails serve different roles",
+        "Directionality and sensitivity must both be validated",
+        "Population, unit, denominator, and window define the estimand",
+        "Metric versions and lineage are part of scientific reproducibility"
       ],
       "resources": [
+        "trustworthy-oce-metrics",
+        "metric-development-kdd",
+        "dirty-dozen-metrics",
         "microsoft-experimentation"
       ],
       "featured": true,
+      "description": "Metric design translates a product objective into a measurable, sensitive, directionally trustworthy decision system. A North Star or Overall Evaluation Criterion (OEC) should predict long-term value closely enough to guide short experiments, driver metrics explain mechanisms, and guardrails prevent unacceptable harm. This chapter develops metric contracts, populations, units, numerators, denominators, windows, attribution, directionality, sensitivity, validity, reliability, gaming, ratio estimands, heavy tails, missingness, delayed outcomes, composite scores, proxy risk, and metric lifecycle governance. You will learn why more activity is not always better, why per-user and per-event averages answer different questions, how denominator changes can reverse a result, and how to validate short-term proxies against long-term outcomes and known interventions. A worked recommendation-system scorecard separates engagement from satisfaction and ecosystem health. The lab builds a semantic metric contract and ratio-of-sums calculator, rejects grain and denominator errors, and verifies invariants against pandas. Production guidance covers lineage, versioning, backfills, dashboards, experiment inference, access control, alerts, deprecation, correction, and rollback. The goal is not one magical number; it is an auditable map from user and business value to decisions under uncertainty.",
+      "prerequisites": [
+        "experiment-design",
+        "groupby-pivot",
+        "causal-inference"
+      ],
+      "learningObjectives": [
+        "Define a metric through population, unit, event, numerator, denominator, window, attribution, direction, and missingness semantics.",
+        "Construct primary, driver, diagnostic, and guardrail metrics that map to a causal product theory rather than a dashboard inventory.",
+        "Evaluate directionality, sensitivity, validity, reliability, robustness, gaming risk, and long-term proxy quality.",
+        "Implement and test ratio metrics with grain, denominator, reconciliation, and versioning invariants."
+      ],
       "editorial": {
-        "status": "summary"
+        "status": "verified",
+        "verifiedOn": "2026-08-21"
       },
-      "status": "summary",
-      "hasLab": false,
-      "labGoal": "",
-      "visualCount": 1,
+      "status": "verified",
+      "hasLab": true,
+      "labGoal": "Validate a semantic metric contract, compute a ratio of sums at user grain, and verify that aggregation, denominators, and pandas results reconcile.",
+      "visualCount": 2,
       "visualSummaries": [
         {
-          "type": "concept-map",
-          "title": "Metric Design: North Star, Driver & Guardrail Metrics"
+          "type": "flow",
+          "title": "Metric decision hierarchy"
+        },
+        {
+          "type": "compare",
+          "title": "Two plausible rate estimands"
         }
       ],
       "followUpQuestions": [
-        "What assumptions does Metric Design: North Star, Driver & Guardrail Metrics make?",
-        "How would you validate or debug Metric Design: North Star, Driver & Guardrail Metrics in practice?"
+        "What makes a good OEC?",
+        "Why can per-active-user metrics mislead?",
+        "Should guardrails be included in a composite?"
       ],
-      "estimatedMinutes": 1
+      "estimatedMinutes": 9
     },
     {
       "slug": "funnels",
@@ -9792,34 +10254,57 @@
         "ds",
         "da"
       ],
-      "interviewAnswer": "A funnel measures progression through ordered steps. The main analytical challenge is defining eligibility, step ordering, time windows and denominators consistently rather than simply computing percentages.",
+      "interviewAnswer": "A funnel is a versioned sequence estimand, not just counts by event name. I define the eligible entity and entry cohort, strict or loose order, conversion window, repeat and re-entry rules, identity resolution, and whether conversion is unique entities or event completions. I deduplicate at the chosen unit, require complete follow-up or handle censoring, and reconcile cumulative counts so they cannot increase. I segment only with pre-step attributes for causal interpretation, inspect time-to-transition and alternative paths, and use experiments to test proposed causes. Drop-off shows where progression stops under the definition; it does not prove why.",
       "keyPoints": [
-        "Define entry cohort.",
-        "Use consistent conversion windows.",
-        "Segment to locate where drop-off changes."
+        "Funnel definitions construct the population and path",
+        "Entity counts and event counts answer different questions",
+        "Conversion windows and maturity prevent unequal opportunity",
+        "Step drop-off is descriptive, not a causal explanation",
+        "Identity and event-contract quality dominate trustworthy funnel analysis"
       ],
       "resources": [
-        "berkeley-data100"
+        "amplitude-funnel-docs",
+        "amplitude-experiment-metrics",
+        "berkeley-data100",
+        "fundamentals-dataviz"
       ],
       "featured": false,
+      "description": "Funnel analysis measures how eligible entities progress through a defined sequence of product states or events and where they fail, branch, repeat, or take too long. A funnel is not an objective map of user behavior: step definitions, order rules, identity, attribution, conversion window, denominator, and re-entry policy construct the result. This chapter develops strict and loose funnels, unique-user versus event conversion, closed versus open cohorts, step and cumulative rates, time-to-convert, competing paths, censoring, segmentation, instrumentation, causal limits, and experimental use. You will learn how repeated events and inner joins inflate conversion, why recent entrants have incomplete opportunity, how to distinguish a product obstacle from selection, and when a state machine or journey analysis is better than a linear funnel. A worked checkout example exposes an identity and window bug. The lab implements a deterministic ordered unique-user funnel from raw events, compares it with pandas, and verifies monotonic counts, window rules, deduplication, and denominator reconciliation. Production guidance covers event contracts, late data, sessionization, privacy, monitoring, metric versions, and rollback. The goal is a reproducible behavioral estimand that guides hypotheses, not a decorative narrowing chart that implies causality.",
+      "prerequisites": [
+        "metric-design",
+        "groupby-pivot",
+        "eda-workflow"
+      ],
+      "learningObjectives": [
+        "Define funnel population, entity, step events, ordering, window, attribution, repetition, and denominator semantics precisely.",
+        "Compute cumulative and step conversion without double counting entities or granting unequal observation opportunity.",
+        "Diagnose instrumentation, identity, time, competing-path, and selection explanations for apparent drop-off.",
+        "Implement and verify an ordered funnel while preserving raw counts, transition times, and alternative paths."
+      ],
       "editorial": {
-        "status": "summary"
+        "status": "verified",
+        "verifiedOn": "2026-08-21"
       },
-      "status": "summary",
+      "status": "verified",
       "hasLab": true,
-      "labGoal": "Compute a simple event funnel with explicit user-level denominators.",
-      "visualCount": 1,
+      "labGoal": "Build an ordered unique-user funnel from event histories, compare counts with pandas, and verify monotonicity, deduplication, and conversion-window semantics.",
+      "visualCount": 2,
       "visualSummaries": [
         {
           "type": "funnel",
-          "title": "Product funnel"
+          "title": "Ordered checkout funnel"
+        },
+        {
+          "type": "compare",
+          "title": "Linear funnel versus journey view"
         }
       ],
       "followUpQuestions": [
-        "What assumptions does Funnels & Conversion Analysis make?",
-        "How would you validate or debug Funnels & Conversion Analysis in practice?"
+        "What is a strict funnel?",
+        "Why can cumulative counts increase?",
+        "How do you compare funnel conversion in an A/B test?"
       ],
-      "estimatedMinutes": 2
+      "estimatedMinutes": 9
     },
     {
       "slug": "cohort-retention",
@@ -9830,34 +10315,57 @@
         "ds",
         "da"
       ],
-      "interviewAnswer": "Retention should compare users at the same age since cohort entry, not raw calendar activity. Cohort tables reveal whether product changes affect long-term engagement across acquisition periods.",
+      "interviewAnswer": "Retention starts with a fixed cohort, usually entities sharing a first value event or acquisition period, and asks what fraction performs a defined return behavior at each age. I specify exact-period versus rolling retention, interval boundaries, identity, denominator, resurrection, and observation cutoff. Recent cohorts do not have mature later ages, so I leave those cells unavailable rather than zero. I compare cohorts at the same age, inspect calendar effects and acquisition mix, and use survival or hazard methods when time-to-churn and censoring matter. A better curve is descriptive until an experiment or causal design supports attribution.",
       "keyPoints": [
-        "Define cohort entry event.",
-        "Choose retention event and time grain.",
-        "Account for right-censoring of recent cohorts."
+        "Cohort time and calendar time are separate axes",
+        "Retention depends on the value event and denominator contract",
+        "Recent cohort cells are censored, not zero",
+        "Exact, rolling, and survival retention answer different questions",
+        "Composition and identity changes can mimic product retention gains"
       ],
       "resources": [
+        "amplitude-experiment-metrics",
+        "mixpanel-retention",
+        "lifelines",
         "berkeley-data100"
       ],
       "featured": false,
+      "description": "Cohort retention analysis follows entities from a common starting event and measures whether they return to a value-defining behavior at comparable ages. It separates lifecycle decay from calendar-time shocks, but only when cohort assignment, activity, interval boundaries, identity, denominator, and observation maturity are defined consistently. This chapter develops acquisition and behavioral cohorts, exact-period, rolling, and bracket retention, survival-style retention, resurrection, churn, cohort-age matrices, censoring, composition, seasonality, segmentation, uncertainty, and experimental interpretation. You will learn why recent cohorts form an incomplete triangle, why retention can rise when low-value users never enter the denominator, how identity and late events reshape curves, and when Kaplan-Meier or hazard analysis is more appropriate. A worked subscription example separates acquisition-mix change from product improvement. The lab builds a monthly exact-period retention matrix from first activity and later events, compares with pandas, and verifies cohort size, maturity, identity uniqueness, and denominator invariants. Production guidance covers semantic models, incremental updates, backfills, privacy, monitoring, causal tests, and rollback. The goal is a lifecycle measurement system that reveals durable value, not a color grid interpreted without population or time context.",
+      "prerequisites": [
+        "funnels",
+        "groupby-pivot",
+        "censoring-survival"
+      ],
+      "learningObjectives": [
+        "Define cohort membership, start event, retained behavior, age interval, denominator, and resurrection semantics.",
+        "Compute exact, rolling, and survival-style retention while handling right censoring and incomplete recent cohorts.",
+        "Decompose retention changes into cohort composition, lifecycle, calendar time, instrumentation, and product mechanisms.",
+        "Implement and validate a cohort matrix with maturity and reconciliation checks."
+      ],
       "editorial": {
-        "status": "summary"
+        "status": "verified",
+        "verifiedOn": "2026-08-21"
       },
-      "status": "summary",
-      "hasLab": false,
-      "labGoal": "",
-      "visualCount": 1,
+      "status": "verified",
+      "hasLab": true,
+      "labGoal": "Build an exact monthly cohort-retention matrix, compare it with pandas, and verify cohort membership, maturity, uniqueness, and denominators.",
+      "visualCount": 2,
       "visualSummaries": [
         {
           "type": "matrix",
-          "title": "Retention cohort heatmap"
+          "title": "Conceptual cohort retention matrix"
+        },
+        {
+          "type": "compare",
+          "title": "Three retention questions"
         }
       ],
       "followUpQuestions": [
-        "What assumptions does Cohort Retention Analysis make?",
-        "How would you validate or debug Cohort Retention Analysis in practice?"
+        "What is rolling retention?",
+        "Why is the cohort table triangular?",
+        "When should you use survival analysis?"
       ],
-      "estimatedMinutes": 1
+      "estimatedMinutes": 9
     },
     {
       "slug": "ltv-churn",
@@ -9868,30 +10376,57 @@
         "ds",
         "da"
       ],
-      "interviewAnswer": "Churn and LTV metrics require explicit definitions of active, retained, revenue horizon and censoring. Predictive accuracy is secondary if the metric definition does not match the decision.",
+      "interviewAnswer": "LTV is expected discounted future contribution margin over a stated horizon, conditional on current information and policy. In subscriptions, churn may be an observed cancellation or nonrenewal; in noncontractual products, inactivity is latent and needs a repeat-purchase/dropout model or an operational lapse rule. I handle right censoring, customer heterogeneity, refunds and variable costs, validate on mature chronological cohorts, and report cohort calibration and uncertainty rather than only individual rank. CAC comparison uses incremental fully loaded acquisition cost. A high predicted LTV does not imply targeting will cause value; intervention decisions need treatment effects and costs.",
       "keyPoints": [
-        "Logo vs revenue churn differ.",
-        "LTV can be historical or predictive.",
-        "Censoring and acquisition costs matter."
+        "LTV is a horizon- and policy-dependent expectation",
+        "Contribution margin differs from revenue",
+        "Churn is observed only in some business settings",
+        "Censoring and heterogeneity are central, not edge cases",
+        "Predictive value and incremental intervention value are different estimands"
       ],
       "resources": [
-        "berkeley-data100",
-        "lifelines"
+        "customer-base-models",
+        "fader-heterogeneity",
+        "lifelines",
+        "statsmodels-survival"
       ],
       "featured": false,
-      "editorial": {
-        "status": "summary"
-      },
-      "status": "summary",
-      "hasLab": false,
-      "labGoal": "",
-      "visualCount": 0,
-      "visualSummaries": [],
-      "followUpQuestions": [
-        "What assumptions does Churn, Lifetime Value & Unit Economics make?",
-        "How would you validate or debug Churn, Lifetime Value & Unit Economics in practice?"
+      "description": "Customer lifetime value (LTV or CLV) is the discounted expected contribution margin generated by a customer or cohort over a declared future horizon, while churn describes a contractual cancellation or a modeled loss of future activity. Both are forecasts with behavioral, accounting, censoring, and policy assumptions; neither is a timeless label stored on a user. This chapter develops contractual versus noncontractual settings, retention and hazard, right censoring, revenue versus margin, discounting, acquisition cost, payback, cohort versus individual prediction, BG/NBD-style customer-base models, survival models, calibration, chronological validation, treatment effects, uncertainty, and decision use. You will learn why last activity is not observed churn, why a constant-retention formula can be dangerously optimistic, how heterogeneity changes aggregate value, and why marketing intervention can invalidate passive forecasts. A worked subscription example separates gross revenue from incremental contribution value. The lab implements Kaplan-Meier survival and discounted cohort LTV from first principles, compares grouped calculations with pandas, and verifies censoring and monotonicity invariants. Production guidance covers label maturity, leakage, policy feedback, monitoring, fairness, cost, rollback, and human review.",
+      "prerequisites": [
+        "cohort-retention",
+        "censoring-survival",
+        "probability-basics"
       ],
-      "estimatedMinutes": 1
+      "learningObjectives": [
+        "Define churn, survival, margin, horizon, discounting, and acquisition cost for contractual and noncontractual businesses.",
+        "Estimate retention under right censoring and translate survival or repeat-purchase forecasts into discounted expected contribution value.",
+        "Validate LTV models chronologically with calibration, ranking, aggregate value, policy, and uncertainty metrics.",
+        "Distinguish predictive customer value from incremental value caused by a retention or acquisition action."
+      ],
+      "editorial": {
+        "status": "verified",
+        "verifiedOn": "2026-08-21"
+      },
+      "status": "verified",
+      "hasLab": true,
+      "labGoal": "Implement Kaplan-Meier survival and finite-horizon discounted contribution LTV, compare grouped risk calculations with pandas, and verify censoring and monotonicity.",
+      "visualCount": 2,
+      "visualSummaries": [
+        {
+          "type": "flow",
+          "title": "LTV evidence chain"
+        },
+        {
+          "type": "compare",
+          "title": "Prediction versus intervention"
+        }
+      ],
+      "followUpQuestions": [
+        "What is right censoring?",
+        "How does LTV differ in contractual and noncontractual businesses?",
+        "How do you validate LTV?"
+      ],
+      "estimatedMinutes": 10
     },
     {
       "slug": "potential-outcomes",
@@ -10963,30 +11498,57 @@
         "ds",
         "as"
       ],
-      "interviewAnswer": "Lagrange multipliers incorporate constraints into an objective; KKT conditions characterize optima for broad constrained problems under regularity assumptions. Duality can provide bounds and alternative formulations.",
+      "interviewAnswer": "For minimize f(x) subject to g_i(x)<=0 and h_j(x)=0, the Lagrangian is L=f+sum lambda_i g_i+sum nu_j h_j with lambda_i>=0. KKT requires primal feasibility, dual feasibility, stationarity of L, and complementary slackness lambda_i g_i=0. Under a constraint qualification KKT is necessary for a local optimum; for a convex problem it is sufficient, and with Slater's condition strong duality holds. Multipliers are shadow prices: locally they quantify how the optimal value changes when a constraint bound is tightened, but their interpretation depends on units, sign convention, degeneracy, and perturbation size.",
       "keyPoints": [
-        "Primal vs dual variables.",
-        "Complementary slackness links active constraints and multipliers.",
-        "Strong duality needs conditions."
+        "The Lagrangian prices constraint violation",
+        "KKT combines four conditions, not stationarity alone",
+        "Constraint qualifications prevent pathological necessity failures",
+        "Convexity turns a KKT point into a global optimum",
+        "Dual variables are local sensitivities with units and validity ranges"
       ],
       "resources": [
         "boyd-convex",
-        "stanford-ee364a"
+        "stanford-ee364a",
+        "cvxpy-guide",
+        "scipy-optimize"
       ],
       "featured": false,
-      "editorial": {
-        "status": "summary"
-      },
-      "status": "summary",
-      "hasLab": false,
-      "labGoal": "",
-      "visualCount": 0,
-      "visualSummaries": [],
-      "followUpQuestions": [
-        "What assumptions does Lagrange Multipliers, Duality & KKT Conditions make?",
-        "How would you validate or debug Lagrange Multipliers, Duality & KKT Conditions in practice?"
+      "description": "Lagrange multipliers, duality, and the Karush-Kuhn-Tucker (KKT) conditions connect constrained optimization to geometry, economic sensitivity, and verifiable optimality. This chapter derives the Lagrangian for equality and inequality constraints, explains feasible directions and active constraints, distinguishes primal and dual problems, and develops weak duality, strong duality, Slater's condition, complementary slackness, constraint qualifications, and dual sensitivity. You will learn when KKT conditions are necessary, when they are sufficient, why multiplier signs depend on convention, and why stationarity alone never proves feasibility or global optimality. A worked resource-allocation problem computes the primal solution and shadow price by hand. The lab builds KKT residual checks for a constrained quadratic, compares the result with SciPy's SLSQP interface, and verifies primal feasibility, dual feasibility, stationarity, and complementarity. Production guidance covers scaling, degeneracy, infeasibility, inaccurate multipliers, solver status, sensitivity ranges, observability, and safe fallbacks. The payoff is the ability to interpret a constrained solver result as a scientific decision and certificate rather than an unexplained vector.",
+      "prerequisites": [
+        "convexity",
+        "derivatives-gradients",
+        "vectors-matrices"
       ],
-      "estimatedMinutes": 1
+      "learningObjectives": [
+        "Construct a Lagrangian with consistent inequality signs and derive stationarity, feasibility, and complementary slackness conditions.",
+        "Explain weak versus strong duality and identify conditions under which KKT conditions are necessary or sufficient.",
+        "Interpret optimal multipliers as local value sensitivities while stating sign, units, and range limitations.",
+        "Diagnose candidate solutions through scaled KKT residuals and solver termination evidence."
+      ],
+      "editorial": {
+        "status": "verified",
+        "verifiedOn": "2026-08-21"
+      },
+      "status": "verified",
+      "hasLab": true,
+      "labGoal": "Compute and verify the KKT certificate for a binding convex inequality, then compare the candidate with a constrained SciPy solve.",
+      "visualCount": 2,
+      "visualSummaries": [
+        {
+          "type": "flow",
+          "title": "From constrained model to certificate"
+        },
+        {
+          "type": "compare",
+          "title": "What KKT can establish"
+        }
+      ],
+      "followUpQuestions": [
+        "What does complementary slackness mean?",
+        "When are KKT conditions sufficient?",
+        "What is Slater's condition used for?"
+      ],
+      "estimatedMinutes": 9
     },
     {
       "slug": "linear-programming",
@@ -10997,35 +11559,57 @@
         "ds",
         "as"
       ],
-      "interviewAnswer": "Linear programming optimizes a linear objective under linear constraints. It is ideal for allocation, blending, planning and many operational decisions once predictions have been produced.",
+      "interviewAnswer": "An LP minimizes or maximizes c^T x subject to linear constraints and bounds. The feasible set is a convex polyhedron; if a finite optimum exists, at least one extreme point is optimal. Simplex moves among adjacent basic feasible solutions, while interior-point methods travel through the interior. Every LP has a dual whose feasible objective bounds the primal, and under standard feasibility conditions strong duality makes the gap zero. In practice I define variables and units carefully, inspect status, primal residuals, objective reconstruction, dual gap and sensitivity, and explicitly distinguish optimal, feasible-but-uncertified, infeasible, and unbounded results.",
       "keyPoints": [
-        "Decision variables, objective, constraints.",
-        "Feasible region is a polyhedron.",
-        "Sensitivity/shadow prices can be valuable."
+        "Variables and units determine whether the model represents the real decision",
+        "LP feasible regions are convex polyhedra",
+        "Simplex and interior-point methods exploit different geometry",
+        "The dual provides bounds and local resource values",
+        "Status, residuals, and dual evidence are part of the output"
       ],
       "resources": [
-        "scipy-optimize",
-        "ortools"
+        "boyd-convex",
+        "scipy-linprog",
+        "ortools-mathopt",
+        "stanford-ee364a"
       ],
       "featured": false,
+      "description": "Linear programming (LP) optimizes a linear objective over linear equality, inequality, and bound constraints. Its simple algebra hides a powerful geometry: feasible solutions form a convex polyhedron, optimal solutions occur on a face containing an extreme point when an optimum exists, and a dual program supplies bounds, shadow prices, and certificates of optimality or infeasibility. This chapter develops modeling from decisions and units through standard forms, slack variables, vertices, simplex intuition, interior-point methods, duality, sensitivity, degeneracy, alternate optima, infeasibility, unboundedness, and numerical scaling. You will learn to translate business rules without reversing signs or mixing units, distinguish model infeasibility from solver failure, and validate solutions using constraint residuals, objective reconstruction, and dual evidence. A worked production-planning example derives candidate vertices and a binding-capacity interpretation. The lab enumerates every 2D vertex from scratch, compares the optimum with SciPy's HiGHS-backed `linprog`, and verifies feasibility and objective agreement. Production guidance covers sparse models, solver statuses, tolerances, warm starts, time limits, security, drift, safe fallbacks, and rollback.",
+      "prerequisites": [
+        "convexity",
+        "vectors-matrices",
+        "lagrange-kkt"
+      ],
+      "learningObjectives": [
+        "Translate a decision problem into linear variables, an objective, constraints, bounds, units, and explicit assumptions.",
+        "Explain LP geometry, extreme points, simplex and interior-point intuitions, and the primal-dual certificate.",
+        "Diagnose optimal, infeasible, unbounded, degenerate, and multiple-optimum outcomes from evidence rather than guesswork.",
+        "Implement vertex enumeration for a small LP and validate a library solution using independent invariants."
+      ],
       "editorial": {
-        "status": "summary"
+        "status": "verified",
+        "verifiedOn": "2026-08-21"
       },
-      "status": "summary",
+      "status": "verified",
       "hasLab": true,
-      "labGoal": "Solve a small constrained allocation problem with linear programming.",
-      "visualCount": 1,
+      "labGoal": "Enumerate a two-variable LP's vertices from first principles, compare with SciPy linprog, and verify primal feasibility plus objective agreement.",
+      "visualCount": 2,
       "visualSummaries": [
         {
-          "type": "scatter",
-          "title": "Linear programming geometry"
+          "type": "flow",
+          "title": "LP solution and evidence"
+        },
+        {
+          "type": "compare",
+          "title": "Finite LP outcomes"
         }
       ],
       "followUpQuestions": [
-        "What assumptions does Linear Programming make?",
-        "How would you validate or debug Linear Programming in practice?"
+        "Why does an LP optimum occur at a vertex?",
+        "What does unbounded mean?",
+        "What is degeneracy?"
       ],
-      "estimatedMinutes": 2
+      "estimatedMinutes": 10
     },
     {
       "slug": "integer-programming",
@@ -11036,29 +11620,57 @@
         "ds",
         "as"
       ],
-      "interviewAnswer": "Integer programs require some decision variables to be discrete, enabling assignment, routing and scheduling but making optimization computationally harder than continuous LPs.",
+      "interviewAnswer": "A mixed-integer program combines linear constraints and objective terms with some variables restricted to integers, often binary. The LP relaxation drops integrality and gives a bound. Branch-and-bound partitions the feasible set by branching on fractional variables, solves relaxations at nodes, prunes nodes whose bounds cannot beat the incumbent, and uses cuts and heuristics to tighten bounds or find feasible solutions. Rounding is not generally valid. In production I build tight formulations, use indicator constraints when available, set explicit time and gap limits, and report the feasible incumbent, best bound, relative gap, residuals, and solver status separately.",
       "keyPoints": [
-        "Integrality creates combinatorial search.",
-        "LP relaxation gives bounds.",
-        "Formulation quality strongly affects solve time."
+        "Integrality models choices and logic, not just rounded quantities",
+        "LP relaxations supply bounds but not necessarily feasible decisions",
+        "Branch-and-bound tracks incumbent and global bound",
+        "Strong formulations and symmetry breaking can dominate solver tuning",
+        "A time-limited feasible solution is not automatically optimal"
       ],
       "resources": [
-        "ortools"
+        "scipy-milp",
+        "ortools-cpsat",
+        "ortools-mathopt",
+        "boyd-convex"
       ],
       "featured": false,
-      "editorial": {
-        "status": "summary"
-      },
-      "status": "summary",
-      "hasLab": false,
-      "labGoal": "",
-      "visualCount": 0,
-      "visualSummaries": [],
-      "followUpQuestions": [
-        "What assumptions does Integer & Mixed-Integer Optimization make?",
-        "How would you validate or debug Integer & Mixed-Integer Optimization in practice?"
+      "description": "Integer and mixed-integer optimization represents indivisible choices, logical rules, fixed costs, assignments, schedules, and network designs that continuous models cannot express faithfully. This chapter develops binary, integer, continuous, semi-continuous, and mixed variables; strong formulations; LP relaxations; integrality gaps; branch-and-bound; cutting planes; primal heuristics; constraint programming and CP-SAT; big-M, indicator, and logical constraints; symmetry; decomposition; and solver certificates. You will learn why rounding an LP solution can violate constraints or destroy value, how bounds turn exponential search into a quantifiable optimality gap, and how formulation strength often matters more than solver tuning. A worked knapsack example contrasts integer, relaxed, and rounded decisions. The lab enumerates a small binary portfolio from scratch, compares it with SciPy's `milp`, and verifies feasibility, optimality, and a nonzero relaxation gap. Production guidance covers time limits, incumbent-versus-bound semantics, deterministic replay, solution pools, infeasibility, numerical scaling, licensing, monitoring, safe fallbacks, and rollback. The objective is to ship auditable discrete decisions, not merely obtain a solver vector.",
+      "prerequisites": [
+        "linear-programming",
+        "big-o",
+        "trees-graphs-algorithms"
       ],
-      "estimatedMinutes": 1
+      "learningObjectives": [
+        "Model discrete decisions and logical relationships with explicit variable domains and tight linear constraints.",
+        "Explain LP relaxation, branch-and-bound, cuts, heuristics, integrality gaps, and termination certificates.",
+        "Recognize weak big-M formulations, symmetry, scaling, and horizon choices that make otherwise correct models intractable.",
+        "Validate feasible incumbents and optimality gaps independently before operational use."
+      ],
+      "editorial": {
+        "status": "verified",
+        "verifiedOn": "2026-08-21"
+      },
+      "status": "verified",
+      "hasLab": true,
+      "labGoal": "Solve a binary knapsack by enumeration, compare it with SciPy milp, and verify domains, capacity, objective, and relaxation gap.",
+      "visualCount": 2,
+      "visualSummaries": [
+        {
+          "type": "flow",
+          "title": "Branch-and-bound evidence loop"
+        },
+        {
+          "type": "compare",
+          "title": "Continuous relaxation versus discrete decision"
+        }
+      ],
+      "followUpQuestions": [
+        "What is an integrality gap?",
+        "Why is big-M dangerous?",
+        "What can you return at a time limit?"
+      ],
+      "estimatedMinutes": 9
     },
     {
       "slug": "bayesian-optimization",
@@ -11069,30 +11681,57 @@
         "ds",
         "as"
       ],
-      "interviewAnswer": "Bayesian optimization fits a surrogate model of an expensive black-box objective and uses an acquisition function to choose promising evaluations, useful for costly hyperparameter or experiment tuning.",
+      "interviewAnswer": "Bayesian optimization is useful when objective evaluations are expensive and gradients are unavailable. It fits a probabilistic surrogate, commonly a Gaussian process, to observed configurations and outcomes. An acquisition function such as expected improvement or UCB combines predicted performance with uncertainty, is optimized cheaply to choose the next evaluation, and the posterior is updated after observing it. I define the search space and budget, seed with a space-filling design, model noise and constraints, compare against random search over repeated runs, and monitor regret, feasibility, cost, failed trials, and calibration. It is usually best in modest dimensions, not a default for cheap or massively high-dimensional objectives.",
       "keyPoints": [
-        "Surrogate captures uncertainty.",
-        "Acquisition balances exploration/exploitation.",
-        "Best when evaluations are expensive, not huge-dimensional."
+        "BO optimizes evaluation choice, not just a fitted response surface",
+        "Posterior uncertainty drives exploration",
+        "The acquisition is cheap to optimize but can itself be multimodal",
+        "Noise, constraints, batches, and fidelity change the correct decision rule",
+        "Repeated-budget comparisons against simple baselines are essential"
       ],
       "resources": [
+        "frazier-bo",
+        "botorch-docs",
         "sklearn",
-        "boyd-convex"
+        "probml-book"
       ],
       "featured": false,
-      "editorial": {
-        "status": "summary"
-      },
-      "status": "summary",
-      "hasLab": false,
-      "labGoal": "",
-      "visualCount": 0,
-      "visualSummaries": [],
-      "followUpQuestions": [
-        "What assumptions does Bayesian Optimization for Expensive Objectives make?",
-        "How would you validate or debug Bayesian Optimization for Expensive Objectives in practice?"
+      "description": "Bayesian optimization (BO) is a sequential strategy for optimizing a costly black-box objective when each evaluation consumes meaningful time, money, compute, or risk. It fits a probabilistic surrogate to observed evaluations, uses posterior uncertainty to score the value of candidate experiments, evaluates a selected candidate, and repeats. This chapter develops Gaussian-process surrogates, priors and kernels, noisy observations, exploration versus exploitation, probability of improvement, expected improvement, upper-confidence-bound and information-based acquisitions, acquisition optimization, initialization, constraints, batch and asynchronous experiments, multi-fidelity evaluation, high-dimensional and mixed spaces, stopping, and honest evaluation. You will learn when BO is preferable to random search or gradient methods, how model misspecification and overconfident uncertainty can waste a budget, and why the acquisition is a decision rule rather than the real objective. The lab implements a one-dimensional Gaussian-process posterior and expected-improvement loop, compares it with scikit-learn, and verifies uncertainty and simple-regret improvement. Production guidance covers experiment identity, failed trials, concurrency, reproducibility, cost, safety, monitoring, and rollback.",
+      "prerequisites": [
+        "gaussian-processes",
+        "probability-basics",
+        "hyperparameter-tuning"
       ],
-      "estimatedMinutes": 1
+      "learningObjectives": [
+        "Formulate costly black-box optimization as a sequential probabilistic decision problem with an explicit evaluation budget.",
+        "Compute and interpret Gaussian-process posterior mean, variance, and common acquisition functions.",
+        "Choose initialization, noise treatment, constraints, batching, fidelity, and stopping rules for a real experiment system.",
+        "Evaluate a BO policy without leakage using regret, cost, feasibility, and repeated-seed baselines."
+      ],
+      "editorial": {
+        "status": "verified",
+        "verifiedOn": "2026-08-21"
+      },
+      "status": "verified",
+      "hasLab": true,
+      "labGoal": "Implement a one-dimensional Gaussian-process posterior and expected-improvement policy, compare with scikit-learn, and verify uncertainty plus regret behavior.",
+      "visualCount": 2,
+      "visualSummaries": [
+        {
+          "type": "flow",
+          "title": "Bayesian optimization closed loop"
+        },
+        {
+          "type": "curve",
+          "title": "Conceptual posterior and uncertainty"
+        }
+      ],
+      "followUpQuestions": [
+        "Why not use grid search?",
+        "What is expected improvement?",
+        "How do constraints enter BO?"
+      ],
+      "estimatedMinutes": 10
     },
     {
       "slug": "recsys-baselines",
@@ -13732,35 +14371,58 @@
         "ds",
         "as"
       ],
-      "interviewAnswer": "Many real systems optimize several conflicting objectives. Pareto-optimal solutions cannot improve one objective without worsening another; teams often scalarize objectives or impose constraints/guardrails.",
+      "interviewAnswer": "In multi-objective optimization, a feasible point dominates another if it is no worse on every objective and strictly better on at least one. Pareto-optimal points are not dominated, so the result is generally a frontier rather than one answer. Weighted sums are simple and can recover supported points on convex fronts, but may miss nonconvex regions and hide stakeholder preferences. Epsilon constraints or lexicographic rules are often clearer for hard limits and priorities; evolutionary algorithms such as NSGA-II approximate broader fronts. I normalize only with declared meaning, include uncertainty and feasibility, evaluate coverage/diversity, and treat selection from the frontier as a separate governed decision.",
       "keyPoints": [
-        "Weighted sums encode preferences but can hide trade-offs.",
-        "Constraints are often clearer for safety/SLA requirements.",
-        "Pareto frontier communicates choices."
+        "Pareto optimal means not dominated, not universally best",
+        "Decision space and objective space are different",
+        "Scalarization embeds preferences and can miss parts of a front",
+        "Front quality requires convergence and diversity evidence",
+        "Choosing one point is a policy decision after optimization"
       ],
       "resources": [
         "boyd-convex",
-        "ortools"
+        "nsga2-paper",
+        "pymoo-docs",
+        "botorch-docs",
+        "scipy-optimize"
       ],
       "featured": false,
+      "description": "Multi-objective optimization handles decisions where several criteria conflict and no single scalar score is scientifically or organizationally sufficient. Rather than pretending one configuration is universally best, it identifies feasible trade-offs through dominance, Pareto optimality, fronts, scalarization, epsilon constraints, lexicographic priorities, evolutionary methods, hypervolume, and multi-criteria decision analysis. This chapter develops decision space versus objective space, weak and strict dominance, supported and unsupported Pareto points, normalization, preference elicitation, constraints, uncertainty, many-objective difficulties, and post-optimization selection. You will learn why weighted sums expose only part of a nonconvex front, why objectives should preserve units until preferences are explicit, how NSGA-II uses nondominated sorting and crowding distance, and why optimizing a frontier is separate from choosing a policy. A worked model-selection example balances error, latency, cost, and fairness guardrails. The lab implements nondominated filtering and hypervolume in two dimensions, uses a SciPy epsilon-constraint sweep, and verifies invariance and known fronts. Production guidance covers stakeholder governance, metric drift, robust feasibility, monitoring, rollback, and transparent decision records.",
+      "prerequisites": [
+        "convexity",
+        "linear-programming",
+        "experiment-design"
+      ],
+      "learningObjectives": [
+        "Define dominance, Pareto optimality, Pareto sets, and fronts with consistent objective directions and constraints.",
+        "Use weighted sums, epsilon constraints, and lexicographic priorities while stating which trade-offs each method can or cannot recover.",
+        "Explain nondominated sorting, diversity preservation, hypervolume, and the limitations of evolutionary approximations.",
+        "Separate frontier generation from preference-based selection and audit the final decision under uncertainty."
+      ],
       "editorial": {
-        "status": "summary"
+        "status": "verified",
+        "verifiedOn": "2026-08-21"
       },
-      "status": "summary",
-      "hasLab": false,
-      "labGoal": "",
-      "visualCount": 1,
+      "status": "verified",
+      "hasLab": true,
+      "labGoal": "Implement nondominated filtering and two-dimensional hypervolume, use SciPy for an epsilon-constraint sweep, and verify known fronts plus invariants.",
+      "visualCount": 2,
       "visualSummaries": [
         {
-          "type": "curve",
-          "title": "Pareto frontier"
+          "type": "scatter",
+          "title": "Conceptual Pareto front"
+        },
+        {
+          "type": "compare",
+          "title": "Preference methods expose different information"
         }
       ],
       "followUpQuestions": [
-        "What assumptions or limitations does Multi-objective Optimization & Pareto Trade-offs have?",
-        "How would you validate Multi-objective Optimization & Pareto Trade-offs on a real dataset?"
+        "What is Pareto optimality?",
+        "Why can weighted sums miss solutions?",
+        "What does hypervolume depend on?"
       ],
-      "estimatedMinutes": 1
+      "estimatedMinutes": 10
     },
     {
       "slug": "cold-start",
@@ -14377,30 +15039,57 @@
         "da",
         "ds"
       ],
-      "interviewAnswer": "A good dashboard starts from decisions and questions, not chart availability. Use stable metric definitions, clear filters/time windows, meaningful comparisons and enough context to distinguish signal from normal variation.",
+      "interviewAnswer": "I design a dashboard around who decides what, how often, and what action follows. I create a hierarchy from outcome and guardrail KPIs to diagnostic drivers, with definitions, units, denominators, targets, uncertainty, sample support, freshness, and ownership. The default screen answers current state, change, significance/impact, and where to investigate; details live in drill-downs. I use simple comparable charts, consistent filters and time windows, accessible redundant status encodings, and explicit stale/partial-data states. The semantic model, row-level security, tests, performance, alerts, and rollback are part of the design.",
       "keyPoints": [
-        "One screen should have a clear decision purpose.",
-        "Show denominators, time grain and targets/baselines.",
-        "Avoid mixing metric definitions across pages."
+        "Decisions and actions determine dashboard scope",
+        "KPIs need targets, denominators, uncertainty, and freshness",
+        "Overview and diagnosis need different levels of detail",
+        "Status must distinguish harm, uncertainty, and missing/stale data",
+        "The semantic and operational system is part of the interface"
       ],
       "resources": [
+        "powerbi-dashboard-design",
         "fundamentals-dataviz",
-        "berkeley-data100"
+        "visual-communication-science",
+        "dbt-contracts"
       ],
       "featured": false,
-      "editorial": {
-        "status": "summary"
-      },
-      "status": "summary",
-      "hasLab": false,
-      "labGoal": "",
-      "visualCount": 0,
-      "visualSummaries": [],
-      "followUpQuestions": [
-        "When would you not use Dashboard & BI Design?",
-        "How would you validate or tune Dashboard & BI Design?"
+      "description": "A dashboard is an operational decision interface over a semantic metric layer, not a collage of charts. Its design begins with audience, decisions, monitoring cadence, actions, and failure behavior; visual hierarchy and interaction then make the relevant state legible. This chapter develops audience and task analysis, KPI trees, leading and lagging indicators, targets and guardrails, overview-to-detail structure, freshness and provenance, chart selection, alert semantics, filters, drill-down, mobile and accessibility behavior, performance budgets, and governance. You will learn why a single number needs context, why red/green status cannot replace uncertainty or impact, how denominator and refresh mismatches create false narratives, and how to separate monitoring from exploratory reports. The worked example redesigns a model-health dashboard whose green average hides slice harm and stale labels. The lab builds a dashboard-card state engine with freshness, sample-size, interval, and threshold checks and verifies safe behavior. Production guidance covers semantic models, caching, row-level security, observability, testing, ownership, incident response, and rollback.",
+      "prerequisites": [
+        "visual-encoding",
+        "groupby-pivot",
+        "data-contracts-lineage"
       ],
-      "estimatedMinutes": 1
+      "learningObjectives": [
+        "Derive dashboard content from audience decisions, monitoring cadence, actions, and metric ownership.",
+        "Design KPI hierarchy with estimates, targets, guardrails, denominators, uncertainty, freshness, and diagnostic drill-down.",
+        "Specify filters, interaction, accessibility, responsive layout, performance, and secure data behavior as product requirements.",
+        "Operate dashboards through semantic contracts, tests, observability, incident response, and versioned rollback."
+      ],
+      "editorial": {
+        "status": "verified",
+        "verifiedOn": "2026-08-21"
+      },
+      "status": "verified",
+      "hasLab": true,
+      "labGoal": "Build a dashboard-card state engine that gates health on freshness, maturity, sample support, uncertainty, and explicit thresholds.",
+      "visualCount": 2,
+      "visualSummaries": [
+        {
+          "type": "flow",
+          "title": "Decision dashboard hierarchy"
+        },
+        {
+          "type": "compare",
+          "title": "Healthy versus unknown state"
+        }
+      ],
+      "followUpQuestions": [
+        "What belongs above the fold?",
+        "How do you prevent alert fatigue?",
+        "How do you show stale data?"
+      ],
+      "estimatedMinutes": 9
     },
     {
       "slug": "data-storytelling",
@@ -14411,35 +15100,57 @@
         "da",
         "ds"
       ],
-      "interviewAnswer": "Data storytelling means structuring evidence around the decision: context, key finding, uncertainty, alternatives and recommended action. It is not decorating charts or hiding caveats.",
+      "interviewAnswer": "I start with the audience's decision and write one precise claim. Then I show the minimum evidence needed: population, denominator, baseline, absolute and relative magnitude, time, uncertainty, and relevant slices. I separate observation, explanation, and recommendation; avoid causal language unless design supports it; include alternative explanations and guardrails; and end with an action plus what would change it. The visual sequence should preserve context and link to definitions, code, and data lineage so the story is persuasive because it is auditable, not because uncertainty was removed.",
       "keyPoints": [
-        "Lead with the decision-relevant result.",
-        "Quantify uncertainty and practical magnitude.",
-        "Separate observed facts from interpretation."
+        "Decision and claim determine the evidence sequence",
+        "Observation, interpretation, and action are distinct layers",
+        "Uncertainty and counterevidence strengthen calibrated trust",
+        "Absolute magnitude and denominator prevent rhetorical inflation",
+        "Narratives need provenance, accessibility, and correction lifecycle"
       ],
       "resources": [
+        "visual-communication-science",
+        "uncertainty-visualization",
         "fundamentals-dataviz",
         "microsoft-experimentation"
       ],
       "featured": false,
+      "description": "Data storytelling is the disciplined communication of a decision-relevant claim through evidence, context, uncertainty, alternatives, and action. It is not the addition of a dramatic narrative to a chart. This chapter develops audience and decision framing, claim–evidence–reasoning structure, visual sequence, explanatory versus exploratory artifacts, annotations, uncertainty language, practical thresholds, causal humility, counterevidence, and reproducible handoff. You will learn to separate observation from interpretation and recommendation, quantify absolute and relative effects, communicate interval and scenario uncertainty in plain language, avoid cherry-picking and rhetorical overclaim, and design executive summaries that link to auditable detail. The worked example rewrites a misleading 'campaign doubled engagement' presentation into a population- and uncertainty-aware decision memo. The lab builds a structured evidence record and validates that claims include denominators, comparison, uncertainty, caveats, and source lineage. Production guidance covers templates, review, localization, accessibility, dynamic data, corrections, privacy, and rollback. A strong story makes its reasoning inspectable rather than merely memorable.",
+      "prerequisites": [
+        "visual-encoding",
+        "visualization-pitfalls",
+        "confidence-intervals"
+      ],
+      "learningObjectives": [
+        "Frame communication around audience knowledge, decision, stakes, alternatives, and time horizon.",
+        "Build a claim–evidence–reasoning chain that separates measured facts, interpretations, assumptions, and recommendations.",
+        "Communicate magnitude and uncertainty with calibrated language, numbers, visuals, and practical thresholds.",
+        "Create auditable, accessible, versioned narratives that include counterevidence, limitations, provenance, and correction paths."
+      ],
       "editorial": {
-        "status": "summary"
+        "status": "verified",
+        "verifiedOn": "2026-08-21"
       },
-      "status": "summary",
-      "hasLab": false,
-      "labGoal": "",
-      "visualCount": 1,
+      "status": "verified",
+      "hasLab": true,
+      "labGoal": "Build and validate a structured evidence record so a decision claim cannot omit population, denominator, magnitude, uncertainty, limitations, and provenance.",
+      "visualCount": 2,
       "visualSummaries": [
         {
-          "type": "map",
-          "title": "When geography is the story"
+          "type": "flow",
+          "title": "Claim–evidence–action chain"
+        },
+        {
+          "type": "compare",
+          "title": "Three statements that must not blur"
         }
       ],
       "followUpQuestions": [
-        "When would you not use Data Storytelling & Communicating Uncertainty?",
-        "How would you validate or tune Data Storytelling & Communicating Uncertainty?"
+        "How do you simplify for executives without misleading?",
+        "How do you communicate a nonsignificant result?",
+        "What makes a recommendation auditable?"
       ],
-      "estimatedMinutes": 1
+      "estimatedMinutes": 9
     },
     {
       "slug": "image-augmentation",
@@ -14832,35 +15543,57 @@
         "da",
         "as"
       ],
-      "interviewAnswer": "A trend can reverse after stratifying by a confounding/grouping variable because aggregate weights differ. Always inspect important segments before interpreting an overall association.",
+      "interviewAnswer": "Simpson's paradox is a reversal between aggregate and stratified associations caused by different group weights and within-group rates. The aggregate rate is a weighted average, so treatment groups with different severity, channel, or cohort composition can rank differently even when every stratum has the opposite ordering. I show the decomposition, define the target population and estimand, and use design/causal structure to decide adjustment. Adjust confounders when appropriate, do not condition on colliders, treat mediators according to the estimand, and report composition plus stratum effects.",
       "keyPoints": [
-        "Aggregate rates are weighted averages.",
-        "Different group composition can reverse comparisons.",
-        "Causal conclusions need more than stratification alone."
+        "Aggregate rates combine within-stratum outcomes and group composition",
+        "Reversal is arithmetic; preferred interpretation requires a scientific target",
+        "Confounder, mediator, collider, and effect modifier imply different adjustment choices",
+        "Standardization compares groups under a common composition",
+        "Population drift can create dashboard reversals without individual behavior change"
       ],
       "resources": [
         "openintro-stats",
-        "harvard-causal-diagrams"
+        "harvard-causal-diagrams",
+        "berkeley-data100",
+        "fundamentals-dataviz"
       ],
       "featured": false,
+      "description": "Simpson's paradox occurs when an association in aggregated data reverses or materially changes after stratifying by another variable because group composition and within-group relationships combine differently. The arithmetic is weighted averages; the interpretation is causal and design-dependent. This chapter derives the decomposition, distinguishes confounders, mediators, colliders, and effect modifiers, explains standardization and weighting, and shows why neither aggregate nor stratified result is automatically correct. You will learn to detect reversals with contingency tables and small multiples, define the target population and estimand, choose adjustment sets using time and causal structure, avoid conditioning on selection, and report both composition and within-group effects. The worked example reconstructs a treatment comparison where one method is better in every severity stratum but worse overall because it handles harder cases. The lab generates a deterministic reversal, verifies weighted decompositions, and standardizes both treatments to a common severity mix. Production guidance covers metric stratification, population drift, fairness, experimentation, monitoring, and rollback.",
+      "prerequisites": [
+        "groupby-pivot",
+        "joint-marginal-conditional",
+        "dag-confounding"
+      ],
+      "learningObjectives": [
+        "Derive how aggregate rates are weighted combinations of stratum-specific rates and composition.",
+        "Detect and reproduce Simpson reversals through tables, plots, and decomposition rather than relying on correlations alone.",
+        "Choose whether and how to adjust using target estimand, temporal order, design, and causal diagrams.",
+        "Monitor composition shifts and communicate aggregate and conditional results without assuming either is universally correct."
+      ],
       "editorial": {
-        "status": "summary"
+        "status": "verified",
+        "verifiedOn": "2026-08-21"
       },
-      "status": "summary",
-      "hasLab": false,
-      "labGoal": "",
-      "visualCount": 1,
+      "status": "verified",
+      "hasLab": true,
+      "labGoal": "Construct a Simpson reversal, verify weighted aggregation, and standardize both treatments to a common severity distribution.",
+      "visualCount": 2,
       "visualSummaries": [
         {
           "type": "compare",
-          "title": "Simpson’s paradox"
+          "title": "One dataset, two valid descriptive views"
+        },
+        {
+          "type": "flow",
+          "title": "Interpret a Simpson reversal"
         }
       ],
       "followUpQuestions": [
-        "When would you not use Simpson’s Paradox & Aggregation Bias?",
-        "How would you validate or tune Simpson’s Paradox & Aggregation Bias?"
+        "Can Simpson's paradox occur without confounding?",
+        "How does standardization help?",
+        "Should you always stratify?"
       ],
-      "estimatedMinutes": 1
+      "estimatedMinutes": 9
     },
     {
       "slug": "network-experiments",
@@ -14872,30 +15605,57 @@
         "da",
         "as"
       ],
-      "interviewAnswer": "Standard A/B inference assumes one unit’s treatment does not change another unit’s outcome. Social, marketplace and collaborative products violate this through interference, requiring cluster designs or specialized estimands.",
+      "interviewAnswer": "Standard A/B inference assumes no interference: one unit's assignment does not affect another's outcome. In social networks, marketplaces, and shared-capacity systems that can fail. I define the target effect first - direct, spillover, or total effect under full rollout - and an exposure mapping describing relevant neighbors' assignments. Individual randomization has high power but can dilute effects through cross-arm exposure. Graph-cluster or market-level randomization reduces contamination at the cost of fewer independent units and possible cluster imbalance; saturation or two-stage designs estimate spillovers. I use graph snapshots and cluster-aware inference, measure exposure and leakage, and avoid claiming a full-rollout effect from an estimand the design cannot identify.",
       "keyPoints": [
-        "SUTVA/no-interference can fail.",
-        "Cluster randomization reduces contamination but changes power.",
-        "Marketplace two-sided effects complicate interpretation."
+        "Interference makes outcomes depend on assignment vectors",
+        "Direct and total rollout effects are different estimands",
+        "Individual randomization can be precise for the wrong mixed-exposure contrast",
+        "Clustering trades fewer cross-arm edges for fewer independent units",
+        "Graph, exposure, and assignment versions are part of the causal design"
       ],
       "resources": [
-        "microsoft-experimentation",
+        "network-experimentation-scale",
+        "detecting-network-effects",
+        "airbnb-interference",
         "causal-mixtape"
       ],
       "featured": false,
-      "editorial": {
-        "status": "summary"
-      },
-      "status": "summary",
-      "hasLab": false,
-      "labGoal": "",
-      "visualCount": 0,
-      "visualSummaries": [],
-      "followUpQuestions": [
-        "When would you not use Interference & Network Effects in Experiments?",
-        "How would you validate or tune Interference & Network Effects in Experiments?"
+      "description": "Network experiments study treatments whose effects can spill across users, sellers, geographic areas, or shared resources, violating the usual no-interference assumption that each unit's outcome depends only on its own assignment. This chapter develops potential outcomes under exposure mappings, direct, spillover, total, and equilibrium effects; graph and cluster randomization; saturation and two-stage designs; switchbacks; marketplaces; contamination; cluster construction; variance and power; Horvitz-Thompson-style weighting; meta-experiments for detecting interference; and generalization to full rollout. You will learn why individual randomization can estimate a diluted mixture rather than the global policy effect, why cluster randomization reduces cross-arm edges but sacrifices independent units, how to define exposure without conditioning on realized outcomes, and how network evolution or hidden edges threaten identification. A worked messaging example contrasts direct and total effects. The lab simulates spillovers on a ring network, compares individual with cluster assignment, and verifies contamination, bias direction, and cluster-aware summaries. Production guidance covers graph snapshots, cluster versions, assignment, privacy, monitoring, safety, and rollback. The goal is to align the experiment's counterfactual worlds with how treatment actually propagates.",
+      "prerequisites": [
+        "experiment-design",
+        "trees-graphs-algorithms",
+        "causal-inference"
       ],
-      "estimatedMinutes": 1
+      "learningObjectives": [
+        "Define direct, spillover, total, and equilibrium estimands through treatment and neighborhood exposure mappings.",
+        "Choose individual, cluster, saturation, two-stage, or switchback assignment based on interference topology and policy target.",
+        "Analyze power and uncertainty using the actual independent randomization units and assignment probabilities.",
+        "Implement a spillover simulation and diagnose contamination and estimator mismatch under competing designs."
+      ],
+      "editorial": {
+        "status": "verified",
+        "verifiedOn": "2026-08-21"
+      },
+      "status": "verified",
+      "hasLab": true,
+      "labGoal": "Simulate network spillovers, compare individual and cluster assignment, and verify contamination, contrast dilution, and cluster-aware summaries.",
+      "visualCount": 2,
+      "visualSummaries": [
+        {
+          "type": "flow",
+          "title": "Interference-aware design choice"
+        },
+        {
+          "type": "compare",
+          "title": "Individual versus graph-cluster assignment"
+        }
+      ],
+      "followUpQuestions": [
+        "What is interference?",
+        "Why cluster-randomize a graph?",
+        "How can you detect network effects?"
+      ],
+      "estimatedMinutes": 10
     },
     {
       "slug": "data-observability",

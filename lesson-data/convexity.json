@@ -7,37 +7,232 @@
     "ds",
     "as"
   ],
-  "interviewAnswer": "A convex objective has no bad local minima: any local minimum is global. Deep networks are non-convex, so optimization relies on practical gradient methods rather than global-optimum guarantees.",
+  "interviewAnswer": "A set is convex when every line segment between two of its points remains in the set. A function is convex when its graph lies below every chord, equivalently its epigraph is convex; for differentiable functions the tangent plane is a global underestimator, and twice-differentiable convex functions have positive-semidefinite Hessians. A convex optimization problem minimizes a convex objective over a convex feasible set, so every local minimum is global. Strong convexity can give uniqueness and smoothness controls safe gradient steps, but convexity alone does not guarantee strict uniqueness, fast convergence, good conditioning, or numerical correctness.",
   "keyPoints": [
-    "Convex set/function",
-    "Local vs global optimum",
-    "Learning rate",
-    "Conditioning"
+    "Convex combinations define both convex sets and Jensen's inequality",
+    "Local minima are global only when objective and feasible set form a convex problem",
+    "Positive-semidefinite Hessian is a second-order convexity test on a convex domain",
+    "Strong convexity and smoothness control uniqueness and optimization rates",
+    "A solver result still needs feasibility, stationarity, and numerical validation"
   ],
   "resources": [
-    "stanford-cs229",
-    "mit-linear-algebra",
-    "3b1b-linear-algebra"
+    "boyd-convex",
+    "stanford-ee364a",
+    "cvxpy-guide",
+    "scipy-optimize"
   ],
   "featured": false,
-  "why": "Convexity explains why some optimization problems are globally well-behaved while deep-network training is not.",
-  "intuition": "A convex bowl has no deceptive local valleys: the line segment between two points stays above the function, and any local minimum is global.",
-  "deepDive": "For differentiable convex f, f(y)≥f(x)+∇f(x)ᵀ(y-x). Strong convexity gives curvature bounds and faster guarantees. Linear/logistic regression with suitable losses can be convex in parameters, while neural networks are highly non-convex. Non-convex does not mean impossible; gradient methods can still find useful solutions in overparameterized landscapes.",
-  "math": "Convex: f(θx+(1-θ)y) ≤ θf(x)+(1-θ)f(y), θ∈[0,1]",
-  "workedExample": "Least-squares linear regression has a convex quadratic objective; changing initialization does not create distinct bad local minima in the same way a deep network can.",
+  "why": "Least squares, logistic regression with standard regularization, support vector machines, portfolio allocation, and many estimation problems are convex after the right formulation. That structure lets algorithms certify optimality instead of only returning a point that appears good from one initialization. It also supports sensitivity analysis and reliable decomposition. Conversely, a neural network loss, discrete decision, or nonconvex constraint may contain multiple basins and invalidate convex guarantees even if part of the expression looks convex. Interviewers ask convexity to see whether a candidate understands why gradient descent works beyond a memorized update. In production, formulation errors, bad scaling, loose tolerances, and silent constraint violations often matter more than the named solver.",
+  "intuition": "Imagine stretching a straight cord between any two points on a bowl. For a convex bowl, the cord never falls below the surface; any downhill path cannot settle in a false basin. Convex feasible regions similarly have no holes or inward dents along line segments. Strong convexity means the bowl has a minimum curvature, preventing a flat valley of equally good answers. Smoothness caps curvature, preventing the gradient from changing too abruptly. Their ratio describes conditioning: a long narrow bowl makes a single global step size crawl along one direction or oscillate across another. Projection adds a second move: descend according to the objective, then return to the nearest feasible point.",
+  "deepDive": "Convex analysis supplies a vocabulary for geometry, certificates, and algorithm design. The definition is global, derivative tests are convenient consequences, and composition rules let complex models inherit convexity without redoing the definition point by point.",
+  "math": "For theta in [0,1], convexity is f(theta x+(1-theta)y)<=theta f(x)+(1-theta)f(y). Differentiable convexity gives f(y)>=f(x)+grad f(x)^T(y-x). Twice-differentiable f is convex on a convex domain iff H_f(x) is positive semidefinite for all x. Strong convexity adds (mu/2)||y-x||^2; L-smoothness gives ||grad f(x)-grad f(y)||<=L||x-y||. For a quadratic f(x)=0.5*x^T Qx-b^Tx with Q positive definite, x*=Q^{-1}b and kappa=lambda_max(Q)/lambda_min(Q).",
+  "workedExample": "Consider f(x,y)=0.5(x^2+10y^2)-2x-20y on the box [0,3]^2. The Hessian diag(1,10) is positive definite, so f is strongly convex with mu=1, L=10, and condition number 10. Solving Qz=b gives unconstrained optimum (2,2), already feasible, hence it is the unique constrained optimum. A gradient step with alpha=0.1 updates x by 0.1(2-x) and y directly to 2; alpha greater than 0.2 can make the high-curvature y direction unstable. The projected-gradient residual is zero at (2,2). Checking only that the objective stopped changing could accept a poorly scaled point, so the implementation also checks bounds and residual norm.",
   "commonMistakes": [
-    "Saying convex functions are always easy regardless of conditioning/scale.",
-    "Calling every smooth loss convex.",
-    "Assuming non-convex training necessarily gets stuck in poor local minima."
+    {
+      "mistake": "Calling any bowl-shaped plot convex",
+      "correction": "Convexity is a domain-wide inequality; verify it analytically or with valid composition rules rather than a finite plot."
+    },
+    {
+      "mistake": "Assuming a convex objective makes the problem convex",
+      "correction": "The feasible set and constraint forms must also be convex; integrality or nonlinear equalities can destroy the guarantee."
+    },
+    {
+      "mistake": "Equating convexity with a unique minimizer",
+      "correction": "Convex objectives can have flat optimal faces. Strict or strong convexity supplies stronger uniqueness statements."
+    },
+    {
+      "mistake": "Treating solver success as proof",
+      "correction": "Inspect status, constraint residuals, stationarity or duality gap, scale, and sensitivity."
+    }
   ],
   "followUps": [
-    "Convex vs strongly convex?",
-    "Why is linear regression convex?",
-    "Is logistic regression convex?",
-    "What does condition number affect?"
+    {
+      "question": "What is the difference between strict and strong convexity?",
+      "answer": "Strict convexity makes every nontrivial chord inequality strict and implies at most one minimizer. Strong convexity gives a quantitative quadratic lower-curvature bound and supports rate and stability guarantees."
+    },
+    {
+      "question": "Can a nondifferentiable function be convex?",
+      "answer": "Yes. Absolute value and norms are convex. Subgradients replace ordinary gradients at nondifferentiable points, and proximal methods exploit their structure."
+    },
+    {
+      "question": "Why does feature scaling affect a convex problem?",
+      "answer": "It can change the Hessian spectrum and condition number, so the same first-order method may converge much faster even though the global optimum maps to the same scientific solution."
+    }
   ],
-  "production": "Convex baselines are valuable for reliability and debugging; if a complex model barely beats one, production complexity may not be justified.",
+  "production": "Store the mathematical model, units, parameter versions, solver name/version, options, seed where relevant, termination status, objective, and residuals. Scale variables and constraints so tolerances have comparable meaning. Set explicit time and iteration limits and distinguish optimal, feasible, infeasible, unbounded, and interrupted outcomes. Validate on small instances with analytic or enumerated answers and property tests. Monitor objective distribution, constraint slack, projected-gradient or duality gap, runtime, retries, and solution discontinuities as inputs drift. Warm starts can reduce latency but must not hide stale state. Protect sensitive coefficients and decision outputs with access controls. If certification fails, use a safe feasible fallback or prior approved solution; rollback model, data, solver settings, and published decisions together.",
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "Convexity is the structural property that turns many optimization problems from a search for a lucky local solution into a problem with global guarantees. This chapter develops convex sets, convex combinations, convex functions, epigraphs, first- and second-order tests, strong convexity, smoothness, subgradients, projections, and the difference between convex problems and merely convex objectives. You will learn what convexity guarantees, what it does not guarantee, how objective geometry controls gradient methods, and how transformations or regularizers can preserve or destroy tractability. A worked quadratic example connects Hessian eigenvalues to contours, step sizes, conditioning, and convergence. The lab implements projected gradient descent for a box-constrained convex quadratic, compares it with SciPy, and checks feasibility, monotone descent, stationarity, and the known optimum. Production guidance covers scaling, stopping criteria, numerical precision, solver statuses, warm starts, reproducibility, monitoring, and rollback. The goal is not to memorize Jensen's inequality; it is to recognize when a model has exploitable global structure and verify that the implemented problem actually retains it.",
+  "prerequisites": [
+    "vectors-matrices",
+    "derivatives-gradients",
+    "norms-distances"
+  ],
+  "learningObjectives": [
+    "Prove or disprove convexity of common sets and functions using definitions, composition rules, gradients, and Hessians.",
+    "Distinguish a convex objective from a convex optimization problem and state the global-optimality consequences precisely.",
+    "Relate strong convexity, smoothness, and condition number to uniqueness, stable step sizes, and convergence speed.",
+    "Implement and verify projected gradient descent with feasibility, descent, and stationarity checks."
+  ],
+  "deepSections": [
+    {
+      "id": "sets-functions",
+      "title": "Convex sets, functions, and epigraphs",
+      "body": "For x and y in a set C and theta in [0,1], the point theta*x+(1-theta)*y is a convex combination. C is convex when every such point remains in C. Intersections of convex sets are convex; unions generally are not. A function f on a convex domain is convex when f(theta*x+(1-theta)*y) <= theta*f(x)+(1-theta)*f(y). This is Jensen's inequality for two points and extends to finite mixtures. The epigraph epi(f)={(x,t): t>=f(x)} is convex exactly when f is convex. Affine functions are both convex and concave. Norms, maxima of affine functions, and nonnegative weighted sums of convex functions are convex."
+    },
+    {
+      "id": "derivative-tests",
+      "title": "First- and second-order characterizations",
+      "body": "If f is differentiable on a convex domain, convexity is equivalent to f(y)>=f(x)+grad f(x)^T(y-x): every tangent plane globally underestimates the function. Therefore grad f(x*)=0 makes x* globally optimal in an unconstrained convex problem. If f is twice differentiable, a positive-semidefinite Hessian everywhere is equivalent to convexity; positive definiteness everywhere is sufficient for strict convexity, though not necessary. Along any direction v, v^T H v is directional curvature. Nondifferentiable convex functions use subgradients g satisfying the same global lower-bound inequality. At |x|=0, every g in [-1,1] is a valid subgradient."
+    },
+    {
+      "id": "problem-form",
+      "title": "When an optimization problem is convex",
+      "body": "The standard minimization form requires a convex objective, convex inequality functions f_i(x)<=0, and affine equality constraints Ax=b. The feasible set is then convex. Maximizing a concave function is equivalent after sign reversal. A convex objective with a nonconvex feasible set is not a convex problem; integrality, disjoint choices, rank equalities, or an equality involving a nonlinear convex function can break the structure. Equivalent algebraic expressions can differ in whether a modeling system can certify curvature. Disciplined convex programming applies conservative composition rules, so an unrecognized expression may need a mathematically equivalent reformulation rather than a different solver."
+    },
+    {
+      "id": "strong-smooth",
+      "title": "Strong convexity, smoothness, and conditioning",
+      "body": "A function is mu-strongly convex when f(y)>=f(x)+grad f(x)^T(y-x)+(mu/2)||y-x||^2. It then has at most one minimizer and objective error controls distance to it. An L-smooth function has an L-Lipschitz gradient, which upper-bounds curvature. For a quadratic with positive-definite Hessian Q, mu and L are the smallest and largest eigenvalues. Gradient descent with step at most 1/L decreases the objective, and its linear rate depends on condition number kappa=L/mu. Feature scaling, preconditioning, and better parameterization can shrink kappa without changing the scientific target."
+    },
+    {
+      "id": "algorithms-certificates",
+      "title": "Algorithms, projections, and certificates",
+      "body": "Gradient, accelerated, proximal, coordinate, interior-point, and splitting methods exploit different structure. Projected gradient computes x_next=Pi_C(x-alpha*grad f(x)); projection onto a closed convex set is unique. Proximal methods handle a smooth term plus a nonsmooth regularizer. Stopping because iterates barely move is weaker than checking a certificate: primal feasibility, objective change, gradient or projected-gradient norm, and when applicable duality gap. Finite precision can yield tiny violations, so tolerances must be scaled to units. Multiple initializations are not needed for globality in a correctly solved convex problem, but they are useful for detecting implementation or numerical errors."
+    }
+  ],
+  "workedExamples": [
+    {
+      "title": "A box-constrained quadratic bowl",
+      "body": "Use Hessian eigenvalues to certify convexity, derive the unique optimum, select a stable step, project every iterate, and verify feasibility plus projected stationarity."
+    }
+  ],
+  "exercises": [
+    {
+      "prompt": "Is f(x)=max(x,0) convex, and is it differentiable at zero?",
+      "solution": "It is the maximum of two affine functions, so it is convex. It is not differentiable at zero; its subdifferential there is [0,1]."
+    },
+    {
+      "prompt": "A Hessian has eigenvalues 0 and 4 everywhere. What follows?",
+      "solution": "It is positive semidefinite, so the function is convex on a convex domain, but the zero direction means strong convexity and uniqueness do not follow."
+    },
+    {
+      "prompt": "Why is x in {0,1} a nonconvex constraint?",
+      "solution": "The midpoint of feasible points 0 and 1 is 0.5, which is not feasible, so the feasible set fails the line-segment definition."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "curve",
+      "title": "Conceptual convex and nonconvex landscapes",
+      "series": [
+        {
+          "label": "convex bowl",
+          "points": [
+            [
+              0.0,
+              0.9
+            ],
+            [
+              0.25,
+              0.25
+            ],
+            [
+              0.5,
+              0.05
+            ],
+            [
+              0.75,
+              0.25
+            ],
+            [
+              1.0,
+              0.9
+            ]
+          ]
+        },
+        {
+          "label": "nonconvex wells",
+          "points": [
+            [
+              0.0,
+              0.65
+            ],
+            [
+              0.2,
+              0.15
+            ],
+            [
+              0.5,
+              0.7
+            ],
+            [
+              0.8,
+              0.15
+            ],
+            [
+              1.0,
+              0.65
+            ]
+          ]
+        }
+      ],
+      "xLabel": "parameter",
+      "yLabel": "objective",
+      "caption": "Conceptual curves: a convex local minimum is global, whereas a nonconvex landscape can contain competing basins.",
+      "afterSection": "sets-functions"
+    },
+    {
+      "type": "compare",
+      "title": "Geometry changes the guarantee",
+      "left": {
+        "title": "Convex problem",
+        "items": [
+          "Convex objective",
+          "Convex feasible set",
+          "Every local minimum global",
+          "Certificates available"
+        ]
+      },
+      "right": {
+        "title": "Nonconvex problem",
+        "items": [
+          "Discrete or curved exclusions",
+          "Multiple basins possible",
+          "Initialization can matter",
+          "Usually weaker certificates"
+        ]
+      },
+      "caption": "The objective alone is not enough; the complete feasible optimization problem determines the guarantee.",
+      "afterSection": "problem-form"
+    }
+  ],
+  "lab": {
+    "language": "python",
+    "goal": "Implement projected gradient descent for a strongly convex box-constrained quadratic, compare with SciPy, and verify descent, feasibility, and stationarity.",
+    "buildIt": "def objective(z):\n    x,y=z; return 0.5*(x*x+10*y*y)-2*x-20*y\ndef gradient(z):\n    x,y=z; return [x-2,10*y-20]\ndef project(z): return [min(3,max(0,v)) for v in z]\ndef solve(z,step=0.1,iterations=300):\n    history=[objective(z)]\n    for _ in range(iterations):\n        g=gradient(z); z=project([z[i]-step*g[i] for i in range(2)])\n        history.append(objective(z))\n    return z,history\nsolution,history=solve([0.0,0.0])",
+    "useIt": "from scipy.optimize import minimize\nresult=minimize(objective,[0.0,0.0],jac=gradient,bounds=[(0,3),(0,3)],method='L-BFGS-B')",
+    "verifyIt": "assert all(0<=v<=3 for v in solution)\nassert all(b<=a+1e-12 for a,b in zip(history,history[1:]))\nassert max(abs(solution[i]-[2,2][i]) for i in range(2))<1e-8\nassert result.success\nassert max(abs(result.x[i]-solution[i]) for i in range(2))<1e-6\nprojected=project([solution[i]-gradient(solution)[i] for i in range(2)])\nassert max(abs(projected[i]-solution[i]) for i in range(2))<1e-8",
+    "shipIt": "Version coefficients and solver settings, scale inputs, enforce time limits, record feasibility and stationarity certificates, monitor runtime/residual drift, and fall back to the last safe feasible decision if certification fails."
+  },
+  "sourceNotes": [
+    {
+      "resource": "boyd-convex",
+      "contribution": "Provides the canonical definitions, calculus tests, composition rules, strong convexity, algorithms, and duality foundations."
+    },
+    {
+      "resource": "stanford-ee364a",
+      "contribution": "Provides university-level exercises and lectures connecting convex analysis to practical modeling and numerical methods."
+    },
+    {
+      "resource": "cvxpy-guide",
+      "contribution": "Documents current disciplined convex programming rules, problem statuses, solver interfaces, and verification features."
+    },
+    {
+      "resource": "scipy-optimize",
+      "contribution": "Documents current numerical minimization interfaces, bounds, constraints, derivatives, and solver result semantics."
+    }
+  ]
 }

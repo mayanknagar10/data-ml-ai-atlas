@@ -7,30 +7,186 @@
     "ds",
     "da"
   ],
-  "interviewAnswer": "CUPED uses pre-experiment covariates correlated with the outcome to reduce variance without changing the treatment effect expectation under valid conditions, increasing experiment sensitivity.",
+  "interviewAnswer": "CUPED reduces experiment variance by subtracting the predictable part of an outcome from a pre-treatment covariate. With outcome Y and centered covariate X, define Y_adj=Y-theta(X-E[X]), where theta=Cov(Y,X)/Var(X). Because treatment is randomized and X is measured before treatment, arm means of X are equal in expectation, so the treatment contrast stays unbiased while residual variance falls; with an optimal single covariate the ideal reduction is rho squared. I freeze the pre-period cutoff, estimate theta without outcome-driven selection, handle missing X explicitly, preserve ITT, and verify the adjusted effect against the raw estimate and historical simulations.",
   "keyPoints": [
-    "Use pre-treatment covariates.",
-    "Correlation with outcome determines gain.",
-    "Avoid leakage from treatment-period features."
+    "CUPED removes outcome variation predictable before treatment",
+    "Pre-treatment timing protects the causal contrast",
+    "Ideal single-covariate variance reduction is governed by squared correlation",
+    "Regression adjustment generalizes CUPED but needs design-aware specification",
+    "Precision gains never excuse SRM, leakage, or post-treatment selection"
   ],
   "resources": [
-    "microsoft-experimentation"
+    "cuped-paper",
+    "trustworthy-oce-survey",
+    "microsoft-experimentation",
+    "statsmodels-power"
   ],
   "featured": false,
-  "why": "Variance Reduction & CUPED appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
-  "intuition": "Use pre-treatment covariates.",
-  "deepDive": "CUPED uses pre-experiment covariates correlated with the outcome to reduce variance without changing the treatment effect expectation under valid conditions, increasing experiment sensitivity. Correlation with outcome determines gain. Avoid leakage from treatment-period features. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
-  "workedExample": "Adjust spend outcome using pre-experiment spend to detect smaller treatment lifts.",
+  "why": "User-level revenue, sessions, and engagement are heterogeneous: a small group of naturally heavy users creates large variance even after randomization balances groups in expectation. Historical behavior predicts much of that variation but cannot be affected by today's treatment. Removing it can detect the same decision-relevant effect with fewer units or a narrower interval at the same sample size. The original CUPED paper demonstrated the value of pre-experiment data for online experiments. However, a covariate contaminated by treatment, a cutoff tied to exposure, or post-hoc selection among many adjustments can bias or overstate gains. Production implementations therefore treat temporal lineage and analysis governance as first-class requirements.",
+  "intuition": "Two randomized arms may contain slightly different numbers of naturally high-spending users by chance. If last month's spend predicts this month's spend, subtract each user's expected baseline tendency before comparing arms. The adjusted outcome asks whether a user did unusually well relative to their pre-treatment pattern. Centering preserves the overall scale, and randomization means neither arm should receive systematically different baseline adjustments. Stronger pre-to-post correlation removes more noise. A user with no history requires a prespecified representation; silently keeping only returning users changes the target population.",
+  "deepDive": "CUPED is a control-variate estimator embedded in a randomized design. It exploits known zero treatment contrast for pre-treatment variables to reduce estimator variance while retaining the original causal estimand.",
+  "workedExample": "A revenue test has raw user-level standard deviation $40 and an effect estimate of +$0.60. Pre-period revenue correlates 0.7 with experiment-period revenue. Ideal residual variance is about 1-0.49=51% of raw variance, so standard error falls by roughly sqrt(0.51), subject to estimation and missing history. CUPED produces +$0.58 with a substantially narrower interval; the small point-estimate change is compatible with random baseline imbalance, not evidence that CUPED created revenue. New users are retained using a missing-history indicator. Raw and adjusted conclusions, theta, cutoff, missingness, and interval are all published.",
   "commonMistakes": [
-    "Applying the method without checking its assumptions or data-generating process.",
-    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+    {
+      "mistake": "Using a covariate measured after assignment",
+      "correction": "Treatment may change it, so subtraction can remove part of the effect or induce selection bias; enforce a pre-treatment cutoff."
+    },
+    {
+      "mistake": "Dropping users without history",
+      "correction": "That changes the population and can bias a triggered analysis; handle missing history explicitly."
+    },
+    {
+      "mistake": "Expecting CUPED to fix a broken test",
+      "correction": "It reduces random variance under a trustworthy design; it does not repair SRM, logging loss, or interference."
+    },
+    {
+      "mistake": "Selecting the best covariate after reading results",
+      "correction": "Prevalidate and version adjustment choices to avoid analysis multiplicity and overstated gains."
+    }
   ],
   "followUps": [
-    "What assumptions does Variance Reduction & CUPED make?",
-    "How would you validate or debug Variance Reduction & CUPED in practice?"
+    {
+      "question": "Why does CUPED remain unbiased?",
+      "answer": "The centered covariate has zero expected arm contrast under randomization and is unaffected by treatment, so subtracting a fixed multiple does not change the expected treatment difference."
+    },
+    {
+      "question": "How much variance can it remove?",
+      "answer": "For the optimal single linear covariate, the ideal outcome variance reduction is rho squared; treatment-effect variance also depends on allocation and estimation details."
+    },
+    {
+      "question": "What if theta is estimated from the experiment?",
+      "answer": "Treatment-blind pooled estimation is common and often asymptotically valid, but fully interacted regression, robust errors, and historical validation improve protection under heterogeneity and finite samples."
+    }
   ],
-  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "production": "Create a covariate contract with source, unit, historical window, absolute cutoff, transformation, missingness handling, and owner. Enforce that no input timestamp reaches the assignment or treatment period. Version theta or model artifacts and compute them treatment-blind. Persist raw and adjusted outcomes, effects, intervals, covariance, correlation, variance reduction, sample inclusion, and balance. Monitor cutoff violations, missing-history drift, feature availability, theta instability, residual variance, raw-adjusted divergence, and coverage on A/A traffic. Limit access to historical user behavior and minimize retention. If the adjustment pipeline fails, publish the valid raw estimator with wider uncertainty. Rollback the CUPED artifact without changing assignments, outcomes, or the prespecified causal target.",
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "Controlled-experiment variance reduction uses pre-treatment information to make treatment-effect estimates more precise without changing the randomized causal contrast. CUPED (Controlled-experiment Using Pre-Experiment Data) adjusts an outcome by a centered covariate measured before assignment, typically the same user metric in a historical window. This chapter derives the optimal linear coefficient, variance reduction factor, unbiasedness under randomization, cross-fitting and regression adjustment, missing pre-period data, triggered metrics, ratio metrics, multiple covariates, heterogeneity, and failure modes. You will learn why correlation determines precision gain, why post-treatment covariates create bias, why centering and a treatment interaction matter, and how to estimate gains on historical A/A-style data rather than selecting a favorable adjustment after seeing outcomes. A worked revenue experiment shows a large variance reduction with unchanged effect expectation. The lab implements CUPED from first principles, compares it with an OLS treatment coefficient, and verifies unbiased effect recovery plus reduced variance over repeated randomized trials. Production guidance covers cutoff enforcement, leakage checks, coefficient versioning, missingness, metric lineage, monitoring, fallback, and rollback. CUPED creates information by removing predictable noise; it cannot repair broken randomization or measurement.",
+  "prerequisites": [
+    "experiment-design",
+    "expectation-variance",
+    "linear-regression"
+  ],
+  "learningObjectives": [
+    "Derive the CUPED adjustment coefficient and variance reduction from covariance and correlation.",
+    "Choose covariates that are predictive, pre-treatment, consistently available, and unaffected by assignment or exposure.",
+    "Connect CUPED to regression adjustment, interactions, cross-fitting, and robust analysis for complex metrics.",
+    "Implement and validate an adjustment using unbiasedness, variance, leakage, missingness, and reproducibility checks."
+  ],
+  "deepSections": [
+    {
+      "id": "derivation",
+      "title": "Control-variate derivation",
+      "body": "Let X be a pre-treatment covariate with mean mu_X and define Y_cv=Y-theta(X-mu_X). Its expectation equals E[Y] for any fixed theta because the centered term has mean zero. Its variance is Var(Y)+theta^2 Var(X)-2 theta Cov(Y,X), minimized at theta*=Cov(Y,X)/Var(X) when Var(X)>0. Substitution gives Var(Y_cv)=Var(Y)(1-rho^2), where rho is correlation between X and Y. In an experiment, comparing adjusted arm means retains ITT because assignment is independent of pre-treatment X in expectation. Finite-sample estimates of theta add uncertainty, usually small at scale but still part of method validation."
+    },
+    {
+      "id": "covariates",
+      "title": "Choosing and constructing covariates",
+      "body": "Good covariates predict the outcome, are available before assignment for the target units, have stable semantics, and cannot be altered by treatment. The same metric in a comparable pre-period is common; multiple historical periods, geography, device, or model predictions can add signal. Freeze an absolute cutoff before any unit could receive treatment, not a user-relative window starting from exposure. Do not use post-treatment clicks, survival, session count, or eligibility consequences. Avoid selecting covariates solely because they maximize precision in the current treatment comparison. Evaluate expected gains on historical periods, A/A splits, or cross-validation and keep a versioned covariate contract."
+    },
+    {
+      "id": "regression",
+      "title": "Regression adjustment, interactions, and cross-fitting",
+      "body": "CUPED with one linear control is equivalent to residualizing outcomes or including a centered covariate in a treatment regression under corresponding specification. With treatment effects heterogeneous by X, include treatment-by-covariate interactions or use a fully interacted estimator so adjustment does not impose a common slope across arms. Robust standard errors protect heteroskedasticity. Flexible machine-learning predictions can serve as control variates when trained without treatment-period leakage; cross-fitting separates prediction training from residual evaluation and supports modern covariate adjustment. The target remains the randomized marginal effect, not the regression coefficient's associational interpretation outside the design."
+    },
+    {
+      "id": "missing-ratios",
+      "title": "Missing history, new users, and nonlinear metrics",
+      "body": "New users have no pre-period metric. Complete-case CUPED changes the estimand to returning users and can interact with eligibility. Instead predefine zero plus a missingness indicator, group-specific centering, or a prediction model that accepts available features, then verify balance and effect interpretation. Heavy tails may need winsorization defined independently of treatment and applied consistently. Ratio metrics require unit-level definitions, delta-method or influence-function adjustment, or numerator and denominator treatment that preserves the estimand; subtracting a covariate from an already aggregated ratio is generally invalid. Triggered analyses must ensure the trigger is pre-treatment or assignment-invariant."
+    },
+    {
+      "id": "validation-operation",
+      "title": "Validating gains and guarding failure modes",
+      "body": "Always compute raw and adjusted effects: material divergence beyond expected noise suggests leakage, imbalance, implementation error, or estimand change. On historical null periods, verify centered adjusted effects and interval calibration. Measure covariance, theta, raw and residual variance, empirical reduction, missingness, and gains by prespecified platform or cohort. Re-estimate or version theta when behavior drifts, but do not tune repeatedly on live treatment effects. CUPED does not fix differential logging, SRM, interference, or noncompliance. If the covariate pipeline is late or invalid, fall back to the prespecified unadjusted estimator rather than blocking safety decisions or imputing from treatment-period outcomes."
+    }
+  ],
+  "math": "For centered X_c=X-mu_X, Y_cuped=Y-theta X_c. E[Y_cuped]=E[Y]. The variance-minimizing theta*=Cov(Y,X)/Var(X), yielding Var(Y_cuped)=Var(Y)-Cov(Y,X)^2/Var(X)=Var(Y)(1-rho^2). Estimate the treatment effect as mean(Y_cuped|Z=1)-mean(Y_cuped|Z=0). In a sample, center X using a treatment-blind population mean and compute uncertainty for the adjusted outcome at the randomization unit, with robust or cluster-aware methods matching the design.",
+  "workedExamples": [
+    {
+      "title": "Reducing revenue noise without changing the target",
+      "body": "Use a frozen historical revenue covariate, derive theta, retain new users with explicit missingness handling, compare raw and adjusted effects, and validate empirical variance reduction on historical splits."
+    }
+  ],
+  "exercises": [
+    {
+      "prompt": "If pre/post correlation is 0.6, what ideal variance fraction remains?",
+      "solution": "1-rho^2=1-0.36=0.64, so ideal variance reduction is 36% and standard error scales by sqrt(0.64)=0.8."
+    },
+    {
+      "prompt": "Why center X?",
+      "solution": "Centering keeps the adjusted outcome mean on the original scale and makes the control-variate expectation zero; arm contrasts would cancel a common constant, but centering clarifies interpretation and numerics."
+    },
+    {
+      "prompt": "Can treatment-period session count be a CUPED covariate?",
+      "solution": "No if treatment can affect sessions. It is post-treatment and adjustment could remove the treatment pathway or create selection bias."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "flow",
+      "title": "CUPED information path",
+      "items": [
+        "Freeze pre-treatment window",
+        "Build predictive covariate",
+        "Center + estimate theta",
+        "Adjust unit outcome",
+        "Compare randomized arms",
+        "Validate raw effect + variance gain"
+      ],
+      "caption": "Variance reduction is trustworthy only when the predictor is temporally protected from treatment.",
+      "afterSection": "covariates"
+    },
+    {
+      "type": "compare",
+      "title": "What CUPED changes",
+      "left": {
+        "title": "Changes",
+        "items": [
+          "Residual outcome variance",
+          "Interval width",
+          "Power / MDE",
+          "Sensitivity to chance baseline mix"
+        ]
+      },
+      "right": {
+        "title": "Does not change",
+        "items": [
+          "Randomized estimand",
+          "Eligibility population",
+          "Treatment assignment",
+          "Need for SRM and trust checks"
+        ]
+      },
+      "caption": "CUPED improves precision; it does not create a new causal design.",
+      "afterSection": "validation-operation"
+    }
+  ],
+  "lab": {
+    "language": "python",
+    "goal": "Implement CUPED adjustment, compare it with regression adjustment, and verify effect unbiasedness plus variance reduction over repeated randomized experiments.",
+    "buildIt": "import numpy as np\ndef cuped(y,x):\n    x=np.asarray(x,float); y=np.asarray(y,float)\n    xc=x-x.mean(); theta=float(np.dot(xc,y-y.mean())/np.dot(xc,xc))\n    return y-theta*xc,theta\nrng=np.random.default_rng(7); n=4000\nx=rng.normal(10,3,n); z=rng.integers(0,2,n)\ny=5+0.8*x+1.5*z+rng.normal(0,2,n)\ny_adj,theta=cuped(y,x)\ndef arm_effect(values,z): return values[z==1].mean()-values[z==0].mean()\nraw_effect=arm_effect(y,z); adjusted_effect=arm_effect(y_adj,z)",
+    "useIt": "import statsmodels.api as sm\ndesign=sm.add_constant(np.column_stack([z,x-x.mean()]))\nfit=sm.OLS(y,design).fit(cov_type='HC1')\nregression_effect=float(fit.params[1])",
+    "verifyIt": "assert abs(theta-0.8)<0.05\nassert abs(adjusted_effect-regression_effect)<1e-10\nassert np.var(y_adj)<np.var(y)\nassert abs(adjusted_effect-1.5)<0.12\nraw=[]; adjusted=[]\nfor seed in range(200):\n    local=np.random.default_rng(seed); zz=local.integers(0,2,n); yy=5+0.8*x+1.5*zz+local.normal(0,2,n); aa,_=cuped(yy,x)\n    raw.append(arm_effect(yy,zz)); adjusted.append(arm_effect(aa,zz))\nassert abs(np.mean(adjusted)-1.5)<0.03\nassert np.var(adjusted)<0.6*np.var(raw)",
+    "shipIt": "Freeze covariate cutoff and missingness semantics, version theta/model, publish raw and adjusted estimates, monitor leakage and realized variance reduction, and fall back to the unadjusted ITT estimator if the covariate pipeline is invalid."
+  },
+  "sourceNotes": [
+    {
+      "resource": "cuped-paper",
+      "contribution": "Introduces CUPED and derives sensitivity gains from pre-experiment data in online controlled experiments."
+    },
+    {
+      "resource": "trustworthy-oce-survey",
+      "contribution": "Provides broader randomization, variance reduction, power, and trustworthy-analysis context."
+    },
+    {
+      "resource": "microsoft-experimentation",
+      "contribution": "Provides large-scale operational experience with pre-period metrics, experiment platforms, and trust safeguards."
+    },
+    {
+      "resource": "statsmodels-power",
+      "contribution": "Documents statistical modeling and power interfaces used to cross-check adjustment and inference workflows."
+    }
+  ]
 }

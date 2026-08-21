@@ -7,31 +7,175 @@
     "da",
     "ds"
   ],
-  "interviewAnswer": "A good dashboard starts from decisions and questions, not chart availability. Use stable metric definitions, clear filters/time windows, meaningful comparisons and enough context to distinguish signal from normal variation.",
+  "interviewAnswer": "I design a dashboard around who decides what, how often, and what action follows. I create a hierarchy from outcome and guardrail KPIs to diagnostic drivers, with definitions, units, denominators, targets, uncertainty, sample support, freshness, and ownership. The default screen answers current state, change, significance/impact, and where to investigate; details live in drill-downs. I use simple comparable charts, consistent filters and time windows, accessible redundant status encodings, and explicit stale/partial-data states. The semantic model, row-level security, tests, performance, alerts, and rollback are part of the design.",
   "keyPoints": [
-    "One screen should have a clear decision purpose.",
-    "Show denominators, time grain and targets/baselines.",
-    "Avoid mixing metric definitions across pages."
+    "Decisions and actions determine dashboard scope",
+    "KPIs need targets, denominators, uncertainty, and freshness",
+    "Overview and diagnosis need different levels of detail",
+    "Status must distinguish harm, uncertainty, and missing/stale data",
+    "The semantic and operational system is part of the interface"
   ],
   "resources": [
+    "powerbi-dashboard-design",
     "fundamentals-dataviz",
-    "berkeley-data100"
+    "visual-communication-science",
+    "dbt-contracts"
   ],
   "featured": false,
-  "why": "Dashboard & BI Design is a standard part of a broad data/ML curriculum because it changes how models are selected, evaluated or operated in real systems.",
-  "intuition": "One screen should have a clear decision purpose.",
-  "deepDive": "A good dashboard starts from decisions and questions, not chart availability. Use stable metric definitions, clear filters/time windows, meaningful comparisons and enough context to distinguish signal from normal variation. Show denominators, time grain and targets/baselines. Avoid mixing metric definitions across pages. A strong answer connects the formal idea to validation, data requirements and failure modes instead of treating the method as a recipe.",
-  "workedExample": "An operations dashboard shows current failure rate, historical baseline, target, affected segments and alert threshold—not twenty unrelated charts.",
+  "why": "Dashboards shape recurring decisions more than one-off analyses. A clean card can be dangerously persuasive if its metric is stale, denominator changed, or confidence is weak. Adding every stakeholder request produces a wall of tiles that nobody can scan; hiding diagnostics forces incidents into manual queries. Microsoft’s official guidance emphasizes audience, essential content, hierarchy, and appropriate visual choice, but technical reliability goes further: metric contracts, access control, query performance, alerts, and provenance determine whether the page is trustworthy. Interviews test layout and KPIs; production design treats the dashboard as a monitored product with failure states.",
+  "intuition": "Think of a cockpit, not a poster. The overview tells whether the system is within acceptable operating bounds. Every warning points toward a diagnostic path and an owner. A speed value without units, safe range, time, or sensor status is useless; the same is true of conversion or model accuracy. Space is scarce, so visual prominence reflects decision priority, not chart novelty. A red state should mean a defined action, an amber state defined uncertainty or risk, and a gray state unavailable/stale—not a subjective color choice. Users need to know whether the world changed or the measurement system did.",
+  "deepDive": "Dashboard architecture has four coupled layers: metric semantics, data/query reliability, visual and interaction design, and operating governance. A failure in any layer can invalidate the decision even when the others look healthy.",
+  "workedExample": "A model-health dashboard shows 92% accuracy in green. Labels are 21 days stale, positive class is 2%, one region has 41% recall, and the displayed average weights events rather than users. Redesign the overview with label/data freshness state, user-level population, recall/precision/calibration and latency/cost guardrails, thresholds, intervals, and support. A slice-exception table highlights region harm with minimum-cell/privacy rules. Trends annotate model and policy deployments. Drill-down links to confusion matrices and lineage. If labels exceed the freshness SLO, status becomes gray 'unknown' rather than green, alerts route to the label-pipeline owner, and last valid model decision remains visible.",
   "commonMistakes": [
-    "Choosing the technique without checking whether its assumptions match the problem.",
-    "Optimizing an offline metric without checking realistic validation slices or operational constraints."
+    "Starting from available metrics or chart requests instead of decisions, cadence, and actions.",
+    "Displaying a KPI without denominator, target, uncertainty/support, freshness, owner, or definition.",
+    "Using red/green status for everything and rendering stale, partial, denied, or missing data as zero or healthy.",
+    "Allowing filters, caches, exports, or drill-downs to use inconsistent populations or bypass security.",
+    "Changing semantic definitions without versioning, rebuilding history, and notifying consumers."
   ],
   "followUps": [
-    "When would you not use Dashboard & BI Design?",
-    "How would you validate or tune Dashboard & BI Design?"
+    {
+      "question": "What belongs above the fold?",
+      "answer": "The few outcome and guardrail states that drive the audience's immediate decisions, plus freshness and meaningful exceptions. Detail and exploration should be one predictable step away."
+    },
+    {
+      "question": "How do you prevent alert fatigue?",
+      "answer": "Use action-linked thresholds, uncertainty/volume-aware rules, deduplication, cooldowns, severity, ownership, runbooks, and post-alert review of precision and missed incidents."
+    },
+    {
+      "question": "How do you show stale data?",
+      "answer": "Use an explicit unavailable/stale state with last complete event time and reason. Do not retain a green color or silently display the last value as current."
+    }
   ],
-  "production": "In production, validate on realistic slices, track latency/cost when relevant, and monitor for distribution changes or failure modes that the offline metric can hide.",
+  "production": "Treat dashboard definitions, semantic metrics, alerts, and access policies as version-controlled code. Validate additive components and fixtures against source systems; monitor query success, latency, freshness, cache age, row counts, nulls, permissions, broken links, and render errors. Test filter propagation, exports, mobile, dark/light, localization, keyboard/screen-reader behavior, and small-cell privacy. Instrument usage and incident resolution. Provide owner and runbook for every alerting metric. Use deployment annotations and change logs. When a source or definition fails, fail visibly, freeze the last valid state with timestamp, and suppress unsafe alerts. Rollback data model, metric version, dashboard spec, cache, and alerts together.",
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "A dashboard is an operational decision interface over a semantic metric layer, not a collage of charts. Its design begins with audience, decisions, monitoring cadence, actions, and failure behavior; visual hierarchy and interaction then make the relevant state legible. This chapter develops audience and task analysis, KPI trees, leading and lagging indicators, targets and guardrails, overview-to-detail structure, freshness and provenance, chart selection, alert semantics, filters, drill-down, mobile and accessibility behavior, performance budgets, and governance. You will learn why a single number needs context, why red/green status cannot replace uncertainty or impact, how denominator and refresh mismatches create false narratives, and how to separate monitoring from exploratory reports. The worked example redesigns a model-health dashboard whose green average hides slice harm and stale labels. The lab builds a dashboard-card state engine with freshness, sample-size, interval, and threshold checks and verifies safe behavior. Production guidance covers semantic models, caching, row-level security, observability, testing, ownership, incident response, and rollback.",
+  "prerequisites": [
+    "visual-encoding",
+    "groupby-pivot",
+    "data-contracts-lineage"
+  ],
+  "learningObjectives": [
+    "Derive dashboard content from audience decisions, monitoring cadence, actions, and metric ownership.",
+    "Design KPI hierarchy with estimates, targets, guardrails, denominators, uncertainty, freshness, and diagnostic drill-down.",
+    "Specify filters, interaction, accessibility, responsive layout, performance, and secure data behavior as product requirements.",
+    "Operate dashboards through semantic contracts, tests, observability, incident response, and versioned rollback."
+  ],
+  "deepSections": [
+    {
+      "id": "audience-decisions",
+      "title": "Audience, cadence, and action mapping",
+      "body": "Interview users about decisions, not requested charts. For each decision record owner, cadence, lead time, cost of false alarm/miss, required slices, and available actions. Executives need outcome and strategic exceptions; operators need near-real-time diagnostics; analysts need flexible exploration. A single page cannot optimize all tasks. Separate monitoring dashboards from exploratory reports and postmortem analysis. Define the question each tile answers and remove tiles with no action or learning path. Arrange the reading order around urgency and hierarchy, considering left-to-right or locale-specific reading and wallboard versus mobile contexts."
+    },
+    {
+      "id": "kpi-tree",
+      "title": "KPI trees, targets, guardrails, and context",
+      "body": "Start with a small set of outcome metrics, decompose into leading drivers and guardrails, and show causal humility: a KPI tree is a hypothesis about relationships, not proof. Every metric needs definition, grain, numerator, denominator, unit, population, time window, owner, source, target, and revision. Show current estimate, change versus relevant baseline, uncertainty or support, target/practical threshold, and forecast where needed. Pair growth with quality, fairness, cost, or reliability guardrails. Avoid vanity metrics and composite scores whose weights hide trade-offs. Use rates and counts together so denominator changes remain visible."
+    },
+    {
+      "id": "layout-interaction",
+      "title": "Overview, hierarchy, filters, and drill-down",
+      "body": "Use the first viewport for status and exceptions, then trends and diagnostic slices. Repeated card/chart structures create scanability. Place related metrics together and use whitespace as grouping, not decoration. Keep color reserved for status/highlight and direct labels where possible. Global filters must visibly apply to every tile or clearly show exceptions; preserve filter state in shared URLs and exports. Drill-down should maintain context and provenance. Avoid hidden hover-only facts. Offer exact tables for lookup. Test empty, loading, error, stale, partial, and permission-denied states rather than letting them look like zero."
+    },
+    {
+      "id": "alerts-uncertainty",
+      "title": "Alerts, uncertainty, and safe status",
+      "body": "Static thresholds create alert fatigue when noise, seasonality, or volume changes. Define whether status uses an absolute SLO, control limit, confidence/credible interval, forecast residual, or business threshold. Show both magnitude and uncertainty; a precise tiny deviation and a large uncertain deviation need different actions. Correct for repeated monitoring with sequential or process-control methods where claims require it. Include sample size, data maturity, and last successful refresh. Red/green alone is inaccessible and conflates good/bad with measured/unmeasured; add text, icons, and reason codes. Alerts need owner, deduplication, cooldown, escalation, and runbook links."
+    },
+    {
+      "id": "platform-governance",
+      "title": "Semantic layer, performance, security, and lifecycle",
+      "body": "Centralize metric definitions and certified dimensions so tiles do not implement independent business logic. Enforce row-level and column security throughout queries, exports, caches, and drill-downs. Set query latency and freshness SLOs, preaggregate where semantics permit, and expose cache/refresh time. Test metric fixtures, chart specs, filter propagation, permissions, responsive layout, accessibility, and links. Track usage and decision value without using views as the only success metric. Assign owners and deprecation dates. Version dashboards and metrics; announce definition changes and rebuild historical comparisons rather than silently splicing regimes.\n\nDesign an explicit degraded mode. If labels, denominators, or freshness signals fail, suppress definitive status and show what remains measurable, the last trustworthy cutoff, and the owner. Operational users need to distinguish bad performance from absent evidence; otherwise the dashboard itself becomes a source of unsafe automated decisions."
+    }
+  ],
+  "math": "A status rule should be explicit, for example alert if estimate plus uncertainty relation crosses a harm threshold and data are mature/fresh. Rate r=numerator/denominator requires both components. Change can be absolute r_t-r_0 or relative (r_t-r_0)/r_0; label it. Freshness age=current time-max complete event time, not only query completion. For a composite score S=sum w_j z_j, weights, standardization, missing handling, and trade-offs must be published; otherwise movement cannot be interpreted.",
+  "workedExamples": [
+    {
+      "title": "A green average that hides stale labels and regional harm",
+      "body": "Repair unit and metric semantics, elevate freshness to a status prerequisite, add decision-aligned quality and system guardrails, expose slice exceptions, and connect every alert to an owner and runbook."
+    }
+  ],
+  "exercises": [
+    {
+      "prompt": "A KPI card says conversion 12%. Name four missing contexts.",
+      "solution": "Possible answers: numerator/denominator and population, time window, baseline/target, uncertainty/sample size, freshness, unit, owner, or definition version."
+    },
+    {
+      "prompt": "Why should stale data be gray/unknown rather than green?",
+      "solution": "Green asserts healthy current state. Stale data provide no current evidence; preserving green creates false reassurance and delays incident response."
+    },
+    {
+      "prompt": "A dashboard uses one global region filter but one tile ignores it. What is required?",
+      "solution": "Either make filter semantics consistent or visibly label the exception and reason. Silent inconsistency makes cross-tile comparison invalid."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "flow",
+      "title": "Decision dashboard hierarchy",
+      "items": [
+        "Audience decision",
+        "Outcome KPI",
+        "Drivers + guardrails",
+        "Exception/slice diagnostics",
+        "Owner + action/runbook"
+      ],
+      "caption": "Every visible metric should connect upward to a decision and downward to a diagnosis or action.",
+      "orientation": "horizontal",
+      "afterSection": "audience-decisions"
+    },
+    {
+      "type": "compare",
+      "title": "Healthy versus unknown state",
+      "left": {
+        "title": "Measured healthy",
+        "items": [
+          "Fresh and complete data",
+          "Metric within threshold",
+          "Adequate support",
+          "Green + text"
+        ]
+      },
+      "right": {
+        "title": "Unknown / unsafe to judge",
+        "items": [
+          "Stale or partial data",
+          "Permission/query failure",
+          "Immature outcome",
+          "Gray + reason"
+        ]
+      },
+      "caption": "Missing evidence is not evidence of health and needs its own operational state.",
+      "afterSection": "alerts-uncertainty"
+    }
+  ],
+  "lab": {
+    "language": "python",
+    "goal": "Build a dashboard-card state engine that gates health on freshness, maturity, sample support, uncertainty, and explicit thresholds.",
+    "buildIt": "from dataclasses import dataclass\n\n@dataclass\nclass Metric:\n    value: float\n    lower: float\n    upper: float\n    sample_size: int\n    freshness_minutes: int\n    complete: bool\n\ndef status(metric,minimum,freshness_slo,min_n):\n    if not metric.complete: return 'unknown: incomplete'\n    if metric.freshness_minutes>freshness_slo: return 'unknown: stale'\n    if metric.sample_size<min_n: return 'unknown: low support'\n    if metric.upper<minimum: return 'harm'\n    if metric.lower>=minimum: return 'healthy'\n    return 'uncertain'\n\ngood=Metric(0.94,0.93,0.95,5000,10,True)\nstale=Metric(0.99,0.98,1.0,5000,180,True)",
+    "useIt": "import pandas as pd\nframe=pd.DataFrame([good.__dict__,stale.__dict__])\nframe['state']=[status(m,0.90,60,1000) for m in (good,stale)]",
+    "verifyIt": "assert status(good,0.90,60,1000)=='healthy'\nassert status(stale,0.90,60,1000)=='unknown: stale'\nassert status(Metric(0.85,0.80,0.89,5000,5,True),0.90,60,1000)=='harm'\nassert status(Metric(0.91,0.88,0.94,5000,5,True),0.90,60,1000)=='uncertain'\nassert status(Metric(0.99,0.98,1.0,5,5,True),0.90,60,1000)=='unknown: low support'\nassert list(frame['state'])==['healthy','unknown: stale']",
+    "shipIt": "Centralize metric and status contracts, gate on data integrity/freshness/support, test filters/security/accessibility/performance, attach owners and runbooks, and fail visibly rather than preserving reassuring stale values."
+  },
+  "sourceNotes": [
+    {
+      "resource": "powerbi-dashboard-design",
+      "contribution": "Provides current official audience, hierarchy, single-screen, clutter, chart-choice, labeling, and context recommendations."
+    },
+    {
+      "resource": "fundamentals-dataviz",
+      "contribution": "Provides practical principles for multi-panel layouts, color, labels, scales, and decision-focused quantitative display."
+    },
+    {
+      "resource": "visual-communication-science",
+      "contribution": "Provides empirical foundations for perceptual hierarchy, comparison, uncertainty, and audience comprehension."
+    },
+    {
+      "resource": "dbt-contracts",
+      "contribution": "Provides official contract, schema, compatibility, and governance guidance for dependable semantic inputs."
+    }
+  ]
 }

@@ -7,31 +7,184 @@
     "ds",
     "da"
   ],
-  "interviewAnswer": "Grouping and pivoting turn event-level data into interpretable segment, cohort and time summaries. The key is choosing denominators and cohorts consistently.",
+  "interviewAnswer": "GroupBy is split–apply–combine: partition rows by keys, compute an operation per group, and return an output whose grain depends on aggregation, transformation, or filtering. I declare the output grain, null/category behavior, and additive components, then reconcile to source totals. Pivot reshapes a unique key combination; duplicates require an explicit aggregation, not accidental first value. For cohorts, assign each entity once, compute period age consistently, deduplicate entity-period activity, keep denominators tied to the original eligible cohort, and mark recent right-censored cells as unavailable rather than zero.",
   "keyPoints": [
-    "Define cohort entry date explicitly.",
-    "Do not mix counts and rates without denominators.",
-    "Check Simpson’s paradox across segments."
+    "Every grouped result has a grain and key contract",
+    "Ratios should aggregate numerator and denominator",
+    "Pivot duplicates require an explicit rule",
+    "Cohort and calendar time are distinct axes",
+    "Censoring and late data define which retention cells are observable"
   ],
   "resources": [
+    "pandas-groupby",
     "pandas-user-guide",
-    "berkeley-data100"
+    "berkeley-data100",
+    "openintro-stats"
   ],
   "featured": false,
-  "why": "GroupBy, Pivot & Cohort Analysis appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
-  "intuition": "Define cohort entry date explicitly.",
-  "deepDive": "Grouping and pivoting turn event-level data into interpretable segment, cohort and time summaries. The key is choosing denominators and cohorts consistently. Do not mix counts and rates without denominators. Check Simpson’s paradox across segments. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
-  "workedExample": "Build retention by signup month and weeks-since-signup rather than comparing raw active-user totals.",
+  "why": "A large share of analytics logic is grouping, yet many metric incidents come from grain errors rather than arithmetic. A mean of country conversion rates weights countries equally instead of users; a left join duplicates events before grouping; `dropna=True` removes unknown categories; a cohort dashboard labels unobserved future months as zero. Interviews test API fluency, but rigorous work predicts row counts and defines denominators. In production, grouped tables often become semantic models that feed dashboards and experiments, so reproducibility, incremental backfills, and reconciliation are essential.",
+  "intuition": "Imagine sorting receipts into labeled bins, summarizing each bin, then arranging summaries in a grid. The bin label defines the output row. If you keep one result per receipt, that is a transformation, not an aggregation. A pivot only rotates labels into columns after deciding what one cell means. Cohorts add a clock that starts separately for every entity: month 0 is signup month, month 1 the next month. The diagonal edge of a cohort matrix is not poor retention; it is the future. Correct cohort analysis asks which original members were eligible to have reached each age and which were observed active, while preserving calendar date for outages and seasonality.",
+  "deepDive": "Grouped analysis is relational algebra plus metric semantics. Associative additive components support distributed and incremental aggregation; ratios, distinct counts, medians, and cohort states require additional merge rules and state.",
+  "workedExample": "A January cohort has 100 users and 60 active in month 1; February has 20 users and 18 active. The unweighted average of retention rates is (60%+90%)/2=75%, while user-weighted combined retention is 78/120=65%. Neither is universally correct, but a company-wide retained-user rate uses the latter and must keep counts. A March cohort dashboard displays month 2 as 0% even though the data cutoff is April 15; the cell is unobservable and should be NA. Duplicate event rows had also counted active users twice, producing values above 100%. Deduplicate entity-age and assert bounds.",
   "commonMistakes": [
-    "Applying the method without checking its assumptions or data-generating process.",
-    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+    "Averaging group percentages without preserving numerators, denominators, and intended weights.",
+    "Using pivot with duplicate index/column pairs and accepting an arbitrary value or aggregation.",
+    "Letting null group keys disappear or unobserved categorical combinations appear without an explicit policy.",
+    "Counting events rather than distinct entities in retention and allowing rates above one.",
+    "Filling not-yet-mature cohort cells with zero and comparing recent cohorts with complete older cohorts."
   ],
   "followUps": [
-    "What assumptions does GroupBy, Pivot & Cohort Analysis make?",
-    "How would you validate or debug GroupBy, Pivot & Cohort Analysis in practice?"
+    {
+      "question": "What is the difference between aggregate and transform?",
+      "answer": "Aggregate reduces each group to summary rows at group grain; transform returns values aligned to the original rows, often broadcasting a group statistic."
+    },
+    {
+      "question": "Why is average of averages wrong?",
+      "answer": "Group means have different denominators. An unweighted average targets an equal-group estimand; the combined individual mean requires weighting by valid counts or weights."
+    },
+    {
+      "question": "How do late events affect cohorts?",
+      "answer": "They can add activity to past cells or reveal an earlier first event that moves an entity's cohort and all ages. Incremental logic must identify and rebuild affected history."
+    }
   ],
-  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "production": "Publish group and cohort metrics from a semantic layer with explicit grain, keys, numerator, denominator, distinctness, null/category behavior, time zone, cutoff, and maturity rule. Preserve long-form components and pivot only for display. Incremental jobs must be idempotent, watermark-aware, and able to rebuild entities whose first event changes. Test source reconciliation, output-key uniqueness, no rates outside bounds, no duplicate entity-age, and full-versus-incremental equality. Monitor cohort sizes, late-event age, unknown groups, sparse/high-cardinality explosion, and freshness. Suppress or aggregate sensitive small cohorts. Version definitions and backfill history deliberately. Rollback model, generated matrices, and dashboard together.",
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "GroupBy and pivot operations transform event-level rows into metrics at a declared output grain. Cohort analysis adds two time axes—when an entity entered and how long it has progressed—so lifecycle behavior is separated from calendar conditions. This chapter develops split–apply–combine semantics, aggregation versus transformation, multi-key grouping, observed versus unobserved categories, null-key handling, weighted rates, ratios of sums, pivot uniqueness, margins, cohort assignment, age calculation, right censoring, retention denominators, and reconciliation. You will learn why average of averages is usually wrong, why groupby can silently drop null keys, how duplicate entity-period rows inflate retention, and why incomplete recent cohorts must not be compared with mature cohorts. The worked example builds a monthly signup-retention matrix and diagnoses a denominator bug. The lab implements grouping and cohort retention from first principles, compares with pandas, and verifies totals, grain, and monotonic eligibility. Production guidance covers semantic models, incremental recomputation, late events, time zones, sparse output, privacy, monitoring, and rollback.",
+  "prerequisites": [
+    "pandas-core",
+    "eda-workflow",
+    "sql-aggregation"
+  ],
+  "learningObjectives": [
+    "Declare input and output grain for groupby, aggregation, transformation, and pivot operations.",
+    "Compute weighted rates and ratios from additive components without averaging subgroup averages incorrectly.",
+    "Construct cohort and age indices with stable entity assignment, mature denominators, and late-event handling.",
+    "Verify grouped outputs through reconciliation, uniqueness, category/null semantics, and incremental consistency."
+  ],
+  "deepSections": [
+    {
+      "id": "grain",
+      "title": "Input grain, grouping keys, and output shape",
+      "body": "State whether rows are events, entity-days, orders, or snapshots. Group keys define partitions, but aggregation defines one row per observed key combination, transformation returns input-aligned values, and filtering may retain arbitrary rows. In pandas, `as_index`, `group_keys`, `observed`, `sort`, and `dropna` affect shape and semantics; verify current documented defaults rather than rely on memory. Null keys may represent unknown groups and should not vanish silently. Categorical groupers can produce unobserved combinations. Assert uniqueness of output keys and expected row bounds."
+    },
+    {
+      "id": "metrics",
+      "title": "Additive components, weights, and average-of-averages",
+      "body": "Sums and counts combine across partitions. A rate should usually be sum(successes)/sum(eligible), not mean of group rates unless equal group weighting is the estimand. Weighted mean is sum(w x)/sum(w), with weight meaning and support documented. Distinct counts are nonadditive across overlapping groups; use exact set unions or validated sketches. Medians and quantiles need raw values or mergeable summaries with approximation error. Keep numerator and denominator columns in semantic models so downstream slices recompute correctly. Reconcile grouped sums with source totals over complete partitions."
+    },
+    {
+      "id": "pivot",
+      "title": "Pivot, pivot_table, and duplicate cells",
+      "body": "A strict pivot maps each unique index–column pair to one value and should fail when duplicates exist. `pivot_table` aggregates duplicates with an explicit function. First/last is meaningful only with a deterministic order and business rule. Missing cell can mean no activity, not applicable, or incomplete data; choose fill values accordingly. Margins and totals may reapply aggregation rather than sum displayed cells, especially for means and ratios. Wide output can explode with high-cardinality categories; keep long form for computation and pivot at presentation boundaries. Column order should follow time or domain order, not accidental lexical sorting."
+    },
+    {
+      "id": "cohorts",
+      "title": "Cohort assignment, age, and retention",
+      "body": "Assign cohort once using first eligible event under a stable identity and time zone. Define period boundaries and age: calendar-month difference, exact-day windows, or billing cycles are not interchangeable. Deduplicate active entity within cohort-age so many events do not count multiple times. Denominator may be original cohort size for classic retention, at-risk population for survival, or eligible exposed population for product analysis; label it. Separate acquisition cohort from activity calendar date. Recent cohorts lack later ages, so cells are censored/NA, not zero. Reinstatement, deletion, identity merges, and backfilled first events require explicit policies."
+    },
+    {
+      "id": "incremental",
+      "title": "Late data, incremental state, and reconciliation",
+      "body": "Incremental aggregates must be idempotent and update affected groups when late or corrected events arrive. A new earlier signup can move an entity's entire cohort history. Track source watermark and impacted entities/partitions; rebuild a bounded window or maintain change logs. Snapshot facts can double-count state if summed across dates. Time-zone changes shift period boundaries. Verify full-refresh and incremental results on fixtures, reconcile numerator/denominator totals, and monitor cohort-size drift, impossible retention above one, duplicate entity-age records, and mature-cell coverage. Version metric and cohort definitions so historical matrices are interpretable.\n\nWhen aggregates are computed across partitions, verify associativity before merging partial results. Sums and counts combine cleanly; medians, distinct counts, ratios, and percentiles need sufficient intermediate state or explicit approximation. Reconcile partitioned output against a trusted batch calculation so execution strategy cannot silently redefine the metric."
+    }
+  ],
+  "math": "For group g, weighted mean mu_g=sum_{i in g}w_i x_i/sum_{i in g}w_i. Overall rate=sum_g successes_g/sum_g eligible_g, not generally mean_g(successes_g/eligible_g). For entity u with cohort period c_u and activity period t, age a=t-c_u under the chosen period arithmetic. Classic retention R_{c,a}=|{u:c_u=c and active at age a}|/|{u:c_u=c}|, defined only when cohort c has matured through age a and observation is complete.",
+  "workedExamples": [
+    {
+      "title": "Weighted retention and censored cohort cells",
+      "body": "Retain cohort-size and active-user components, distinguish equal-cohort from user-weighted estimands, deduplicate entity-age activity, and mask ages not yet observable at the data cutoff."
+    }
+  ],
+  "exercises": [
+    {
+      "prompt": "Groups have rates 10/20 and 90/180. What are unweighted and combined rates?",
+      "solution": "Both group rates are 50%, so unweighted and combined are 50%. This equality is incidental; different group rates and sizes generally differ."
+    },
+    {
+      "prompt": "January cohort is 100 users and 40 active at age 2; data cutoff occurs before March activity is complete. What should the cell show?",
+      "solution": "NA/incomplete rather than 40% or 0%, unless the maturity rule says age 2 is fully observed. Denominator and cutoff must be explicit."
+    },
+    {
+      "prompt": "Why can strict pivot failure be useful?",
+      "solution": "Duplicate index/column pairs reveal grain ambiguity. Failing forces an explicit aggregation or deduplication rule instead of silently losing or combining values."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "flow",
+      "title": "Split–apply–combine with grain",
+      "items": [
+        "Event/entity rows",
+        "Partition by keys",
+        "Apply sum/count/rate logic",
+        "Combine one row per output key",
+        "Reconcile components"
+      ],
+      "caption": "The grouping API is secondary to the output grain and metric algebra.",
+      "orientation": "horizontal",
+      "afterSection": "grain"
+    },
+    {
+      "type": "matrix",
+      "title": "Cohort retention geometry",
+      "rows": [
+        "Jan cohort",
+        "Feb cohort",
+        "Mar cohort"
+      ],
+      "cols": [
+        "Age 0",
+        "Age 1",
+        "Age 2"
+      ],
+      "cells": [
+        [
+          "100%",
+          "62%",
+          "48%"
+        ],
+        [
+          "100%",
+          "66%",
+          "NA"
+        ],
+        [
+          "100%",
+          "NA",
+          "NA"
+        ]
+      ],
+      "caption": "The upper-right cells are not zeros; cohorts have not matured to those ages at the conceptual data cutoff.",
+      "afterSection": "cohorts"
+    }
+  ],
+  "lab": {
+    "language": "python",
+    "goal": "Build grouped rate and cohort retention logic from first principles, compare with pandas, and verify grain, reconciliation, distinctness, and maturity bounds.",
+    "buildIt": "from collections import defaultdict\n\nevents=[('u1',0,0),('u1',0,1),('u1',0,1),('u2',0,0),('u3',1,1),('u3',1,2)]\ncohort_members=defaultdict(set); active=defaultdict(set)\nfor user,cohort,period in events:\n    cohort_members[cohort].add(user)\n    age=period-cohort\n    active[(cohort,age)].add(user)\nretention={}\nfor (cohort,age),users in active.items():\n    retention[(cohort,age)]=len(users)/len(cohort_members[cohort])",
+    "useIt": "import pandas as pd\ndf=pd.DataFrame(events,columns=['user','cohort','period'])\ndf['age']=df['period']-df['cohort']\npd_active=df.drop_duplicates(['user','cohort','age']).groupby(['cohort','age'])['user'].nunique()\npd_sizes=df.drop_duplicates(['user','cohort']).groupby('cohort')['user'].nunique()\npd_retention={(c,a):count/pd_sizes.loc[c] for (c,a),count in pd_active.items()}",
+    "verifyIt": "assert retention==pd_retention\nassert retention[(0,1)]==0.5\nassert all(0<=value<=1 for value in retention.values())\nassert len(active[(0,1)])==1\nassert sum(len(v) for v in cohort_members.values())==3\nassert all(age>=0 for _,age in retention)",
+    "shipIt": "Persist additive components at declared grain, deduplicate entity-period activity, mask immature cells, test full/incremental reconciliation, monitor late identity changes, and version cohort/time/denominator rules."
+  },
+  "sourceNotes": [
+    {
+      "resource": "pandas-groupby",
+      "contribution": "Documents current split–apply–combine behavior, aggregation, transformation, filtering, categorical, and missing-key semantics."
+    },
+    {
+      "resource": "pandas-user-guide",
+      "contribution": "Provides current pivoting, reshaping, time, grouping, and missing-data APIs for reproducible tabular analysis."
+    },
+    {
+      "resource": "berkeley-data100",
+      "contribution": "Connects grouped summaries, visualization, sampling, and analytical interpretation in end-to-end data science."
+    },
+    {
+      "resource": "openintro-stats",
+      "contribution": "Provides weighting, conditional distribution, aggregation, and sampling foundations needed for honest cohort metrics."
+    }
+  ]
 }

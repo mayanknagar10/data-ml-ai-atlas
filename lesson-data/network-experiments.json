@@ -8,31 +8,186 @@
     "da",
     "as"
   ],
-  "interviewAnswer": "Standard A/B inference assumes one unit’s treatment does not change another unit’s outcome. Social, marketplace and collaborative products violate this through interference, requiring cluster designs or specialized estimands.",
+  "interviewAnswer": "Standard A/B inference assumes no interference: one unit's assignment does not affect another's outcome. In social networks, marketplaces, and shared-capacity systems that can fail. I define the target effect first - direct, spillover, or total effect under full rollout - and an exposure mapping describing relevant neighbors' assignments. Individual randomization has high power but can dilute effects through cross-arm exposure. Graph-cluster or market-level randomization reduces contamination at the cost of fewer independent units and possible cluster imbalance; saturation or two-stage designs estimate spillovers. I use graph snapshots and cluster-aware inference, measure exposure and leakage, and avoid claiming a full-rollout effect from an estimand the design cannot identify.",
   "keyPoints": [
-    "SUTVA/no-interference can fail.",
-    "Cluster randomization reduces contamination but changes power.",
-    "Marketplace two-sided effects complicate interpretation."
+    "Interference makes outcomes depend on assignment vectors",
+    "Direct and total rollout effects are different estimands",
+    "Individual randomization can be precise for the wrong mixed-exposure contrast",
+    "Clustering trades fewer cross-arm edges for fewer independent units",
+    "Graph, exposure, and assignment versions are part of the causal design"
   ],
   "resources": [
-    "microsoft-experimentation",
+    "network-experimentation-scale",
+    "detecting-network-effects",
+    "airbnb-interference",
     "causal-mixtape"
   ],
   "featured": false,
-  "why": "Interference & Network Effects in Experiments is a standard part of a broad data/ML curriculum because it changes how models are selected, evaluated or operated in real systems.",
-  "intuition": "SUTVA/no-interference can fail.",
-  "deepDive": "Standard A/B inference assumes one unit’s treatment does not change another unit’s outcome. Social, marketplace and collaborative products violate this through interference, requiring cluster designs or specialized estimands. Cluster randomization reduces contamination but changes power. Marketplace two-sided effects complicate interpretation. A strong answer connects the formal idea to validation, data requirements and failure modes instead of treating the method as a recipe.",
-  "workedExample": "Changing seller ranking affects buyers and competing sellers, so user-level independent randomization may contaminate control.",
+  "why": "A treated user may invite control friends, a seller may change prices for all buyers, or a routing policy may alter congestion for both arms. In these settings, control is exposed indirectly and treatment effects can be amplified, diluted, or reversed. Research from large platforms documents network experiments and meta-experiments that detect bias from standard individual randomization. Interviews test whether candidates recognize Stable Unit Treatment Value Assumption (SUTVA) failure and redesign rather than merely clustering standard errors. Production designs also face incomplete graphs, rapidly changing edges, and privacy constraints.",
+  "intuition": "In an ordinary experiment, imagine each unit inside an isolated box. Network interference adds arrows between boxes, so flipping one treatment changes several outcomes. Individual randomization cuts many arrows between treatment and control, mixing their experiences. Cluster randomization groups strongly connected units and flips one coin per cluster, keeping more arrows within the same world. But if there are only twenty clusters, twenty is closer to the effective replication count than the millions of members. A full-rollout policy treats every node, an exposure condition rarely observed in a fifty-fifty individual experiment; extrapolation needs design or modeling support.",
+  "deepDive": "Interference expands potential outcomes from Y_i(z_i) to Y_i(z_vector). Exposure mappings reduce this enormous space by asserting which aspects of neighbors' assignments matter, and the experiment can identify only contrasts with adequate assignment probability.",
+  "workedExample": "A messaging feature makes sending invitations easier. Under user-level randomization, treated users invite control friends, so control activation rises; treated users also receive invitations from controls. The observed own-assignment contrast is only +1%, while the policy question is the total effect if everyone has the feature. Graph clusters based on pre-treatment communication reduce cross-arm edges, and a meta-experiment randomizes some regions by users and others by clusters. The cluster design estimates +4% with wider uncertainty, providing evidence of positive spillover and dilution. The report states cluster count, leakage, exposure mapping, and limits on full-rollout equilibrium.",
   "commonMistakes": [
-    "Choosing the technique without checking whether its assumptions match the problem.",
-    "Optimizing an offline metric without checking realistic validation slices or operational constraints."
+    {
+      "mistake": "Only clustering standard errors",
+      "correction": "That can address dependence but not bias from control units receiving treatment spillovers; redesign assignment or identify exposure effects."
+    },
+    {
+      "mistake": "Treating graph members as independent",
+      "correction": "Inference follows cluster or structured assignment, and effective replication may be the number of clusters."
+    },
+    {
+      "mistake": "Defining exposure after seeing outcomes",
+      "correction": "Outcome-driven exposure mappings create specification search; predefine and test sensitivity."
+    },
+    {
+      "mistake": "Calling the 50/50 contrast a full-rollout effect",
+      "correction": "The observed exposure mixture may differ radically from all-treated equilibrium; state the identified estimand."
+    }
   ],
   "followUps": [
-    "When would you not use Interference & Network Effects in Experiments?",
-    "How would you validate or tune Interference & Network Effects in Experiments?"
+    {
+      "question": "What is interference?",
+      "answer": "One unit's outcome depends on other units' assignments or treatments, so the usual isolated-unit potential-outcome model fails."
+    },
+    {
+      "question": "Why cluster-randomize a graph?",
+      "answer": "It keeps more interacting units in the same arm, reducing cross-arm contamination and making policy-world contrasts more visible, at a power cost."
+    },
+    {
+      "question": "How can you detect network effects?",
+      "answer": "Use domain evidence and exposure diagnostics, or randomize over assignment mechanisms and compare individual versus cluster estimates in a meta-experiment."
+    }
   ],
-  "production": "In production, validate on realistic slices, track latency/cost when relevant, and monitor for distribution changes or failure modes that the offline metric can hide.",
+  "production": "Version the target estimand, exposure mapping, graph source and cutoff, edge semantics, cluster algorithm and map, assignment probabilities, balance constraints, treatment versions, and analysis plan. Store cluster assignment and unit membership immutably; log realized exposure and boundary interactions separately. Monitor cluster-size imbalance, cross-arm edge fraction, graph staleness, exposure support, attrition, capacity, and global safety metrics. Simulate power and estimator behavior on representative graph snapshots. Restrict graph access and publish only privacy-safe aggregates. Roll out gradually with capacity and ecosystem guardrails. On harm, stop treatment globally where spillovers require it, observe cooldown, and retain graph, assignment, and exposure evidence for reproducible rollback analysis.",
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "Network experiments study treatments whose effects can spill across users, sellers, geographic areas, or shared resources, violating the usual no-interference assumption that each unit's outcome depends only on its own assignment. This chapter develops potential outcomes under exposure mappings, direct, spillover, total, and equilibrium effects; graph and cluster randomization; saturation and two-stage designs; switchbacks; marketplaces; contamination; cluster construction; variance and power; Horvitz-Thompson-style weighting; meta-experiments for detecting interference; and generalization to full rollout. You will learn why individual randomization can estimate a diluted mixture rather than the global policy effect, why cluster randomization reduces cross-arm edges but sacrifices independent units, how to define exposure without conditioning on realized outcomes, and how network evolution or hidden edges threaten identification. A worked messaging example contrasts direct and total effects. The lab simulates spillovers on a ring network, compares individual with cluster assignment, and verifies contamination, bias direction, and cluster-aware summaries. Production guidance covers graph snapshots, cluster versions, assignment, privacy, monitoring, safety, and rollback. The goal is to align the experiment's counterfactual worlds with how treatment actually propagates.",
+  "prerequisites": [
+    "experiment-design",
+    "trees-graphs-algorithms",
+    "causal-inference"
+  ],
+  "learningObjectives": [
+    "Define direct, spillover, total, and equilibrium estimands through treatment and neighborhood exposure mappings.",
+    "Choose individual, cluster, saturation, two-stage, or switchback assignment based on interference topology and policy target.",
+    "Analyze power and uncertainty using the actual independent randomization units and assignment probabilities.",
+    "Implement a spillover simulation and diagnose contamination and estimator mismatch under competing designs."
+  ],
+  "deepSections": [
+    {
+      "id": "estimands",
+      "title": "Potential outcomes and exposure mappings",
+      "body": "Without interference, unit i has Y_i(1) and Y_i(0). With interference, Y_i may depend on the full assignment vector. An exposure mapping compresses it to conditions such as own assignment plus fraction of treated neighbors, treated household, market saturation, or shared-resource load. A direct effect compares own treatment at the same neighborhood exposure; a spillover effect compares neighborhood exposure holding own treatment; a total effect compares policy worlds such as all treated versus all control. Equilibrium effects may include adaptation over time. State the mapping before outcomes and acknowledge hidden or weighted edges. Misspecification changes the estimand and can create residual interference."
+    },
+    {
+      "id": "designs",
+      "title": "Individual, cluster, saturation, and switchback designs",
+      "body": "Individual randomization supports direct contrasts but often creates mixed exposure. Graph-cluster randomization partitions nodes and randomizes clusters, aiming to maximize within-cluster edges while maintaining enough balanced clusters. Geographic or market clustering follows operational interactions. Two-stage designs randomize clusters to treatment saturation, then units within clusters, enabling direct and spillover contrasts under assumptions. Saturation designs vary treated fractions. Switchbacks alternate a shared market or service across time, useful for congestion or marketplace interference when carryover is short. A randomized meta-experiment can compare individual and cluster designs to test for interference bias."
+    },
+    {
+      "id": "clustering-power",
+      "title": "Cluster quality, power, and effective sample size",
+      "body": "Clustering reduces cross-arm edges but can create unequal cluster sizes, covariate imbalance, and few randomization units. Cluster construction should use a pre-treatment graph snapshot and be independent of outcomes. Balance volume, connectivity, geography, and operational constraints; rerandomization rules must be specified. Intracluster outcome correlation and cluster-size variation inflate variance. Analyze at cluster level or use design-consistent cluster-robust/randomization inference; user-level standard errors are anti-conservative. Exposure-aware estimators may have extreme inverse probabilities when some conditions are rare. Power simulations should use realistic topology, effects, graph evolution, and the exact assignment algorithm."
+    },
+    {
+      "id": "analysis",
+      "title": "Exposure, estimators, and diagnostics",
+      "body": "Log assignment separately from realized exposure. For a declared exposure condition, estimate means using design probabilities; Horvitz-Thompson or Hajek weighting can correct unequal exposure probabilities but may be noisy. Regression adjustment with pre-treatment cluster covariates can improve precision while preserving design. Report cluster counts, sizes, cross-arm edge fraction, exposure distribution, assignment probabilities, balance, attrition, and uncertainty. Compare intent-to-treat by cluster with exposure-response analyses, clearly labeling additional assumptions. Do not condition on post-treatment network changes such as new friendships without addressing mediation and selection. Test sensitivity to plausible alternative exposure mappings."
+    },
+    {
+      "id": "operation-generalization",
+      "title": "Dynamic networks, rollout, and operational safety",
+      "body": "Graph snapshots become stale as edges form, disappear, or remain unobserved; treatment may itself change the network. Version snapshot time, edge definition, direction, weight, and clustering algorithm, and measure boundary leakage during the test. Full rollout can change equilibrium, capacity, prices, or content supply beyond observed saturations. Use saturation response, long-term holdouts, staged geographic rollout, structural assumptions, or conservative bounds for generalization. Protect graph relationships and suppress small clusters. Monitor harm and capacity globally because spillovers cross experiment arms. Rollback may itself have network carryover; define cooldown and measurement after treatment removal. Recompute estimates under plausible hidden-edge and cluster-boundary perturbations so conclusions expose sensitivity to an incomplete graph rather than treating observed adjacency as ground truth."
+    }
+  ],
+  "math": "Let Z be the assignment vector and G_i(Z) an exposure mapping. Potential outcome is Y_i(z_i,g). A direct effect at exposure g is E[Y_i(1,g)-Y_i(0,g)]; a spillover effect for controls compares E[Y_i(0,g_1)-Y_i(0,g_0)]; a total policy effect may compare E[Y_i(1,g_all)-Y_i(0,g_none)]. For exposure condition e with probability pi_i(e), a Horvitz-Thompson mean uses N^{-1}sum_i 1{E_i=e}Y_i/pi_i(e). Variance must follow the dependent assignment design.",
+  "workedExamples": [
+    {
+      "title": "Invitation spillovers dilute an individual A/B contrast",
+      "body": "Map invitation edges, define direct and total effects, compare individual and cluster designs in a meta-experiment, and report leakage plus cluster-aware uncertainty before extrapolating to rollout."
+    }
+  ],
+  "exercises": [
+    {
+      "prompt": "Why can individual randomization underestimate a positive network effect?",
+      "solution": "Control units receive spillover and treated units lack an all-treated neighborhood, shrinking the own-assignment contrast relative to full rollout."
+    },
+    {
+      "prompt": "What is the main power cost of cluster randomization?",
+      "solution": "Outcomes within clusters are correlated and the independent assignment count is clusters, often far smaller than users."
+    },
+    {
+      "prompt": "Can a post-treatment friendship graph define exposure?",
+      "solution": "It may be a mediator affected by treatment; using it naively conditions on a treatment consequence. Prefer a pre-treatment graph or explicit causal mediation assumptions."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "flow",
+      "title": "Interference-aware design choice",
+      "items": [
+        "Map treatment propagation",
+        "Define direct/spillover/total effect",
+        "Choose exposure mapping",
+        "Select individual/cluster/saturation/time design",
+        "Simulate power + leakage",
+        "Analyze by assignment + exposure"
+      ],
+      "caption": "The causal target and propagation mechanism determine the assignment design and estimator together.",
+      "afterSection": "estimands"
+    },
+    {
+      "type": "compare",
+      "title": "Individual versus graph-cluster assignment",
+      "left": {
+        "title": "Individual",
+        "items": [
+          "Many randomized units",
+          "High nominal precision",
+          "Many cross-arm edges",
+          "Estimates mixed exposure"
+        ]
+      },
+      "right": {
+        "title": "Graph cluster",
+        "items": [
+          "Fewer independent units",
+          "Wider uncertainty",
+          "Lower boundary leakage",
+          "Closer policy-world contrast"
+        ]
+      },
+      "caption": "Cluster randomization can exchange precision for less interference bias; neither design is universally superior.",
+      "afterSection": "clustering-power"
+    }
+  ],
+  "lab": {
+    "language": "python",
+    "goal": "Simulate network spillovers, compare individual and cluster assignment, and verify contamination, contrast dilution, and cluster-aware summaries.",
+    "buildIt": "import random\ndef neighbors(i,n): return ((i-1)%n,(i+1)%n)\ndef outcome(i,z,direct=1.0,spill=1.5):\n    exposure=sum(z[j] for j in neighbors(i,len(z)))/2\n    return direct*z[i]+spill*exposure\ndef individual_assignment(n,seed):\n    rng=random.Random(seed); return [rng.randrange(2) for _ in range(n)]\ndef cluster_assignment(n,cluster_size,seed):\n    rng=random.Random(seed); clusters=[rng.randrange(2) for _ in range(n//cluster_size)]\n    return [clusters[i//cluster_size] for i in range(n)]\ndef contrast(z):\n    y=[outcome(i,z) for i in range(len(z))]\n    return sum(v for v,a in zip(y,z) if a)/sum(z)-sum(v for v,a in zip(y,z) if not a)/(len(z)-sum(z))\ndef crossing_edges(z): return sum(z[i]!=z[(i+1)%len(z)] for i in range(len(z)))\nn=200; zi=individual_assignment(n,7); zc=cluster_assignment(n,10,7)\nindividual_effect=contrast(zi); cluster_effect=contrast(zc)",
+    "useIt": "import pandas as pd\nsummary=pd.DataFrame([{'design':'individual','effect':individual_effect,'crossing':crossing_edges(zi)},{'design':'cluster','effect':cluster_effect,'crossing':crossing_edges(zc)}]).set_index('design')",
+    "verifyIt": "assert 0<sum(zi)<n and 0<sum(zc)<n\nassert summary.loc['cluster','crossing']<summary.loc['individual','crossing']\nassert cluster_effect>individual_effect\nassert abs(individual_effect-1.0)<0.35\nassert cluster_effect>2.0\nall_control=[0]*n; all_treated=[1]*n\ntotal_effect=sum(outcome(i,all_treated)-outcome(i,all_control) for i in range(n))/n\nassert abs(total_effect-2.5)<1e-12\nassert individual_effect<total_effect",
+    "shipIt": "Freeze graph and clusters before assignment, log realized exposure and leakage, simulate design power, analyze independent clusters, monitor ecosystem-wide guardrails, and include cooldown and graph evidence in rollback."
+  },
+  "sourceNotes": [
+    {
+      "resource": "network-experimentation-scale",
+      "contribution": "Provides a deployed framework for cluster-randomized experiments, exposure adjustment, and interference evidence at Facebook scale."
+    },
+    {
+      "resource": "detecting-network-effects",
+      "contribution": "Provides a randomized-over-randomizations design for testing interference by comparing individual and cluster assignment."
+    },
+    {
+      "resource": "airbnb-interference",
+      "contribution": "Provides marketplace meta-experiment evidence that individual randomization can be biased under seller-buyer interference."
+    },
+    {
+      "resource": "causal-mixtape",
+      "contribution": "Provides potential-outcome, design-based, cluster, and causal-inference foundations for interpreting experimental contrasts."
+    }
+  ]
 }

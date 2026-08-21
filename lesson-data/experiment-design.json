@@ -7,43 +7,186 @@
     "ds",
     "da"
   ],
-  "interviewAnswer": "A trustworthy experiment starts with a unit of randomization, eligibility criteria, treatment assignment, primary metric, guardrails and a pre-specified analysis plan. Randomization protects causal interpretation when implementation is correct.",
+  "interviewAnswer": "I start with the causal estimand and target population, then choose the unit at which treatment can be assigned without unacceptable spillover or carryover. I define eligibility before randomization, stable assignment, treatment versions, primary outcomes, guardrails, duration, and exclusions. I use blocking on strong pre-treatment predictors to improve balance and precision, cluster randomization when units interact, and switchbacks when treatment operates at a shared time-varying system level. Analysis follows the assignment mechanism and preserves ITT. I predeclare power, multiplicity, stopping, missingness, and noncompliance handling, then validate assignment and exposure before reading effects.",
   "keyPoints": [
-    "Choose user/session/cluster randomization deliberately.",
-    "Define exposure and sample ratio checks.",
-    "Primary metrics and guardrails should be decided before reading results."
+    "Design begins with estimand and interference structure",
+    "Randomization unit and analysis unit must remain aligned",
+    "Blocking can improve precision using pre-treatment information",
+    "Cluster and switchback designs trade bias control for effective sample size",
+    "ITT, missingness, and treatment versions must be specified before outcomes"
   ],
   "resources": [
+    "trustworthy-oce-survey",
+    "stanford-stats60",
     "microsoft-experimentation",
-    "stanford-stats60"
+    "network-experimentation-scale"
   ],
   "featured": true,
-  "why": "Randomized Experiment Design appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
-  "intuition": "Choose user/session/cluster randomization deliberately.",
-  "deepDive": "A trustworthy experiment starts with a unit of randomization, eligibility criteria, treatment assignment, primary metric, guardrails and a pre-specified analysis plan. Randomization protects causal interpretation when implementation is correct. Define exposure and sample ratio checks. Primary metrics and guardrails should be decided before reading results. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
-  "workedExample": "Randomize users to a new recommendation algorithm while monitoring conversion plus latency and complaint-rate guardrails.",
+  "why": "Randomization is not a button labeled fifty-fifty. A messaging feature may spill across friends, a pricing change may shift marketplace equilibrium, and a ranking algorithm may operate on a shared inventory pool. Randomizing individuals in those systems can estimate a diluted or biased contrast. Conversely, clustering too coarsely can leave too few independent units for useful power. Design choices determine identification and uncertainty; analysis cannot repair missing control worlds after launch. Interviews test whether candidates recognize the experimental unit, potential interference, and post-treatment selection. In production, robust assignment and exposure infrastructure is as important as the estimator.",
+  "intuition": "An experiment deliberately creates comparable counterfactual worlds. The assignment coin determines which potential outcome is revealed for each unit. Blocking first groups similar units using pre-treatment information, then flips coins within groups so an unlucky imbalance on a strong predictor is less likely. Cluster randomization flips one coin for a connected group to keep spillovers mostly within treatment worlds, but members of a cluster do not provide independent replicas. Switchbacks assign a shared system by time block, balancing time patterns while requiring washout for carryover. Every efficiency gain or operational convenience changes what counts as independent evidence.",
+  "deepDive": "Design is a probability distribution over assignments plus a protocol for treatment and measurement. Randomization-based inference conditions on that design, so undocumented deviations change both the estimand and reference distribution.",
+  "workedExample": "A marketplace pricing rule affects both treated buyers and the sellers who respond to demand. Buyer-level randomization mixes treatment and control demand in the same seller market, so seller responses spill across arms and dilute the total effect. Market-level cluster randomization better targets equilibrium impact but only 40 markets are independent, requiring cluster-aware power and inference. A switchback by market-week can add replication if carryover is short and seasonality is blocked, but a pricing change with persistent seller learning violates washout. The design choice follows the target: direct buyer response versus full-market policy effect. The protocol records contamination and validates market balance before outcomes.",
   "commonMistakes": [
-    "Applying the method without checking its assumptions or data-generating process.",
-    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+    {
+      "mistake": "Choosing the smallest convenient randomization unit",
+      "correction": "Convenience can create interference or carryover; align assignment with treatment delivery and the causal estimand."
+    },
+    {
+      "mistake": "Counting events as independent units",
+      "correction": "Inference follows assignment; repeated outcomes within randomized users or clusters are correlated."
+    },
+    {
+      "mistake": "Dropping users who were not exposed",
+      "correction": "Exposure is post-assignment and may select on treatment effects; preserve ITT and analyze compliance only with explicit assumptions."
+    },
+    {
+      "mistake": "Blocking on a post-treatment variable",
+      "correction": "Blocks must be determined before assignment from unaffected information."
+    }
   ],
   "followUps": [
-    "What assumptions does Randomized Experiment Design make?",
-    "How would you validate or debug Randomized Experiment Design in practice?"
+    {
+      "question": "When should you cluster-randomize?",
+      "answer": "When treatment or outcomes spill substantially within groups, delivery occurs at group level, or contamination makes individual assignment misaligned with the target effect."
+    },
+    {
+      "question": "Why block randomization?",
+      "answer": "It guarantees controlled allocation within prespecified pre-treatment strata and can reduce variance when block variables predict outcomes."
+    },
+    {
+      "question": "What is a switchback experiment?",
+      "answer": "A shared unit such as a market or service alternates variants across randomized time blocks; analysis must account for time, carryover, and block-level independence."
+    }
   ],
-  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
-  "visual": {
-    "type": "layers",
-    "title": "Experiment design checklist",
-    "items": [
-      "Unit of randomization",
-      "Primary metric",
-      "Power / sample size",
-      "Guardrails",
-      "Analysis plan"
-    ],
-    "caption": "Good experiments are designed around the decision, not around whichever metric looks best afterward."
-  },
+  "production": "Run assignment through a reviewed service with immutable experiment namespace, salt, eligibility version, unit key, allocation, ramp state, mutual-exclusion layer, block or cluster map, and treatment version. Make retries idempotent and preserve the first assignment. Log delivery and exposure independently. Validate counts within blocks, cross-experiment conflicts, identity churn, cluster leakage, and invariant outcomes. Ramps and kill switches change traffic only through recorded protocol events. Restrict identifiers and sensitive stratification fields. Reproduce assignments offline from snapshots and test A/A behavior. On incident, stop serving treatment while retaining assignments and outcome collection where safe; rollback configuration, treatment artifact, and analysis plan together without rewriting historical membership.",
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "Randomized experiment design determines what causal question a test can answer before any statistical model is fit. This chapter develops experimental units, treatment versions, eligibility, potential outcomes, assignment mechanisms, complete and Bernoulli randomization, blocking and stratification, cluster and switchback designs, factorial experiments, unequal allocation, covariate balance, noncompliance, attrition, spillovers, exposure, power, preregistration, and analysis plans. You will learn to align randomization with the interference and delivery structure, separate design-stage balance from post-hoc adjustment, preserve intention-to-treat analysis, and avoid conditioning on variables affected by treatment. A worked marketplace example compares buyer-level, market-level, and time-block assignment under seller competition. The lab implements deterministic blocked randomization, checks allocation and balance invariants, and estimates a known treatment effect over repeated simulations. Production guidance covers assignment services, salts, mutual exclusion, ramps, identity changes, logging, privacy, monitoring, incident response, and rollback. A good design makes a simple estimator credible; no amount of downstream modeling can reconstruct counterfactual evidence destroyed by a flawed assignment or measurement process.",
+  "prerequisites": [
+    "ab-testing",
+    "sampling-design",
+    "causal-inference"
+  ],
+  "learningObjectives": [
+    "Choose an experimental unit and assignment mechanism that match treatment delivery, interference, carryover, and the target estimand.",
+    "Use blocking, clustering, factorial structure, and unequal allocation with correct analysis and power implications.",
+    "Specify intention-to-treat, exposure, attrition, noncompliance, and missing-outcome handling before observing effects.",
+    "Implement reproducible blocked assignment and verify determinism, allocation, covariate balance, and estimator behavior."
+  ],
+  "deepSections": [
+    {
+      "id": "estimand-unit",
+      "title": "From causal question to experimental unit",
+      "body": "Define potential outcomes under explicit treatment versions and a target contrast: ITT among all assigned eligible units, per-protocol effect, direct effect, or total equilibrium effect are not interchangeable. Choose the unit whose assignment can be implemented stably and whose outcomes are approximately unaffected by other units' assignments under the design. Users, devices, households, stores, geographic markets, graph clusters, or time blocks may be appropriate. If identities merge or treatment crosses units, document contamination. The unit of analysis should respect assignment dependence; millions of events from one randomized market do not create millions of independent experimental units."
+    },
+    {
+      "id": "assignment",
+      "title": "Complete, Bernoulli, blocked, and unequal assignment",
+      "body": "Bernoulli randomization assigns each unit independently with a fixed probability, producing random arm sizes. Complete randomization fixes arm counts and samples an assignment uniformly. Blocked randomization fixes or controls allocation within prespecified strata defined by pre-treatment variables, often improving balance and variance. Pair matching is an extreme block design. Unequal allocation can reduce exposure to risky treatment, satisfy capacity, or optimize precision under unequal variances and costs. Assignment probabilities must be known and positive for every target unit. Deterministic hashing is operationally stable only if the identifier, namespace, salt, traffic ramp, and modulo logic are versioned and collision behavior is understood."
+    },
+    {
+      "id": "structured-designs",
+      "title": "Clusters, switchbacks, and factorial experiments",
+      "body": "Cluster randomization assigns groups to reduce within-group interference or match delivery. Effective sample size depends on cluster count, size imbalance, and intracluster correlation; analysis uses cluster-level or cluster-robust methods. Switchbacks randomize a shared service or market across time blocks, requiring blocks long enough for treatment delivery yet short enough for replication, with washout for carryover and blocking by time-of-day or day-of-week. Factorial designs randomize multiple factors to estimate main effects and interactions efficiently, but interactions require power and compatible treatments. Mutual-exclusion layers prevent incompatible experiments from contaminating each other but reduce available traffic."
+    },
+    {
+      "id": "protocol-threats",
+      "title": "Noncompliance, attrition, exposure, and post-treatment bias",
+      "body": "ITT compares assigned arms and remains protected by randomization even when delivery is imperfect. Conditioning on actual exposure, engagement, survival, or another treatment consequence can open selection bias. Record assignment, eligibility, delivery, exposure, and outcomes as distinct events. One-sided or two-sided noncompliance may support instrumental-variable estimands under exclusion, monotonicity, and other assumptions, but not by simply dropping noncompliers. Differential attrition or missing outcomes can bias ITT if missingness depends on treatment and potential outcome; predefine bounds, sensitivity analyses, or measurement recovery. Freeze treatment versions or model planned versions because changing implementation mid-test creates an ambiguous treatment."
+    },
+    {
+      "id": "analysis-plan",
+      "title": "Power, diagnostics, and prespecified analysis",
+      "body": "Power the number of independent assignment units using baseline variance, design effect, MDE, allocation, expected attrition, and planned estimator. Prespecify primary and guardrail metrics, transformations, windows, covariate adjustment, subgroup hypotheses, multiplicity, stopping, and decision thresholds. After assignment, check counts, invariants, treatment delivery, and covariate balance as diagnostics; do not repeatedly rerandomize until outcome-correlated balance looks favorable unless the rerandomization rule was part of the design. Analyze according to the actual randomization, including block or cluster indicators and weights. Preserve every protocol deviation and report sensitivity rather than selecting the most favorable specification."
+    }
+  ],
+  "math": "With units i and assignment Z_i, potential outcomes Y_i(1),Y_i(0), the finite-sample average treatment effect is tau=N^{-1}sum_i[Y_i(1)-Y_i(0)]. Under complete randomization, difference in arm means is unbiased for tau. In blocks b, combine block effects tau_hat_b with target weights N_b/N. For equal-size clusters with intracluster correlation rho and mean size m, the approximate design effect is 1+(m-1)rho; unequal sizes usually worsen it. Factorial main effects average contrasts across levels of other randomized factors.",
+  "workedExamples": [
+    {
+      "title": "Choosing a design for a two-sided marketplace",
+      "body": "Map buyer-seller spillovers, compare individual, market-cluster, and switchback assignments, then choose the design whose estimand and carryover assumptions match the policy decision."
+    }
+  ],
+  "exercises": [
+    {
+      "prompt": "Why can cluster randomization reduce power?",
+      "solution": "Members within a cluster are correlated, so information grows mainly with independent clusters rather than raw member count; imbalance and intracluster correlation inflate variance."
+    },
+    {
+      "prompt": "Can you block on last month's usage?",
+      "solution": "Yes if measured before treatment, available for every eligible unit, and block construction is fixed before assignment."
+    },
+    {
+      "prompt": "A user is assigned treatment but never loads the page. Include in ITT?",
+      "solution": "Yes. ITT compares assignment policies and preserves randomization; a separate compliance estimand needs additional assumptions."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "flow",
+      "title": "Design follows the causal system",
+      "items": [
+        "Target population + estimand",
+        "Map delivery/interference",
+        "Choose unit + assignment",
+        "Power independent units",
+        "Predeclare protocol",
+        "Validate, analyze as randomized"
+      ],
+      "caption": "The assignment mechanism is chosen after mapping treatment propagation, not before.",
+      "afterSection": "estimand-unit"
+    },
+    {
+      "type": "compare",
+      "title": "Common randomization structures",
+      "left": {
+        "title": "Individual / blocked",
+        "items": [
+          "High unit count",
+          "Simple ITT",
+          "Good without spillovers",
+          "Block strong predictors"
+        ]
+      },
+      "right": {
+        "title": "Cluster / switchback",
+        "items": [
+          "Controls shared exposure",
+          "Fewer independent units",
+          "Needs cluster/time analysis",
+          "Carryover and leakage risks"
+        ]
+      },
+      "caption": "The right design trades precision for a counterfactual comparison that matches how treatment operates.",
+      "afterSection": "structured-designs"
+    }
+  ],
+  "lab": {
+    "language": "python",
+    "goal": "Implement reproducible blocked assignment, verify allocation and pre-treatment balance, and confirm difference-in-means behavior across repeated randomized assignments.",
+    "buildIt": "import hashlib,random\ndef score(namespace,unit):\n    digest=hashlib.sha256(f'{namespace}:{unit}'.encode()).digest()\n    return int.from_bytes(digest[:8],'big')\ndef blocked_assign(rows,namespace):\n    by_block={}\n    for row in rows:by_block.setdefault(row['block'],[]).append(row)\n    assignment={}\n    for block,members in by_block.items():\n        ordered=sorted(members,key=lambda r:score(namespace,r['id']))\n        for i,row in enumerate(ordered):assignment[row['id']]=i%2\n    return assignment\nrows=[{'id':i,'block':'high' if i%3==0 else 'low','baseline':10+(i%3)*4} for i in range(120)]\nassignment=blocked_assign(rows,'exp-v1')",
+    "useIt": "import pandas as pd\ndf=pd.DataFrame(rows); df['treatment']=df['id'].map(assignment)\nblock_counts=df.groupby(['block','treatment']).size().unstack(fill_value=0)\nbalance=df.groupby('treatment')['baseline'].mean()",
+    "verifyIt": "assert assignment==blocked_assign(rows,'exp-v1')\nassert assignment!=blocked_assign(rows,'exp-v2')\nassert (block_counts.max(axis=1)-block_counts.min(axis=1)).max()<=1\nassert abs(balance[1]-balance[0])<0.5\nrng=random.Random(7); estimates=[]\nfor rep in range(500):\n    a=blocked_assign(rows,f'rep-{rep}')\n    outcomes={r['id']:r['baseline']+2*a[r['id']]+rng.gauss(0,1) for r in rows}\n    mt=sum(outcomes[i] for i,z in a.items() if z)/sum(a.values())\n    mc=sum(outcomes[i] for i,z in a.items() if not z)/(len(a)-sum(a.values()))\n    estimates.append(mt-mc)\nassert abs(sum(estimates)/len(estimates)-2)<0.08",
+    "shipIt": "Version the unit key, namespace, salt, eligibility, block map and allocation; preserve first assignment; monitor within-block counts and contamination; and use kill switches that stop treatment without deleting the randomized evidence."
+  },
+  "sourceNotes": [
+    {
+      "resource": "trustworthy-oce-survey",
+      "contribution": "Provides peer-reviewed design guidance for online randomization, power, units, pitfalls, and operational experimentation."
+    },
+    {
+      "resource": "stanford-stats60",
+      "contribution": "Provides university-level randomization, blocking, causal comparison, and experimental design foundations."
+    },
+    {
+      "resource": "microsoft-experimentation",
+      "contribution": "Provides large-scale operational lessons on assignment systems, treatment delivery, trust checks, ramps, and analysis."
+    },
+    {
+      "resource": "network-experimentation-scale",
+      "contribution": "Provides deployed evidence on cluster randomization and interference-aware design in large connected systems."
+    }
+  ]
 }

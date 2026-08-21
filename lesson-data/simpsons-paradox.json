@@ -8,50 +8,176 @@
     "da",
     "as"
   ],
-  "interviewAnswer": "A trend can reverse after stratifying by a confounding/grouping variable because aggregate weights differ. Always inspect important segments before interpreting an overall association.",
+  "interviewAnswer": "Simpson's paradox is a reversal between aggregate and stratified associations caused by different group weights and within-group rates. The aggregate rate is a weighted average, so treatment groups with different severity, channel, or cohort composition can rank differently even when every stratum has the opposite ordering. I show the decomposition, define the target population and estimand, and use design/causal structure to decide adjustment. Adjust confounders when appropriate, do not condition on colliders, treat mediators according to the estimand, and report composition plus stratum effects.",
   "keyPoints": [
-    "Aggregate rates are weighted averages.",
-    "Different group composition can reverse comparisons.",
-    "Causal conclusions need more than stratification alone."
+    "Aggregate rates combine within-stratum outcomes and group composition",
+    "Reversal is arithmetic; preferred interpretation requires a scientific target",
+    "Confounder, mediator, collider, and effect modifier imply different adjustment choices",
+    "Standardization compares groups under a common composition",
+    "Population drift can create dashboard reversals without individual behavior change"
   ],
   "resources": [
     "openintro-stats",
-    "harvard-causal-diagrams"
+    "harvard-causal-diagrams",
+    "berkeley-data100",
+    "fundamentals-dataviz"
   ],
   "featured": false,
-  "why": "Simpson’s Paradox & Aggregation Bias is a standard part of a broad data/ML curriculum because it changes how models are selected, evaluated or operated in real systems.",
-  "intuition": "Aggregate rates are weighted averages.",
-  "deepDive": "A trend can reverse after stratifying by a confounding/grouping variable because aggregate weights differ. Always inspect important segments before interpreting an overall association. Different group composition can reverse comparisons. Causal conclusions need more than stratification alone. A strong answer connects the formal idea to validation, data requirements and failure modes instead of treating the method as a recipe.",
-  "workedExample": "Treatment A wins overall because it is used more often on easy cases, but loses within both easy and hard cases.",
+  "why": "Aggregate KPIs can reverse because products reach different users, hospitals treat different severity, or schools admit different applicant pools. A team may attribute a conversion drop to model quality when traffic shifted toward harder cases. Conversely, slicing until a desired pattern appears can introduce selection or multiplicity. Interviews use Simpson's paradox to test weighted-average reasoning and causal humility. In production, monitoring both composition and conditional performance prevents false incidents and fairness failures. The lesson is not 'always segment'; it is 'define the estimand and adjustment set before choosing the level of aggregation.'",
+  "intuition": "Suppose Treatment A is used mostly for severe cases and B mostly for mild cases. A can have higher recovery than B within both severity groups, yet lower overall recovery because severe cases have low recovery under either treatment and dominate A's patients. The aggregate compares treatment plus composition. Stratification holds severity categories visible. Standardization asks what rates would be if both treatments served the same severity mix. But if the stratifying variable were caused by treatment or created by selecting only admitted patients, conditioning could answer a different or biased question. Arithmetic reveals the reversal; causal structure tells what to compare.",
+  "deepDive": "For group A, aggregate outcome is sum_z P(Y=1|A,z)P(z|A). Differences can arise from conditional rates, group composition, or both. Adjustment replaces group-specific composition with a common target distribution when that estimand is justified.",
+  "workedExample": "Mild cases: A recovers 90/100=90%, B 760/900=84.4%. Severe: A 240/900=26.7%, B 20/100=20%. A is better in both strata. Overall A is 330/1000=33%; B is 780/1000=78%, because A treats 90% severe cases while B treats 10%. Standardizing both to 50/50 severity gives A 58.3% and B 52.2%, favoring A under that target. The real aggregate still matters for operational burden. Without random assignment or sufficient confounding control, the standardized contrast is not automatically causal.",
   "commonMistakes": [
-    "Choosing the technique without checking whether its assumptions match the problem.",
-    "Optimizing an offline metric without checking realistic validation slices or operational constraints."
+    "Assuming the aggregate result is wrong whenever stratified results differ.",
+    "Assuming every stratifying variable should be controlled without classifying confounders, mediators, colliders, or modifiers.",
+    "Reporting stratum rates without sample sizes, uncertainty, overlap, or how strata were selected.",
+    "Using adjusted results to hide poor outcomes in the population actually served.",
+    "Searching many segmentations until a reversal appears and treating it as confirmatory evidence."
   ],
   "followUps": [
-    "When would you not use Simpson’s Paradox & Aggregation Bias?",
-    "How would you validate or tune Simpson’s Paradox & Aggregation Bias?"
+    {
+      "question": "Can Simpson's paradox occur without confounding?",
+      "answer": "Yes as an arithmetic aggregation reversal from different weights. Whether the reversal represents confounding or which estimate is causally relevant depends on design and variable roles."
+    },
+    {
+      "question": "How does standardization help?",
+      "answer": "It applies each group's stratum-specific rates to the same target composition, separating conditional-rate differences from unequal mix for that declared population."
+    },
+    {
+      "question": "Should you always stratify?",
+      "answer": "No. Stratify variables relevant to the estimand and generating process. Conditioning on colliders or mediators can bias or change the target; excessive slicing also creates sparse and multiple-comparison problems."
+    }
   ],
-  "production": "In production, validate on realistic slices, track latency/cost when relevant, and monitor for distribution changes or failure modes that the offline metric can hide.",
-  "visual": {
-    "type": "compare",
-    "title": "Simpson’s paradox",
-    "left": {
-      "title": "Aggregated view",
-      "items": [
-        "Overall trend: A > B",
-        "Can be driven by group mix"
-      ]
-    },
-    "right": {
-      "title": "Within groups",
-      "items": [
-        "Group 1: B > A",
-        "Group 2: B > A"
-      ]
-    },
-    "caption": "Aggregation can reverse relationships when a lurking variable changes the composition of groups."
-  },
+  "production": "Store additive numerators/denominators for aggregate and key prespecified strata, plus target-standardization weights and version. Monitor group composition, within-stratum rates, aggregate rates, overlap/effective sample size, missingness, and standardized effects with uncertainty. Annotate policy or routing changes that alter mix. Prevent sparse-cell disclosure and unstable rankings. Validate that weighted stratum totals reconstruct aggregate metrics and that category definitions remain stable. For experiment metrics, preserve randomization and predefine heterogeneity analyses. If mix or taxonomy changes, recompute baselines and historical standardized series under explicit versions. Roll back alerts and narratives that attributed a composition shift to quality degradation.",
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "Simpson's paradox occurs when an association in aggregated data reverses or materially changes after stratifying by another variable because group composition and within-group relationships combine differently. The arithmetic is weighted averages; the interpretation is causal and design-dependent. This chapter derives the decomposition, distinguishes confounders, mediators, colliders, and effect modifiers, explains standardization and weighting, and shows why neither aggregate nor stratified result is automatically correct. You will learn to detect reversals with contingency tables and small multiples, define the target population and estimand, choose adjustment sets using time and causal structure, avoid conditioning on selection, and report both composition and within-group effects. The worked example reconstructs a treatment comparison where one method is better in every severity stratum but worse overall because it handles harder cases. The lab generates a deterministic reversal, verifies weighted decompositions, and standardizes both treatments to a common severity mix. Production guidance covers metric stratification, population drift, fairness, experimentation, monitoring, and rollback.",
+  "prerequisites": [
+    "groupby-pivot",
+    "joint-marginal-conditional",
+    "dag-confounding"
+  ],
+  "learningObjectives": [
+    "Derive how aggregate rates are weighted combinations of stratum-specific rates and composition.",
+    "Detect and reproduce Simpson reversals through tables, plots, and decomposition rather than relying on correlations alone.",
+    "Choose whether and how to adjust using target estimand, temporal order, design, and causal diagrams.",
+    "Monitor composition shifts and communicate aggregate and conditional results without assuming either is universally correct."
+  ],
+  "deepSections": [
+    {
+      "id": "decomposition",
+      "title": "Weighted-average decomposition",
+      "body": "Let r_{a,z} be outcome rate for treatment/group a in stratum z and w_{a,z}=P(z|a). Aggregate r_a=sum_z w_{a,z}r_{a,z}. Even if r_{A,z}>r_{B,z} for every z, r_A can be lower when A places more weight on low-baseline strata. Decompose the aggregate difference using a reference composition: one term for conditional-rate differences and another for composition differences, noting path dependence for nonlinear metrics. Always display stratum sizes, not only rates. Sparse strata carry high uncertainty and may not support definitive rankings."
+    },
+    {
+      "id": "detection",
+      "title": "Detecting reversal and aggregation bias",
+      "body": "Start with aggregate and cross-tabulated numerator/denominator by plausible pre-outcome variables. Plot stratum-specific rates on common scales and inspect how weights differ. Compare weighted reconstructions with the aggregate to catch bugs. Use regression with interactions for continuous covariates and uncertainty, but do not assume a linear coefficient resolves causal structure. Time aggregation can reverse trends when cohorts or seasonality shift. Missingness and selection can create the same pattern. Log which stratifications were examined and confirm unexpected findings on fresh or held-out data."
+    },
+    {
+      "id": "causal-roles",
+      "title": "Confounder, mediator, collider, or effect modifier",
+      "body": "A confounder precedes exposure and affects exposure and outcome; adjustment may identify a causal effect under exchangeability and positivity. A mediator lies on the causal path; conditioning estimates a direct rather than total effect and can add bias with mediator–outcome confounding. A collider is caused by exposure and outcome or their causes; conditioning opens a noncausal path. An effect modifier means causal effect genuinely varies by z and should be reported, not merely averaged away. Temporal order, domain knowledge, randomized assignment, and a DAG guide classification. The same variable name can play different roles in different systems."
+    },
+    {
+      "id": "standardization",
+      "title": "Common-population standardization and overlap",
+      "body": "To compare under target weights q_z, compute standardized R_a^q=sum_z q_z r_{a,z}. Choose q as combined population, policy target, or one group's composition and state it. Inverse-probability weighting and g-computation generalize to many covariates, requiring correct models and positivity: each group must have support across target strata. Extreme weights signal extrapolation. Direct standardization estimates a marginal effect in the chosen target population; conditional coefficients may be noncollapsible for measures such as odds ratios even without confounding. Use absolute risks when possible for transparent decomposition."
+    },
+    {
+      "id": "interpretation-monitoring",
+      "title": "From reversal to a decision",
+      "body": "Neither aggregate nor stratified result wins by definition. For resource planning, actual aggregate outcomes may be the target; for treatment efficacy, standardized or randomized comparisons may be relevant; for fairness, both allocation/composition and conditional outcomes matter. Report who receives each treatment, within-stratum effects, target-standardized effects, uncertainty, and assumptions. Monitor mix shifts alongside KPIs so alerts distinguish quality deterioration from harder traffic. If policy changes composition intentionally, update expected baselines without erasing outcomes for affected groups. Avoid using adjustment to excuse harm in the real served population.\n\nFor continuous stratifiers, coarse bins can hide residual imbalance or manufacture apparent reversals at arbitrary boundaries. Compare several defensible specifications, inspect overlap across the original scale, and prefer model-based standardization with diagnostics when appropriate. Any adjusted estimate still inherits modeling assumptions and should be paired with observed composition and sensitivity results."
+    }
+  ],
+  "math": "Aggregate rate r_a=sum_z w_{a,z}r_{a,z}. A standardized contrast for target q is Delta_q=sum_z q_z(r_{A,z}-r_{B,z}). An Oaxaca-style additive decomposition using reference B rates is r_A-r_B=sum_z w_{A,z}(r_{A,z}-r_{B,z})+sum_z(w_{A,z}-w_{B,z})r_{B,z}; alternative references allocate interaction differently. Positivity requires q_z>0 only where both groups have estimable support for the intended comparison.",
+  "workedExamples": [
+    {
+      "title": "Treatment performance reversed by case severity",
+      "body": "Reconstruct aggregate rates from stratum rates and weights, verify the reversal, standardize to a declared common population, and separate efficacy interpretation from actual operational outcomes."
+    }
+  ],
+  "exercises": [
+    {
+      "prompt": "Group A rates are 80% and 40% with weights 25%/75%. What is aggregate?",
+      "solution": "0.25*0.80+0.75*0.40=0.50 or 50%."
+    },
+    {
+      "prompt": "Why might controlling for hospital admission create bias?",
+      "solution": "Admission can be a collider influenced by illness severity and access/treatment factors; conditioning can open an association between its causes."
+    },
+    {
+      "prompt": "What must be specified for a standardized rate?",
+      "solution": "Stratum definitions, stratum-specific estimators, target composition weights, overlap/support, uncertainty method, and why that target population answers the decision question."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "compare",
+      "title": "One dataset, two valid descriptive views",
+      "left": {
+        "title": "Aggregate served population",
+        "items": [
+          "A: 33% recovery",
+          "B: 78% recovery",
+          "Includes severity mix",
+          "Operational outcome"
+        ]
+      },
+      "right": {
+        "title": "Within severity / standardized",
+        "items": [
+          "A better in both strata",
+          "50/50 target: A 58%, B 52%",
+          "Controls composition",
+          "Different estimand"
+        ]
+      },
+      "caption": "The apparent contradiction disappears when the weighting populations are made explicit.",
+      "afterSection": "decomposition"
+    },
+    {
+      "type": "flow",
+      "title": "Interpret a Simpson reversal",
+      "items": [
+        "Reconstruct weighted aggregate",
+        "Plot stratum rates + sizes",
+        "Classify variable causally",
+        "Choose target population",
+        "Check overlap + uncertainty",
+        "Report aggregate and adjusted"
+      ],
+      "caption": "Arithmetic detection comes before causal interpretation and decision choice.",
+      "orientation": "horizontal",
+      "afterSection": "causal-roles"
+    }
+  ],
+  "lab": {
+    "language": "python",
+    "goal": "Construct a Simpson reversal, verify weighted aggregation, and standardize both treatments to a common severity distribution.",
+    "buildIt": "data={\n 'A':{'mild':(90,100),'severe':(240,900)},\n 'B':{'mild':(760,900),'severe':(20,100)},\n}\ndef rate(pair): return pair[0]/pair[1]\ndef aggregate(group):\n    successes=sum(x[0] for x in group.values()); total=sum(x[1] for x in group.values())\n    return successes/total\ndef standardized(group,weights): return sum(weights[z]*rate(group[z]) for z in weights)\naggregate_rates={g:aggregate(table) for g,table in data.items()}\nwithin={z:{g:rate(data[g][z]) for g in data} for z in ('mild','severe')}\ntarget={'mild':0.5,'severe':0.5}\nstandardized_rates={g:standardized(table,target) for g,table in data.items()}",
+    "useIt": "import pandas as pd\nrows=[{'group':g,'severity':z,'success':s,'total':n,'rate':s/n} for g,t in data.items() for z,(s,n) in t.items()]\ndf=pd.DataFrame(rows)\npandas_aggregate=df.groupby('group')[['success','total']].sum().eval('success/total')",
+    "verifyIt": "assert within['mild']['A']>within['mild']['B']\nassert within['severe']['A']>within['severe']['B']\nassert aggregate_rates['A']<aggregate_rates['B']\nassert standardized_rates['A']>standardized_rates['B']\nassert abs(sum(target.values())-1)<1e-12\nassert all(abs(aggregate_rates[g]-pandas_aggregate[g])<1e-12 for g in data)",
+    "shipIt": "Persist stratum components and target weights, verify aggregate reconstruction, monitor mix and conditional rates together, predefine causal/heterogeneity analyses, protect sparse groups, and version population/taxonomy changes."
+  },
+  "sourceNotes": [
+    {
+      "resource": "openintro-stats",
+      "contribution": "Provides conditional probability, contingency-table, weighting, and aggregation foundations for Simpson's paradox."
+    },
+    {
+      "resource": "harvard-causal-diagrams",
+      "contribution": "Provides causal graph reasoning needed to distinguish confounders, mediators, colliders, and adjustment consequences."
+    },
+    {
+      "resource": "berkeley-data100",
+      "contribution": "Connects grouped data analysis, visualization, sampling, and model-based conditional reasoning."
+    },
+    {
+      "resource": "fundamentals-dataviz",
+      "contribution": "Provides small-multiple and common-scale techniques that make aggregate and stratified patterns visible."
+    }
+  ]
 }

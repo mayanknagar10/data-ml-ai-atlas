@@ -7,31 +7,232 @@
     "ds",
     "da"
   ],
-  "interviewAnswer": "Repeatedly checking a fixed-horizon p-value and stopping when significant inflates false positives. Use precommitted horizons or valid sequential methods/alpha-spending when decisions are continuous.",
+  "interviewAnswer": "A fixed-horizon test controls Type I error only for its planned sample and analysis. If I repeatedly peek and stop when p<0.05, I give noise multiple chances to cross the threshold and inflate false positives. Valid options include prespecified group-sequential looks with alpha spending, a sequential probability ratio test for specified alternatives, or anytime-valid p-values, e-values, and confidence sequences. I define the stopping rule, information times, minimum duration, primary metric, multiplicity, and delayed-outcome handling before launch. Safety kill switches can stop exposure immediately, but confirmatory efficacy claims still follow their declared evidence procedure.",
   "keyPoints": [
-    "Optional stopping changes error rates.",
-    "Sequential designs can be valid when planned.",
-    "Operational urgency must not silently redefine statistics."
+    "Optional stopping changes the sampling distribution",
+    "Monitoring schedule and stopping rule are part of the design",
+    "Group-sequential methods spend a finite error budget across planned looks",
+    "Confidence sequences provide simultaneous coverage over time",
+    "Safety stopping and efficacy inference answer different questions"
   ],
   "resources": [
-    "microsoft-experimentation",
+    "confidence-sequences",
+    "enterprise-anytime-valid",
+    "trustworthy-oce-survey",
     "stanford-stats200"
   ],
   "featured": false,
-  "why": "Sequential Testing, Peeking & Early Stopping appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
-  "intuition": "Optional stopping changes error rates.",
-  "deepDive": "Repeatedly checking a fixed-horizon p-value and stopping when significant inflates false positives. Use precommitted horizons or valid sequential methods/alpha-spending when decisions are continuous. Sequential designs can be valid when planned. Operational urgency must not silently redefine statistics. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
-  "workedExample": "A dashboard checked every hour needs sequential methodology rather than “stop at p<0.05.”",
+  "why": "Teams naturally watch experiments daily, want to stop losing variants early, and want to ship obvious wins without waiting. Traditional fixed-horizon reports tempt users to treat today's p-value as if no earlier looks occurred. Under a true null, enough looks make a threshold crossing increasingly likely. Valid sequential tools reconcile monitoring with error control, but their intervals are often wider early and their assumptions still depend on assignment, dependence, and metric construction. Interviews ask peeking because it exposes whether a candidate understands a procedure rather than a one-time formula. Experiment platforms must encode the rule so dashboards cannot silently change inferential meaning.",
+  "intuition": "A fixed-horizon threshold is like one finish-line photograph. Peeking takes many photographs and keeps the most flattering one. Even when treatment does nothing, a noisy estimate wanders and may briefly look significant. Alpha spending divides a finite false-positive budget across planned checkpoints; early evidence must be stronger because more opportunities remain. A confidence sequence is a sequence of intervals constructed so the true value is covered simultaneously at all times with high probability, allowing observation at an arbitrary stopping time. Flexibility is paid for through wider early boundaries, not obtained for free.",
+  "deepDive": "Sequential validity is a property of the entire stochastic evidence process. Calendar time, sample size, information, pending outcomes, and decision actions must be connected to the same prespecified filtration and stopping logic.",
+  "workedExample": "A team views a null A/A conversion test at 10 equally spaced looks and stops at the first ordinary p<0.05. Simulation shows false launches far above 5%. They replace this with a prespecified five-look design using alpha/5 at each checkpoint, require two full weekly cycles, and keep a separate immediate crash kill switch. At the third look an ordinary p-value is 0.03: interesting, but above the 0.01 sequential boundary, so no efficacy claim is made. The test reaches its final planned look with a narrow interval excluding the practical benefit threshold and stops for lack of value, not because exact zero was proven.",
   "commonMistakes": [
-    "Applying the method without checking its assumptions or data-generating process.",
-    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+    {
+      "mistake": "Peeking but claiming looks are highly correlated",
+      "correction": "Correlation reduces but does not remove inflation; calibrate the entire planned or anytime-valid procedure."
+    },
+    {
+      "mistake": "Using an anytime-valid p-value with an ordinary interval",
+      "correction": "Inference objects must be matched; use the corresponding confidence sequence for time-uniform interval claims."
+    },
+    {
+      "mistake": "Requiring statistical harm before stopping crashes",
+      "correction": "Operational safety can stop exposure immediately; statistical evidence governs later causal interpretation, not user protection."
+    },
+    {
+      "mistake": "Restarting and combining p-values informally",
+      "correction": "A restart changes assignment, treatment, or evidence history; define a new experiment or a valid continuation rule."
+    }
   ],
   "followUps": [
-    "What assumptions does Sequential Testing, Peeking & Early Stopping make?",
-    "How would you validate or debug Sequential Testing, Peeking & Early Stopping in practice?"
+    {
+      "question": "What is a confidence sequence?",
+      "answer": "A sequence of intervals designed to cover the fixed parameter simultaneously over all times with probability at least 1-alpha, enabling valid inspection at a data-dependent time."
+    },
+    {
+      "question": "What is alpha spending?",
+      "answer": "A rule allocating cumulative Type I error across information times, with boundaries calibrated so total false-rejection probability remains controlled."
+    },
+    {
+      "question": "Can you always stop an experiment for harm?",
+      "answer": "Yes operationally when users are at risk. Whether the resulting data support a formal harm claim depends on the prespecified monitoring and multiplicity procedure."
+    }
   ],
-  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "production": "Store the inference mode, primary hypothesis, alternative or practical margin, maximum sample, minimum duration, information-time definition, planned looks, alpha-spending or e-process version, metric contracts, and delayed-outcome cutoff. The dashboard reads this immutable plan and cannot expose fixed-horizon significance at interim looks. Persist each look with data snapshot, counts, estimate, boundary, remaining budget, trust status, and action. Monitor SRM and invariants before sequential evidence. Simulate platform-wide false-positive behavior, including correlated metrics and overlapping tests. Safety alerts bypass efficacy gates but are audited. On invalid data or code, freeze claims, stop risky treatment, and restart under a new version; rollback must preserve the complete evidence path.",
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "Sequential experimentation allows data-dependent monitoring or stopping while preserving a declared error guarantee. Repeatedly applying a fixed-horizon p-value whenever new data arrive does not do this: optional stopping selects unusually favorable noise and inflates false positives. This chapter develops fixed-horizon designs, group-sequential looks, alpha spending, sequential probability ratio tests, always-valid p-values, e-values, confidence sequences, futility, harm stopping, minimum run constraints, delayed outcomes, and decision-theoretic trade-offs. You will learn why stopping rules are part of the statistical procedure, how time-uniform intervals differ from ordinary intervals, how to choose between planned looks and continuous monitoring, and why operational kill switches should not be confused with efficacy claims. A worked product experiment contrasts naive peeking with an anytime-valid rule. The lab simulates false-positive inflation from fixed-horizon peeking and verifies control from a Bonferroni group-sequential design using SciPy. Production guidance covers dashboards, information time, alpha budgets, metric multiplicity, late data, restarts, safety escalation, audit logs, and rollback. Sequential methods provide flexibility only when the monitoring rule and evidence process are designed together.",
+  "prerequisites": [
+    "ab-testing",
+    "hypothesis-testing",
+    "confidence-intervals"
+  ],
+  "learningObjectives": [
+    "Explain mathematically and through simulation why optional stopping invalidates repeatedly viewed fixed-horizon p-values.",
+    "Choose and interpret fixed-horizon, group-sequential, alpha-spending, confidence-sequence, and e-value procedures.",
+    "Separate efficacy, futility, harm, operational, and business stopping rules with their distinct guarantees.",
+    "Implement and validate a planned-look design using family-wise error simulations and an immutable monitoring schedule."
+  ],
+  "deepSections": [
+    {
+      "id": "peeking",
+      "title": "Why naive repeated testing fails",
+      "body": "A p-value is calibrated under a null distribution and an analysis rule. At each independent or correlated look, the estimate has another opportunity to produce an extreme statistic. The probability of ever crossing 0.05 exceeds 5%, even though adjacent looks reuse data and are dependent. Stopping at a favorable crossing also biases the reported effect upward, known as the winner's curse. Continuing after an unfavorable result but stopping after a favorable one is asymmetric optional stopping. A final ordinary interval calculated at that selected time no longer has its nominal fixed-horizon coverage. Simulation under the complete pipeline is a powerful audit of the actual rule."
+    },
+    {
+      "id": "group-sequential",
+      "title": "Planned looks and alpha spending",
+      "body": "Group-sequential designs specify interim information times and efficacy boundaries so the probability of any false rejection stays at alpha. Bonferroni can allocate alpha/K across K looks and is simple but conservative. Pocock-like boundaries spend more evenly; O'Brien-Fleming-like boundaries demand very strong early evidence and approach conventional thresholds later. Alpha-spending functions allow looks at flexible information times while tracking cumulative budget. Information time should reflect precision, not merely calendar days, especially with uneven traffic or delayed outcomes. Correlated endpoints and multiple variants consume an additional multiplicity budget."
+    },
+    {
+      "id": "anytime-valid",
+      "title": "SPRT, e-values, and confidence sequences",
+      "body": "Wald's sequential probability ratio test accumulates a likelihood ratio between specified simple hypotheses and stops at evidence boundaries. Always-valid p-values remain valid at any stopping time under their construction. An e-process is a nonnegative process with null expectation controlled over time; a large e-value supplies evidence, and Ville's inequality bounds the probability its running maximum crosses 1/alpha. Confidence sequences invert sequential tests to provide intervals with simultaneous coverage across time. Modern nonparametric confidence sequences handle means and treatment effects under stated boundedness or variance assumptions. These objects are not ordinary p-values or confidence intervals with a new label; use matched estimators and implementations."
+    },
+    {
+      "id": "stopping-types",
+      "title": "Efficacy, futility, harm, and operational stopping",
+      "body": "Efficacy stopping claims benefit under the confirmatory rule. Futility stops when the chance or value of reaching a useful conclusion is low; nonbinding futility can preserve some guarantees more easily than binding rules. Harm stopping may use asymmetric thresholds and multiple safety metrics because protecting users outweighs power. Operational kill switches respond to crashes, latency, security, or data corruption and need no permission from an efficacy test, but the stopped run may not support a causal product claim. Minimum runtime covers novelty, weekly cycles, and delayed outcomes. Maximum runtime prevents indefinite underpowered tests. Define whether restarts create new evidence or continue a valid sequence."
+    },
+    {
+      "id": "platform-validation",
+      "title": "Information, delayed data, and platform validation",
+      "body": "Assign each unit once and define when its outcome becomes observable. If recent units have incomplete windows, naive daily means compare arms with different maturity or repeatedly revise history. Use cohort-complete information sets, lag-aware estimators, or explicitly modeled delayed outcomes. Persist every look, sample, metric version, cumulative alpha or e-value, boundary, and action. Backtest and simulate null, alternative, heavy-tailed, clustered, missing, and late-event scenarios using the exact production code. Never let a dashboard toggle between fixed and sequential inference after seeing results. If assumptions fail, quarantine evidence and use safety behavior, not an improvised threshold."
+    }
+  ],
+  "math": "For K planned looks, Bonferroni rejects if any p_k<=alpha/K, guaranteeing family-wise error at most alpha without independence. An alpha-spending design chooses cumulative A(t)<=alpha and boundaries consistent with increments. A confidence sequence {C_t} satisfies P(theta in C_t for all t)>=1-alpha. An e-process E_t under H0 satisfies E[E_tau]<=1 for suitable stopping times; Ville gives P(sup_t E_t>=1/alpha)<=alpha. Exact formulas depend on metric, dependence, variance assumptions, and assignment design.",
+  "workedExamples": [
+    {
+      "title": "A tempting early p-value that does not cross the sequential boundary",
+      "body": "Contrast naive repeated 0.05 testing with a finite alpha budget, preserve a separate harm switch, and use the final interval relative to a practical threshold."
+    }
+  ],
+  "exercises": [
+    {
+      "prompt": "Why is p=0.03 at an interim look not automatically a win?",
+      "solution": "Its meaning depends on the planned boundary or anytime-valid construction; an ordinary fixed-horizon threshold is invalid after optional monitoring."
+    },
+    {
+      "prompt": "What is information time?",
+      "solution": "The fraction of planned statistical information accumulated, often related to inverse variance, not necessarily the fraction of calendar duration."
+    },
+    {
+      "prompt": "Why are early group-sequential boundaries often stricter?",
+      "solution": "They reserve error budget for later looks and prevent weak early noise from triggering a high false-positive rate."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "curve",
+      "title": "Conceptual monitoring boundaries",
+      "series": [
+        {
+          "label": "naive fixed threshold",
+          "points": [
+            [
+              0.1,
+              0.45
+            ],
+            [
+              0.3,
+              0.45
+            ],
+            [
+              0.5,
+              0.45
+            ],
+            [
+              0.7,
+              0.45
+            ],
+            [
+              0.9,
+              0.45
+            ]
+          ]
+        },
+        {
+          "label": "sequential evidence boundary",
+          "points": [
+            [
+              0.1,
+              0.95
+            ],
+            [
+              0.3,
+              0.78
+            ],
+            [
+              0.5,
+              0.66
+            ],
+            [
+              0.7,
+              0.56
+            ],
+            [
+              0.9,
+              0.5
+            ]
+          ]
+        }
+      ],
+      "xLabel": "information time",
+      "yLabel": "required evidence",
+      "caption": "Conceptual: valid early stopping usually requires stronger evidence than repeatedly applying the final fixed-horizon threshold.",
+      "afterSection": "group-sequential"
+    },
+    {
+      "type": "compare",
+      "title": "Two monitoring systems",
+      "left": {
+        "title": "Naive peeking",
+        "items": [
+          "Ordinary p-value every day",
+          "Stop on first p<0.05",
+          "Inflated false positives",
+          "Selected effect biased upward"
+        ]
+      },
+      "right": {
+        "title": "Sequentially valid",
+        "items": [
+          "Planned looks or anytime process",
+          "Finite alpha/evidence rule",
+          "Matched interval procedure",
+          "Every look and action logged"
+        ]
+      },
+      "caption": "The dashboard may look similar, but the probability guarantee comes from the evidence process underneath it.",
+      "afterSection": "anytime-valid"
+    }
+  ],
+  "lab": {
+    "language": "python",
+    "goal": "Simulate false-positive inflation from naive peeking and verify family-wise control from a planned Bonferroni group-sequential design.",
+    "buildIt": "import numpy as np\nfrom math import erf,sqrt\ndef pvalue(x,y):\n    n=len(x); effect=x.mean()-y.mean(); se=sqrt(x.var(ddof=1)/n+y.var(ddof=1)/n)\n    z=effect/se; return 2*(1-0.5*(1+erf(abs(z)/sqrt(2))))\ndef simulate(rule,runs=3000,seed=7):\n    rng=np.random.default_rng(seed); rejected=0; looks=(40,80,120,160,200)\n    for _ in range(runs):\n        x=rng.normal(size=looks[-1]); y=rng.normal(size=looks[-1])\n        if any(pvalue(x[:n],y[:n])<=rule(len(looks),i) for i,n in enumerate(looks,1)):rejected+=1\n    return rejected/runs\nnaive=simulate(lambda k,i:0.05)\ncontrolled=simulate(lambda k,i:0.05/k)",
+    "useIt": "from scipy.stats import norm\nbonferroni_z=float(norm.ppf(1-0.05/(2*5)))\nfixed_z=float(norm.ppf(1-0.05/2))",
+    "verifyIt": "assert naive>0.10\nassert controlled<0.065\nassert controlled>0\nassert bonferroni_z>fixed_z\nassert abs(simulate(lambda k,i:0.05,seed=7)-naive)<1e-12\nassert 0<=naive<=1 and 0<=controlled<=1",
+    "shipIt": "Encode the monitoring method and information schedule immutably, record every look and remaining alpha/evidence, simulate production false positives, separate safety kills from efficacy claims, and restart rather than improvise after invalid data."
+  },
+  "sourceNotes": [
+    {
+      "resource": "confidence-sequences",
+      "contribution": "Provides the modern time-uniform, nonparametric, nonasymptotic foundations for confidence sequences and their relation to sequential tests."
+    },
+    {
+      "resource": "enterprise-anytime-valid",
+      "contribution": "Documents deployment of anytime-valid confidence sequences in an enterprise A/B testing platform, including monitoring and sample planning."
+    },
+    {
+      "resource": "trustworthy-oce-survey",
+      "contribution": "Provides online-experiment guidance on stopping, power, pitfalls, and decision practice."
+    },
+    {
+      "resource": "stanford-stats200",
+      "contribution": "Provides fixed-horizon testing, likelihood, confidence interval, and error-control foundations needed to contrast sequential procedures."
+    }
+  ]
 }

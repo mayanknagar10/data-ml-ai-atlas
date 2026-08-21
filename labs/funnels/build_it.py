@@ -1,10 +1,16 @@
-import pandas as pd
-events=pd.DataFrame({'user':[1,1,1,2,2,3,3],'event':['visit','signup','purchase','visit','signup','visit','signup']})
-steps=['visit','signup','purchase']
-users={s:set(events.loc[events.event==s,'user']) for s in steps}
-counts=[len(users[steps[0]])]
-base=users[steps[0]]
-for s in steps[1:]:
-    base=base & users[s]
-    counts.append(len(base))
-print(dict(zip(steps,counts)))
+from collections import defaultdict
+steps=['cart','payment','purchase']
+events=[('u1','cart',0),('u1','payment',2),('u1','purchase',5),('u1','purchase',6),('u2','cart',0),('u2','purchase',3),('u3','cart',0),('u3','payment',8),('u3','purchase',12),('u4','cart',0),('u4','payment',2)]
+def ordered_funnel(events,steps,window):
+    by_user=defaultdict(list)
+    for user,event,t in events:by_user[user].append((t,event))
+    counts=[0]*len(steps); reached={}
+    for user,history in by_user.items():
+        history.sort(); index=0; start=None
+        for t,event in history:
+            if index==0 and event==steps[0]:start=t; index=1; counts[0]+=1
+            elif start is not None and t-start<=window and index<len(steps) and event==steps[index]:
+                index+=1; counts[index-1]+=1
+        reached[user]=index
+    return counts,reached
+counts,reached=ordered_funnel(events,steps,10)

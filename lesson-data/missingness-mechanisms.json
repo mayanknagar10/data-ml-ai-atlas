@@ -7,31 +7,181 @@
     "ds",
     "da"
   ],
-  "interviewAnswer": "Missing values can be completely random, explainable by observed variables, or related to the missing value itself. The mechanism matters because naive imputation can bias estimates and hide useful missingness signals.",
+  "interviewAnswer": "Let R indicate whether a value is observed. MCAR means R is independent of observed and missing values; MAR means missingness may depend on observed data but not the missing value after conditioning; MNAR means it still depends on the unseen value or unobserved causes. These are assumptions about the data-generating process and MNAR versus MAR is generally not testable from observed data alone. I preserve missingness masks and reason codes, analyze patterns by time/source/covariates, choose design-consistent weighting or multiple imputation, prevent leakage, propagate uncertainty, and run MNAR sensitivity analyses.",
   "keyPoints": [
-    "MCAR: missing independent of data.",
-    "MAR: missingness depends on observed variables.",
-    "MNAR: missingness depends on unobserved/missing value."
+    "Missingness is data with a mechanism and provenance",
+    "MAR is conditional, not 'random-looking'",
+    "Observed data cannot generally distinguish MAR from MNAR",
+    "Imputation model and analysis model must be congenial",
+    "Production missingness can shift and become informative"
   ],
   "resources": [
-    "openintro-stats",
-    "stanford-stats200"
+    "rubin-missing",
+    "stanford-stats200",
+    "pandas-missing",
+    "openintro-stats"
   ],
   "featured": false,
-  "why": "Missingness: MCAR, MAR & MNAR appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
-  "intuition": "MCAR: missing independent of data.",
-  "deepDive": "Missing values can be completely random, explainable by observed variables, or related to the missing value itself. The mechanism matters because naive imputation can bias estimates and hide useful missingness signals. MAR: missingness depends on observed variables. MNAR: missingness depends on unobserved/missing value. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
-  "workedExample": "Income nonresponse may be related to income itself, making simple mean imputation particularly questionable.",
+  "why": "Nulls can mean not applicable, not measured, below detection, user refusal, device outage, late arrival, or join failure. Collapsing them into one `NaN` erases the mechanism needed for valid analysis. Complete cases may represent a healthier or more engaged population; mean imputation distorts variance and relationships; model-based imputation can leak outcomes or future data. Interviews ask MCAR/MAR/MNAR definitions, but robust work also tracks operational reason codes and uncertainty. In production, a missingness indicator can become a powerful proxy for workflow or access and then break when collection policy changes. The correct response begins with the generating process, not a preferred imputer.",
+  "intuition": "Suppose blood pressure is missing. Under MCAR, a random label-printer failure decides which values vanish, unrelated to any patient information. Under MAR, older patients are more likely to miss the measurement, but after conditioning on observed age, missingness no longer depends on the unseen pressure. Under MNAR, people with very high unseen pressure avoid measurement even after known covariates are considered. The observed table can reveal age differences between observed and missing groups, contradicting MCAR, but it cannot reveal the unseen within-age pressure difference without assumptions or external data. Every method fills that information gap with an assumption, whether explicit or hidden.",
+  "deepDive": "Missingness analysis augments the data model with indicators R and, when needed, a response model p(R|Y,X). The taxonomy is relative to which variables are observed and included, so richer auxiliary data can make a MAR assumption more plausible without proving it.",
+  "workedExample": "A severity biomarker is observed only when clinicians order a test. Ordering depends on observed triage score and, within a triage level, on symptoms not recorded in the dataset. Conditioning on triage alone may leave MNAR selection. Mean imputation would flatten severity and bias relationships. Add available symptoms and clinician/site/time variables, use multiple imputation under a MAR model, then shift missing biomarker values upward in delta sensitivity analyses. Separately, a one-day device outage creates missing telemetry across all users; that pipeline mechanism is addressed by incident flags and time exclusion, not patient-level imputation. The report keeps these reasons distinct.",
   "commonMistakes": [
-    "Applying the method without checking its assumptions or data-generating process.",
-    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+    "Defining MAR as missingness that looks random or has no obvious pattern.",
+    "Assuming an imputer recovers truth without a missingness and outcome model.",
+    "Using mean/zero imputation and then treating filled values as observed with unchanged variance.",
+    "Fitting imputation on full data or using future/outcome information unavailable at prediction time.",
+    "Collapsing structural not-applicable values, censoring, refusal, and pipeline failure into the same null."
   ],
   "followUps": [
-    "What assumptions does Missingness: MCAR, MAR & MNAR make?",
-    "How would you validate or debug Missingness: MCAR, MAR & MNAR in practice?"
+    {
+      "question": "Can you test whether data are MNAR?",
+      "answer": "Not generally from observed data alone, because the defining dependence involves unseen values. External follow-up, instruments, design information, or sensitivity assumptions are needed."
+    },
+    {
+      "question": "When is a missing indicator useful?",
+      "answer": "It can represent an informative observation process and help prediction, but its meaning may be unstable or unfair. Keep reason provenance and monitor policy/source changes."
+    },
+    {
+      "question": "Why use multiple rather than single imputation?",
+      "answer": "Multiple imputation propagates uncertainty about missing values through between-imputation variation; single imputation treats guesses as known and usually understates uncertainty."
+    }
   ],
-  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "production": "Define a missingness taxonomy and store masks, reason codes, source stage, eligibility, detection/censoring limit, event/arrival times, and imputation version. Monitor rates and co-missingness by source, time, group, device, and model feature; alert on mechanism proxies and schema changes, not only overall percentage. Fit imputers within training boundaries and version features for serving parity. Validate support, constraints, calibration, downstream slice behavior, and uncertainty. Keep raw and imputed values separate and restrict sensitive reason codes. Provide fallback behavior when a required feature is missing, including abstention or alternate model. Refit or roll back imputer and dependent model together. Publish sensitivity ranges when MNAR could alter important decisions.",
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "Missing data are generated by a process. MCAR, MAR, and MNAR describe conditional relationships between missingness indicators and data, not visual patterns a dataset can prove from observed cells alone. This chapter defines unit versus item nonresponse, structural versus censored missingness, Rubin's mechanisms, ignorability conditions, complete-case analysis, indicator methods, single and multiple imputation, inverse-probability weighting, likelihood-based estimation, and sensitivity analysis. You will learn why filling every null is not a solution, why outcome imputation must respect train/test and temporal boundaries, how missingness indicators can be predictive yet unstable, and why uncertainty from imputation must be propagated rather than treating guessed values as observed. The worked example contrasts lab tests ordered by severity with device-sensor outages. The lab simulates MCAR and outcome-related missingness, quantifies complete-case bias, applies a valid observed-covariate adjustment, and verifies assumptions. Production guidance covers reason codes, masks, imputation artifacts, monitoring, privacy, model serving, and rollback. The emphasis is defensible inference, not cosmetically complete tables.",
+  "prerequisites": [
+    "eda-workflow",
+    "joint-marginal-conditional",
+    "selection-nonresponse-bias"
+  ],
+  "learningObjectives": [
+    "Define MCAR, MAR, and MNAR using missingness indicators and observed/unobserved data.",
+    "Distinguish structural absence, censoring, item nonresponse, unit nonresponse, and pipeline failures before choosing treatment.",
+    "Select complete-case, weighting, likelihood, or multiple-imputation methods with explicit assumptions and uncertainty propagation.",
+    "Design missingness diagnostics, sensitivity analyses, and production monitoring without leaking future or target information."
+  ],
+  "deepSections": [
+    {
+      "id": "types",
+      "title": "Structural, censored, unit, item, and pipeline missingness",
+      "body": "Structural missingness is logically not applicable, such as pregnancy field for an ineligible unit, and should use an explicit category or mask rather than imputed biology. Censoring tells an inequality or interval, such as measurement below detection, and retains information. Unit nonresponse removes an entire sampled unit; item nonresponse removes fields. Attrition is longitudinal missingness whose hazard evolves. Pipeline missingness includes late data, parse failures, unmatched joins, and permission filters. Preserve reason, stage, timestamp, and eligibility denominator. Different mechanisms can coexist in one column, so a single imputation rule is rarely defensible."
+    },
+    {
+      "id": "mcar-mar-mnar",
+      "title": "Rubin mechanisms in conditional form",
+      "body": "Write Y=(Y_obs,Y_mis) and R as observation indicators. MCAR asserts p(R|Y_obs,Y_mis)=p(R), a strong condition under which complete cases remain representative though precision falls. MAR asserts p(R|Y_obs,Y_mis)=p(R|Y_obs): after conditioning on observed variables included in the model, missingness does not depend on missing values. MNAR allows residual dependence on Y_mis. MAR does not mean missingness is unrelated to data, and it is model-relative. Observed patterns can reject simple MCAR explanations, but MAR versus MNAR generally needs untestable assumptions, follow-up, instruments, refreshment samples, or sensitivity parameters."
+    },
+    {
+      "id": "methods",
+      "title": "Deletion, weighting, likelihood, and imputation",
+      "body": "Complete-case analysis can be valid for some parameters under MCAR or special outcome-dependent designs, but wastes information and often changes population. Pairwise deletion creates inconsistent covariance matrices and denominators. Inverse response weighting needs observed predictors of missingness, positivity, and a correct propensity model. Full-information likelihood integrates missing values under a joint model. Multiple imputation draws several plausible completed datasets, fits the analysis to each, and combines within- and between-imputation uncertainty. Single mean imputation understates variance and weakens correlations. Include outcomes and auxiliary variables appropriately during training analysis, but never leak future labels into production features."
+    },
+    {
+      "id": "imputation-design",
+      "title": "Compatible imputation, splits, and constraints",
+      "body": "Imputation models should respect variable support, nonlinearities, interactions, time ordering, clusters, survey design, and the substantive analysis. Predictive mean matching can preserve observed ranges but has donor assumptions. For time series, future values cannot impute past features in a forecasting evaluation. Fit preprocessing only on training folds and carry missing indicators consistently to validation/serving. Imputed categories must obey referential and logical constraints. Multiple imputation needs enough datasets for stable Monte Carlo error when missing information is high. Store imputation seeds and distinguish original from imputed values so audits and downstream models can treat them differently."
+    },
+    {
+      "id": "sensitivity",
+      "title": "Diagnostics and MNAR sensitivity",
+      "body": "Plot missingness matrices, co-missingness, rates by time/source/group, and observed-variable distributions by R. Model R as an outcome to find operational predictors, not to prove MAR. Compare complete-case, weighted, imputed, and bounded analyses. Delta adjustment shifts imputed missing outcomes by plausible amounts; selection and pattern-mixture models parameterize MNAR differently. Report tipping points at which decisions reverse. Use targeted recontact or redundant sensors to learn about missing cases. Missingness fraction alone is not bias; association with outcomes and analysis structure determines harm. Monitor both rate and mechanism proxies after deployment.\n\nServing-time behavior must match training-time missingness semantics. Test absent fields, explicit nulls, stale values, and upstream timeouts separately because they may trigger different defaults. When a reason code changes, treat it as a schema change: reassess assumptions, recalibrate uncertainty, and compare decisions before and after deployment."
+    }
+  ],
+  "math": "MCAR: R independent of (Y_obs,Y_mis). MAR: R independent of Y_mis conditional on Y_obs under the chosen model. MNAR violates that conditional independence. Under MAR and positivity, inverse-probability identity E[R Y/pi(X)]=E[Y] motivates weighting when pi(X)=P(R=1|X). Multiple-imputation total variance combines average within-imputation variance W and between-imputation variance B as T=W+(1+1/m)B for m imputations under Rubin's combining rules and their assumptions.",
+  "workedExamples": [
+    {
+      "title": "Clinician-ordered biomarker versus device outage",
+      "body": "Separate clinical selection from operational loss, build a richer MAR analysis with uncertainty, perform MNAR delta sensitivity, and route the outage through incident-aware time handling rather than one universal imputer."
+    }
+  ],
+  "exercises": [
+    {
+      "prompt": "Missingness depends on observed age but not unseen income after age. Which mechanism relative to this model?",
+      "solution": "MAR, because R may depend on observed age but is conditionally independent of missing income given included observed variables."
+    },
+    {
+      "prompt": "Why can complete-case analysis be biased under MAR?",
+      "solution": "Complete cases have a different observed-covariate distribution. Unless the estimand/model has special invariance, dropping them changes the target; weighting or likelihood/imputation can adjust under assumptions."
+    },
+    {
+      "prompt": "What does a delta sensitivity analysis do?",
+      "solution": "It shifts or otherwise relates the missing-value distribution to the MAR-imputed distribution by a plausible unobserved amount and measures when conclusions change."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "matrix",
+      "title": "Missingness mechanisms",
+      "rows": [
+        "MCAR",
+        "MAR",
+        "MNAR"
+      ],
+      "cols": [
+        "R depends on observed?",
+        "R depends on unseen after conditioning?"
+      ],
+      "cells": [
+        [
+          "No",
+          "No"
+        ],
+        [
+          "Possibly",
+          "No"
+        ],
+        [
+          "Possibly",
+          "Yes"
+        ]
+      ],
+      "caption": "The labels describe conditional dependence in a specified model; observed data alone generally cannot distinguish MAR from MNAR.",
+      "afterSection": "mcar-mar-mnar"
+    },
+    {
+      "type": "flow",
+      "title": "Missing-data workflow",
+      "items": [
+        "Classify reason/stage",
+        "Plot patterns + predictors",
+        "State mechanism assumption",
+        "Choose design-aware method",
+        "Propagate uncertainty",
+        "Stress-test MNAR"
+      ],
+      "caption": "Imputation is one middle step, not the beginning or end of missing-data analysis.",
+      "orientation": "horizontal",
+      "afterSection": "methods"
+    }
+  ],
+  "lab": {
+    "language": "python",
+    "goal": "Simulate MCAR and covariate-dependent missingness, quantify complete-case bias, and verify an observed-stratum adjustment under its assumptions.",
+    "buildIt": "import random\n\ndef mean(xs): return sum(xs)/len(xs)\ndef simulate(seed=41,n=20000):\n    rng=random.Random(seed); rows=[]\n    for _ in range(n):\n        group=int(rng.random()<0.4)\n        y=10+5*group+rng.gauss(0,1)\n        observed_mcar=rng.random()<0.6\n        observed_mar=rng.random()<(0.8 if group==0 else 0.25)\n        rows.append((group,y,observed_mcar,observed_mar))\n    return rows\nrows=simulate()\ntruth=mean([r[1] for r in rows])\nmcar_mean=mean([r[1] for r in rows if r[2]])\nmar_complete=mean([r[1] for r in rows if r[3]])\n# Standardize observed group means to known population group shares.\nshares={g:sum(r[0]==g for r in rows)/len(rows) for g in (0,1)}\nobserved_means={g:mean([r[1] for r in rows if r[0]==g and r[3]]) for g in (0,1)}\nadjusted=sum(shares[g]*observed_means[g] for g in (0,1))",
+    "useIt": "import numpy as np\na=np.asarray(rows,dtype=float)\nnumpy_truth=float(a[:,1].mean())\nmissing_rate_mar=float(1-a[:,3].mean())",
+    "verifyIt": "assert abs(truth-numpy_truth) < 1e-12\nassert abs(mcar_mean-truth) < 0.08\nassert abs(mar_complete-truth) > 0.5\nassert abs(adjusted-truth) < 0.08\nassert 0 < missing_rate_mar < 1\nassert simulate(seed=41,n=50)==simulate(seed=41,n=50)",
+    "shipIt": "Preserve masks and reason codes, fit adjustment/imputation only within valid train/time boundaries, version assumptions and seeds, monitor mechanism shifts, and publish MNAR sensitivity for decision-critical outcomes."
+  },
+  "sourceNotes": [
+    {
+      "resource": "rubin-missing",
+      "contribution": "Introduces the formal missing-data mechanisms and ignorability distinctions underlying MCAR, MAR, and MNAR."
+    },
+    {
+      "resource": "stanford-stats200",
+      "contribution": "Provides likelihood, Bayesian, and inferential foundations needed to understand missing-data assumptions and uncertainty."
+    },
+    {
+      "resource": "pandas-missing",
+      "contribution": "Documents current missing-value representations, propagation, detection, and dtype-specific behavior in tabular workflows."
+    },
+    {
+      "resource": "openintro-stats",
+      "contribution": "Provides accessible missingness, sampling, bias, and imputation context for applied analysis."
+    }
+  ]
 }

@@ -1,6 +1,6 @@
 # Funnels & Conversion Analysis — Code Lab
 
-Compute a simple event funnel with explicit user-level denominators.
+Build an ordered unique-user funnel from event histories, compare counts with pandas, and verify monotonicity, deduplication, and conversion-window semantics.
 
 ## 1. Build it
 

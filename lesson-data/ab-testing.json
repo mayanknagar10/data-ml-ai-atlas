@@ -7,59 +7,187 @@
     "ds",
     "da"
   ],
-  "interviewAnswer": "A/B testing compares randomized groups to estimate causal treatment effects. Before running the test, define the primary metric, minimum detectable effect, significance level and required power to determine sample size.",
+  "interviewAnswer": "An A/B test randomly assigns eligible units to control or treatment, so treatment assignment is independent of potential outcomes in expectation. The intention-to-treat effect is the difference in arm means using every assigned unit under a prespecified analysis. Before launch I define the unit, population, primary metric, guardrails, alpha, power, MDE, duration, and stopping rule. During analysis I check assignment and exposure integrity, especially SRM, then report effect size and interval alongside p-value. I do not treat nonsignificance as no effect, peek with a fixed-horizon test, or ship a statistically significant but operationally harmful result.",
   "keyPoints": [
-    "Randomization",
-    "Power",
-    "Multiple testing",
-    "Guardrail metrics"
+    "Randomization identifies a causal intention-to-treat contrast",
+    "The randomization unit determines independence and effective sample size",
+    "Power depends on variance, baseline, allocation, alpha, and decision-relevant MDE",
+    "Effect size and uncertainty matter more than a significance label",
+    "Trust checks and guardrails precede launch interpretation"
   ],
   "resources": [
-    "statquest",
-    "google-mlcc",
-    "harvard-stat110"
+    "trustworthy-oce-survey",
+    "statsmodels-power",
+    "stanford-stats200",
+    "microsoft-experimentation"
   ],
   "featured": false,
-  "why": "A/B testing is one of the most common Data Scientist interview topics because it combines statistics, causal reasoning, product judgment and operational constraints.",
-  "intuition": "Randomization makes treatment and control comparable on average, so a difference in outcomes can be attributed to the intervention rather than pre-existing group differences—assuming the experiment is executed correctly.",
-  "deepDive": "Define the unit of randomization, primary metric, guardrails, minimum detectable effect, significance level, desired power and sample size before launch. Watch for interference between units, novelty effects, sample-ratio mismatch, repeated peeking and multiple metrics. Statistical significance is only one decision input; effect size, confidence interval, cost and risk matter too.",
-  "math": "Power = P(reject H₀ | a specified real effect exists)\nType I error = α\nType II error = β; power = 1-β",
-  "workedExample": "For a checkout redesign, randomize users rather than page views if the same user can return repeatedly. Define conversion as the primary metric, latency/errors as guardrails, and decide the minimum lift worth shipping before estimating sample size.",
+  "why": "Observational product metrics confound feature exposure with who chose, qualified for, or successfully loaded the feature. Random assignment breaks that systematic link and enables a transparent causal comparison. Small product effects can be worth millions, but large samples can make trivial changes significant, while underpowered tests routinely miss useful changes. A/B testing also fails when instrumentation differs by variant, users switch identities, or one user's treatment affects another. Interviews test whether candidates understand design and decision quality, not only a z-test formula. In production, trustworthy experimentation is a platform capability involving assignment, logging, metrics, inference, alerting, review, and safe deployment.",
+  "intuition": "Each eligible user has two potential outcomes: what would happen under control and under treatment, but only one is observed. Randomization creates two groups that are comparable before treatment, so their average outcome difference estimates the missing counterfactual contrast. Sampling noise means the estimate moves across repeated experiments; an interval describes compatible effect sizes under assumptions. Power is the chance that the planned rule detects a chosen true effect. A smaller MDE demands more information. The result should answer a decision: whether benefits exceed a practical threshold while guardrails remain safe, not merely whether exact zero can be rejected.",
+  "deepDive": "The experiment is a chain from causal estimand through randomized assignment, measurement, statistical estimator, and decision rule. Breaking any link can produce precise evidence about the wrong population or outcome.",
+  "math": "Let p_T=x_T/n_T and p_C=x_C/n_C. Estimated absolute effect d=p_T-p_C. An unpooled standard error for an interval is sqrt(p_T(1-p_T)/n_T+p_C(1-p_C)/n_C); a null z-test often uses pooled p=(x_T+x_C)/(n_T+n_C). Approximate equal-arm sample per group for a mean effect delta is 2 sigma^2(z_{1-alpha/2}+z_{1-beta})^2/delta^2. Relative lift is d/p_C when p_C>0. These formulas assume independent units and the stated fixed-horizon plan.",
+  "workedExample": "Checkout conversion is 10%, and the smallest worthwhile absolute improvement is 0.5 percentage points. With two-sided alpha 0.05 and 80% power, planning uses baseline variance and a two-proportion calculation, then inflates for exclusions defined before assignment and a complete weekly cycle. Observed control is 10.1% and treatment 10.45%, an effect of +0.35 points with a 95% interval from -0.05 to +0.75. The result is compatible with small harm and a worthwhile gain, so it is inconclusive for the +0.5-point decision threshold despite a positive point estimate. Guardrail latency also worsened; the team does not ship and instead diagnoses performance before a new test.",
   "code": "# Conceptual experiment checklist\nexperiment = {\n  \"unit\": \"user\",\n  \"primary_metric\": \"conversion\",\n  \"alpha\": 0.05,\n  \"power\": 0.80,\n  \"guardrails\": [\"latency\", \"error_rate\"]\n}",
   "commonMistakes": [
-    "Stopping the test the first time p<0.05 without a sequential-testing plan.",
-    "Testing many metrics and reporting only the significant one.",
-    "Ignoring sample-ratio mismatch or users appearing in both groups."
+    {
+      "mistake": "Interpreting p>0.05 as no effect",
+      "correction": "It means the planned test did not reject its null; inspect the interval to see which harms and benefits remain compatible."
+    },
+    {
+      "mistake": "Powering for any detectable effect",
+      "correction": "Choose a decision-relevant MDE using value and risk; arbitrary tiny effects create impractical sample demands."
+    },
+    {
+      "mistake": "Analyzing only exposed users",
+      "correction": "Exposure is post-assignment and may be treatment-dependent; ITT preserves randomization unless a valid triggered design was specified."
+    },
+    {
+      "mistake": "Ignoring guardrails after a primary win",
+      "correction": "A primary metric does not compensate for unacceptable reliability, safety, fairness, or cost harm."
+    }
   ],
   "followUps": [
-    "How do you choose sample size?",
-    "What is statistical power?",
-    "How would you handle multiple testing?",
-    "What if randomization must happen by store or company rather than user?"
+    {
+      "question": "What is the difference between statistical and practical significance?",
+      "answer": "Statistical significance concerns evidence against a null under a procedure; practical significance asks whether the magnitude justifies action given costs, thresholds, and risks."
+    },
+    {
+      "question": "Why is 50/50 allocation common?",
+      "answer": "For equal per-unit variance and cost, balanced arms minimize variance for a fixed total sample. Risk, capacity, or multi-arm designs can justify another ratio."
+    },
+    {
+      "question": "What does randomization guarantee?",
+      "answer": "In expectation it balances pre-treatment potential-outcome determinants under a correct assignment mechanism. It does not fix missing data, interference, broken logging, or chance imbalance in one realization."
+    }
   ],
-  "production": "Experimentation platforms need deterministic assignment, exposure logging, metric definitions, data-quality checks and safeguards against peeking. The statistical test is only one component of the system.",
+  "production": "Version the hypothesis, estimand, eligibility query, unit, allocation, assignment salt, variants, power inputs, primary and guardrail metric contracts, analysis windows, multiplicity and stopping rules before launch. Log assignment and exposure separately with immutable timestamps. Ramp gradually behind kill switches. Monitor SRM, invariant metrics, crashes, latency, data loss, cross-variant contamination, and delayed outcomes without applying invalid fixed-horizon inference. Reproduce results from raw events and an independent assignment snapshot. Protect user privacy and small slices. Publish effect, interval, denominator, exclusions, diagnostic status, and decision. Rollback treatment serving immediately on guardrail breach while retaining assignment and evidence; never rewrite experiment history.",
   "lab": {
-    "goal": "Estimate conversion uplift and a confidence interval before declaring an experiment winner.",
     "language": "python",
-    "buildIt": "import math\nn1,x1=5000,500; n2,x2=5000,575\np1,p2=x1/n1,x2/n2\nd=p2-p1\nse=math.sqrt(p1*(1-p1)/n1+p2*(1-p2)/n2)\nlo,hi=d-1.96*se,d+1.96*se\nprint('uplift',d,'95% CI',lo,hi)",
-    "useIt": "# scipy can provide a z-test or confidence-interval helpers; the key is\n# to define the metric, unit of randomization and stopping rule before peeking.\nrelative=(x2/n2)/(x1/n1)-1\nprint('relative uplift',relative)",
-    "verifyIt": "assert lo>0\n"
-  },
-  "visual": {
-    "type": "flow",
-    "title": "A/B experiment",
-    "items": [
-      "Eligible population",
-      "Random assignment",
-      "Control vs treatment",
-      "Measure outcome",
-      "Estimate effect"
-    ],
-    "caption": "Randomization breaks systematic confounding in expectation, enabling a causal comparison.",
-    "accent": 1,
-    "orientation": "horizontal"
+    "goal": "Implement a two-proportion A/B estimate, interval, null z-test, and approximate power calculation, then compare with statsmodels and verify invariants.",
+    "buildIt": "from math import erf,sqrt\ndef normal_cdf(z): return 0.5*(1+erf(z/sqrt(2)))\ndef ab_proportions(x_t,n_t,x_c,n_c,zcrit=1.95996398454):\n    pt,pc=x_t/n_t,x_c/n_c; effect=pt-pc\n    se=sqrt(pt*(1-pt)/n_t+pc*(1-pc)/n_c)\n    pooled=(x_t+x_c)/(n_t+n_c)\n    se0=sqrt(pooled*(1-pooled)*(1/n_t+1/n_c))\n    z=effect/se0; pvalue=2*(1-normal_cdf(abs(z)))\n    return effect,(effect-zcrit*se,effect+zcrit*se),z,pvalue\ndef mean_sample_per_arm(sigma,mde,alpha_z=1.96,power_z=0.841621):\n    return int(2*sigma*sigma*(alpha_z+power_z)**2/(mde*mde)+0.999999)\nreport=ab_proportions(1045,10000,1010,10000)\nplanned_n=mean_sample_per_arm(sqrt(0.1*0.9),0.005)",
+    "useIt": "from statsmodels.stats.proportion import proportions_ztest\nstat,pvalue=proportions_ztest([1045,1010],[10000,10000])",
+    "verifyIt": "effect,interval,z,p=report\nassert abs(effect-0.0035)<1e-12\nassert interval[0]<effect<interval[1]\nassert abs(z-stat)<1e-10 and abs(p-pvalue)<1e-10\nassert planned_n>0\nassert mean_sample_per_arm(sqrt(0.1*0.9),0.0025)>3*planned_n\nreverse=ab_proportions(1010,10000,1045,10000)\nassert abs(reverse[0]+effect)<1e-12\nassert 0<=p<=1",
+    "shipIt": "Bind calculations to immutable assignment and metric snapshots, validate SRM and analysis-unit independence first, version alpha/MDE/stopping rules, monitor guardrails, and publish effects with intervals and denominators rather than significance labels alone."
   },
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "A/B testing estimates the causal effect of a product or policy change by randomly assigning eligible experimental units to variants and comparing prespecified outcomes. This chapter connects potential outcomes, randomization, difference-in-means and difference-in-proportions estimators, confidence intervals, hypothesis tests, Type I and II errors, statistical power, minimum detectable effect (MDE), practical significance, multiple metrics, heterogeneous effects, and decision rules. You will learn why randomization identifies an intention-to-treat effect, why exposure logging and unit choice matter, how baseline rate and variance determine sample size, and why a nonsignificant result is not proof of equivalence. A worked checkout experiment translates a business threshold into power, duration, and interpretation. The lab implements a two-proportion effect estimate, standard error, interval, z-test, and approximate sample-size calculation; compares with statsmodels; and verifies invariants using deterministic data. Production guidance covers assignment, sample-ratio mismatch, novelty, interference, sequential monitoring, data quality, privacy, guardrails, rollout, and rollback. The aim is a trustworthy decision process, not a ritual that converts every p-value below 0.05 into a launch.",
+  "prerequisites": [
+    "hypothesis-testing",
+    "confidence-intervals",
+    "power-sample-size"
+  ],
+  "learningObjectives": [
+    "Define the estimand, eligible population, randomization unit, variants, outcomes, and decision threshold before observing results.",
+    "Compute and interpret treatment effects, uncertainty, p-values, power, and MDE for common independent-arm metrics.",
+    "Distinguish statistical significance, practical significance, equivalence, noninferiority, and inconclusive evidence.",
+    "Audit an online test for assignment, exposure, SRM, multiplicity, interference, and post-randomization bias."
+  ],
+  "deepSections": [
+    {
+      "id": "estimand-design",
+      "title": "Population, unit, assignment, and estimand",
+      "body": "Specify eligibility before assignment, the experimental unit, allocation ratio, assignment mechanism, treatment versions, exposure semantics, and analysis population. User randomization fits persistent user experiences; session or request randomization may create carryover and correlated observations; cluster randomization protects shared treatment but reduces effective sample size. The intention-to-treat (ITT) estimand compares outcomes by assigned arm regardless of actual exposure and preserves randomization. Treatment-on-treated needs additional assumptions because exposure is post-randomization. Define analysis windows, delayed outcomes, triggered analyses, and exclusions without conditioning on treatment consequences. Persist assignment before serving and make it deterministic for stable identities."
+    },
+    {
+      "id": "estimation-inference",
+      "title": "Effects, standard errors, intervals, and tests",
+      "body": "For independent arms, estimate a mean effect as mean(Y_T)-mean(Y_C), or a proportion effect as p_T-p_C. Its standard error combines arm variances divided by arm counts. A confidence interval is estimate plus or minus a critical value times standard error; it describes a procedure's repeated-sampling coverage, not a posterior probability that the fixed effect lies inside. A null test compares a statistic to its reference distribution under H0. Use the analysis unit implied by randomization, cluster-robust methods when assignment or dependence is clustered, and robust or bootstrap methods for heavy-tailed metrics. Report absolute and relative changes with denominators."
+    },
+    {
+      "id": "power-mde",
+      "title": "Power, MDE, allocation, and duration",
+      "body": "Type I error alpha is the probability of rejecting a true null under the planned procedure; Type II error beta is missing a specified alternative, and power is 1-beta. MDE is a design input tied to the smallest effect worth reliably detecting, not a magical post-hoc boundary. Required sample grows roughly with variance and inverse squared effect. For proportions it depends on baseline rate; for clustered data it grows with the design effect. Equal allocation maximizes precision at equal per-unit cost, while asymmetric allocation can reflect treatment risk or capacity. Convert sample to duration using eligible traffic, weekday cycles, ramp plan, attrition, and delayed outcomes, not raw site traffic."
+    },
+    {
+      "id": "decision-interpretation",
+      "title": "From evidence to a launch decision",
+      "body": "Separate the null of exactly zero from practical hypotheses such as effect above a benefit threshold, noninferiority above an acceptable loss, or equivalence within a margin. A narrow interval entirely below the business threshold can support rejection even if statistically positive. A wide interval crossing harm and benefit is inconclusive, not no effect. Consider primary metric, prespecified guardrails, costs, risk, heterogeneity, novelty, and external validity. Multiple outcomes or segments require a family-wise or false-discovery plan when claims depend on searching. Report all prespecified metrics and analysis changes. A launch may still be staged because the experiment population, scale, or duration differs from full deployment."
+    },
+    {
+      "id": "trust-failures",
+      "title": "Trust checks and common experiment failures",
+      "body": "Before reading effects, verify assignment proportions, covariate balance appropriate to the design, mutually exclusive variants, stable identity, exposure delivery, event completeness, timestamps, and invariant metrics. Sample-ratio mismatch is a symptom requiring diagnosis, not a nuisance p-value to waive. Bots, duplicate users, missing events, cache behavior, or treatment-dependent logging can bias results. Peeking with fixed-horizon p-values inflates false positives. Network spillovers violate no-interference assumptions. Novelty and learning can make early effects transient. Run an A/A test and synthetic controls for the platform, but remember that passing checks does not prove every experiment valid."
+    }
+  ],
+  "workedExamples": [
+    {
+      "title": "A positive estimate that is not decision-ready",
+      "body": "Translate a practical threshold into power, report the absolute effect interval, compare it with benefit and harm regions, and include guardrail evidence before deciding."
+    }
+  ],
+  "exercises": [
+    {
+      "prompt": "An interval is [-1%, +3%]. Can you claim no effect?",
+      "solution": "No. The data remain compatible with meaningful harm and benefit; the experiment is inconclusive for many practical thresholds."
+    },
+    {
+      "prompt": "What happens to sample size if MDE is halved?",
+      "solution": "Under the usual approximation it grows by about four because sample is proportional to 1/delta^2."
+    },
+    {
+      "prompt": "Why analyze at user level when users were randomized?",
+      "solution": "Repeated events within a user are correlated; treating events as independent overstates information and understates uncertainty."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "flow",
+      "title": "Trustworthy A/B test lifecycle",
+      "items": [
+        "Specify estimand + thresholds",
+        "Power and randomize",
+        "Ramp + trust checks",
+        "Measure prespecified outcomes",
+        "Estimate effect + interval",
+        "Decide, ship, monitor, rollback"
+      ],
+      "caption": "Inference is one stage in a larger causal and operational control system.",
+      "afterSection": "estimand-design"
+    },
+    {
+      "type": "compare",
+      "title": "Three evidence regions",
+      "left": {
+        "title": "Decision-supporting",
+        "items": [
+          "Interval above benefit threshold",
+          "Guardrails within margins",
+          "Trust checks pass",
+          "Population matches launch"
+        ]
+      },
+      "right": {
+        "title": "Not decision-supporting",
+        "items": [
+          "Wide interval across harm/benefit",
+          "Trivial effect only",
+          "SRM or logging failure",
+          "Guardrail breach"
+        ]
+      },
+      "caption": "A p-value alone cannot distinguish these operationally different outcomes.",
+      "afterSection": "decision-interpretation"
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "trustworthy-oce-survey",
+      "contribution": "Provides a peer-reviewed practical foundation for online randomization, power, variance reduction, pitfalls, and trustworthy causal interpretation."
+    },
+    {
+      "resource": "statsmodels-power",
+      "contribution": "Documents current power, sample-size, and proportion-test implementations used for idiomatic verification."
+    },
+    {
+      "resource": "stanford-stats200",
+      "contribution": "Provides university-level hypothesis testing, confidence interval, multiple-testing, and power foundations."
+    },
+    {
+      "resource": "microsoft-experimentation",
+      "contribution": "Provides large-scale platform experience on assignment, metrics, trust checks, and operational decision making."
+    }
+  ]
 }

@@ -1,0 +1,16 @@
+from collections import Counter
+
+def profile(rows,key,numeric,categorical):
+    keys=[r.get(key) for r in rows]
+    values=[r.get(numeric) for r in rows if r.get(numeric) is not None]
+    categories=Counter(r.get(categorical) for r in rows)
+    return {
+        'rows':len(rows),'unique_keys':len(set(keys)),
+        'duplicate_keys':len(keys)-len(set(keys)),
+        'missing_numeric':sum(r.get(numeric) is None for r in rows),
+        'numeric_min':min(values),'numeric_max':max(values),
+        'categories':dict(categories),
+    }
+
+rows=[{'id':1,'amount':12.0,'channel':'web'},{'id':2,'amount':None,'channel':'store'},{'id':3,'amount':8.0,'channel':'web'}]
+report=profile(rows,'id','amount','channel')

@@ -7,44 +7,173 @@
     "ds",
     "as"
   ],
-  "interviewAnswer": "MCMC constructs a Markov chain whose stationary distribution is the posterior, letting us approximate expectations when closed-form inference is unavailable. Diagnostics are essential because samples can be correlated or chains may not mix.",
+  "interviewAnswer": "MCMC constructs a Markov chain with the posterior as its stationary distribution, then estimates posterior expectations from retained dependent draws. Metropolis–Hastings accepts a proposal with the target-density and proposal-ratio correction; HMC uses gradients to propose distant moves and NUTS adapts trajectory length. Run multiple dispersed chains, separate warmup, and check rank-normalized split R-hat, bulk and tail ESS, Monte Carlo SE, trace plots, divergences, treedepth, and model-specific calibration. A high acceptance rate or long chain alone does not prove convergence, and thinning rarely fixes autocorrelation.",
   "keyPoints": [
-    "Burn-in/warmup is not a substitute for convergence diagnostics.",
-    "Check multiple chains, R-hat and effective sample size.",
-    "Posterior samples enable arbitrary derived quantities."
+    "Stationarity does not guarantee finite-chain exploration",
+    "Dependent draws reduce effective information",
+    "Multiple diagnostics target different failures",
+    "Geometry and parameterization dominate sampler performance",
+    "Computation must be validated against known and simulated truth"
   ],
   "resources": [
+    "stan-reference",
     "pymc",
-    "think-bayes"
+    "think-bayes",
+    "bayesian-workflow"
   ],
   "featured": false,
-  "why": "MCMC & Posterior Sampling appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
-  "intuition": "Burn-in/warmup is not a substitute for convergence diagnostics.",
-  "deepDive": "MCMC constructs a Markov chain whose stationary distribution is the posterior, letting us approximate expectations when closed-form inference is unavailable. Diagnostics are essential because samples can be correlated or chains may not mix. Check multiple chains, R-hat and effective sample size. Posterior samples enable arbitrary derived quantities. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
-  "workedExample": "Fit a hierarchical conversion model and use posterior draws to estimate probability one segment outperforms another.",
+  "why": "Most realistic Bayesian models lack closed-form posteriors. MCMC makes full posterior inference possible, but it also creates a second layer of uncertainty: the chain may not represent the target well. A model can produce plausible-looking histograms while one chain remains trapped in a mode, tail ESS is tiny, or HMC divergences avoid an important region. Interviews ask Metropolis acceptance and burn-in; advanced practice requires diagnostics and geometry. Production systems must turn those diagnostics into hard quality gates rather than warnings lost in logs. More iterations can reduce Monte Carlo error after mixing, but they do not repair a nonidentified model, disconnected modes, or systematically missed curvature.",
+  "intuition": "Imagine exploring a landscape whose height is posterior density. Random-walk Metropolis proposes a nearby step and always accepts uphill moves, while sometimes accepting downhill moves so it does not freeze at a local peak. Tiny steps accept often but crawl; huge steps reject often and repeat the same state. HMC adds momentum and follows gradients, traveling across smooth valleys with fewer random walks. Warmup tunes step size, mass matrix, and sometimes proposal scales; those adaptive draws are not ordinary samples. Even after warmup, neighboring states remain correlated. Effective sample size asks how many independent draws would provide comparable precision. Multiple chains started apart reveal whether explorers agree on the same terrain.",
+  "deepDive": "MCMC targets integrals E[f(theta)|y]. If a chain is ergodic with invariant posterior pi, averages of f(theta_t) converge under conditions. Finite-chain validity depends on initialization, adaptation, transition geometry, numerical correctness, and whether every important region is reachable.",
+  "workedExample": "For Beta(8,22), run four random-walk Metropolis chains on logit p with dispersed starting values. A proposal SD of 0.02 in p-space accepts almost everything but moves slowly; SD 0.8 rejects most proposals; an intermediate logit proposal explores efficiently. Compare sample mean with analytic 8/30, quantiles with SciPy, chain means with one another, and autocorrelation/ESS. This successful one-dimensional benchmark verifies the kernel but not a later hierarchical model. A funnel can show acceptable marginal means while divergences avoid the narrow neck, requiring noncentering or stronger prior geometry.",
   "commonMistakes": [
-    "Applying the method without checking its assumptions or data-generating process.",
-    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+    "Treating high acceptance, one smooth trace, or many iterations as proof of convergence.",
+    "Dropping rejected states or adapting proposals forever without a valid adaptive scheme.",
+    "Using thinning as a cure for poor mixing instead of improving geometry or running longer valid chains.",
+    "Ignoring divergences, tail ESS, treedepth, or diagnostic failures in derived decision quantities.",
+    "Running all chains from nearly identical starts and declaring agreement despite missed modes."
   ],
   "followUps": [
-    "What assumptions does MCMC & Posterior Sampling make?",
-    "How would you validate or debug MCMC & Posterior Sampling in practice?"
+    {
+      "question": "Why retain repeated states after rejection?",
+      "answer": "The self-transition is part of the Markov kernel that preserves the target. Removing rejections changes empirical weights and biases the sample toward accepted moves."
+    },
+    {
+      "question": "What is the difference between posterior SD and MCSE?",
+      "answer": "Posterior SD is substantive uncertainty about the parameter under the model. MCSE is numerical uncertainty in an estimated posterior summary caused by a finite correlated simulation."
+    },
+    {
+      "question": "Why does noncentering help hierarchical models?",
+      "answer": "With weak group data it separates standard latent effects from population scale, reducing funnel curvature and posterior dependence. With strongly informed groups, centered forms can sometimes be more efficient."
+    }
   ],
-  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
-  "visual": {
-    "type": "flow",
-    "title": "MCMC sampling",
-    "items": [
-      "Start state",
-      "Propose move",
-      "Accept / reject",
-      "Approximate posterior"
-    ],
-    "caption": "A Markov chain is constructed so that its long-run samples follow the target posterior distribution.",
-    "accent": 2,
-    "orientation": "horizontal"
-  },
+  "production": "Run at least multiple independent chains with deterministic, independent RNG streams and versioned initializations. Separate adaptation from retained draws. Define quality gates for R-hat, bulk/tail ESS relative to required summary precision, MCSE, divergences, treedepth saturation, energy diagnostics, failed transitions, and model-specific invariants. Store compact posterior draws or reproducible summaries with data/code hashes, sampler configuration, package/compiler/hardware versions, and diagnostics. Limit raw posterior access when draws reveal sensitive small-group values. Benchmark runtime and cap resources, but never silently return partial chains as valid. Retry only with a documented diagnostic hypothesis; otherwise fall back to a simpler validated model or withhold the decision. Rollback restores model, parameterization, sampler, prior, and posterior artifact together. Monitor predictive calibration after deployment because perfect MCMC cannot rescue a wrong model.",
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "Markov chain Monte Carlo approximates posterior expectations by constructing dependent draws whose stationary distribution is the target posterior. The central promise is asymptotic, while every real analysis uses finite chains that can fail to explore relevant modes or geometry. This chapter develops Metropolis–Hastings, Gibbs sampling, Hamiltonian Monte Carlo, and the No-U-Turn Sampler; distinguishes warmup from retained sampling; and explains detailed balance, autocorrelation, effective sample size, Monte Carlo standard error, rank-normalized split R-hat, divergences, treedepth, energy diagnostics, and multimodality. You will learn why acceptance rate alone is not convergence, why thinning usually discards information, how centered versus noncentered parameterizations change hierarchical geometry, and how to validate an implementation against conjugate truth and simulation-based calibration. The worked example samples a one-dimensional Beta posterior, then contrasts its easy geometry with a funnel. The lab builds random-walk Metropolis, compares posterior moments with SciPy, and checks multiple-chain mixing. Production guidance covers deterministic seeds, chain parallelism, diagnostics gates, compute budgets, artifact storage, privacy, and safe failure behavior.",
+  "prerequisites": [
+    "bayes-update",
+    "conjugate-priors",
+    "numerical-stability"
+  ],
+  "learningObjectives": [
+    "Explain how a Markov transition kernel can leave a posterior invariant and why retained draws are dependent.",
+    "Implement Metropolis–Hastings and relate proposal scale to exploration, acceptance, and autocorrelation.",
+    "Interpret R-hat, bulk/tail ESS, Monte Carlo SE, divergences, treedepth, and trace diagnostics jointly.",
+    "Diagnose multimodality, funnels, constraints, initialization, and parameterization failures before using posterior summaries."
+  ],
+  "deepSections": [
+    {
+      "id": "mh",
+      "title": "Metropolis–Hastings and invariance",
+      "body": "From current theta, propose theta'~q(theta'|theta). Accept with probability min(1, pi(theta')q(theta|theta')/[pi(theta)q(theta'|theta)]); otherwise retain theta. This correction establishes detailed balance for many kernels, implying pi is invariant. Symmetric random-walk proposals cancel q. Work in log density to prevent underflow. Rejections are valid repeated draws and must remain in the chain. Proposal tuning changes efficiency, not target, if adaptation stops or follows valid adaptive rules. Irreducibility and aperiodicity matter: a proposal that cannot cross a support gap never discovers the other mode regardless of iterations."
+    },
+    {
+      "id": "gibbs-hmc",
+      "title": "Gibbs, HMC, and NUTS",
+      "body": "Gibbs sampling draws each block from its full conditional and accepts automatically; strong posterior correlations can still make coordinate updates slow. Hamiltonian Monte Carlo augments parameters with momentum, simulates approximate Hamiltonian dynamics using leapfrog integration, and corrects integration error with Metropolis acceptance. A mass matrix rescales geometry. NUTS expands trajectories until a no-U-turn condition and adapts step size during warmup. Gradients enable distant proposals, but discontinuities, boundaries, heavy tails, and funnels challenge HMC. Divergences flag trajectories where numerical integration cannot follow curvature and often indicate biased exploration, not harmless noise to suppress blindly."
+    },
+    {
+      "id": "diagnostics",
+      "title": "R-hat, ESS, MCSE, and visual diagnostics",
+      "body": "Rank-normalized split R-hat compares between- and within-chain behavior after splitting chains and transforming ranks; values near one are necessary but not sufficient. Bulk ESS assesses central-location estimation and tail ESS assesses quantiles/tails. ESS incorporates autocorrelation and can differ by parameter and function. Monte Carlo SE estimates numerical uncertainty in a posterior summary, distinct from posterior SD. Trace plots should look stationary and overlapping; rank plots expose chain-specific distribution differences; autocorrelation plots show persistence. For HMC, inspect divergence count/location, maximum treedepth, energy behavior, and acceptance adaptation. Check transformed quantities and decisions, not only raw parameters."
+    },
+    {
+      "id": "geometry",
+      "title": "Funnels, correlations, modes, and reparameterization",
+      "body": "Hierarchical scale parameters create funnel geometry: when group-scale is small, latent effects occupy a narrow neck; when large, they spread widely. Centered parameterization can be efficient with strongly informed groups but poor with weak data. Noncentering writes effects as population mean plus scale times standard-normal latent variables, often easing weak-data geometry. Highly correlated parameters need mass-matrix adaptation or reparameterization. Label switching in mixtures yields symmetric modes; identifiability constraints or permutation-invariant summaries may be needed. Disconnected modes cannot be diagnosed solely by local HMC statistics if every chain initializes in one mode. Use prior predictive insight, dispersed starts, alternative algorithms, and tempered methods when relevant."
+    },
+    {
+      "id": "workflow-validation",
+      "title": "Warmup, initialization, and validation",
+      "body": "Warmup removes initialization influence and adapts sampler settings; discarding an arbitrary fraction without checking mixing is not a proof. Initialize multiple chains over plausible dispersed regions, but avoid pathological invalid values. Validate code on prior-only simulation, conjugate models, and simulated datasets where parameters are known. Simulation-based calibration tests rank uniformity across repeated prior-generated datasets and can detect inference implementation bias. Compare independent software or analytic results on small cases. Thinning usually increases Monte Carlo error for a fixed computation and is justified mainly for storage or expensive downstream calculations. If diagnostics fail, revise model or computation before interpreting posterior output."
+    }
+  ],
+  "math": "For stationary scalar chain f_t with autocorrelations rho_k, asymptotic variance of the sample mean is Var_pi(f)/N times tau, where tau=1+2 sum_{k>=1}rho_k is integrated autocorrelation time; ESS=N/tau. MCSE(mean) is approximately posterior SD/sqrt(ESS). Metropolis–Hastings acceptance is alpha=min(1, exp(log pi(theta')-log pi(theta)+log q(theta|theta')-log q(theta'|theta))). Detailed balance pi(theta)K(theta,theta')=pi(theta')K(theta',theta) is sufficient, not necessary, for invariance.",
+  "workedExamples": [
+    {
+      "title": "Metropolis on a known Beta posterior",
+      "body": "Use a conjugate target as a golden test, vary proposal scale, retain rejected states, compare all chains with analytic moments, and distinguish acceptance rate from effective exploration."
+    }
+  ],
+  "exercises": [
+    {
+      "prompt": "A chain has N=10,000 and integrated autocorrelation time 20. Approximate ESS.",
+      "solution": "ESS=N/tau=10,000/20=500 independent-equivalent draws."
+    },
+    {
+      "prompt": "Posterior SD is 2 and ESS is 400. Approximate MCSE of the mean.",
+      "solution": "2/sqrt(400)=0.1. This is simulation error in the posterior mean estimate, not posterior uncertainty of 2."
+    },
+    {
+      "prompt": "Why can four chains with R-hat near one still miss a mode?",
+      "solution": "If all initialize in and remain within the same mode, they can agree locally. Use dispersed starts, model knowledge, alternative methods, and predictive/sensitivity checks to search for disconnected regions."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "flow",
+      "title": "Metropolis–Hastings transition",
+      "items": [
+        "Current state",
+        "Propose candidate",
+        "Compute log density ratio",
+        "Accept or self-transition",
+        "Repeat and diagnose"
+      ],
+      "caption": "Rejected proposals remain as repeated states; the full kernel, not accepted points alone, targets the posterior.",
+      "orientation": "horizontal",
+      "afterSection": "mh"
+    },
+    {
+      "type": "compare",
+      "title": "Two kinds of uncertainty",
+      "left": {
+        "title": "Posterior uncertainty",
+        "items": [
+          "Spread of p(theta|y)",
+          "Substantive under model",
+          "Does not vanish with more MCMC alone"
+        ]
+      },
+      "right": {
+        "title": "Monte Carlo uncertainty",
+        "items": [
+          "Error estimating posterior summaries",
+          "Depends on ESS",
+          "Shrinks with effective draws"
+        ]
+      },
+      "caption": "Do not report numerical precision as though it reduced uncertainty about the world.",
+      "afterSection": "diagnostics"
+    }
+  ],
+  "lab": {
+    "language": "python",
+    "goal": "Build random-walk Metropolis for a Beta target, verify moments and multiple-chain agreement, and quantify acceptance versus autocorrelation.",
+    "buildIt": "import math\nimport random\n\ndef log_beta_kernel(p,a,b):\n    if not 0 < p < 1: return float('-inf')\n    return (a-1)*math.log(p)+(b-1)*math.log1p(-p)\ndef metropolis(start,a,b,steps,proposal_sd,seed):\n    rng=random.Random(seed); x=start; out=[]; accepted=0\n    logp=log_beta_kernel(x,a,b)\n    for _ in range(steps):\n        candidate=x+rng.gauss(0,proposal_sd)\n        logc=log_beta_kernel(candidate,a,b)\n        if math.log(rng.random()) < min(0.0,logc-logp):\n            x,logp=candidate,logc; accepted+=1\n        out.append(x)\n    return out,accepted/steps\nchains=[metropolis(s,8,22,30000,0.08,seed) for s,seed in [(0.05,1),(0.2,2),(0.6,3),(0.9,4)]]\nretained=[draws[5000:] for draws,_ in chains]",
+    "useIt": "import numpy as np\nfrom scipy.stats import beta\ncombined=np.concatenate([np.asarray(c) for c in retained])\nanalytic_mean=beta.mean(8,22)\nanalytic_q=beta.ppf([0.025,0.975],8,22)",
+    "verifyIt": "assert abs(combined.mean()-analytic_mean) < 0.01\nassert np.allclose(np.quantile(combined,[0.025,0.975]),analytic_q,atol=0.02)\nchain_means=[np.mean(c) for c in retained]\nassert max(chain_means)-min(chain_means) < 0.02\nassert all(0.15 < rate < 0.85 for _,rate in chains)\nassert all(len(c)==25000 for c in retained)",
+    "shipIt": "Run independent dispersed chains with immutable configs, gate every posterior on modern convergence/ESS/HMC diagnostics and analytic or simulated fixtures, and withhold output rather than suppressing failures."
+  },
+  "sourceNotes": [
+    {
+      "resource": "stan-reference",
+      "contribution": "Provides authoritative MCMC algorithms, rank-normalized R-hat, ESS, MCSE, diagnostics, and reproducibility guidance."
+    },
+    {
+      "resource": "pymc",
+      "contribution": "Documents current gradient-based posterior sampling and diagnostic workflows in a Python probabilistic-programming system."
+    },
+    {
+      "resource": "bayesian-workflow",
+      "contribution": "Places computational diagnostics inside iterative model building, validation, sensitivity, and revision."
+    },
+    {
+      "resource": "think-bayes",
+      "contribution": "Provides transparent computational sampling examples suitable for mechanism-first understanding."
+    }
+  ]
 }

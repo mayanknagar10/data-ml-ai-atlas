@@ -7,31 +7,179 @@
     "ds",
     "as"
   ],
-  "interviewAnswer": "Posterior predictive checks simulate data from the fitted model and compare it with observed patterns. They test whether the model can reproduce important features, not whether the model is “true.”",
+  "interviewAnswer": "Prior predictive checks sample parameters from the prior and then data, revealing whether assumptions imply plausible outcomes before fitting. Posterior predictive checks sample parameters from the posterior and replicated data from the likelihood, then compare summaries and structure with observations. They can reveal dispersion, tails, zeros, dependence, and subgroup failures but do not prove the model true. Also check MCMC diagnostics, prior sensitivity, simulation-based calibration for the algorithm, and held-out prediction. Predefine important checks, version revisions, and do not treat posterior predictive p-values like ordinary p-values.",
   "keyPoints": [
-    "Choose discrepancy statistics tied to the use case.",
-    "Good fit on one summary can hide poor fit elsewhere.",
-    "Model checking should inform revision."
+    "Prior predictive checks criticize assumptions before data conditioning",
+    "Posterior replication asks whether fitted models reproduce relevant structure",
+    "Computation and model fit are separate gates",
+    "Discrepancies should reflect decisions and failure modes",
+    "Checking drives revision, not certification of truth"
   ],
   "resources": [
+    "stan-predictive-checks",
     "pymc",
-    "think-bayes"
+    "bayesian-workflow",
+    "stan-reference"
   ],
   "featured": false,
-  "why": "Posterior Predictive Checks & Bayesian Model Criticism appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
-  "intuition": "Choose discrepancy statistics tied to the use case.",
-  "deepDive": "Posterior predictive checks simulate data from the fitted model and compare it with observed patterns. They test whether the model can reproduce important features, not whether the model is “true.” Good fit on one summary can hide poor fit elsewhere. Model checking should inform revision. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
-  "workedExample": "Simulate purchase counts from a fitted model and compare zero frequency and tail behavior with actual data.",
+  "why": "A posterior can be numerically precise and operationally useless if the model cannot reproduce rare failures, weekday cycles, subgroup spreads, or the dependence that drives uncertainty. Bayesian inference conditions on a model; checking challenges that model. Interviews often stop at 'generate replicated data,' but production requires a library of domain-specific diagnostics and rules for action when they fail. Visual checks can become subjective, while one aggregate score can hide local mismatch. A disciplined workflow combines graphics, calibrated summaries, held-out prediction, sensitivity, and external validation. The goal is not to prove a model true—every model is simplified—but to find consequential inadequacies before they harm decisions.",
+  "intuition": "Treat the model as a simulator. Before seeing data, draw worlds from the prior predictive distribution. If it routinely predicts impossible conversion rates or billion-dollar orders, the prior and likelihood do not encode what the team believes. After fitting, draw replicated datasets from posterior parameter values. Compare them with reality using features the model should explain: mean, spread, zeros, extreme quantiles, autocorrelation, subgroup differences, and decision events. If observed data sit in an unusual part of the replicated distribution, the model is missing structure. Passing chosen checks only means no discrepancy was found along those dimensions; another statistic may reveal a failure.",
+  "deepDive": "Model checking is iterative: formulate, simulate, fit, diagnose computation, compare replicated with observed data, evaluate prediction, assess sensitivity, revise, and document. Conditioning differs across checks, so their reference distributions and interpretations differ.",
+  "workedExample": "Daily incident counts have observed mean 2.0, variance 9.5, and 30% zeros. A Poisson posterior fits lambda near 2, so posterior predictive datasets reproduce the mean but have variance near 2 and zero rate near exp(-2)=13.5%. The observed variance and zero frequency sit far in predictive tails. The model is underdispersed and misses excess zeros or heterogeneity. Candidate revisions include a negative-binomial rate mixture, zero-inflated process, or hierarchical day effects, chosen from the generating mechanism. Refit, recheck MCMC, and compare tail, zero, temporal, and held-out behavior—not only mean log score.",
   "commonMistakes": [
-    "Applying the method without checking its assumptions or data-generating process.",
-    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+    "Treating a passed posterior predictive check as proof the model is true.",
+    "Checking only the statistic directly fit by the model, such as the mean, while ignoring tails or dependence.",
+    "Interpreting posterior predictive tail areas as ordinary uniform p-values with a universal 0.05 rule.",
+    "Running model checks before resolving MCMC or approximation diagnostics.",
+    "Repeatedly revising against the same checks and calling the final result out-of-sample validated."
   ],
   "followUps": [
-    "What assumptions does Posterior Predictive Checks & Bayesian Model Criticism make?",
-    "How would you validate or debug Posterior Predictive Checks & Bayesian Model Criticism in practice?"
+    {
+      "question": "What is the difference between prior and posterior predictive checks?",
+      "answer": "Prior checks simulate from prior plus likelihood before conditioning and assess assumptions. Posterior checks simulate from posterior plus likelihood after fitting and assess whether the fitted model reproduces relevant observed structure."
+    },
+    {
+      "question": "Does a good posterior predictive check prove the model?",
+      "answer": "No. It means selected discrepancies did not expose a consequential mismatch. Other features, future populations, causal assumptions, or external data may still contradict the model."
+    },
+    {
+      "question": "What does simulation-based calibration test?",
+      "answer": "It tests whether an inference implementation produces calibrated posterior ranks when parameters and data are generated from the model. It does not establish that the model describes the real world."
+    }
   ],
-  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "production": "Create a check registry tied to model risks: prior bounds, means, variances, tails, zeros, calibration, subgroup behavior, dependence, rare events, and decision loss. Define warning and blocking policies before release. Run computational diagnostics first, then prior/posterior predictive, sensitivity, and held-out checks with reproducible independent RNG streams. Persist generated-summary artifacts, plots, package versions, data/code hashes, and model revision history; store raw replicated data only when privacy and cost permit. Monitor predictive residuals, calibration, drift, subgroup failures, and check stability after deployment. Avoid exposing small-group replications. If a blocking check fails, withhold or fall back rather than silently widening priors until it passes. Rollback restores model, posterior, generator, check thresholds, and decision logic together.",
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "Bayesian model checking asks whether data generated from a fitted probability model resemble the observations in scientifically and operationally important ways. Prior predictive checks expose implications before fitting; posterior predictive checks compare replicated datasets with observed data after conditioning; simulation-based calibration audits inference algorithms; sensitivity analysis tests modeling choices; and held-out predictive evaluation measures generalization. This chapter explains what each check conditions on, how to choose discrepancy statistics and graphical diagnostics, why posterior predictive p-values are not ordinary uniform p-values, and how double use of data affects interpretation. You will learn to detect tail, dispersion, zero-inflation, dependence, subgroup, and calibration failures; separate computational from model criticism; compare models without treating one score as truth; and revise models without overfitting the checks. The worked example reveals overdispersion hidden by a Poisson mean fit. The lab generates prior and posterior predictive Beta–Binomial data, checks observed statistics, and verifies reproducibility. Production guidance covers check registries, acceptance gates, drift, privacy, reproducible artifacts, and rollback.",
+  "prerequisites": [
+    "bayes-update",
+    "mcmc",
+    "hierarchical-bayes"
+  ],
+  "learningObjectives": [
+    "Distinguish prior predictive, posterior predictive, simulation-based calibration, and held-out predictive checks by what is generated and conditioned on.",
+    "Design discrepancy statistics and plots that target domain-relevant aspects of the data rather than only global averages.",
+    "Separate sampler convergence from model adequacy and identify tail, dispersion, dependence, subgroup, and calibration failures.",
+    "Build a versioned model-revision workflow that avoids optimizing indefinitely against one reused check set."
+  ],
+  "deepSections": [
+    {
+      "id": "prior-checks",
+      "title": "Prior predictive checks",
+      "body": "Draw theta_sim~p(theta), then y_sim~p(y|theta_sim) without conditioning on observations. Inspect units, bounds, order of magnitude, event frequency, group variation, correlations, and downstream decisions. Weakly informative priors can still imply absurd outcomes after nonlinear links or high-dimensional composition. Prior checks catch those implications before the likelihood dominates. They also reveal whether the simulator and parameterization match the intended generative story. Do not tune priors to reproduce the exact observed dataset before fitting; use domain knowledge, historical external data, and broad plausibility ranges. Record rejected prior versions and rationale."
+    },
+    {
+      "id": "posterior-checks",
+      "title": "Posterior predictive replication",
+      "body": "Draw theta_s from p(theta|y), then y_rep_s~p(y_rep|theta_s). Compare observed T(y) with the distribution of T(y_rep). Use graphical overlays, residuals, interval coverage, rank plots, and targeted discrepancies. A Poisson model can match the mean while missing variance and zero frequency; a Gaussian model can match mean/SD while missing tail asymmetry; an iid model can match marginals while missing autocorrelation. Condition checks by relevant covariates and groups. Replicating data at training covariates is model criticism; predicting at new covariates is a different out-of-sample task."
+    },
+    {
+      "id": "ppp",
+      "title": "Posterior predictive p-values and double use",
+      "body": "A posterior predictive tail area P(T(y_rep)>=T(y)|y) summarizes how extreme a discrepancy is under posterior replication. Because y informs both the posterior and observed discrepancy, it is generally not uniform under the null and is often conservative; it is not an ordinary frequentist p-value. Discrepancy functions can depend on theta to focus on residual behavior, but interpretation remains model-specific. Use tail areas as diagnostics rather than binary accept/reject certificates. Plot the full replicated distribution and effect size of mismatch. Calibrated alternatives include conditional predictive checks, cross-validation, or simulation-based reference distributions when their assumptions fit."
+    },
+    {
+      "id": "computation-vs-model",
+      "title": "Computation checks before model criticism",
+      "body": "A poor posterior approximation can create fake predictive failures or hide real ones. First verify R-hat, bulk and tail ESS, MCSE, divergences, treedepth, and chain exploration. Simulation-based calibration generates theta from the prior, data from the likelihood, runs inference, and checks whether true parameters have uniform ranks among posterior draws; it audits implementation and algorithm under the model, not real-world adequacy. Unit-test log densities and generated quantities on small cases. Variational approximations can underestimate variance, so compare with MCMC or analytic fixtures where feasible. Only then attribute replicated-data mismatch to model structure."
+    },
+    {
+      "id": "comparison-revision",
+      "title": "Held-out evaluation, sensitivity, and revision",
+      "body": "Leave-one-out or K-fold predictive evaluation compares expected out-of-sample log predictive density, but influential observations and unstable importance weights need diagnosis. A slightly better average score may still worsen safety tails or key groups. Prior sensitivity, alternative likelihoods, missing-data mechanisms, and causal assumptions should be varied. Revision adds justified structure—overdispersion, hierarchy, nonlinear trend, dependence, measurement error—not arbitrary flexibility that memorizes checks. Maintain a fresh validation slice or future period because repeatedly tuning to the same PPC set overfits model criticism. Document which failures remain acceptable for the intended decision."
+    },
+    {
+      "id": "calibration-decisions",
+      "title": "Calibration and decision-focused checks",
+      "body": "Predictive calibration asks whether events assigned probability q occur about q of the time across comparable cases, while sharpness rewards concentrated forecasts subject to calibration. Evaluate reliability curves, proper scoring rules, interval coverage, and calibration within consequential groups and horizons. Average calibration can hide severe local failure. Decision-focused checks simulate the downstream action: alert counts, capacity overload, abstention, expected cost, or safety violations under replicated data. A model may reproduce raw outcomes yet fail after thresholding because tail probability is wrong. Use prospective or rolling validation for time-varying systems, and avoid recalibrating on the same period used to claim performance. Link every blocking check to a concrete operational consequence so model criticism remains interpretable and maintainable."
+    }
+  ],
+  "math": "Prior predictive p(y_sim)=integral p(y_sim|theta)p(theta)dtheta. Posterior predictive p(y_rep|y)=integral p(y_rep|theta)p(theta|y)dtheta. A posterior predictive tail area is E[1{T(y_rep)>=T(y)}|y]. For posterior draws theta^(s), approximate a predictive expectation by S^{-1} sum_s E[g(y_new)|theta^(s)] or simulate y_new^(s). Simulation-based calibration checks ranks r=number of posterior draws below the generating theta across repeated prior-generated datasets.",
+  "workedExamples": [
+    {
+      "title": "Poisson model that matches mean but misses dispersion",
+      "body": "Generate posterior predictive counts, compare mean, variance, zeros, and temporal structure, then revise the generative process rather than declaring success from one matched aggregate."
+    }
+  ],
+  "exercises": [
+    {
+      "prompt": "A Poisson model matches observed mean but predictive variance is much smaller. What does that suggest?",
+      "solution": "The likelihood is underdispersed relative to data. Consider heterogeneity, negative-binomial variation, zero inflation, dependence, or measurement processes rather than only changing the prior on one fixed rate."
+    },
+    {
+      "prompt": "Why is a posterior predictive p-value not usually uniform under the model?",
+      "solution": "The observed data are used both to form the posterior predictive distribution and to compute the observed discrepancy, creating double use and typically conservative behavior."
+    },
+    {
+      "prompt": "What failure does simulation-based calibration detect that a PPC may not?",
+      "solution": "SBC can reveal biased or miscalibrated inference code/algorithms even when generated data look plausible, because it checks ranks of known generating parameters across repeated simulated fits."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "flow",
+      "title": "Bayesian model criticism loop",
+      "items": [
+        "Prior predictive",
+        "Fit",
+        "Computation diagnostics",
+        "Posterior predictive",
+        "Held-out + sensitivity",
+        "Revise / document"
+      ],
+      "caption": "Checking is an iterative workflow with separate gates for assumptions, computation, fit, and generalization.",
+      "orientation": "horizontal",
+      "afterSection": "comparison-revision"
+    },
+    {
+      "type": "compare",
+      "title": "Two simulators, different conditioning",
+      "left": {
+        "title": "Prior predictive",
+        "items": [
+          "theta from prior",
+          "No observed-data conditioning",
+          "Checks assumptions and scale"
+        ]
+      },
+      "right": {
+        "title": "Posterior predictive",
+        "items": [
+          "theta from posterior",
+          "Conditions on observed data",
+          "Checks fitted replication"
+        ]
+      },
+      "caption": "Both generate data, but they answer different model-criticism questions.",
+      "afterSection": "prior-checks"
+    }
+  ],
+  "lab": {
+    "language": "python",
+    "goal": "Generate prior and posterior predictive Bernoulli data, compare observed discrepancies, and verify reproducible predictive calibration checks.",
+    "buildIt": "import random\nimport statistics\n\ndef beta_draw(a,b,rng): return rng.betavariate(a,b)\ndef predictive_counts(a,b,trials,repeats,seed):\n    rng=random.Random(seed); counts=[]\n    for _ in range(repeats):\n        p=beta_draw(a,b,rng)\n        counts.append(sum(rng.random()<p for _ in range(trials)))\n    return counts\n\nprior_counts=predictive_counts(2,8,20,5000,31)\n# Six successes in twenty trials -> Beta(8,22).\nposterior_counts=predictive_counts(8,22,20,5000,31)\nobserved=6",
+    "useIt": "import numpy as np\nfrom scipy.stats import betabinom\nanalytic_mean=betabinom.mean(20,8,22)\nanalytic_interval=betabinom.ppf([0.025,0.975],20,8,22)\nposterior_array=np.asarray(posterior_counts)",
+    "verifyIt": "assert predictive_counts(8,22,20,50,31)==predictive_counts(8,22,20,50,31)\nassert abs(statistics.mean(posterior_counts)-analytic_mean) < 0.15\nassert analytic_interval[0] <= observed <= analytic_interval[1]\nassert statistics.mean(prior_counts) < statistics.mean(posterior_counts)\ntail=np.mean(posterior_array >= observed)\nassert 0 < tail < 1",
+    "shipIt": "Version a risk-based check registry, run computation gates before predictive criticism, retain reproducible summaries and revision history, and block or fall back when consequential predictive checks fail."
+  },
+  "sourceNotes": [
+    {
+      "resource": "stan-predictive-checks",
+      "contribution": "Provides official prior, posterior, and hierarchical predictive-check constructions and interpretation."
+    },
+    {
+      "resource": "pymc",
+      "contribution": "Documents current prior/posterior predictive sampling APIs and worked model-checking examples."
+    },
+    {
+      "resource": "bayesian-workflow",
+      "contribution": "Provides the integrated process of simulation, fitting, diagnostics, predictive evaluation, sensitivity, and model revision."
+    },
+    {
+      "resource": "stan-reference",
+      "contribution": "Provides computational diagnostics needed to separate sampler failure from model inadequacy."
+    }
+  ]
 }

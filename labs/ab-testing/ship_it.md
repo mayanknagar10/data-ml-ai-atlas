@@ -1,3 +1,3 @@
 # Ship it
 
-Experimentation platforms need deterministic assignment, exposure logging, metric definitions, data-quality checks and safeguards against peeking. The statistical test is only one component of the system.
+Bind calculations to immutable assignment and metric snapshots, validate SRM and analysis-unit independence first, version alpha/MDE/stopping rules, monitor guardrails, and publish effects with intervals and denominators rather than significance labels alone.

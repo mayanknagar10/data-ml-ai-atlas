@@ -1,0 +1,25 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Interference &amp; Network Effects in Experiments — Code Lab</title><script>(()=>{const s=localStorage.getItem('atlas-theme');const t=s||((matchMedia('(prefers-color-scheme: dark)').matches)?'dark':'light');document.documentElement.dataset.theme=t})()</script><style>:root{--bg:#fff;--text:#121417;--muted:#5d6470;--line:#dfe3e8;--soft:#f6f7f8;--blue:#155eef;--code:#0d1117;color-scheme:light}html[data-theme=dark]{--bg:#0d1117;--text:#eef2f6;--muted:#a8b0ba;--line:#2b333d;--soft:#171d24;--blue:#8fb4ff;--code:#070a0e;color-scheme:dark}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.6 Inter,system-ui,sans-serif}main{max-width:980px;margin:auto;padding:44px 22px 80px}a{color:var(--blue)}h1{font-size:42px;line-height:1.05;margin:8px 0 12px}.k{font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--blue);font-weight:800}.lead{color:var(--muted);font-size:17px}.top{display:flex;justify-content:space-between;gap:16px}button{border:1px solid var(--line);background:var(--soft);color:var(--text);border-radius:8px;padding:7px 9px;cursor:pointer}section{border-top:1px solid var(--line);padding-top:22px;margin-top:26px}pre{background:var(--code);color:#e6edf3;padding:18px;border-radius:12px;overflow:auto;font:13px/1.55 ui-monospace,monospace}.links{display:flex;gap:12px;flex-wrap:wrap;margin:18px 0}.links a{border:1px solid var(--line);border-radius:8px;padding:7px 9px;text-decoration:none;font-size:12px}@media(max-width:600px){h1{font-size:34px}.top{display:block}}</style></head><body><main><div class="top"><div><div class="k">Data, ML & AI Atlas · Runnable Lab</div><h1>Interference &amp; Network Effects in Experiments</h1></div><button id="t">◐ Theme</button></div><p class="lead">Simulate network spillovers, compare individual and cluster assignment, and verify contamination, contrast dilution, and cluster-aware summaries.</p><div class="links"><a href="../../index.html#/lesson/network-experiments">← Full lesson</a><a href="lab.py">Combined Python file</a><a href="README.md">README</a></div><section><h2>1 · Build it</h2><p>Minimal implementation with as little framework abstraction as practical.</p><pre>import random
+def neighbors(i,n): return ((i-1)%n,(i+1)%n)
+def outcome(i,z,direct=1.0,spill=1.5):
+    exposure=sum(z[j] for j in neighbors(i,len(z)))/2
+    return direct*z[i]+spill*exposure
+def individual_assignment(n,seed):
+    rng=random.Random(seed); return [rng.randrange(2) for _ in range(n)]
+def cluster_assignment(n,cluster_size,seed):
+    rng=random.Random(seed); clusters=[rng.randrange(2) for _ in range(n//cluster_size)]
+    return [clusters[i//cluster_size] for i in range(n)]
+def contrast(z):
+    y=[outcome(i,z) for i in range(len(z))]
+    return sum(v for v,a in zip(y,z) if a)/sum(z)-sum(v for v,a in zip(y,z) if not a)/(len(z)-sum(z))
+def crossing_edges(z): return sum(z[i]!=z[(i+1)%len(z)] for i in range(len(z)))
+n=200; zi=individual_assignment(n,7); zc=cluster_assignment(n,10,7)
+individual_effect=contrast(zi); cluster_effect=contrast(zc)</pre></section><section><h2>2 · Use it</h2><p>The same idea through a common library or practical API.</p><pre>import pandas as pd
+summary=pd.DataFrame([{&#x27;design&#x27;:&#x27;individual&#x27;,&#x27;effect&#x27;:individual_effect,&#x27;crossing&#x27;:crossing_edges(zi)},{&#x27;design&#x27;:&#x27;cluster&#x27;,&#x27;effect&#x27;:cluster_effect,&#x27;crossing&#x27;:crossing_edges(zc)}]).set_index(&#x27;design&#x27;)</pre></section><section><h2>3 · Ship it</h2><p>Freeze graph and clusters before assignment, log realized exposure and leakage, simulate design power, analyze independent clusters, monitor ecosystem-wide guardrails, and include cooldown and graph evidence in rollback.</p></section><section><h2>4 · Verify it</h2><p>Assertions and sanity checks that catch conceptual or implementation mistakes.</p><pre>assert 0&lt;sum(zi)&lt;n and 0&lt;sum(zc)&lt;n
+assert summary.loc[&#x27;cluster&#x27;,&#x27;crossing&#x27;]&lt;summary.loc[&#x27;individual&#x27;,&#x27;crossing&#x27;]
+assert cluster_effect&gt;individual_effect
+assert abs(individual_effect-1.0)&lt;0.35
+assert cluster_effect&gt;2.0
+all_control=[0]*n; all_treated=[1]*n
+total_effect=sum(outcome(i,all_treated)-outcome(i,all_control) for i in range(n))/n
+assert abs(total_effect-2.5)&lt;1e-12
+assert individual_effect&lt;total_effect</pre></section></main><script>const b=document.getElementById('t');function u(){b.textContent=document.documentElement.dataset.theme==='dark'?'☀ Light':'☾ Dark'}u();b.onclick=()=>{const n=document.documentElement.dataset.theme==='dark'?'light':'dark';document.documentElement.dataset.theme=n;localStorage.setItem('atlas-theme',n);u()}</script></body></html>

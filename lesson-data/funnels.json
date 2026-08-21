@@ -7,61 +7,190 @@
     "ds",
     "da"
   ],
-  "interviewAnswer": "A funnel measures progression through ordered steps. The main analytical challenge is defining eligibility, step ordering, time windows and denominators consistently rather than simply computing percentages.",
+  "interviewAnswer": "A funnel is a versioned sequence estimand, not just counts by event name. I define the eligible entity and entry cohort, strict or loose order, conversion window, repeat and re-entry rules, identity resolution, and whether conversion is unique entities or event completions. I deduplicate at the chosen unit, require complete follow-up or handle censoring, and reconcile cumulative counts so they cannot increase. I segment only with pre-step attributes for causal interpretation, inspect time-to-transition and alternative paths, and use experiments to test proposed causes. Drop-off shows where progression stops under the definition; it does not prove why.",
   "keyPoints": [
-    "Define entry cohort.",
-    "Use consistent conversion windows.",
-    "Segment to locate where drop-off changes."
+    "Funnel definitions construct the population and path",
+    "Entity counts and event counts answer different questions",
+    "Conversion windows and maturity prevent unequal opportunity",
+    "Step drop-off is descriptive, not a causal explanation",
+    "Identity and event-contract quality dominate trustworthy funnel analysis"
   ],
   "resources": [
-    "berkeley-data100"
+    "amplitude-funnel-docs",
+    "amplitude-experiment-metrics",
+    "berkeley-data100",
+    "fundamentals-dataviz"
   ],
   "featured": false,
-  "why": "Funnels & Conversion Analysis appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
-  "intuition": "Define entry cohort.",
-  "deepDive": "A funnel measures progression through ordered steps. The main analytical challenge is defining eligibility, step ordering, time windows and denominators consistently rather than simply computing percentages. Use consistent conversion windows. Segment to locate where drop-off changes. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
-  "workedExample": "Signup → onboarding → first action → paid conversion, measured within 14 days of signup.",
+  "why": "Onboarding, checkout, application, and activation flows are operationally sequential, so aggregate conversion can hide where a change occurred. But a user may skip steps, repeat them, switch devices, complete offline, or enter through another path. A dashboard can show a dramatic drop simply because one event was renamed or a recent cohort lacks time to convert. Funnel analysis is valuable when it turns a product theory into explicit state transitions and testable hypotheses. Interviews probe whether analysts define denominators and time correctly. In production, funnel metrics share instrumentation with experiments and can bias launch decisions if event loss differs by variant.",
+  "intuition": "Imagine following each eligible person with a timestamped event ledger. A strict funnel asks whether the ledger contains step A, then a later B, then a later C, all within a clock that starts at A. Count each person once at the furthest qualified step. The narrowing bars are just an aggregation of these state-machine traces. If the last cohort entered yesterday and conversion allows seven days, its apparent failure is administrative censoring. If B is missing because an app version stopped logging, that is measurement loss, not user abandonment. Examine both the accepted path and what users did instead.",
+  "deepDive": "A funnel is a temporal query over entity histories. Its scientific quality depends on state semantics, observation opportunity, identity, and the difference between descriptive transition rates and causal mechanisms.",
+  "workedExample": "A checkout funnel shows 100,000 cart users, 70,000 payment-page users, and 45,000 purchases. After an app release, payment-to-purchase appears to improve, but entry-to-purchase falls. Investigation finds the new app creates a fresh anonymous ID after payment failure; the payment event is under the old ID and repeat purchase under a logged-in ID. A loose cross-device join matches only successful users, inflating the middle transition. The team repairs identity linkage, starts from assigned cart entrants, applies a seven-day maturity cutoff, and adds payment-error events. The corrected analysis shows increased failures, leading to rollback and a randomized fix.",
   "commonMistakes": [
-    "Applying the method without checking its assumptions or data-generating process.",
-    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+    {
+      "mistake": "Counting events as users",
+      "correction": "Repeated events can inflate downstream steps; deduplicate the defined entity or use explicit journey IDs."
+    },
+    {
+      "mistake": "Comparing immature recent cohorts",
+      "correction": "Require the full conversion window or use censoring-aware time-to-event analysis."
+    },
+    {
+      "mistake": "Treating drop-off as a cause",
+      "correction": "It locates an observed transition; errors, alternatives, selection, and experiments are needed to identify mechanisms."
+    },
+    {
+      "mistake": "Joining only users with every step",
+      "correction": "That removes nonconverters from the denominator; begin with entry and left join later states."
+    }
   ],
   "followUps": [
-    "What assumptions does Funnels & Conversion Analysis make?",
-    "How would you validate or debug Funnels & Conversion Analysis in practice?"
+    {
+      "question": "What is a strict funnel?",
+      "answer": "An entity must complete defined steps in order, typically within a conversion window; intervening events may or may not be allowed according to the contract."
+    },
+    {
+      "question": "Why can cumulative counts increase?",
+      "answer": "They should not for a unique-entity strict funnel. An increase signals inconsistent populations, repeated-event counting, re-entry, identity, or query errors."
+    },
+    {
+      "question": "How do you compare funnel conversion in an A/B test?",
+      "answer": "Use assigned eligible units or an assignment-invariant trigger as denominator, prespecify the end metric, and treat intermediate steps as drivers without post-treatment filtering."
+    }
   ],
-  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "production": "Govern every step event with owner, schema, version, entity key, event-time semantics, and property tests. Build funnels from immutable entry cohorts and left-joined histories, using a versioned identity graph and late-data cutoff. Persist step counts, cumulative and transition rates, time distributions, window maturity, missingness, and alternate-path counts. Monitor monotonicity, event coverage, ordering violations, identity-link rates, transition shifts, and platform/version slices. Protect journey data and suppress small cohorts. Dual-log renamed events and reconcile before cutover. On instrumentation failure, freeze funnel-based decisions, publish the affected interval, backfill only under explicit versions, and roll back the metric or product change without rewriting prior definitions.",
   "lab": {
-    "goal": "Compute a simple event funnel with explicit user-level denominators.",
     "language": "python",
-    "buildIt": "import pandas as pd\nevents=pd.DataFrame({'user':[1,1,1,2,2,3,3],'event':['visit','signup','purchase','visit','signup','visit','signup']})\nsteps=['visit','signup','purchase']\nusers={s:set(events.loc[events.event==s,'user']) for s in steps}\ncounts=[len(users[steps[0]])]\nbase=users[steps[0]]\nfor s in steps[1:]:\n    base=base & users[s]\n    counts.append(len(base))\nprint(dict(zip(steps,counts)))",
-    "useIt": "summary=pd.Series(dict(zip(steps,counts)),name='users')\nprint(summary)",
-    "shipIt": "Production funnels need event contracts, idempotent logging, time windows, bot/test-user filtering and metric definitions versioned with dashboards.",
-    "verifyIt": "assert counts == sorted(counts, reverse=True)"
-  },
-  "visual": {
-    "type": "funnel",
-    "title": "Product funnel",
-    "items": [
-      {
-        "label": "Visit",
-        "value": 100
-      },
-      {
-        "label": "Signup",
-        "value": 62
-      },
-      {
-        "label": "Activation",
-        "value": 38
-      },
-      {
-        "label": "Purchase",
-        "value": 17
-      }
-    ],
-    "caption": "Funnels show where users drop between sequential product stages; each transition needs a clearly defined denominator."
+    "goal": "Build an ordered unique-user funnel from event histories, compare counts with pandas, and verify monotonicity, deduplication, and conversion-window semantics.",
+    "buildIt": "from collections import defaultdict\nsteps=['cart','payment','purchase']\nevents=[('u1','cart',0),('u1','payment',2),('u1','purchase',5),('u1','purchase',6),('u2','cart',0),('u2','purchase',3),('u3','cart',0),('u3','payment',8),('u3','purchase',12),('u4','cart',0),('u4','payment',2)]\ndef ordered_funnel(events,steps,window):\n    by_user=defaultdict(list)\n    for user,event,t in events:by_user[user].append((t,event))\n    counts=[0]*len(steps); reached={}\n    for user,history in by_user.items():\n        history.sort(); index=0; start=None\n        for t,event in history:\n            if index==0 and event==steps[0]:start=t; index=1; counts[0]+=1\n            elif start is not None and t-start<=window and index<len(steps) and event==steps[index]:\n                index+=1; counts[index-1]+=1\n        reached[user]=index\n    return counts,reached\ncounts,reached=ordered_funnel(events,steps,10)",
+    "useIt": "import pandas as pd\ndf=pd.DataFrame(events,columns=['user','event','time'])\nentry_users=set(df.loc[df.event=='cart','user'])\npandas_entry=len(entry_users)\nunique_event_users=df.groupby('event')['user'].nunique().to_dict()",
+    "verifyIt": "assert counts==[4,3,1]\nassert counts==sorted(counts,reverse=True)\nassert pandas_entry==counts[0]\nassert reached['u1']==3 and reached['u2']==1\nassert unique_event_users['purchase']==3 and counts[2]==1\nassert ordered_funnel(events,steps,20)[0]==[4,3,2]\nassert counts[2]/counts[0]==0.25",
+    "shipIt": "Version entity, step, order, window and identity semantics; build from entry with complete opportunity; persist additive counts and transition times; monitor event parity and monotonicity; and freeze decisions when instrumentation breaks."
   },
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "Funnel analysis measures how eligible entities progress through a defined sequence of product states or events and where they fail, branch, repeat, or take too long. A funnel is not an objective map of user behavior: step definitions, order rules, identity, attribution, conversion window, denominator, and re-entry policy construct the result. This chapter develops strict and loose funnels, unique-user versus event conversion, closed versus open cohorts, step and cumulative rates, time-to-convert, competing paths, censoring, segmentation, instrumentation, causal limits, and experimental use. You will learn how repeated events and inner joins inflate conversion, why recent entrants have incomplete opportunity, how to distinguish a product obstacle from selection, and when a state machine or journey analysis is better than a linear funnel. A worked checkout example exposes an identity and window bug. The lab implements a deterministic ordered unique-user funnel from raw events, compares it with pandas, and verifies monotonic counts, window rules, deduplication, and denominator reconciliation. Production guidance covers event contracts, late data, sessionization, privacy, monitoring, metric versions, and rollback. The goal is a reproducible behavioral estimand that guides hypotheses, not a decorative narrowing chart that implies causality.",
+  "prerequisites": [
+    "metric-design",
+    "groupby-pivot",
+    "eda-workflow"
+  ],
+  "learningObjectives": [
+    "Define funnel population, entity, step events, ordering, window, attribution, repetition, and denominator semantics precisely.",
+    "Compute cumulative and step conversion without double counting entities or granting unequal observation opportunity.",
+    "Diagnose instrumentation, identity, time, competing-path, and selection explanations for apparent drop-off.",
+    "Implement and verify an ordered funnel while preserving raw counts, transition times, and alternative paths."
+  ],
+  "deepSections": [
+    {
+      "id": "definition",
+      "title": "Entity, entry, steps, order, and window",
+      "body": "Name the entity: user, account, order, application, device, or session. Define eligibility and entry event with source and version. A strict funnel requires step order; a loose funnel may allow intervening events while preserving order; any-order completion answers a different question. Define whether timestamps may tie, whether one event can satisfy multiple steps, and whether all steps must share an order or item property. The conversion window begins at a stated event and uses event time with a timezone and late-data policy. Closed cohorts fix entry membership; open funnels can mix changing populations. Version every semantic choice."
+    },
+    {
+      "id": "counting",
+      "title": "Unique entities, repeats, and denominators",
+      "body": "Unique-entity conversion counts each entity once, usually using the earliest eligible entry and earliest qualifying next step. Event-total funnels can count repeated completions and may exceed entry entities; label them explicitly. Step conversion N_k/N_{k-1} differs from cumulative conversion N_k/N_1, and their product reconciles when definitions align. Decide whether users can re-enter after failure or complete multiple journeys; then use a journey identifier rather than accidental event pairs. Preserve numerator and denominator for every transition. An inner join of completed steps drops nonconverters and can make conversion appear 100%; start from the entry population and left join forward."
+    },
+    {
+      "id": "time-censoring",
+      "title": "Time to convert and observation maturity",
+      "body": "Report transition-time distributions, not only means, because latency is often skewed and long tails determine the window. A fixed window classifies no completion by its end, but entities entering near the data cutoff have not had equal opportunity. Restrict to matured entrants, use cohort-age tables, or apply survival methods when time-to-event is the target and right censoring assumptions are defensible. Calendar shocks and app releases affect cohorts differently. Sessionization adds an inactivity threshold that can split or merge journeys; document it and test sensitivity. Late events can revise earlier funnels, so publish a data-completeness cutoff."
+    },
+    {
+      "id": "diagnosis",
+      "title": "Drop-off, segmentation, and competing paths",
+      "body": "A large drop identifies a transition worth investigation, not its cause. Inspect errors, latency, validation messages, alternate events, support contacts, and qualitative evidence. Segment by pre-entry attributes such as platform or acquisition channel, while recognizing composition and multiplicity. Segmenting on a later step selects converters and can reverse interpretation. Users may reach the same value through a different sequence, so path or state-transition analysis can reveal false drop-off. Compare step rates on common cohorts and complete windows; decompose an aggregate change into entry mix, within-segment transition changes, and logging coverage."
+    },
+    {
+      "id": "experiments-quality",
+      "title": "Causal tests and data-quality controls",
+      "body": "Funnel patterns generate hypotheses such as a form field causing abandonment. Randomize the proposed change and estimate ITT effects on prespecified end conversion plus transition drivers and guardrails. Do not declare causal impact from users who happened to complete a step. In experiment funnels, denominator should normally begin with assigned eligible units or an assignment-invariant trigger; treatment-dependent exposure filters bias comparison. Test event schema, uniqueness, ordering, property consistency, assignment coverage, and arm-specific missingness. Maintain synthetic journeys and expected counts. When a step event changes, dual-log and reconcile before migrating the metric."
+    }
+  ],
+  "math": "Let E be entry entities and S_k the subset that satisfies ordered steps 1..k within window W. Cumulative conversion C_k=|S_k|/|E| and step conversion c_k=|S_k|/|S_{k-1}|, with C_k=product_{j=2..k}c_j when sets and denominators align. Drop-off at k is |S_{k-1}|-|S_k|. Time-to-step T_k=t_k-t_entry is censored at the data cutoff or window for incomplete entities. Compare arms at the randomization-unit level and retain additive counts for reconciliation.",
+  "workedExamples": [
+    {
+      "title": "An identity reset that turns failures into apparent success",
+      "body": "Trace raw entity histories, detect cross-step identity loss, rebuild from entry with complete windows, and separate instrumentation repair from the randomized product fix."
+    }
+  ],
+  "exercises": [
+    {
+      "prompt": "Counts are 1000, 800, 600. What are step and cumulative final conversion?",
+      "solution": "Step conversions are 80% then 75%; final cumulative conversion is 600/1000=60%, equal to 0.8*0.75."
+    },
+    {
+      "prompt": "Why can a 30-day window bias the newest cohort?",
+      "solution": "Members have not all had 30 days of follow-up; restrict to mature entries or use censoring-aware methods."
+    },
+    {
+      "prompt": "A user completes B before A. Do they convert?",
+      "solution": "Only under an any-order definition. A strict ordered funnel excludes that sequence; the contract must decide."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "funnel",
+      "title": "Ordered checkout funnel",
+      "labels": [
+        "Eligible cart",
+        "Payment page",
+        "Submit",
+        "Purchase"
+      ],
+      "values": [
+        1.0,
+        0.72,
+        0.57,
+        0.44
+      ],
+      "caption": "Conceptual unique-user cumulative conversion; each stage is a subset of the prior stage under one identity and window contract.",
+      "afterSection": "counting"
+    },
+    {
+      "type": "compare",
+      "title": "Linear funnel versus journey view",
+      "left": {
+        "title": "Funnel",
+        "items": [
+          "Tests a known sequence",
+          "Clear denominators",
+          "Finds transition loss",
+          "Can hide alternate paths"
+        ]
+      },
+      "right": {
+        "title": "Journey / state model",
+        "items": [
+          "Shows branches and loops",
+          "Captures repeated behavior",
+          "More complex to summarize",
+          "Useful when paths vary"
+        ]
+      },
+      "caption": "Choose the representation that matches product structure rather than forcing every behavior into one line.",
+      "afterSection": "diagnosis"
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "amplitude-funnel-docs",
+      "contribution": "Documents current ordered versus unordered funnels, filters, properties, unique users, conversion windows, and transition behavior."
+    },
+    {
+      "resource": "amplitude-experiment-metrics",
+      "contribution": "Documents explicit experiment funnel denominators, exposure membership, unique versus total conversions, and retention formulas."
+    },
+    {
+      "resource": "berkeley-data100",
+      "contribution": "Provides rigorous event-table grouping, joins, visualization, and inference foundations for reproducible funnel computation."
+    },
+    {
+      "resource": "fundamentals-dataviz",
+      "contribution": "Provides honest funnel and rate visualization principles, including denominators and alternatives to decorative area distortion."
+    }
+  ]
 }

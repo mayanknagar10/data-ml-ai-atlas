@@ -7,50 +7,224 @@
     "ds",
     "as"
   ],
-  "interviewAnswer": "A Bayesian credible interval is a probability statement about a parameter under the posterior; a frequentist confidence interval is a procedure that covers the fixed parameter at a stated long-run frequency.",
+  "interviewAnswer": "A 95% credible interval has 95% posterior probability for the parameter conditional on the model, prior, and observed data. A 95% confidence interval comes from a procedure that covers the fixed true parameter in 95% of repeated samples under its assumptions. The observed frequentist interval does not assign 95% probability to the parameter. Credible intervals may be equal-tailed or highest-density and depend on priors; confidence constructions differ too. Report the framework, estimand, method, assumptions, and practical thresholds, and evaluate both posterior sensitivity and repeated-sample calibration when useful.",
   "keyPoints": [
-    "Interpretations differ even when numerical intervals look similar.",
-    "Bayesian intervals depend on prior/model.",
-    "Frequentist coverage is about repeated procedures."
+    "Credible probability is conditional on model, prior, and data",
+    "Confidence is a property of a repeated-sampling procedure",
+    "Equal-tailed and highest-density sets answer different geometric summaries",
+    "Prediction includes observation noise beyond parameter uncertainty",
+    "Numerical similarity does not erase interpretive differences"
   ],
   "resources": [
+    "stanford-stats200",
     "think-bayes",
-    "stanford-stats200"
+    "stan-predictive-checks",
+    "scipy-stats"
   ],
   "featured": false,
-  "why": "Credible Intervals vs Confidence Intervals appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
-  "intuition": "Interpretations differ even when numerical intervals look similar.",
-  "deepDive": "A Bayesian credible interval is a probability statement about a parameter under the posterior; a frequentist confidence interval is a procedure that covers the fixed parameter at a stated long-run frequency. Bayesian intervals depend on prior/model. Frequentist coverage is about repeated procedures. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
-  "workedExample": "A 95% credible interval can be described as containing 95% posterior probability for the parameter under the model.",
+  "why": "Teams increasingly mix Bayesian experiments with frequentist dashboards. If every interval is labeled '95%' without a framework, readers may treat coverage as posterior probability or interpret a credible interval as model-free calibration. Both errors create false certainty. Bayesian intervals answer natural questions such as P(effect>threshold|data), while confidence procedures offer operating guarantees under repetitions. Each depends on assumptions: priors and likelihoods for the former, sampling design and construction for the latter. Interviews emphasize the semantic difference; production systems also need consistent stopping, multiplicity, and calibration. The most useful practice is not framework tribalism but exact language, decision-aligned quantities, and diagnostics appropriate to the procedure.",
+  "intuition": "For one observed dataset, a Bayesian posterior is a probability distribution over possible parameter values. Mark off a region containing 95% of its mass: that is a credible set. For a frequentist procedure, imagine generating many datasets from one fixed parameter and drawing an interval each time; about 95% of those random intervals should cover the fixed value. One picture holds data fixed and varies the parameter under a posterior; the other varies data while the parameter stays fixed. Their endpoints may converge in regular large samples because the likelihood becomes approximately normal and a weak prior contributes little locally. Near boundaries, with sparse data or informative priors, they can differ substantially.",
+  "deepDive": "An interval is a compressed summary of a distribution or procedure. It cannot communicate multimodality, tail risk, decision asymmetry, or model uncertainty by itself. The construction and target must accompany the endpoints.",
+  "workedExample": "Observe 3 conversions in 10 trials. With Beta(1,1) prior, posterior is Beta(4,8), and its 95% equal-tailed credible interval is given by Beta quantiles. The statement is that, under this prior and binomial model, posterior probability within those endpoints is 0.95. A Wilson 95% confidence interval uses the same data but is interpreted through repeated binomial samples at each fixed p. With only ten trials, endpoints can differ. Repeating the Bayesian analysis under Beta(2,8) reveals prior sensitivity; simulating fixed p values reveals coverage. Neither analysis corrects nonrandom traffic or dependence among trials.",
   "commonMistakes": [
-    "Applying the method without checking its assumptions or data-generating process.",
-    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+    "Saying an observed frequentist interval contains the fixed parameter with 95% probability.",
+    "Presenting a credible interval without the prior, likelihood, and conditioning data.",
+    "Treating any interval excluding zero as evidence of practical importance.",
+    "Confusing a parameter interval with a future-outcome prediction interval.",
+    "Using a highest-density interval as if it were invariant to nonlinear reparameterization."
   ],
   "followUps": [
-    "What assumptions does Credible Intervals vs Confidence Intervals make?",
-    "How would you validate or debug Credible Intervals vs Confidence Intervals in practice?"
+    {
+      "question": "Can a credible interval have 95% frequentist coverage?",
+      "answer": "It can under particular priors, models, and parameter values or asymptotically, but posterior probability does not automatically guarantee repeated-sample coverage. Measure or derive coverage for the intended regime."
+    },
+    {
+      "question": "Why might equal-tailed and highest-density intervals differ?",
+      "answer": "Skewed or multimodal posteriors distribute density unevenly. Equal-tailed intervals balance tail probabilities; highest-density sets prioritize local density and may be shorter or disconnected."
+    },
+    {
+      "question": "Which interval should a dashboard show?",
+      "answer": "Use the framework actually implemented and decision question. Label it clearly, include method and assumptions, show practical thresholds, and avoid mixing posterior probability language with confidence coverage."
+    }
   ],
-  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
-  "visual": {
-    "type": "compare",
-    "title": "Credible vs confidence intervals",
-    "left": {
-      "title": "Bayesian credible interval",
-      "items": [
-        "Probability statement about parameter",
-        "Depends on prior + likelihood"
-      ]
-    },
-    "right": {
-      "title": "Frequentist confidence interval",
-      "items": [
-        "Coverage statement about procedure",
-        "Parameter treated as fixed"
-      ]
-    },
-    "caption": "The numerical intervals can look similar while the interpretation is fundamentally different."
-  },
+  "production": "Require interval metadata: framework, estimand, population, unit, construction, confidence/credible level, sidedness, prior version, likelihood, variance method, stopping rule, multiplicity family, and data window. Render posterior probability statements only from an actual posterior. Run prior sensitivity and predictive checks for Bayesian intervals; run coverage simulations across fixed parameter and design scenarios for decision-critical procedures. Monitor interval width, boundary behavior, posterior drift, calibration, cluster structure, and small-cell instability. Preserve posterior draws or sufficient summaries needed to transform decisions correctly. Apply privacy thresholds. If a sequential policy changes, create a new interval version. Roll back displayed endpoints, labels, and decision status together when data or model integrity fails. Never let UI copy rewrite a confidence statement into a probability claim.",
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "Bayesian credible intervals and frequentist confidence intervals can have similar numerical endpoints while making different probability statements. A credible interval contains a specified posterior probability under a prior and likelihood. A confidence interval is generated by a procedure with stated repeated-sample coverage under a sampling model. This chapter builds both from the same binomial example, compares equal-tailed and highest-density credible sets, explains parameter transformations, nuisance parameters, posterior predictive intervals, and the circumstances in which Bayesian and frequentist intervals approximately agree. You will learn why neither framework is assumption-free, why optional stopping and selection require framework-specific care, how prior sensitivity affects sparse-data credible intervals, and why a 95% posterior interval is not automatically calibrated across repeated real datasets. The worked example contrasts a Beta posterior interval with Wilson confidence coverage. The lab computes equal-tailed posterior intervals, simulates frequentist coverage, and verifies transformation behavior. Production guidance covers naming, metadata, calibration, priors, sequential policies, decision thresholds, privacy, and communication.",
+  "prerequisites": [
+    "bayes-update",
+    "confidence-intervals",
+    "conjugate-priors"
+  ],
+  "learningObjectives": [
+    "State the probability interpretation of credible and confidence intervals without mixing frameworks.",
+    "Construct equal-tailed and highest-density credible sets and contrast them with score or likelihood-based confidence intervals.",
+    "Distinguish parameter uncertainty from posterior predictive uncertainty and transform intervals coherently.",
+    "Evaluate prior sensitivity, frequentist coverage, calibration, selection, and stopping for deployed interval procedures."
+  ],
+  "deepSections": [
+    {
+      "id": "interpretations",
+      "title": "Two probability spaces",
+      "body": "For posterior distribution p(theta|y), a credible set C(y) satisfies integral over C p(theta|y)dtheta=0.95. Probability conditions on observed y and the entire Bayesian model. A confidence procedure C(Y) satisfies P_theta(theta in C(Y))≈0.95 under repetitions Y~p_theta, ideally across relevant theta. Once y is observed, frequentist C(y) either contains theta or not. A confidence distribution is not automatically a Bayesian posterior. Likewise, a credible interval need not have nominal frequentist coverage, though some priors and regular asymptotic settings produce matching behavior. State what is random in the claim."
+    },
+    {
+      "id": "credible-types",
+      "title": "Equal-tailed, highest-density, and one-sided credible sets",
+      "body": "An equal-tailed 95% interval cuts 2.5% posterior probability from each tail and transforms naturally under monotone transformations by transforming endpoints. A highest posterior density set contains points with density above a threshold and often minimizes length in one dimension, but it depends on parameterization and can be disconnected for multimodal posteriors. A single interval spanning a low-density valley can mislead; show the full posterior or disjoint regions. One-sided credible bounds may match risk questions better. The posterior probability above a business threshold is often more actionable than whether zero lies in a central interval, provided the decision model was prespecified."
+    },
+    {
+      "id": "confidence-types",
+      "title": "Confidence constructions and coverage",
+      "body": "Wald intervals use estimate plus-or-minus critical SE and can fail near boundaries or under skewness. Score/Wilson, likelihood-ratio/profile, exact, bootstrap, and randomization intervals have different finite-sample coverage and length. Exact discrete intervals may overcover. Coverage can be marginal rather than conditional in relevant subgroups. Repeated peeking, selecting a winner, or choosing the method after inspection changes operating characteristics unless accounted for. A confidence interval that excludes zero corresponds to a matching two-sided test, but equivalence needs an interval entirely inside prespecified negligible-effect bounds."
+    },
+    {
+      "id": "prediction-transform",
+      "title": "Prediction, transformations, and nuisance uncertainty",
+      "body": "A parameter interval for a mean is not a prediction interval for a future outcome. Bayesian prediction integrates the likelihood over the joint posterior, including correlations among nuisance parameters. Frequentist prediction combines parameter-estimation and future-noise uncertainty through a procedure. For a monotone transform such as odds to probability, transform posterior draws or equal-tailed endpoints; highest-density regions may not transform into highest-density regions. For nonlinear functions or ratios, propagate joint uncertainty rather than transforming marginal intervals separately. Report the original and decision scale when stakeholders reason in absolute risk but modeling occurs in log odds."
+    },
+    {
+      "id": "calibration-sensitivity",
+      "title": "Bayesian calibration and frequentist sensitivity",
+      "body": "Bayesian simulation-based calibration can test whether an inference algorithm recovers prior-generated parameter ranks when data are generated from the model. Posterior predictive checks test data fit, not coverage directly. Repeated-sampling simulations can measure a Bayesian interval's coverage across fixed parameter values and a confidence interval's coverage under design variations. Prior sensitivity should examine posterior decisions under plausible alternatives; confidence sensitivity should examine nuisance, design, and robust-variance choices. Neither one diagnostic proves real-world validity when the data-generating process is outside all simulated models. Use external validation and decision loss as additional evidence."
+    },
+    {
+      "id": "decision-sets",
+      "title": "Intervals, thresholds, and posterior decisions",
+      "body": "A central interval is not always the best decision summary. If harm below h and benefit above b have different consequences, report posterior probabilities for both regions and expected utility, not only mass around the median. Frequentist decisions can similarly use one-sided bounds, equivalence intervals, or confidence sets inverted from decision-relevant tests. Predefine thresholds independently of observed endpoints. When several actions compete, a joint posterior or simultaneous confidence construction may be required; marginal intervals can understate the chance that at least one decision is wrong. Preserve the full draw-level or covariance information needed to evaluate new thresholds, but treat post hoc threshold search as exploratory. Interval presentation should support, not replace, a documented loss model."
+    }
+  ],
+  "math": "For posterior CDF F(theta|y), an equal-tailed 1-alpha credible interval is [F^{-1}(alpha/2),F^{-1}(1-alpha/2)]. A highest-density set has {theta:p(theta|y)>=c} with c chosen to contain 1-alpha mass. A confidence procedure satisfies P_theta(theta in C(Y))>= or approximately 1-alpha. For Beta(a+k,b+n-k), posterior quantiles give a credible interval. A Wilson binomial interval instead inverts a score test and targets repeated-sample coverage without a prior.",
+  "workedExamples": [
+    {
+      "title": "Three conversions in ten trials",
+      "body": "Compute a Beta posterior interval and a Wilson confidence interval, say each interpretation precisely, vary the prior, and use simulation to inspect repeated-sample coverage without declaring one endpoint universally correct."
+    }
+  ],
+  "exercises": [
+    {
+      "prompt": "State a 95% credible interval interpretation.",
+      "solution": "Conditional on the specified prior, likelihood, and observed data, the posterior probability that the parameter lies in the reported set is 0.95."
+    },
+    {
+      "prompt": "State a 95% confidence interval interpretation.",
+      "solution": "Across repetitions of the specified sampling and interval procedure, about 95% of intervals contain the fixed true parameter under the assumptions."
+    },
+    {
+      "prompt": "Why is a posterior parameter interval narrower than a posterior predictive interval in many models?",
+      "solution": "Prediction adds irreducible future outcome variability to uncertainty about parameters, whereas the parameter interval summarizes only posterior parameter uncertainty."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "compare",
+      "title": "Same percentage, different statement",
+      "left": {
+        "title": "Credible interval",
+        "items": [
+          "Data held fixed",
+          "Probability over posterior theta",
+          "Depends on prior + likelihood"
+        ]
+      },
+      "right": {
+        "title": "Confidence interval",
+        "items": [
+          "Theta fixed",
+          "Intervals vary across samples",
+          "Coverage of procedure"
+        ]
+      },
+      "caption": "Numerically similar endpoints do not license interchangeable interpretations.",
+      "afterSection": "interpretations"
+    },
+    {
+      "type": "curve",
+      "title": "Skewed posterior interval choices",
+      "series": [
+        {
+          "label": "posterior density",
+          "points": [
+            [
+              0,
+              0.02
+            ],
+            [
+              0.15,
+              0.6
+            ],
+            [
+              0.3,
+              0.95
+            ],
+            [
+              0.5,
+              0.55
+            ],
+            [
+              0.75,
+              0.2
+            ],
+            [
+              1,
+              0.04
+            ]
+          ]
+        },
+        {
+          "label": "equal-tail bounds",
+          "points": [
+            [
+              0.08,
+              0
+            ],
+            [
+              0.08,
+              0.35
+            ],
+            [
+              0.82,
+              0.35
+            ],
+            [
+              0.82,
+              0
+            ]
+          ]
+        }
+      ],
+      "caption": "Conceptual: equal-tail and highest-density summaries can select different regions of a skewed posterior.",
+      "xLabel": "parameter",
+      "yLabel": "posterior density",
+      "afterSection": "credible-types"
+    }
+  ],
+  "lab": {
+    "language": "python",
+    "goal": "Compute a Beta credible interval, simulate its fixed-parameter coverage, and compare with a Wilson confidence interval.",
+    "buildIt": "import math\n\ndef wilson_interval(k,n,z=1.959963984540054):\n    p=k/n; denom=1+z*z/n\n    center=(p+z*z/(2*n))/denom\n    half=z*math.sqrt(p*(1-p)/n+z*z/(4*n*n))/denom\n    return center-half,center+half\n\nk,n=3,10\nwilson=wilson_interval(k,n)",
+    "useIt": "import numpy as np\nfrom scipy.stats import beta\ncredible=tuple(beta.ppf([0.025,0.975],4,8))\nrng=np.random.default_rng(23)\ntrue_p=0.30\ncounts=rng.binomial(n,true_p,size=20000)\ncredible_intervals=np.asarray([beta.ppf([0.025,0.975],1+c,1+n-c) for c in counts])\ncoverage=np.mean((credible_intervals[:,0] <= true_p) & (true_p <= credible_intervals[:,1]))",
+    "verifyIt": "assert 0 < credible[0] < credible[1] < 1\nassert 0 < wilson[0] < wilson[1] < 1\nassert 0.90 < coverage < 0.99\nlogit_bounds=[math.log(x/(1-x)) for x in credible]\nassert logit_bounds[0] < logit_bounds[1]",
+    "shipIt": "Label interval framework and construction, version priors/design/stopping, coverage- and sensitivity-test decision-critical endpoints, and keep parameter, predictive, and practical-threshold uncertainty distinct in the UI."
+  },
+  "sourceNotes": [
+    {
+      "resource": "stanford-stats200",
+      "contribution": "Provides rigorous frequentist and Bayesian interval foundations and their distinct probability interpretations."
+    },
+    {
+      "resource": "think-bayes",
+      "contribution": "Provides computational posterior interval examples and predictive interpretation."
+    },
+    {
+      "resource": "stan-predictive-checks",
+      "contribution": "Documents model-based predictive simulation used to assess Bayesian interval assumptions."
+    },
+    {
+      "resource": "scipy-stats",
+      "contribution": "Provides current Beta quantile functions used for the verified credible-interval lab."
+    }
+  ]
 }
