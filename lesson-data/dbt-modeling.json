@@ -8,30 +8,176 @@
     "ds",
     "da"
   ],
-  "interviewAnswer": "dbt manages SQL transformations as versioned models with dependencies, tests, documentation and incremental strategies inside the warehouse. It separates data transformation logic from extraction/loading infrastructure.",
+  "interviewAnswer": "dbt compiles templated SQL models into a directed acyclic graph using declared `source()` and `ref()` dependencies, then builds and tests selected nodes in dependency order. A maintainable project stages source data once, uses focused intermediate transformations, and publishes business-conformed marts with explicit grain and metrics. Materialization is a workload decision: views defer compute, tables precompute, incremental models update a bounded subset and need idempotent late-data logic, and snapshots preserve changing source state. Production quality requires version control, CI against isolated schemas, unit and data tests, contracts for public shapes, source freshness, atomic deployment, artifacts, monitoring, and a tested rollback or full rebuild.",
   "keyPoints": [
-    "Models form a DAG.",
-    "Tests protect assumptions such as uniqueness/not-null.",
-    "Incremental models need correct update keys/windows."
+    "Dependencies must be declared",
+    "Staging is source-conformed",
+    "Marts are business-conformed",
+    "Incremental logic must equal full refresh",
+    "Tests and contracts protect different boundaries"
   ],
   "resources": [
-    "dbt-docs"
+    "dbt-docs",
+    "dbt-best-practices",
+    "dbt-contracts"
   ],
   "featured": false,
-  "why": "dbt: Transformation-as-Code appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
-  "intuition": "Models form a DAG.",
-  "deepDive": "dbt manages SQL transformations as versioned models with dependencies, tests, documentation and incremental strategies inside the warehouse. It separates data transformation logic from extraction/loading infrastructure. Tests protect assumptions such as uniqueness/not-null. Incremental models need correct update keys/windows. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
-  "workedExample": "Transform raw events into tested session and daily-metric models with lineage.",
+  "why": "When transformations live as copied SQL in schedulers and dashboards, definitions drift, dependencies are implicit, changes are hard to review, and failures leave unclear partial state. dbt makes the graph and compiled artifacts inspectable, but weak projects can still produce tangled models, repeated business logic, expensive view chains, and incremental tables that silently diverge from a full rebuild. The engineering value comes from disciplined modeling, contracts, verification, environment isolation, and operational ownership around the tool.",
+  "intuition": "Treat each model as a pure-looking build step with a named input contract and one published output. `ref()` is a typed-looking wire in a circuit: it records dependency and resolves the environment-specific relation. Staging cleans source vocabulary into reliable atoms; intermediate nodes perform one explainable transformation; marts assemble the business entities people query. Materialization decides whether a node is recomputed at read time, build time, or only for changed slices.",
+  "deepDive": "The full explanation is organized into the structured sections below.",
+  "workedExample": "Declare raw tables as sources with freshness expectations. `stg_orders` and `stg_items` rename identifiers, cast timestamps, normalize statuses and retain source update time; no cross-domain joins occur there. An intermediate model allocates order discounts to lines and tests that allocated amounts reconcile to the header. `fct_order_lines` declares one order plus line grain, references effective dimensions and exposes additive amount components. `dim_customers` publishes stable customer attributes. Unit fixtures exercise cancellations, null discounts and boundary timestamps. Data tests enforce fact uniqueness, relationships and reconciliation. The incremental fact merges by line key with a monitored overlap window and delete handling, then a scheduled full-refresh comparison checks equivalence. CI builds the changed node and children in a pull-request schema. Production builds versioned outputs, runs tests, publishes only after success, stores artifacts and retains the prior aliases for rollback.",
   "commonMistakes": [
-    "Applying the method without checking its assumptions or data-generating process.",
-    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+    {
+      "mistake": "Put business joins and metrics in staging models.",
+      "correction": "Keep staging source-conformed and reusable; publish cross-source business semantics in intermediate or mart layers."
+    },
+    {
+      "mistake": "An incremental filter only affects performance.",
+      "correction": "It defines which history can be corrected and can make the target diverge permanently from a full build."
+    },
+    {
+      "mistake": "A dbt contract proves values are correct.",
+      "correction": "Contracts primarily protect output shape/types and supported constraints; content and metric invariants need data/unit tests and reconciliation."
+    }
   ],
   "followUps": [
-    "What assumptions does dbt: Transformation-as-Code make?",
-    "How would you validate or debug dbt: Transformation-as-Code in practice?"
+    {
+      "question": "Why use `ref()` instead of a hard-coded table name?",
+      "answer": "It declares graph lineage, controls build order, supports selection and environment resolution, and enables impact analysis."
+    },
+    {
+      "question": "When should a model be incremental?",
+      "answer": "When full rebuild cost or latency is material and the source provides deterministic keys and change/delete semantics that can make incremental results equivalent within a stated horizon."
+    },
+    {
+      "question": "How do unit tests differ from data tests?",
+      "answer": "Unit tests validate SQL transformation logic with controlled static inputs; data tests query built relations for failing real records or invariants."
+    }
   ],
-  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "production": "Compile and test every change in isolated schemas, retain manifest/run artifacts, enforce public model contracts and semantic data tests, and verify incremental/full-refresh equivalence. Orchestrate bounded graph runs with least-privilege identities, source and end-to-end freshness, cost/runtime budgets, and explicit partial-failure policy. Promote atomically or through versioned aliases, make backfills reproducible, monitor downstream impact, and keep prior trusted tables and code ready for rollback.",
   "editorial": {
-    "status": "summary"
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "dbt turns analytical SQL transformations into a version-controlled dependency graph with compilation, environments, tests, documentation, and reusable metadata. The tool does not make a data model correct by itself: engineers still define grain, business semantics, materialization, incremental boundaries, and failure behavior. This chapter explains how `source()` and `ref()` create lineage and execution order; how staging, intermediate, and mart layers move from source-conformed to business-conformed data; and how views, tables, ephemeral models, incremental models, and snapshots trade freshness, cost, persistence, and recoverability. You will learn to separate unit tests of SQL logic from data tests of built relations, use source freshness and model contracts appropriately, design idempotent incremental builds, and use state-aware continuous integration without allowing partial production publication. A worked order mart traces raw inputs through staging and fact models with exact keys and reconciliation. Production guidance covers orchestration, concurrency, slim CI, backfills, artifacts, observability, secrets, warehouse permissions, deployment and rollback. The objective is to treat a dbt project as a governed analytical software system whose compiled SQL and datasets are both production artifacts—not as a folder of ad hoc queries.",
+  "prerequisites": [
+    "star-schema",
+    "sql-ctes-subqueries",
+    "sql-window-functions"
+  ],
+  "learningObjectives": [
+    "Structure a dbt dependency graph from source-conformed staging through purpose-built intermediates to business-conformed marts.",
+    "Choose materializations and incremental strategies from correctness, freshness, cost, rebuild, and late-data requirements.",
+    "Build a deployment and testing workflow that distinguishes SQL logic, dataset assertions, freshness, contracts, artifacts, and rollback."
+  ],
+  "deepSections": [
+    {
+      "id": "graph-structure",
+      "title": "The model graph and project structure",
+      "body": "A dbt model is usually a SQL select statement plus configuration and properties. `source()` names externally loaded relations and carries freshness or schema metadata. `ref()` names another dbt resource, lets dbt infer an edge, and resolves the correct database/schema identifier for the current target. The resulting directed acyclic graph determines selection, build order, documentation lineage, and impact analysis. Hiding dependencies behind hard-coded relation names or uncontrolled macros breaks these capabilities. Cycles usually reveal mixed responsibilities and must be redesigned.\n\nOfficial dbt guidance describes an arc from source-conformed to business-conformed data. Staging models are thin, source-oriented atoms: rename, cast, standardize and perform limited cleanup once. They should not embed changing business aggregations or join many domains. Intermediate models combine or reshape those atoms for a clear purpose and can remain private. Marts publish entities, facts, dimensions, and metrics in language consumers understand. Folder and naming conventions should communicate this intent rather than encode arbitrary execution numbers.\n\nKeep models cohesive and avoid both extremes: a thousand one-line pass-through nodes increase cognitive and runtime overhead, while one enormous query hides grain transitions and repeated logic. Declare a grain and primary key for every published relation. Centralize reusable semantic rules without creating macros that generate opaque SQL. Compile and inspect the actual target-dialect SQL; templating is code generation, and what the warehouse runs is the final behavior."
+    },
+    {
+      "id": "materializations",
+      "title": "Materializations and incremental correctness",
+      "body": "A view stores a query and computes when read. It is simple and fresh with respect to upstream state, but deep view chains can repeat expensive work and expose upstream changes immediately. A table pays compute and storage at build time, then serves predictable reads until refreshed. Ephemeral models inline as common table expressions and reduce persisted clutter, but can make compiled SQL large and are unsuitable as public boundaries. Materialized views and custom materializations are platform-specific and require current adapter documentation.\n\nAn incremental model updates only selected records or partitions. Its filter is not an optimization detail; it is a second algorithm that must converge to the same state as a correct full refresh. Choose a unique key and merge/append/overwrite strategy from source semantics. Use source update timestamps only if they are trustworthy and handle equal timestamps, clock behavior, deletes and corrections. An overlap window catches late changes but must be sized and monitored; it does not solve arbitrarily late data. Partition overwrite can be clearer for time-bounded restatement.\n\nMake every run idempotent. A retry cannot duplicate facts or advance a watermark past failed work. Test incremental versus full-refresh equivalence on fixtures containing updates, deletes, duplicates, late events and schema changes. Snapshots are designed to capture changing source records over time; they are not a substitute for event history when the source lacks reliable change semantics. Plan periodic rebuilds when drift risk justifies the cost."
+    },
+    {
+      "id": "testing-contracts",
+      "title": "Testing, contracts, and documentation",
+      "body": "Unit tests provide static input rows and assert a model's SQL output before materializing production data. They are useful for branches, joins, date boundaries and regression logic. Data tests query built relations and return failing rows: uniqueness, not-null, relationships, accepted values, temporal overlap, reconciliation and business invariants. Generic tests parameterize reusable assertions; singular tests express model-specific rules. A passing set of basic column tests does not prove metric correctness, so add aggregate identities and source control totals where risk warrants them.\n\nSource freshness evaluates whether upstream data arrived within an expectation; downstream model freshness may require separate end-to-end observation. A model contract declares output column names and types and may express constraints, but platform enforcement differs. Contracts protect shape and compatibility; data tests protect content after build. Public, cross-team models benefit most from contracts and versions. Do not assume a declared primary key is enforced by every analytical warehouse—keep the uniqueness test unless the target guarantee is verified.\n\nDescriptions, owners, exposures, tags and semantic metadata make the generated catalog useful only when reviewed with code. Document grain, time semantics, null/unknown behavior, freshness, sensitivity, and supported metrics. Persist dbt artifacts such as the manifest and run results with the code revision and environment. They support lineage, impact analysis, observability and reproducibility, but emitted lineage reflects declared/compiled dependencies and can miss external side effects."
+    },
+    {
+      "id": "delivery-operation",
+      "title": "CI, deployment, and operation",
+      "body": "Continuous integration should compile the project, validate configuration, run unit tests, and build/test the affected graph in an isolated schema using representative data. State-aware selection can reduce cost, but deferral to production artifacts needs compatible versions and must not hide a changed upstream assumption. Prevent pull requests from overwriting shared relations. Linting and SQL style help review, while query-plan or bytes-scanned budgets catch accidental full scans.\n\nProduction orchestration loads sources first, then invokes selected dbt resources with bounded concurrency and warehouse resources. A command succeeding is not enough: capture model and test statuses, timings, adapter responses, freshness, row counts and artifacts. Define behavior for warnings, flaky external sources and partial graph failure. Critical publication can build versioned tables and swap aliases only after downstream tests, or use target-platform transactional mechanisms. Avoid leaving a mixture of old and new mutually dependent marts visible.\n\nFor backfills, record the source cutoff, parameters and code revision; isolate compute; use the same business logic; reconcile before promotion; and catch up live changes. Rollback may mean restoring a prior table snapshot, alias, manifest/code release, or rebuilding from trusted raw data. Keep secrets outside the project, grant CI and production service accounts least privilege, restrict developer targets, mask sensitive data in test environments, and audit access. Monitor model duration, queue time, scan cost, freshness, failures, test results, contract changes and downstream incidents."
+    }
+  ],
+  "math": "Represent a dbt project as DAG G=(V,E), with one model/source/test resource per node and edge u→v when v depends on u. A valid build order is a topological ordering. For an incremental model with source history S_t and target state T_t, correctness requires the incremental transition U(T_t,ΔS)=T_{t+1} to be idempotent and observationally equivalent to a full build F(S_{≤t+1}) for the documented late/update/delete horizon.",
+  "workedExamples": [
+    {
+      "title": "Build a tested order mart",
+      "setup": "Raw customer, order and item tables land hourly. Analysts need one order-line fact and one customer mart without copying transformation logic into dashboards.",
+      "walkthrough": "Declare raw tables as sources with freshness expectations. `stg_orders` and `stg_items` rename identifiers, cast timestamps, normalize statuses and retain source update time; no cross-domain joins occur there. An intermediate model allocates order discounts to lines and tests that allocated amounts reconcile to the header. `fct_order_lines` declares one order plus line grain, references effective dimensions and exposes additive amount components. `dim_customers` publishes stable customer attributes. Unit fixtures exercise cancellations, null discounts and boundary timestamps. Data tests enforce fact uniqueness, relationships and reconciliation. The incremental fact merges by line key with a monitored overlap window and delete handling, then a scheduled full-refresh comparison checks equivalence. CI builds the changed node and children in a pull-request schema. Production builds versioned outputs, runs tests, publishes only after success, stores artifacts and retains the prior aliases for rollback.",
+      "conclusion": "The graph makes dependencies visible, while grain, tests, materialization and promotion policy make the resulting data trustworthy."
+    }
+  ],
+  "exercises": [
+    {
+      "difficulty": "recall",
+      "prompt": "What project arc does current dbt guidance recommend?",
+      "solution": "Move from source-conformed staging atoms through purpose-built intermediate transformations to business-conformed marts."
+    },
+    {
+      "difficulty": "application",
+      "prompt": "Choose a materialization for a costly daily aggregate read by hundreds of dashboards.",
+      "solution": "A table or supported materialized view is a sensible starting point; evaluate freshness, rebuild cost, target capabilities and atomic refresh rather than stacking a costly ordinary view."
+    },
+    {
+      "difficulty": "diagnosis",
+      "prompt": "An incremental fact misses corrections older than seven days. Why?",
+      "solution": "The overlap horizon is part of the algorithm and excludes those changes. Add reliable change capture or a restatement/backfill strategy, monitor late age, and verify against full refresh."
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "dbt-docs",
+      "contribution": "Provides the current product and Core reference for models, `ref`, sources, materializations, tests, commands, artifacts and deployment behavior."
+    },
+    {
+      "resource": "dbt-best-practices",
+      "contribution": "Supplies the official source-conformed staging, intermediate, and business-conformed mart structure and its collaboration rationale."
+    },
+    {
+      "resource": "dbt-contracts",
+      "contribution": "Clarifies current model-contract shape guarantees, platform constraint differences, breaking changes, and distinction from data tests."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "flow",
+      "title": "Source-conformed to business-conformed",
+      "items": [
+        "Declared sources",
+        "Staging atoms",
+        "Purpose-built intermediates",
+        "Facts and dimensions",
+        "Metrics / exposures",
+        "Consumers"
+      ],
+      "caption": "Each graph layer has a distinct responsibility; `ref()` records the edges and resolves environment-specific relations.",
+      "afterSection": "graph-structure"
+    },
+    {
+      "type": "compare",
+      "title": "Quality controls protect different boundaries",
+      "left": {
+        "title": "Before / during build",
+        "items": [
+          "Compile and parse",
+          "Unit-test SQL logic",
+          "Contract shape check",
+          "Isolated CI graph"
+        ]
+      },
+      "right": {
+        "title": "After materialization",
+        "items": [
+          "Data invariants",
+          "Source reconciliation",
+          "Freshness",
+          "Runtime and cost monitoring"
+        ]
+      },
+      "caption": "No single green check proves the model, data, semantics and operation are all correct.",
+      "afterSection": "testing-contracts"
+    }
+  ],
+  "lab": {
+    "goal": "Build a minimal dependency-graph executor and verify topological order, isolated relation resolution, cycle rejection and reproducible output.",
+    "language": "python",
+    "buildIt": "def topo(graph):\n    indegree={node:0 for node in graph}\n    children={node:[] for node in graph}\n    for node,deps in graph.items():\n        for dep in deps:\n            if dep not in graph: raise KeyError(dep)\n            indegree[node]+=1; children[dep].append(node)\n    ready=sorted(node for node,n in indegree.items() if n==0); order=[]\n    while ready:\n        node=ready.pop(0); order.append(node)\n        for child in sorted(children[node]):\n            indegree[child]-=1\n            if indegree[child]==0: ready.append(child); ready.sort()\n    if len(order)!=len(graph): raise ValueError('cycle')\n    return order\n\ndef relation(target,node):\n    return f'{target}__{node}'",
+    "useIt": "import sqlite3\ngraph={'stg_orders':[],'stg_items':[],'int_lines':['stg_orders','stg_items'],'fct_lines':['int_lines']}\ncon=sqlite3.connect(':memory:')\nfor node in topo(graph):\n    con.execute('CREATE TABLE '+relation('pr42',node)+'(built INTEGER)')\n    con.execute('INSERT INTO '+relation('pr42',node)+' VALUES(1)')",
+    "verifyIt": "assert topo(graph)==['stg_items','stg_orders','int_lines','fct_lines']\nassert all(con.execute('SELECT built FROM '+relation('pr42',node)).fetchone()==(1,) for node in graph)\nassert relation('prod','fct_lines')!='pr42__fct_lines'\ntry: topo({'a':['b'],'b':['a']})\nexcept ValueError: pass\nelse: raise AssertionError('cycle must fail')",
+    "shipIt": "Use dbt's compiled graph and artifacts in real projects; build affected nodes in isolated CI targets, store run evidence, promote tested versions atomically, and retain the prior production relations for rollback."
   }
 }

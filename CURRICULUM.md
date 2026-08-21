@@ -1,6 +1,6 @@
 # Data, ML & AI Atlas — Curriculum
 
-**45 modules · 394 topics · 136 curated resources**
+**45 modules · 394 topics · 152 curated resources**
 
 ## 01. 🐍 Python & Software Engineering
 
@@ -32,31 +32,31 @@ Deep-complete: **6/6** · Visual models: **12/6**
 
 SQL querying plus relational storage, indexing, transactions and query execution.
 
-Deep-complete: **0/9** · Visual models: **4/9**
+Deep-complete: **9/9** · Visual models: **18/9**
 
-- 🔥 **SQL Joins** — ◻ interview-ready · 🖼 visual
-- ⬆️ **GROUP BY, HAVING & Aggregation** — ◻ interview-ready
-- 🔥 **Window Functions** — ◻ interview-ready · 🖼 visual
-- • **CTEs & Subqueries** — ◻ interview-ready
-- • **Transactions & Indexes** — ◻ interview-ready · 🖼 visual
-- • **Stored Procedures & Data Pipelines** — ◻ interview-ready
-- ⬆️ **Database Normalization: 1NF to 3NF** — ◻ interview-ready
-- ⬆️ **Query Plans & SQL Performance** — ◻ interview-ready
-- ⬆️ **Transactions & Isolation Levels** — ◻ interview-ready · 🖼 visual
+- 🔥 **SQL Joins** — ✅ deep · 🖼 visual
+- ⬆️ **GROUP BY, HAVING & Aggregation** — ✅ deep · 🖼 visual
+- 🔥 **Window Functions** — ✅ deep · 🖼 visual
+- • **CTEs & Subqueries** — ✅ deep · 🖼 visual
+- • **Transactions & Indexes** — ✅ deep · 🖼 visual
+- • **Stored Procedures & Data Pipelines** — ✅ deep · 🖼 visual
+- ⬆️ **Database Normalization: 1NF to 3NF** — ✅ deep · 🖼 visual
+- ⬆️ **Query Plans & SQL Performance** — ✅ deep · 🖼 visual
+- ⬆️ **Transactions & Isolation Levels** — ✅ deep · 🖼 visual
 
 ## 04. 🏗️ Analytics Engineering & Data Modeling
 
 Warehouses, dimensional modeling, dbt, semantic layers and trustworthy analytical datasets.
 
-Deep-complete: **0/7** · Visual models: **4/7**
+Deep-complete: **7/7** · Visual models: **14/7**
 
-- 🔥 **OLTP vs OLAP** — ◻ interview-ready · 🖼 visual
-- ⬆️ **Star Schemas, Facts & Dimensions** — ◻ interview-ready · 🖼 visual
-- • **Slowly Changing Dimensions** — ◻ interview-ready
-- ⬆️ **dbt: Transformation-as-Code** — ◻ interview-ready
-- ⬆️ **Data Contracts, Lineage & Semantic Consistency** — ◻ interview-ready
-- ⬆️ **Columnar Storage, Parquet & Predicate Pushdown** — ◻ interview-ready · 🖼 visual
-- ⬆️ **Warehouse vs Data Lake vs Lakehouse** — ◻ interview-ready · 🖼 visual
+- 🔥 **OLTP vs OLAP** — ✅ deep · 🖼 visual
+- ⬆️ **Star Schemas, Facts & Dimensions** — ✅ deep · 🖼 visual
+- • **Slowly Changing Dimensions** — ✅ deep · 🖼 visual
+- ⬆️ **dbt: Transformation-as-Code** — ✅ deep · 🖼 visual
+- ⬆️ **Data Contracts, Lineage & Semantic Consistency** — ✅ deep · 🖼 visual
+- ⬆️ **Columnar Storage, Parquet & Predicate Pushdown** — ✅ deep · 🖼 visual
+- ⬆️ **Warehouse vs Data Lake vs Lakehouse** — ✅ deep · 🖼 visual
 
 ## 05. ∑ Math Foundations
 

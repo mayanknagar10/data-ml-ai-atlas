@@ -8,30 +8,171 @@
     "ds",
     "da"
   ],
-  "interviewAnswer": "SCD patterns define how dimension changes are represented. Type 1 overwrites history; Type 2 creates dated versions so historical facts can be analyzed with attributes valid at that time.",
+  "interviewAnswer": "SCD techniques define how dimension attribute changes affect historical analysis. Type 1 overwrites and is appropriate when only the corrected or latest value should be shown. Type 2 inserts a new surrogate-keyed row with effective intervals, so facts can retain the version valid at event time. Type 0 retains the original, and Type 3 stores limited prior state. For Type 2, enforce one current row per business key, non-overlapping half-open intervals, deterministic change detection, and idempotent handling of late or repeated events. Choose by attribute and question; not every change deserves preserved history.",
   "keyPoints": [
-    "Choose history semantics intentionally.",
-    "Surrogate keys often support Type 2.",
-    "Late-arriving changes need policy."
+    "History policy is per attribute",
+    "Type 1 rewrites interpretation",
+    "Type 2 versions effective state",
+    "Intervals must not overlap",
+    "Late corrections need explicit semantics"
   ],
   "resources": [
-    "dbt-docs"
+    "kimball-dimensional",
+    "dbt-best-practices",
+    "postgres-window"
   ],
   "featured": false,
-  "why": "Slowly Changing Dimensions appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
-  "intuition": "Choose history semantics intentionally.",
-  "deepDive": "SCD patterns define how dimension changes are represented. Type 1 overwrites history; Type 2 creates dated versions so historical facts can be analyzed with attributes valid at that time. Surrogate keys often support Type 2. Late-arriving changes need policy. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
-  "workedExample": "Preserve a customer’s historical segment when the segment changes later.",
+  "why": "If customer region is overwritten, last year's revenue may move between regions each time the customer relocates. Sometimes that is desired current-state reporting; often finance needs the region effective when the sale happened. Preserving every source update without semantics can be equally wrong: typo corrections become fake business transitions, duplicated events create zero-duration versions, and out-of-order changes overlap. SCD design is a temporal data contract, not just an ETL recipe.",
+  "intuition": "Imagine a passport for an entity. Type 1 erases and rewrites a field on the same page. Type 2 keeps a sequence of stamped pages, each valid from one instant until the next. A fact either stores the page number that was valid when it occurred or finds that page using event time. A correction may fix an old page rather than create a new real-world period, so the arrival timestamp alone is not enough.",
+  "deepDive": "The full explanation is organized into the structured sections below.",
+  "workedExample": "Initial history is Bronze `[Jan 1, Mar 1)` and Gold `[Mar 1, infinity)`. The late Silver event cannot be appended. Insert Silver `[Feb 10, Mar 1)` and shorten Bronze to `[Jan 1, Feb 10)`, leaving Gold unchanged. A February 20 sale maps to Silver; a March 20 sale maps to Gold. The current-state view may classify both under Gold, while the as-was view uses their stored/effective surrogate keys. A repeated Silver event is deduplicated and makes no new row. Tests verify contiguous ordered intervals, one current version, and exactly one temporal match for every sale. If the event corrected a typo rather than a real tier transition, the policy would update the affected historical interval instead of inventing a period.",
   "commonMistakes": [
-    "Applying the method without checking its assumptions or data-generating process.",
-    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+    {
+      "mistake": "Make the entire dimension Type 2.",
+      "correction": "Choose policy by attribute; volatile or corrective fields can create meaningless versions and excessive storage."
+    },
+    {
+      "mistake": "Use inclusive start and end bounds for adjacent versions.",
+      "correction": "Both versions match at the boundary. Half-open intervals make adjacency and temporal joins unambiguous."
+    },
+    {
+      "mistake": "Append every late change as the current version.",
+      "correction": "Insert by effective time, repair neighboring bounds, and distinguish correction from real transition."
+    }
   ],
   "followUps": [
-    "What assumptions does Slowly Changing Dimensions make?",
-    "How would you validate or debug Slowly Changing Dimensions in practice?"
+    {
+      "question": "When is Type 1 correct?",
+      "answer": "When only current/corrected interpretation matters, history has no analytical value, or a prior value was erroneous and should be restated."
+    },
+    {
+      "question": "What invariants define a valid Type 2 history?",
+      "answer": "Stable surrogate identity, ordered positive intervals, no overlap, at most one current row per business key, idempotent changes, and exactly one intended temporal match for facts."
+    },
+    {
+      "question": "Why would you need bitemporal data?",
+      "answer": "To answer both what was effective in the business world and what the system believed at an earlier reporting time, preserving prior reports after late corrections."
+    }
   ],
-  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "production": "Define history semantics per attribute, durable identity, effective/system timestamps, source precedence, correction and deletion policies. Stage and deduplicate events, apply interval mutations atomically, serialize conflicting business-key updates, and make replay idempotent. Validate overlap, one-current, fact match cardinality, late age, inferred members, and reconciliation. Rebuild in versioned shadow tables and roll back dimensions with dependent facts. Enforce privacy erasure across all historical copies when required.",
   "editorial": {
-    "status": "summary"
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "Slowly changing dimensions (SCDs) are policies for how analytical attributes change and which historical questions remain answerable. Type 1 overwrites an attribute and intentionally presents the latest value for all facts. Type 2 inserts a new dimension version with effective bounds, preserving as-was history and requiring facts or temporal joins to select the correct surrogate key. Type 0 retains the original; Type 3 keeps limited previous state, while hybrid types address specialized reporting needs. This chapter treats SCD choice per attribute and business question rather than as a fashionable table-wide setting. You will learn to define durable business identity, change detection, half-open intervals, current-row invariants, late and out-of-order corrections, inferred members, deletes, and idempotent incremental merges. A worked customer-tier history shows how the same sale is grouped differently under current-state and event-time semantics. The production material covers source replay, hash pitfalls, concurrency, backfills, privacy deletion, bitemporal needs, reconciliation, and rollback. The central lesson is that historical truth has multiple meanings—what was effective, what the system knew, and what has since been corrected—and the model must name which one it preserves.",
+  "prerequisites": [
+    "star-schema",
+    "sql-window-functions"
+  ],
+  "learningObjectives": [
+    "Choose an SCD policy per attribute from the historical questions and correction semantics it must support.",
+    "Implement and validate non-overlapping Type 2 versions with deterministic late-data and idempotency behavior.",
+    "Distinguish valid time, system time, current-state reporting, correction, deletion, and bitemporal requirements."
+  ],
+  "deepSections": [
+    {
+      "id": "policies-questions",
+      "title": "Choose history from the question",
+      "body": "Type 0 retains the original attribute and ignores later changes, suitable for an immutable registration cohort when that meaning is intentional. Type 1 overwrites; all historical facts joined through the dimension appear under the newest or corrected value. It is appropriate for error correction, fields where history has no value, or current-state segmentation. Type 2 inserts a version and preserves effective history. Type 3 adds a previous-value column and supports only limited comparison. Types 4 through 7 combine history tables, mini-dimensions, current outriggers, or dual keys for specialized workloads.\n\nChoose at attribute level. A customer name typo may be Type 1 while risk tier is Type 2 and original acquisition channel is Type 0. Group attributes that change together only when their source semantics and query needs align; otherwise one noisy attribute can create excessive versions. State whether a dashboard asks “as it was then,” “as we know now,” or “under the current classification.” These are all legitimate but different.\n\nSome changes are events better modeled as facts rather than dimension versions—for example, subscription status transitions with duration and reason. Rapidly changing attributes can produce dimension explosion and may belong in a mini-dimension, periodic snapshot, or event fact. The label slowly changing describes a modeling pattern, not a performance promise."
+    },
+    {
+      "id": "type2-invariants",
+      "title": "Type 2 representation and invariants",
+      "body": "A Type 2 row commonly contains a surrogate key, durable business key, tracked attributes, `valid_from`, `valid_to`, and optionally `is_current`. Use half-open intervals `[valid_from, valid_to)` so adjacent versions meet without overlapping and an event exactly at the boundary matches the new version. A high sentinel end date is convenient but must fit every target timestamp type; nullable infinity is another choice. Derive current status from the open interval when possible, or validate the redundant flag.\n\nFor each business key, enforce at most one current version, unique surrogate keys, ordered bounds with start before end, and no overlap. Every fact requiring as-was context must match exactly one version at its event timestamp. Facts predating known history may use an explicit unknown version or follow a documented inference policy. Natural/business keys can be reused or merged in source systems, so durable identity mapping needs governance.\n\nChange detection compares the tracked semantic values, not arbitrary serialization. Normalize only according to domain rules. Hashing can reduce comparison width but cannot replace null, collation, type, canonicalization, and collision reasoning. Include the tracked attribute set/version in the hash contract. Ignore changes to untracked operational metadata. Deduplicate source events by a stable ID or sequence before modifying history."
+    },
+    {
+      "id": "late-bitemporal",
+      "title": "Late data, corrections, and two notions of time",
+      "body": "A late effective change can arrive after later versions have already been created. Appending it as current is wrong. The loader must insert it in effective-time order, split or shorten the covering interval, and preserve adjacent versions. An out-of-order correction may update attributes for an existing interval rather than represent a new transition. Define source precedence, tie-breaking, and whether restated source history is authoritative. Reprocessing must be idempotent: the same source event cannot create another version.\n\nValid time describes when a fact was true in the business world. System time describes when the warehouse learned or recorded it. A standard Type 2 dimension usually preserves valid-time versions as currently understood, but overwriting an old version loses the ability to reproduce what a report showed before correction. Bitemporal modeling records both axes and supports “what was believed on reporting date R about business date V.” It is more complex and justified for audit, regulatory, or model-reproducibility requirements.\n\nHard deletion conflicts with immutable history. Privacy and retention policy may require erasure or irreversible anonymization across current and historical versions, facts, caches, and backups. Soft delete is not sufficient when deletion is legally required. Record tombstone semantics without retaining prohibited content. Separate business cancellation from physical privacy deletion."
+    },
+    {
+      "id": "load-operate",
+      "title": "Loading and operating dimension history",
+      "body": "A robust incremental flow stages and deduplicates source changes, resolves durable identity, classifies new, unchanged, corrected, and changed records, then applies interval changes atomically. For an in-order Type 2 change, close the current version at the new `valid_from` and insert the new row. Readers must not observe the gap between those writes. Concurrency needs serialization by business key or an atomic merge strategy whose engine semantics are verified. Rerunning a batch should produce the same target state.\n\nBackfills must coexist safely with live ingestion. Use a source cutoff or captured log position, rebuild history deterministically in a shadow table, validate it, catch up changes after the cutoff, then atomically swap. Re-keying facts can be expensive; retaining stable historical surrogate keys or rebuilding dependent facts may be necessary. Type 1 corrections should not accidentally change a Type 2 change hash and create versions.\n\nMonitor version count per key, multiple-current and overlap violations, zero/negative intervals, unknown/inferred member rates, late-event age, duplicate events, fact temporal match cardinality, freshness, and source reconciliation. Retain raw change evidence and code versions. Rollback should restore the prior dimension and dependent fact-key state together; rolling back only one side breaks referential and historical consistency."
+    }
+  ],
+  "math": "For business key b, Type 2 versions are intervals I_i=[s_i,e_i). Correctness requires s_i<e_i, pairwise disjoint intervals, and at most one interval containing any time t. An as-was fact f with key b and event time t must map to exactly one version v where v.b=b and v.s≤t<v.e, or to an explicit documented unknown policy. System-time intervals add a second axis when prior warehouse beliefs must remain reproducible.",
+  "workedExamples": [
+    {
+      "title": "Customer tier changes and a late correction",
+      "setup": "Customer C is Bronze from January 1, becomes Gold effective March 1, and a change effective February 10 arrives on April 5 indicating Silver.",
+      "walkthrough": "Initial history is Bronze `[Jan 1, Mar 1)` and Gold `[Mar 1, infinity)`. The late Silver event cannot be appended. Insert Silver `[Feb 10, Mar 1)` and shorten Bronze to `[Jan 1, Feb 10)`, leaving Gold unchanged. A February 20 sale maps to Silver; a March 20 sale maps to Gold. The current-state view may classify both under Gold, while the as-was view uses their stored/effective surrogate keys. A repeated Silver event is deduplicated and makes no new row. Tests verify contiguous ordered intervals, one current version, and exactly one temporal match for every sale. If the event corrected a typo rather than a real tier transition, the policy would update the affected historical interval instead of inventing a period.",
+      "conclusion": "Late arrival changes interval placement, and reporting semantics decide whether facts follow effective history or current classification."
+    }
+  ],
+  "exercises": [
+    {
+      "difficulty": "recall",
+      "prompt": "How do Type 1 and Type 2 differ?",
+      "solution": "Type 1 overwrites an attribute and restates historical joins under the latest value; Type 2 inserts effective-dated versions so facts can retain as-was context."
+    },
+    {
+      "difficulty": "application",
+      "prompt": "A legal-name typo is fixed while customer risk class changes. Choose policies.",
+      "solution": "Usually correct the name with Type 1 and preserve risk class with Type 2, assuming historical risk classification is needed."
+    },
+    {
+      "difficulty": "diagnosis",
+      "prompt": "A fact matches two customer dimension rows at its event time. What failed?",
+      "solution": "The versions overlap, boundary comparisons are inconsistent, or identity resolution duplicated the business key. Repair intervals and enforce temporal uniqueness."
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "kimball-dimensional",
+      "contribution": "Provides the canonical SCD technique family and dimensional-history vocabulary used to choose policies."
+    },
+    {
+      "resource": "dbt-best-practices",
+      "contribution": "Connects source-conformed transformations, snapshots, marts, testing, and idempotent project organization."
+    },
+    {
+      "resource": "postgres-window",
+      "contribution": "Supports deterministic version ordering, boundary comparison, change detection, and interval validation using window functions."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "flow",
+      "title": "Late Type 2 change repairs the timeline",
+      "items": [
+        "Bronze: Jan 1 → Feb 10",
+        "Late Silver: Feb 10 → Mar 1",
+        "Gold: Mar 1 → open",
+        "Fact time selects exactly one version"
+      ],
+      "caption": "A late effective change is inserted into history and neighboring bounds are repaired; it is not appended as current.",
+      "afterSection": "late-bitemporal"
+    },
+    {
+      "type": "compare",
+      "title": "Two valid reporting semantics",
+      "left": {
+        "title": "As-was",
+        "items": [
+          "Use version effective at event",
+          "Preserves historical classification",
+          "Requires temporal key accuracy"
+        ]
+      },
+      "right": {
+        "title": "As-is",
+        "items": [
+          "Use current dimension value",
+          "Restates all history",
+          "Useful for current ownership views"
+        ]
+      },
+      "caption": "The model and metric must name which interpretation is intended; neither is universally correct.",
+      "afterSection": "policies-questions"
+    }
+  ],
+  "lab": {
+    "goal": "Build Type 2 interval insertion, including a late change, and verify non-overlap, one-current, idempotency, and temporal lookup.",
+    "language": "python",
+    "buildIt": "from datetime import date\nINF=date.max\n\ndef insert_version(rows,key,start,value):\n    if any(r['key']==key and r['start']==start and r['value']==value for r in rows): return rows\n    same=sorted((r for r in rows if r['key']==key),key=lambda r:r['start'])\n    covering=next((r for r in same if r['start']<=start<r['end']),None)\n    end=covering['end'] if covering else next((r['start'] for r in same if r['start']>start),INF)\n    if covering: covering['end']=start\n    rows.append({'key':key,'start':start,'end':end,'value':value})\n    return sorted(rows,key=lambda r:(r['key'],r['start']))\n\ndef lookup(rows,key,when):\n    matches=[r for r in rows if r['key']==key and r['start']<=when<r['end']]\n    if len(matches)!=1: raise ValueError('expected one version')\n    return matches[0]",
+    "useIt": "rows=[]\ninsert_version(rows,'C',date(2024,1,1),'Bronze')\ninsert_version(rows,'C',date(2024,3,1),'Gold')\ninsert_version(rows,'C',date(2024,2,10),'Silver')\nbefore_repeat=[dict(r) for r in rows]\ninsert_version(rows,'C',date(2024,2,10),'Silver')",
+    "verifyIt": "assert rows==before_repeat\nassert [r['value'] for r in rows]==['Bronze','Silver','Gold']\nassert all(a['end']<=b['start'] for a,b in zip(rows,rows[1:]))\nassert sum(r['end']==INF for r in rows)==1\nassert lookup(rows,'C',date(2024,2,20))['value']=='Silver'\nassert lookup(rows,'C',date(2024,3,20))['value']=='Gold'",
+    "shipIt": "Use engine-supported atomic merges with verified concurrency semantics, persist source event IDs and effective times, monitor interval invariants and late age, and rebuild/rollback dimensions with dependent facts."
   }
 }

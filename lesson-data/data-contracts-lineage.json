@@ -8,31 +8,176 @@
     "ds",
     "da"
   ],
-  "interviewAnswer": "Data contracts make schemas, ownership and expectations explicit; lineage shows downstream dependencies. Together they reduce silent breakage and clarify impact when producers change data.",
+  "interviewAnswer": "A data contract is a versioned producer-consumer agreement for a dataset's identity, schema, field semantics, grain, quality expectations, freshness, ownership, security and compatibility policy. Tests measure whether an instance meets parts of that agreement; they are not the agreement itself. Lineage links datasets through jobs and concrete runs, enabling impact and root-cause analysis. Good governance validates contracts in CI and production, captures runtime lineage, assigns owners, classifies breaking changes, versions or dual-publishes incompatible changes, propagates access policy, and monitors both contract violations and missing lineage. Lineage shows provenance, not correctness.",
   "keyPoints": [
-    "Schema compatibility is not enough; semantics matter.",
-    "Owners and SLAs should be explicit.",
-    "Metric definitions should be centralized/versioned."
+    "Contract includes semantics, not only schema",
+    "Tests observe contract properties",
+    "Lineage records production relationships",
+    "Compatibility needs consumer evidence",
+    "Ownership and change process make metadata operational"
   ],
   "resources": [
-    "dbt-docs",
-    "google-rules-ml"
+    "dbt-contracts",
+    "openlineage-object-model",
+    "dbt-docs"
   ],
   "featured": false,
-  "why": "Data Contracts, Lineage & Semantic Consistency appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
-  "intuition": "Schema compatibility is not enough; semantics matter.",
-  "deepDive": "Data contracts make schemas, ownership and expectations explicit; lineage shows downstream dependencies. Together they reduce silent breakage and clarify impact when producers change data. Owners and SLAs should be explicit. Metric definitions should be centralized/versioned. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
-  "workedExample": "Changing “revenue” from gross to net without versioning can silently corrupt every downstream dashboard/model.",
+  "why": "A producer can rename a column, change cents to dollars, alter deduplication, or deliver six hours late while all pipelines technically succeed. Consumers discover the change through broken dashboards or model drift. Contracts establish expectations and change protocol; lineage identifies who may be affected and which run introduced a value. Without enforcement and ownership they become stale paperwork. Without humility they promise guarantees the platform cannot enforce. The useful design connects metadata to delivery, monitoring and incident response.",
+  "intuition": "Think of a dataset as a public API. Its table and columns are the response shape, grain and meanings are semantics, freshness and quality are service behavior, and ownership/change policy is API governance. Lineage is the distributed trace: it shows which job run read which inputs and produced which outputs. An API schema and a trace help for different reasons, and neither proves the business answer is right.",
+  "deepDive": "The full explanation is organized into the structured sections below.",
+  "workedExample": "The change is not a simple type widening: scope semantics change. Contract v2 adds `customer_global_id` with explicit format, uniqueness domain, lineage to the identity service, security classification and rollout dates while retaining v1 `customer_id`. CI compares contracts, scans consumer manifests and queries, and flags dashboards and feature pipelines using the old field. The producer backfills v2, validates one-to-one mappings and exception counts, dual-publishes versioned outputs, and emits runtime lineage with dataset and code versions. Consumers reconcile results in a shadow environment and migrate. Adoption and old-field reads are monitored. If mapping defects appear, the alias returns to v1 while v2 is repaired from versioned inputs. After the deprecation window and owner approval, v1 is removed and retention policy deletes obsolete mappings.",
   "commonMistakes": [
-    "Applying the method without checking its assumptions or data-generating process.",
-    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+    {
+      "mistake": "A contract is just a JSON schema.",
+      "correction": "Useful contracts also define grain, semantics, quality/service expectations, ownership, security, compatibility and change procedure."
+    },
+    {
+      "mistake": "Lineage proves the output is correct.",
+      "correction": "It shows declared or observed production relationships; correctness still needs tests, reconciliation, versions and domain review."
+    },
+    {
+      "mistake": "Adding a nullable column is always safe.",
+      "correction": "It may change cost, wildcard outputs, serialization, privacy exposure or consumer behavior; compatibility is consumer-relative."
+    }
   ],
   "followUps": [
-    "What assumptions does Data Contracts, Lineage & Semantic Consistency make?",
-    "How would you validate or debug Data Contracts, Lineage & Semantic Consistency in practice?"
+    {
+      "question": "How is a contract different from a data test?",
+      "answer": "The contract states the expected interface and policy; a test observes whether a dataset instance satisfies one measurable property of it."
+    },
+    {
+      "question": "What is runtime lineage?",
+      "answer": "Evidence from a concrete execution linking a run and its actual input/output dataset identities and versions, rather than only declared design dependencies."
+    },
+    {
+      "question": "What is the hardest breaking change to detect?",
+      "answer": "Semantic change with unchanged schema—such as unit, grain, population, time or identity meaning—because shape-only tools remain green."
+    }
   ],
-  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "production": "Version public contracts and enforce supported shape/constraint checks before publication; measure quality and freshness with explicit severity and failure policy. Capture authenticated design and runtime lineage with stable namespaces, run IDs, code and dataset versions, and monitor missing events. Require semantic review, consumer impact evidence, dual-publish/version incompatible changes, enforce classification and retention, and maintain owner-driven incident and rollback procedures.",
   "editorial": {
-    "status": "summary"
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "A data contract is a versioned agreement at a producer-consumer boundary: identity, schema, semantics, quality expectations, freshness, ownership, compatibility, security classification and change process. Lineage records how datasets are produced and consumed through jobs and runs so teams can assess impact, trace incidents and understand provenance. Neither is sufficient alone. A schema can remain compatible while the meaning or population changes, and a lineage graph can show edges without proving that the data on them is correct. This chapter separates contracts from tests, service-level objectives and documentation; distinguishes design-time from runtime and column-level lineage; and explains how OpenLineage represents jobs, runs, datasets, events and extensible facets. You will learn to classify additive and breaking changes, evolve public datasets through deprecation and versions, propagate sensitivity, and avoid turning governance into unreviewed YAML. A worked customer mart change follows an identifier type migration through consumers and rollback. Production guidance covers ownership, CI, catalog integration, event delivery, graph completeness, incident response and access control. The outcome is a practical governance system that makes change safe without pretending every producer can guarantee perfect data.",
+  "prerequisites": [
+    "dbt-modeling",
+    "star-schema"
+  ],
+  "learningObjectives": [
+    "Define a useful data contract spanning structure, semantics, quality, service levels, ownership, security, compatibility and change policy.",
+    "Interpret design-time, runtime, dataset-, job-, run- and column-level lineage without overstating completeness or correctness.",
+    "Operate a compatible schema/semantic change using impact analysis, consumer validation, versioning, deprecation, monitoring and rollback."
+  ],
+  "deepSections": [
+    {
+      "id": "contract-anatomy",
+      "title": "What a data contract must say",
+      "body": "Start with stable dataset identity and owner. Define the row grain, primary or candidate keys, column names and types, nullability, units, domains, timezone, encoding, event/effective/processing timestamps, retention and deletion semantics. For nested or streaming records, define envelope, ordering, partition key and event identity. Semantic examples are often more useful than a type alone: `amount` needs currency and gross/net meaning; `customer_id` needs identity scope and reuse policy.\n\nQuality expectations should be measurable and risk-based: uniqueness, relationship coverage, allowed values, reconciliation, distribution bounds or domain invariants. State evaluation window, threshold, severity and failure behavior. Freshness needs a reference timestamp and percentile or deadline, not “near real time.” Availability, completeness and recovery objectives may differ. Security metadata includes classification, purpose, allowed consumers, masking, residency and retention.\n\nDefine compatibility rules and a change process: notification, review, impact evidence, versioning, deprecation window and emergency procedure. A contract cannot guarantee upstream reality; it can state what the producer validates and how violations are surfaced. Separate hard guarantees enforced before publication from monitored objectives that may occasionally breach. Assign consumer responsibilities too, such as not depending on undocumented columns or current physical partition layout."
+    },
+    {
+      "id": "compatibility-evolution",
+      "title": "Compatibility and semantic change",
+      "body": "An additive nullable column is often structurally backward compatible, but it can increase cost or leak sensitive information. Removing or renaming a field and narrowing/changing a type are usually breaking. Widening a type can still break code generators or equality behavior. Changing units, grain, population, timestamp meaning, deduplication, default null handling or late-data policy is semantically breaking even when schema is identical. Contract tooling that checks only names and types cannot detect these changes.\n\nClassify compatibility relative to real consumers: backward compatibility lets new data work with old readers; forward compatibility lets old data work with new readers. Evidence comes from the consumer graph, query/code analysis, contract tests and staged execution—not an assumption that no one uses a column. Unknown consumers mean risk, not safety. Publish supported interfaces instead of granting everyone access to internal staging tables.\n\nFor an incompatible change, create a new version or parallel field/table, backfill deterministically, dual-publish if necessary, let consumers validate and migrate, monitor adoption, then deprecate and remove on a communicated date. Preserve the old path long enough for rollback. Avoid permanent dual semantics with unclear ownership. Emergency security changes may require immediate restriction; document the exception and provide a safe consumer response."
+    },
+    {
+      "id": "lineage-model",
+      "title": "Design-time and runtime lineage",
+      "body": "Lineage can be declared at design time from SQL references, orchestration DAGs and model manifests, or observed at runtime from query plans, logs and instrumented job events. Design lineage answers what should depend on what; runtime lineage answers what a concrete run actually read and wrote. Dynamic SQL, stored procedures, external APIs, file globbing and manual uploads create blind spots. Column-level lineage traces expressions from input fields to output fields but can be ambiguous for filters, joins, aggregation populations and opaque functions.\n\nOpenLineage's core model distinguishes a Job, a Run instance and a Dataset. Runtime run events record lifecycle states and input/output datasets; design-time job and dataset events can publish static metadata. Facets extend entities with schema, source-code location, versions, quality metrics, assertions and other information. Consistent namespaces and names are essential: if two integrations identify the same table differently, the graph fragments. Run IDs must remain stable across events for one execution.\n\nLineage is evidence, not proof. An edge does not specify business correctness, delivery completeness, transformation version, or whether a failed run published partial data unless those facets/events are captured. Events can arrive late, duplicate or be lost, so the lineage backend needs idempotent ingestion and completeness monitoring. Sensitive SQL and column names may themselves require access control."
+    },
+    {
+      "id": "governance-operation",
+      "title": "Enforcement, incidents, and operating model",
+      "body": "Validate proposed contracts as machine-readable artifacts in CI, but also require review of semantic and policy changes. Compile producer code, compare public schemas/contracts with the released version, run unit and data tests, and use lineage/consumer manifests for impact analysis. At publication, enforce supported constraints, quarantine or block severe violations, and emit data-quality and lineage events with the code and dataset versions. Do not silently coerce incompatible rows merely to keep a pipeline green.\n\nA catalog should surface owner, descriptions, contract version, freshness, quality, classifications, lineage and recent incidents in one place. Metadata freshness is itself a service: stale ownership and incomplete graphs damage decisions. Track percentage of public assets with owners/contracts, lineage event completeness, unresolved violations, time to acknowledge, deprecation age and consumer migration. Avoid vanity coverage metrics that reward empty descriptions.\n\nDuring an incident, identify the first bad dataset version and run, traverse downstream consumers, stop or label publication, notify owners, restore or rebuild a trusted version, and verify business measures. Lineage accelerates this only if runtime versions and ownership are reliable. Access to graph traversal must respect sensitive relationships. Use least-privilege publication identities, signed or authenticated metadata events where appropriate, audit changes, and prevent untrusted producers from claiming another dataset's namespace."
+    }
+  ],
+  "math": "Model lineage as a directed, version-aware graph G=(D∪J,E), where D are dataset versions and J are job runs. Edges D→J denote reads and J→D denote writes. Impact is a reachability query constrained by environment and version. A contract C_v is a predicate set over dataset metadata and observations plus a compatibility relation K(C_v,C_{v+1}); structural K is necessary but not sufficient for semantic compatibility.",
+  "workedExamples": [
+    {
+      "title": "Migrate a public customer identifier",
+      "setup": "A public customer mart exposes a 32-bit integer ID. Growth requires a string identifier that also changes identity scope across regions.",
+      "walkthrough": "The change is not a simple type widening: scope semantics change. Contract v2 adds `customer_global_id` with explicit format, uniqueness domain, lineage to the identity service, security classification and rollout dates while retaining v1 `customer_id`. CI compares contracts, scans consumer manifests and queries, and flags dashboards and feature pipelines using the old field. The producer backfills v2, validates one-to-one mappings and exception counts, dual-publishes versioned outputs, and emits runtime lineage with dataset and code versions. Consumers reconcile results in a shadow environment and migrate. Adoption and old-field reads are monitored. If mapping defects appear, the alias returns to v1 while v2 is repaired from versioned inputs. After the deprecation window and owner approval, v1 is removed and retention policy deletes obsolete mappings.",
+      "conclusion": "Schema, identity semantics, lineage, consumer evidence and rollback all participate in a safe public change."
+    }
+  ],
+  "exercises": [
+    {
+      "difficulty": "recall",
+      "prompt": "Name four contract elements beyond column type.",
+      "solution": "Examples: grain, field semantics/units, keys, quality thresholds, freshness, ownership, classification, retention, compatibility and deprecation policy."
+    },
+    {
+      "difficulty": "application",
+      "prompt": "A producer changes `revenue` from cents to dollars without renaming it. Is the schema compatible?",
+      "solution": "Structurally perhaps, semantically no. Version or introduce a clearly named field, backfill, dual-publish, notify and validate consumers, then deprecate the old meaning."
+    },
+    {
+      "difficulty": "diagnosis",
+      "prompt": "Impact analysis misses a dashboard that broke. What lineage gaps should you inspect?",
+      "solution": "Hard-coded relations, direct BI queries, dynamic SQL, mismatched namespaces, lost runtime events, unregistered extracts and external/manual dependencies."
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "dbt-contracts",
+      "contribution": "Defines current model shape guarantees, supported materializations, platform constraint differences, public-model use and breaking-change checks."
+    },
+    {
+      "resource": "openlineage-object-model",
+      "contribution": "Provides the standard job, run, dataset, event and facet vocabulary and distinction between runtime and design events."
+    },
+    {
+      "resource": "dbt-docs",
+      "contribution": "Connects contracts and lineage to manifests, tests, sources, exposures, artifacts and deployable analytical projects."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "flow",
+      "title": "Safe incompatible dataset change",
+      "items": [
+        "Propose contract v2",
+        "Classify semantic impact",
+        "Traverse real consumers",
+        "Backfill + dual-publish",
+        "Consumers reconcile",
+        "Deprecate v1",
+        "Remove after evidence"
+      ],
+      "caption": "Compatibility is established through contract and consumer evidence, not schema shape alone.",
+      "afterSection": "compatibility-evolution"
+    },
+    {
+      "type": "compare",
+      "title": "Metadata answers different questions",
+      "left": {
+        "title": "Contract",
+        "items": [
+          "What is promised?",
+          "What does each field mean?",
+          "Who owns changes?",
+          "What is compatible?"
+        ]
+      },
+      "right": {
+        "title": "Lineage",
+        "items": [
+          "What produced this version?",
+          "Which run read it?",
+          "Who may be impacted?",
+          "Where did the value travel?"
+        ]
+      },
+      "caption": "Tests and runtime evidence are still needed to decide whether either promise or path behaved correctly.",
+      "afterSection": "lineage-model"
+    }
+  ],
+  "lab": {
+    "goal": "Validate a compact row contract, build a job-dataset lineage graph, and verify that breaking changes and downstream impact are detected.",
+    "language": "python",
+    "buildIt": "def validate(rows,contract):\n    errors=[]\n    for i,row in enumerate(rows):\n        for name,spec in contract['columns'].items():\n            if name not in row: errors.append((i,name,'missing')); continue\n            value=row[name]\n            if value is None and not spec['nullable']: errors.append((i,name,'null'))\n            if value is not None and not isinstance(value,spec['type']): errors.append((i,name,'type'))\n    key=contract['key']; values=[row.get(key) for row in rows]\n    if len(values)!=len(set(values)): errors.append((-1,key,'duplicate'))\n    return errors\n\ndef downstream(edges,start):\n    seen=set(); frontier=list(start)\n    while frontier:\n        node=frontier.pop(0)\n        for child in edges.get(node,[]):\n            if child not in seen: seen.add(child); frontier.append(child)\n    return seen",
+    "useIt": "v1={'key':'customer_id','columns':{'customer_id':{'type':int,'nullable':False},'tier':{'type':str,'nullable':False}}}\nrows=[{'customer_id':1,'tier':'gold'},{'customer_id':2,'tier':'silver'}]\nedges={'raw.customer':['job.build_customer'],'job.build_customer':['mart.customer'],'mart.customer':['job.dashboard','job.features'],'job.dashboard':['dashboard.revenue'],'job.features':['model.churn']}\nimpact=downstream(edges,{'mart.customer'})",
+    "verifyIt": "assert validate(rows,v1)==[]\nassert impact=={'job.dashboard','job.features','dashboard.revenue','model.churn'}\nbad=rows+[{'customer_id':2,'tier':None}]\nassert (-1,'customer_id','duplicate') in validate(bad,v1)\nassert (2,'tier','null') in validate(bad,v1)\nv2={'key':'customer_id','columns':{'customer_id':{'type':str,'nullable':False},'tier':{'type':str,'nullable':False}}}\nassert validate(rows,v2) and validate(rows,v2)[0][2]=='type'",
+    "shipIt": "Use a versioned contract format and OpenLineage-compatible events in production, secure namespaces, persist code/dataset versions, monitor event completeness and violations, and exercise dual-publish plus rollback with real consumers."
   }
 }

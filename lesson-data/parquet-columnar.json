@@ -8,52 +8,163 @@
     "ds",
     "da"
   ],
-  "interviewAnswer": "Columnar formats store values by column, enabling compression and selective scans for analytics. Parquet also stores metadata/statistics that engines can use for predicate pushdown and row-group pruning.",
+  "interviewAnswer": "Parquet stores data by column within row groups. Each row group has one contiguous column chunk per field, split into encoded and compressed pages, with footer metadata describing schema and locations and often statistics. Analytical readers can avoid unprojected columns and skip row groups or pages whose metadata proves a predicate cannot match. Similar adjacent values compress effectively through encodings such as dictionary and run-length encoding. Performance still depends on engine support, file and row-group size, sort order, statistics, filter form and object-store requests. Parquet is a file format, not a transaction manager; reliable tables need metadata, atomic commits, schema policy and compaction around the files.",
   "keyPoints": [
-    "Columnar is ideal for scans of a subset of columns.",
-    "Compression benefits from similar adjacent values.",
-    "File sizing/partitioning affect performance."
+    "Row groups partition rows",
+    "Column chunks make projection cheap",
+    "Pages carry encoding and compression",
+    "Statistics can prove non-matches",
+    "A file format is not a table transaction layer"
   ],
   "resources": [
-    "spark",
+    "parquet-concepts",
+    "parquet-motivation",
     "duckdb"
   ],
   "featured": false,
-  "why": "Columnar Storage, Parquet & Predicate Pushdown is a recurring foundation across data science and machine learning because it affects both theoretical correctness and practical system behavior.",
-  "intuition": "Columnar is ideal for scans of a subset of columns.",
-  "deepDive": "Columnar formats store values by column, enabling compression and selective scans for analytics. Parquet also stores metadata/statistics that engines can use for predicate pushdown and row-group pruning. Compression benefits from similar adjacent values. File sizing/partitioning affect performance. The interview-level skill is not merely recalling the definition: explain the assumptions, what diagnostic evidence you would inspect, and what alternative you would choose when those assumptions fail.",
-  "workedExample": "Read only date, user_id and revenue columns from a multi-terabyte Parquet dataset rather than full rows.",
+  "why": "Analytical workloads often read a few columns from billions of values. Row-oriented interchange wastes I/O and misses compression opportunities. Parquet can reduce bytes read dramatically, but poor layout creates tiny-file overhead, weak pruning, memory pressure or silent type inconsistencies. Teams also confuse storage partition filters with predicate pushdown and assume concurrent file writes form an atomic table. Understanding the physical hierarchy helps explain both speedups and costly surprises.",
+  "intuition": "Imagine a library shelf built in horizontal batches. For each batch of records, all timestamps are stored together, all customer IDs together and all amounts together. A query requesting time and amount opens only those compartments. A label on each compartment records minimum and maximum; if the requested date is outside that range, the whole compartment stays closed. Sorting improves labels, while random mixing makes every label span almost everything.",
+  "deepDive": "The full explanation is organized into the structured sections below.",
+  "workedExample": "Write files partitioned by day and sort within each day by event timestamp before forming row groups. The table layer prunes all other day files. Projection requests three leaf column chunks rather than 100. For the selected day, row-group min/max timestamps exclude groups outside the hour; the reader applies the pushed region filter to remaining pages. Profile output records files, groups, bytes and rows scanned. If events were randomly ordered, every group's time range might span most of the day and no groups could be excluded. A transformed predicate such as formatting timestamp to text may also block pushdown. Compaction creates appropriately sized files under a new atomic table snapshot and the old snapshot remains available for rollback until retention expires.",
   "commonMistakes": [
-    "Using the concept mechanically without checking assumptions or data semantics.",
-    "Reporting one metric/result without examining uncertainty, slices or failure modes."
+    {
+      "mistake": "Parquet automatically makes every query fast.",
+      "correction": "Benefits depend on projection, filter translation, layout, statistics, file sizes, engine implementation, cache and query shape."
+    },
+    {
+      "mistake": "Predicate pushdown means no irrelevant data was read.",
+      "correction": "The filter may be pushed but metadata may be too broad to skip blocks; inspect groups, rows and bytes scanned."
+    },
+    {
+      "mistake": "Replacing files in a directory is an atomic table update.",
+      "correction": "Parquet supplies file representation, not multi-file transaction metadata; use an atomic publication/table layer."
+    }
   ],
   "followUps": [
-    "What assumptions or limitations does Columnar Storage, Parquet & Predicate Pushdown have?",
-    "How would you validate Columnar Storage, Parquet & Predicate Pushdown on a real dataset?"
+    {
+      "question": "What is a row group?",
+      "answer": "A horizontal batch of rows containing one contiguous column chunk per leaf column; it is commonly a scan/parallelism and statistics unit."
+    },
+    {
+      "question": "Why does sorting help pruning?",
+      "answer": "It narrows per-group min/max ranges for the sort key, letting a range predicate prove more groups cannot match."
+    },
+    {
+      "question": "Why are tiny files harmful?",
+      "answer": "They multiply listing/footer requests and scheduling tasks, reduce sequential I/O and compression, and make planning dominate useful scan work."
+    }
   ],
-  "production": "In production, make assumptions explicit, validate on representative slices, compare with a simple baseline and monitor the signals that can drift.",
-  "visual": {
-    "type": "compare",
-    "title": "Row vs column storage",
-    "left": {
-      "title": "Row-oriented",
-      "items": [
-        "Row 1: A B C",
-        "Row 2: A B C",
-        "Great for point writes"
-      ]
-    },
-    "right": {
-      "title": "Column-oriented",
-      "items": [
-        "Column A: A A",
-        "Column B: B B",
-        "Great for scans/aggregation"
-      ]
-    },
-    "caption": "Columnar formats improve analytical scans by reading only the fields needed."
-  },
+  "production": "Benchmark real projections and predicates, profile files/groups/bytes/rows, and tune file/row-group layout from evidence. Enforce logical types, timestamp/decimal semantics and cross-engine compatibility; compact tiny files transactionally; monitor compression, pruning, requests, corruption and backlog. Use a snapshot/table layer for atomic publication, evolution, deletes and rollback, propagate encryption/access policy, and retain files according to time-travel and privacy rules.",
   "editorial": {
-    "status": "summary"
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "Apache Parquet is an open columnar file format for analytical data. A file is divided horizontally into row groups; each row group contains one contiguous column chunk per column, and column chunks contain encoded and compressed pages. That hierarchy lets readers project only required columns and use metadata statistics, dictionaries, page indexes and partition information to skip data that cannot match a predicate. This chapter derives the I/O and compression benefits, explains definition and repetition levels for nested structures, and separates file-format capabilities from query-engine behavior. You will learn why predicate pushdown is not the same as file pruning, how row-group size and sort order affect selectivity, why thousands of tiny files damage planning and throughput, and why a Parquet file alone does not provide table transactions, schema governance or safe concurrent updates. A worked event dataset estimates bytes avoided under projection and time-range pruning. Production guidance covers types, timestamps, nulls, dictionary fallback, compression, encryption, object-store requests, compaction, statistics, corruption, schema evolution and table formats. The aim is to reason from the query and physical layout to measured scan cost instead of assuming the `.parquet` suffix automatically makes analytics fast.",
+  "prerequisites": [
+    "oltp-olap",
+    "big-o"
+  ],
+  "learningObjectives": [
+    "Explain Parquet's file, row-group, column-chunk and page hierarchy and how it supports projection, encoding, compression and parallel reads.",
+    "Distinguish partition pruning, row-group/page skipping and predicate pushdown, then diagnose why an intended filter still scans data.",
+    "Choose and operate file size, row-group layout, sort order, schema, encoding and table metadata from real workloads and reliability needs."
+  ],
+  "deepSections": [
+    {
+      "id": "physical-hierarchy",
+      "title": "File, row group, column chunk, and page",
+      "body": "A Parquet file contains one or more row groups plus file metadata in the footer. A row group is a horizontal slice of rows and is a common unit of parallel scan planning. Within each row group, every leaf column has a contiguous column chunk, so reading a projection can seek to only relevant chunks. Column chunks are divided into pages, the unit for encoding and compression. Page headers and metadata describe how to decode values; optional page indexes can enable finer skipping.\n\nThe footer records schema, row groups, column chunk locations, counts, codecs, encodings and available statistics. Reading many remote files requires fetching their metadata, so file count and footer access affect planning. Row groups should be large enough for sequential throughput and compression but small enough for parallelism, memory and useful skipping. Universal magic sizes are misleading because object store latency, engine scheduling, row width and query selectivity differ.\n\nParquet represents nested records by shredding them into leaf columns plus definition and repetition levels that encode nullability and list/struct structure. A projected nested field may require reading its levels to reassemble records. Logical types annotate physical primitives for dates, decimals, timestamps and strings; writers and readers must agree on precision, timezone and compatibility. Always inspect the actual schema written, not only the dataframe type before serialization."
+    },
+    {
+      "id": "encoding-compression",
+      "title": "Encoding, compression, and CPU trade-offs",
+      "body": "Encoding changes the representation before compression. Dictionary encoding stores distinct values once and replaces occurrences with smaller indexes, effective for low-to-moderate cardinality columns. Run-length and bit-packed encodings compress repeated indexes and levels. Delta encodings exploit small differences in ordered numbers or lengths. Implementations choose among supported encodings and may fall back when a dictionary grows too large. Compression codecs then reduce encoded page bytes; codec choice trades ratio, CPU, compatibility and splittability at the page/chunk organization.\n\nColumnar locality improves compression because adjacent values share type and often distribution. Sorting by a frequently filtered column creates long runs and narrow min/max ranges, improving both encoding and skipping. But clustering for one query can reduce locality for another and makes writes/compaction more expensive. High-cardinality random identifiers rarely benefit from a dictionary and can make dictionary construction wasteful.\n\nMeasure compressed size, write throughput, read CPU, decoded rows, cache behavior and bytes fetched for representative projections. Smaller files may lower first-result latency yet increase metadata requests; large row groups improve sequential I/O but reduce fine-grained skipping. Encryption can protect column data and footer metadata where supported, but key distribution and reader compatibility are operational dependencies. Compression is not access control."
+    },
+    {
+      "id": "pruning-pushdown",
+      "title": "Projection, pruning, and predicate pushdown",
+      "body": "Column projection avoids reading chunks for unselected columns. Partition pruning excludes files or directories using table/partition metadata before Parquet scanning. Row-group or page skipping uses column statistics, dictionaries, bloom filters or indexes to prove that a physical block cannot contain a match. Predicate pushdown means the engine passes a filter into the scan so filtering and skipping occur near the reader; a pushed predicate may still read every group if metadata ranges overlap it. These mechanisms should be reported separately.\n\nA predicate must be translatable to the storage reader. Wrapping a column in an unsupported function, implicit casts, timezone conversion, complex disjunction or user-defined function may prevent pushdown. Statistics can be absent, truncated, unreliable for a type, or broad because data is unsorted. Null counts help with `IS NULL`; min/max do not encode arbitrary distributions. Bloom filters can disprove membership probabilistically without false negatives when correctly built, but add storage and CPU and are not universally supported.\n\nUse the query engine's explain/profile output to inspect projected columns, filters, files/row groups selected, rows decoded and bytes read. Compare a direct range predicate with an equivalent transformed predicate. If every row group spans the full date range, rewrite data with useful clustering or partitioning rather than adding more SQL hints. Never infer pruning only from fast execution on a warm cache."
+    },
+    {
+      "id": "dataset-operation",
+      "title": "From files to reliable analytical tables",
+      "body": "A directory of Parquet files does not by itself define an atomic table version. Readers listing files while writers add or replace them can observe partial batches, duplicates or missing data. Schema can vary across files, deletes require rewriting or side metadata, and partition directories can become inconsistent. Open table formats and managed warehouses add snapshots, manifests, atomic metadata commits, schema and partition evolution, delete semantics and time travel over underlying files.\n\nThe small-file problem appears when each task or event creates tiny objects. Planning and object-store request overhead dominate, compression suffers and executors process too little data per task. Compact files under a snapshot-aware transaction so readers never see both old and replacement files. Avoid blind file deletion; metadata may reference a file from an older snapshot needed for rollback. Coordinate retention with time travel and legal requirements.\n\nValidate schema, row counts, control totals, nulls, key uniqueness and file checksums where appropriate. Detect corrupt or unreadable files before promotion. Monitor file and row-group size distributions, file count per partition, compression ratio, scan bytes, pruning effectiveness, footer/request latency, compaction backlog and query spill. Version writer libraries and test cross-engine reads. Preserve raw/replay inputs, publish a new snapshot atomically and roll back metadata to a trusted snapshot when a bad write is discovered."
+    }
+  ],
+  "math": "For N rows and columns C with compressed chunk sizes b_{g,c} in row group g, a projected scan over P⊆C reads approximately Σ_{g∈G_selected}Σ_{c∈P}b_{g,c} plus metadata and request overhead. Statistics prune group g for predicate x∈[a,b] when its trustworthy interval [min_g,max_g] is disjoint from [a,b]. Overlapping ranges prevent proof of absence even if few rows match.",
+  "workedExamples": [
+    {
+      "title": "Time-range event scan",
+      "setup": "A daily event dataset has 100 columns but a dashboard reads timestamp, region and amount for one hour.",
+      "walkthrough": "Write files partitioned by day and sort within each day by event timestamp before forming row groups. The table layer prunes all other day files. Projection requests three leaf column chunks rather than 100. For the selected day, row-group min/max timestamps exclude groups outside the hour; the reader applies the pushed region filter to remaining pages. Profile output records files, groups, bytes and rows scanned. If events were randomly ordered, every group's time range might span most of the day and no groups could be excluded. A transformed predicate such as formatting timestamp to text may also block pushdown. Compaction creates appropriately sized files under a new atomic table snapshot and the old snapshot remains available for rollback until retention expires.",
+      "conclusion": "Partitioning, clustering, metadata and predicate form cooperate; Parquet alone does not guarantee pruning."
+    }
+  ],
+  "exercises": [
+    {
+      "difficulty": "recall",
+      "prompt": "State the Parquet physical hierarchy.",
+      "solution": "A file contains row groups; each row group has one column chunk per leaf column; each column chunk contains encoded and compressed pages."
+    },
+    {
+      "difficulty": "application",
+      "prompt": "Queries filter by event day and select four of eighty columns. Which layouts help?",
+      "solution": "Partition/table metadata by an appropriate day transform, project only four columns, and cluster row groups by common selective fields if measurements justify it."
+    },
+    {
+      "difficulty": "diagnosis",
+      "prompt": "A timestamp filter is pushed but scans all row groups. Give likely causes.",
+      "solution": "Random order produced broad ranges, statistics are absent/truncated, a cast changed comparison semantics, or each group genuinely overlaps the requested interval."
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "parquet-concepts",
+      "contribution": "Defines the canonical file, row-group, column-chunk and page hierarchy and their parallelism/I/O roles."
+    },
+    {
+      "resource": "parquet-motivation",
+      "contribution": "Explains the format's columnar, nested-data, encoding, compression and cross-framework design goals."
+    },
+    {
+      "resource": "duckdb",
+      "contribution": "Provides an official analytical reader and profiling/query documentation for projection and Parquet filter behavior."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "layers",
+      "title": "Parquet physical hierarchy",
+      "items": [
+        "File footer: schema + row-group metadata",
+        "Row groups: horizontal row batches",
+        "Column chunks: one contiguous chunk per column per group",
+        "Pages: encoded and compressed values"
+      ],
+      "caption": "Different layers support planning, parallel scans, projection, statistics, encoding and compression.",
+      "afterSection": "physical-hierarchy"
+    },
+    {
+      "type": "flow",
+      "title": "How a selective analytical scan avoids work",
+      "items": [
+        "Partition metadata excludes files",
+        "Projection selects column chunks",
+        "Statistics exclude row groups/pages",
+        "Reader decodes remaining pages",
+        "Predicate filters values",
+        "Operators aggregate rows"
+      ],
+      "caption": "Each pruning mechanism has distinct evidence; profile bytes and groups instead of inferring from elapsed time.",
+      "afterSection": "pruning-pushdown"
+    }
+  ],
+  "lab": {
+    "goal": "Expose dictionary encoding and min/max row-group pruning, then compare the result with an idiomatic PyArrow Parquet scan (Use It requires `pyarrow`).",
+    "language": "python",
+    "buildIt": "def dictionary_encode(values):\n    dictionary=[]; index={} ; codes=[]\n    for value in values:\n        if value not in index:\n            index[value]=len(dictionary); dictionary.append(value)\n        codes.append(index[value])\n    return dictionary,codes\n\ndef groups(rows,size):\n    out=[]\n    for start in range(0,len(rows),size):\n        chunk=rows[start:start+size]\n        out.append({'rows':chunk,'min_ts':min(r['ts'] for r in chunk),'max_ts':max(r['ts'] for r in chunk)})\n    return out\n\ndef scan(groups_,lo,hi):\n    selected=[g for g in groups_ if not (g['max_ts']<lo or g['min_ts']>hi)]\n    return [r for g in selected for r in g['rows'] if lo<=r['ts']<=hi],len(selected)",
+    "useIt": "rows=[{'ts':i,'region':['EU','EU','US'][i%3],'amount':float(i)} for i in range(12)]\nrows.sort(key=lambda r:r['ts'])\ndictionary,codes=dictionary_encode([r['region'] for r in rows])\nrow_groups=groups(rows,4)\nresult,selected=scan(row_groups,5,6)\ntry:\n    import pyarrow as pa, pyarrow.parquet as pq, tempfile\nexcept ImportError:\n    pa=pq=None\nif pa is not None:\n    path=tempfile.NamedTemporaryFile(suffix='.parquet',delete=False).name\n    pq.write_table(pa.Table.from_pylist(rows),path,row_group_size=4)\n    arrow_rows=pq.read_table(path,columns=['ts','amount'],filters=[('ts','>=',5),('ts','<=',6)]).to_pylist()",
+    "verifyIt": "assert dictionary==['EU','US']\nassert [dictionary[code] for code in codes]==[r['region'] for r in rows]\nassert [r['ts'] for r in result]==[5,6]\nassert selected==1 and selected < len(row_groups)\nif pa is not None:\n    assert arrow_rows==[{'ts':5,'amount':5.0},{'ts':6,'amount':6.0}]",
+    "shipIt": "Profile target-engine files, row groups, projected columns and bytes; compact under atomic snapshots, validate schemas/control totals across readers, monitor tiny files and pruning, and retain a trusted snapshot for rollback."
   }
 }

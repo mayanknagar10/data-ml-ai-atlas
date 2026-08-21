@@ -8,31 +8,166 @@
     "ds",
     "da"
   ],
-  "interviewAnswer": "Normalization reduces update anomalies by separating facts according to functional dependencies; analytical systems may deliberately denormalize for read performance.",
+  "interviewAnswer": "Normalization organizes attributes around keys and functional dependencies to reduce redundancy and update anomalies. 1NF requires atomic relation-valued design in the chosen model; 2NF removes dependencies on only part of a composite candidate key; 3NF removes non-key attributes depending transitively on keys, with a formal dependency condition; BCNF requires every nontrivial determinant to be a superkey. A decomposition must also be lossless, and dependency preservation is desirable. Denormalize only for a measured workload and define how duplicate facts stay consistent.",
   "keyPoints": [
-    "Normalization serves transactional integrity.",
-    "Denormalization serves access patterns.",
-    "Know the grain/key of every table."
+    "Dependencies come from semantics",
+    "Candidate keys may be composite",
+    "Decomposition must be lossless",
+    "3NF and BCNF differ",
+    "Denormalization creates maintenance duty"
   ],
   "resources": [
     "cmu-db",
     "postgres"
   ],
   "featured": false,
-  "why": "Database Normalization: 1NF to 3NF is a recurring foundation across data science and machine learning because it affects both theoretical correctness and practical system behavior.",
-  "intuition": "Normalization serves transactional integrity.",
-  "deepDive": "Normalization reduces update anomalies by separating facts according to functional dependencies; analytical systems may deliberately denormalize for read performance. Denormalization serves access patterns. Know the grain/key of every table. The interview-level skill is not merely recalling the definition: explain the assumptions, what diagnostic evidence you would inspect, and what alternative you would choose when those assumptions fail.",
-  "workedExample": "Store customer details once rather than repeating address columns in every order row.",
+  "why": "A table that repeats customer addresses on every order can disagree with itself after one partial update. A design that stores product price only in the current product row can destroy the price actually charged historically. Normalization makes invariants enforceable with keys and foreign keys and reduces write anomalies. Over-normalization or indiscriminate decomposition can create expensive joins and awkward ownership, while warehouse facts and dimensions intentionally optimize a different workload. Interviews often ask form definitions; engineering requires dependency justification, lossless reconstruction, temporal meaning, and a deliberate boundary between source-of-truth data and derived copies.",
+  "intuition": "Each stable fact should have one natural home determined by the thing it describes. Customer email belongs with customer identity; quantity for an order line belongs with the order-product line; the charged unit price belongs with that historical transaction, not merely the current catalog. Functional dependencies are sentences like 'order_id determines customer_id.' Normalization groups facts whose determinants belong together and replaces repeated facts with references.",
+  "deepDive": "The full explanation is organized into the structured sections below.",
+  "workedExample": "Declare `(order_id, product_id, line_number)` or a stable line ID as the order-line key. Dependencies include order_id→customer_id,order_date; customer_id→current customer attributes; product_id→current product attributes under a version; line key→quantity,charged_unit_price. Decompose into customer, product/version, order, and order_line with uniqueness and foreign keys. Keep charged price on order_line because it is determined by the transaction line and must not change with the catalog. Verify the joins are lossless under keys and that revenue reconciles. Test a product-price change and customer deletion policy without mutating historical facts.",
   "commonMistakes": [
-    "Using the concept mechanically without checking assumptions or data semantics.",
-    "Reporting one metric/result without examining uncertainty, slices or failure modes."
+    {
+      "mistake": "A surrogate primary key makes a table normalized.",
+      "correction": "Natural functional dependencies and redundant facts still exist; preserve candidate-key constraints and analyze determinants."
+    },
+    {
+      "mistake": "3NF means every table has only an ID and one value.",
+      "correction": "Attributes depending directly on the key can coexist. Normalization follows dependencies, not an arbitrary narrow-table rule."
+    },
+    {
+      "mistake": "Denormalization is always bad design.",
+      "correction": "Derived analytics and read models can denormalize deliberately when source ownership, refresh, consistency, lineage, and reconciliation are explicit."
+    }
   ],
   "followUps": [
-    "What assumptions or limitations does Database Normalization: 1NF to 3NF have?",
-    "How would you validate Database Normalization: 1NF to 3NF on a real dataset?"
+    {
+      "question": "How do 3NF and BCNF differ?",
+      "answer": "3NF permits X→A when A is prime even if X is not a superkey; BCNF requires every nontrivial determinant to be a superkey."
+    },
+    {
+      "question": "What is lossless decomposition?",
+      "answer": "Joining decomposed relations under valid constraints recreates exactly the original relation without missing or spurious rows."
+    },
+    {
+      "question": "Why preserve dependencies?",
+      "answer": "So constraints can be enforced locally in decomposed relations instead of requiring expensive joins or procedural checks."
+    }
   ],
-  "production": "In production, make assumptions explicit, validate on representative slices, compare with a simple baseline and monitor the signals that can drift.",
+  "production": "Document grain, candidate keys, dependencies, temporal scopes, constraints, and deletion policy. Validate lossless reconstruction and preserve enforceable dependencies. Treat star schemas, materialized views, caches, and duplicated columns as governed derived products with source ownership, lineage, refresh, staleness, reconciliation, and rollback. Monitor orphans, uniqueness, history integrity, and join/read costs before denormalizing further.",
   "editorial": {
-    "status": "summary"
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "Relational normalization uses keys and functional dependencies to place facts where they can be inserted, updated, and deleted without contradictory copies. First, second, and third normal form are not a ritual of splitting tables; they are tests against a declared meaning of attributes. This chapter defines superkeys, candidate keys, prime attributes, determinants, functional and transitive dependencies, then derives 1NF, 2NF, 3NF, and Boyce-Codd normal form (BCNF). It explains lossless decomposition and dependency preservation, because individually clean-looking tables can still fail to reconstruct the original relation or enforce a rule locally. You will normalize an order-line relation, identify update, insertion, and deletion anomalies, and preserve historical prices rather than incorrectly deriving them from a current product table. The design section connects normalized operational schemas with foreign keys, temporal validity, generated identifiers, JSON, star schemas, materialized views, performance, and governance. The objective is to model one fact once under the correct key, then denormalize only for a measured read or analytics need with explicit ownership and refresh semantics.",
+  "prerequisites": [],
+  "learningObjectives": [
+    "Derive candidate keys and functional dependencies from domain semantics rather than sample coincidences.",
+    "Normalize a relation through 1NF, 2NF, 3NF, and BCNF while checking lossless join and dependency preservation.",
+    "Choose deliberate denormalization for operational or analytical workloads with integrity, history, refresh, lineage, and performance controls."
+  ],
+  "deepSections": [
+    {
+      "id": "keys-dependencies",
+      "title": "Keys and functional dependencies",
+      "body": "For relation R, a functional dependency X→Y means any two valid rows agreeing on attributes X must agree on Y. It is a domain constraint over all valid states, not a pattern inferred safely from one dataset. A superkey determines every attribute. A candidate key is a minimal superkey; one may be chosen as primary, while alternatives remain meaningful unique constraints. Prime attributes belong to at least one candidate key.\n\nUse attribute closure to reason about keys: begin with X and repeatedly add attributes determined by known dependencies until no change. If closure reaches all R, X is a superkey; test minimality by removing each member. Surrogate IDs simplify references but do not erase natural dependencies. If email is unique by business rule, preserve that constraint even when customer_id is primary.\n\nDependencies can be full, partial, or transitive. With composite key (order_id, product_id), quantity may depend on the full key while order_date depends only on order_id. If order_id determines customer_id and customer_id determines customer_name, then customer_name is transitively determined by order_id. Record assumptions such as effective time, tenant, locale, or version; dependencies often need those attributes to be true."
+    },
+    {
+      "id": "normal-forms",
+      "title": "1NF, 2NF, 3NF, and BCNF",
+      "body": "First normal form treats each row/column intersection as a value from its declared domain and avoids repeating groups in one relation. 'Atomic' is model-relative: a timestamp is one value even though it has components. Storing comma-separated IDs prevents constraints and relational operations; a proper child relation models multiple values. JSON can be valid for an opaque document but is not a shortcut when individual elements need relational integrity and queries.\n\nSecond normal form applies to relations with composite candidate keys and removes non-prime attributes that depend on a proper subset of a candidate key. Split order-level attributes from order-line attributes. Third normal form can be stated: for every nontrivial X→A, X is a superkey or A is prime. The common intuition removes non-key facts depending on other non-key facts.\n\nBCNF is stricter: every determinant X of a nontrivial dependency must be a superkey. A 3NF relation can violate BCNF when the dependent attribute is prime. BCNF removes more redundancy but may sacrifice dependency preservation; 3NF synthesis is sometimes selected so constraints remain enforceable without joining decomposed tables. Do not claim a form without listing candidate keys and dependencies."
+    },
+    {
+      "id": "decomposition-quality",
+      "title": "Lossless join, dependency preservation, and anomalies",
+      "body": "A decomposition must be lossless: joining decomposed relations on their common attributes must recreate exactly the valid original relation, not add spurious combinations. For a binary decomposition R into R1 and R2, a useful lossless condition under dependencies is that the common attributes functionally determine all of R1 or all of R2. Foreign keys and uniqueness often embody this relationship. Test the theory, not only current sample output.\n\nDependency preservation means original constraints can be enforced by checking individual decomposed relations without reconstructing them. It reduces enforcement cost and complexity. A BCNF decomposition can be lossless yet fail to preserve a dependency, motivating a 3NF design or an additional constraint mechanism.\n\nRedundancy creates update anomalies when copies disagree, insertion anomalies when one fact cannot be stored without another, and deletion anomalies when deleting one fact accidentally erases the last copy of another. Normalization reduces these structural hazards but transactions, constraints, and application logic still matter. A normalized schema with no foreign keys can still contain orphaned references."
+    },
+    {
+      "id": "practical-modeling",
+      "title": "Temporal facts, analytics, and deliberate denormalization",
+      "body": "Facts change over time. An order line's charged price is a transaction fact and should remain even if the product catalog price changes. Customer address 'at order time' differs from current address. Model effective dates or immutable snapshots according to the question. A dependency such as product_id→price may be false without effective_time or version. Soft deletion and slowly changing dimensions likewise modify keys and uniqueness scopes.\n\nOperational schemas favor integrity and focused updates; analytical star schemas intentionally denormalize dimensions around fact tables for scan and reporting patterns. This is not failed normalization when the warehouse is a derived, governed model with declared grain, conformed dimensions, history rules, and rebuildable lineage. Materialized views and caches are also duplicate representations and need refresh, invalidation, and reconciliation.\n\nDenormalize only after measuring a workload and identifying the source of truth. Document duplicate columns, owner, sync mechanism, staleness bound, failure behavior, and backfill. Monitor constraint violations, orphan rates, reconciliation, join latency, and refresh lag. Schema evolution should expand compatibly, backfill, validate, switch readers/writers, then contract with rollback available."
+    }
+  ],
+  "math": "Given functional dependencies F, closure X+ is the set of attributes derivable from X; X is a superkey when X+=R. 3NF requires for every nontrivial X→A that X be a superkey or A be prime. BCNF requires X be a superkey. Binary decomposition R→R1,R2 is lossless under F when (R1∩R2)→R1 or (R1∩R2)→R2 follows from F.",
+  "workedExamples": [
+    {
+      "title": "Normalize orders and preserve charged price",
+      "setup": "One table repeats order date, customer name, product name, current price, charged price, and quantity for every order line.",
+      "walkthrough": "Declare `(order_id, product_id, line_number)` or a stable line ID as the order-line key. Dependencies include order_id→customer_id,order_date; customer_id→current customer attributes; product_id→current product attributes under a version; line key→quantity,charged_unit_price. Decompose into customer, product/version, order, and order_line with uniqueness and foreign keys. Keep charged price on order_line because it is determined by the transaction line and must not change with the catalog. Verify the joins are lossless under keys and that revenue reconciles. Test a product-price change and customer deletion policy without mutating historical facts.",
+      "conclusion": "Normalization separates current entity facts from immutable transaction facts, reducing contradictions while preserving the history the business actually needs."
+    }
+  ],
+  "exercises": [
+    {
+      "difficulty": "recall",
+      "prompt": "If `(order_id,product_id)` is a key and order_date depends only on order_id, which form is violated?",
+      "solution": "Second normal form, because a non-prime attribute depends on a proper subset of a composite candidate key."
+    },
+    {
+      "difficulty": "application",
+      "prompt": "Where should the price actually charged for an order line live?",
+      "solution": "On the order-line transaction fact (or referenced immutable price version), not only in the mutable current product record."
+    },
+    {
+      "difficulty": "diagnosis",
+      "prompt": "A BCNF decomposition needs a join to validate an original dependency. What property may be lost?",
+      "solution": "Dependency preservation; the decomposition can still be lossless while requiring cross-table enforcement."
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "cmu-db",
+      "contribution": "Provides relational models, keys, functional dependencies, normal forms, storage, constraints, and workload trade-offs."
+    },
+    {
+      "resource": "postgres",
+      "contribution": "Documents concrete primary, unique, foreign-key, generated, JSON, view, and materialized-view mechanisms used in implementation examples."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "flow",
+      "title": "Order relation decomposition",
+      "items": [
+        "Mixed order-line table",
+        "Identify keys and dependencies",
+        "Separate customer/product/order facts",
+        "Keep charged price on line",
+        "Enforce references and reconcile"
+      ],
+      "caption": "Facts move to relations keyed by their true determinant while historical transaction values remain with the transaction.",
+      "afterSection": "decomposition-quality"
+    },
+    {
+      "type": "compare",
+      "title": "Normalized source and denormalized read model",
+      "left": {
+        "title": "Operational source",
+        "items": [
+          "One fact home",
+          "Constraints on writes",
+          "Focused updates",
+          "Joins reconstruct views"
+        ]
+      },
+      "right": {
+        "title": "Derived read model",
+        "items": [
+          "Repeated convenient fields",
+          "Faster common scans",
+          "Refresh and staleness",
+          "Rebuildable lineage"
+        ]
+      },
+      "caption": "Denormalization is an operational commitment, not a replacement for source-of-truth modeling.",
+      "afterSection": "practical-modeling"
+    }
+  ],
+  "lab": {
+    "goal": "Use SQLite constraints to model normalized orders and verify uniqueness, references, historical price stability, and revenue reconciliation.",
+    "language": "python",
+    "buildIt": "def closure(attributes,dependencies):\n    result=set(attributes)\n    changed=True\n    while changed:\n        changed=False\n        for left,right in dependencies:\n            if set(left)<=result and not set(right)<=result:\n                result.update(right); changed=True\n    return result",
+    "useIt": "import sqlite3\ncon=sqlite3.connect(':memory:'); con.execute('PRAGMA foreign_keys=ON')\ncon.executescript('CREATE TABLE customer(id INTEGER PRIMARY KEY,name TEXT); CREATE TABLE product(id INTEGER PRIMARY KEY,name TEXT,current_price REAL); CREATE TABLE orders(id INTEGER PRIMARY KEY,customer_id INTEGER REFERENCES customer(id),ordered_at TEXT); CREATE TABLE order_line(order_id INTEGER REFERENCES orders(id),line_no INTEGER,product_id INTEGER REFERENCES product(id),quantity INTEGER CHECK(quantity>0),charged_price REAL CHECK(charged_price>=0),PRIMARY KEY(order_id,line_no)); INSERT INTO customer VALUES(1,\"A\"); INSERT INTO product VALUES(2,\"P\",10); INSERT INTO orders VALUES(3,1,\"2026-01-01\"); INSERT INTO order_line VALUES(3,1,2,2,8); UPDATE product SET current_price=12 WHERE id=2;')",
+    "verifyIt": "deps=[(('order_id',),('customer_id','order_date')),(('customer_id',),('customer_name',)),(('order_id','line_no'),('product_id','quantity','charged_price'))]\nassert {'customer_id','customer_name','order_date'} <= closure({'order_id'},deps)\nassert con.execute('SELECT charged_price FROM order_line').fetchone()[0]==8\nassert con.execute('SELECT current_price FROM product').fetchone()[0]==12\nassert con.execute('SELECT SUM(quantity*charged_price) FROM order_line').fetchone()[0]==16",
+    "shipIt": "Add schema migrations, natural-key uniqueness, temporal validity, orphan/reconciliation checks, analytics lineage, and expand-contract rollback for every model change."
   }
 }

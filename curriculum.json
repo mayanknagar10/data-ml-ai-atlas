@@ -833,37 +833,53 @@
         "mle",
         "da"
       ],
-      "interviewAnswer": "INNER JOIN returns matching rows; LEFT JOIN keeps every row from the left side and fills unmatched right-side columns with NULL; FULL OUTER JOIN keeps rows from both sides. Choose based on what records must survive the join.",
+      "interviewAnswer": "A join pairs rows whose predicate evaluates true. Inner join keeps matches; left join also preserves unmatched left rows with NULL-extended right columns; full join preserves unmatched rows from both sides. Cardinality depends on key multiplicities: a key appearing a times on the left and b times on the right contributes a×b inner matches. Define each table's grain, validate key uniqueness and match rates, and be careful placing right-side filters after a left join because `WHERE` can remove NULL-extended rows. The optimizer may implement the same logic with nested-loop, hash, or merge join.",
       "keyPoints": [
-        "Join keys",
-        "Duplicate amplification",
-        "NULL behavior",
-        "Many-to-many joins"
+        "Declare row grain first",
+        "Multiplicity determines output rows",
+        "Outer joins preserve one side",
+        "NULL makes predicates unknown",
+        "Logical join differs from physical algorithm"
       ],
       "resources": [
-        "postgres"
+        "postgres-select",
+        "cmu-db"
       ],
       "featured": true,
+      "description": "A SQL join combines rows according to a predicate, but its most important property is cardinality: how many output rows each input key can produce. This chapter develops joins from Cartesian product and filtering, then covers inner, left, right, full, cross, self, semi, and anti semantics; NULL and three-valued logic; duplicate multiplication; key normalization; and physical nested-loop, hash, and merge join strategies. You will learn to state table grain before joining, place predicates correctly for outer joins, enforce one-to-one or many-to-one expectations with constraints and tests, and reconcile measures after combination. A worked customer-order example preserves customers without orders while distinguishing structural absence from unknown amounts. The performance section connects logical SQL to optimizer choices, indexes, statistics, memory, spill, skew, and join order without assuming a particular plan from query text. The objective is not merely to recall join syntax. It is to predict the output population, prove which unmatched rows survive, catch unintended many-to-many expansion, and operate joins safely as data distributions and schemas change.",
+      "prerequisites": [
+        "hash-tables",
+        "normalization-db"
+      ],
+      "learningObjectives": [
+        "Predict output grain, matched multiplicity, and unmatched-row behavior for every major join type.",
+        "Explain NULL predicate behavior and distinguish semi/anti existence tests from value-producing joins.",
+        "Validate join correctness and diagnose physical plans using keys, constraints, statistics, indexes, memory, and skew."
+      ],
       "editorial": {
-        "status": "summary"
+        "status": "verified",
+        "verifiedOn": "2026-08-21"
       },
-      "status": "summary",
-      "hasLab": false,
-      "labGoal": "",
-      "visualCount": 1,
+      "status": "verified",
+      "hasLab": true,
+      "labGoal": "Model join cardinality with tiny tables and verify preservation, unmatched, duplication, and reconciliation invariants.",
+      "visualCount": 2,
       "visualSummaries": [
         {
           "type": "compare",
-          "title": "Join semantics"
+          "title": "Inner and left join preservation"
+        },
+        {
+          "type": "flow",
+          "title": "Join assurance loop"
         }
       ],
       "followUpQuestions": [
-        "INNER vs LEFT JOIN?",
-        "What happens in a many-to-many join?",
-        "How do NULLs behave in joins?",
-        "How would you detect duplicate amplification?"
+        "When is `EXISTS` better than a join?",
+        "Why can a hash join spill?",
+        "How do you debug a join that became slow without SQL changes?"
       ],
-      "estimatedMinutes": 2
+      "estimatedMinutes": 10
     },
     {
       "slug": "sql-aggregation",
@@ -876,32 +892,52 @@
         "mle",
         "da"
       ],
-      "interviewAnswer": "GROUP BY changes the grain of the result by aggregating rows into groups. WHERE filters before aggregation; HAVING filters after aggregation.",
+      "interviewAnswer": "`GROUP BY` partitions filtered input rows by key and returns one result row per observed group; aggregate functions summarize rows within each group. `WHERE` filters rows before grouping, while `HAVING` filters groups after aggregates. `COUNT(*)` counts rows, `COUNT(col)` counts non-NULL values, and distinct or conditional metrics must be explicit. Always state the output grain and denominator, because joins or duplicate inputs can change weighting. Physical execution may use hash or sort aggregation and can spill when state exceeds memory.",
       "keyPoints": [
-        "Row grain",
-        "COUNT(*) vs COUNT(column)",
-        "WHERE vs HAVING",
-        "Conditional aggregation"
+        "Aggregation changes grain",
+        "WHERE rows, HAVING groups",
+        "COUNT variants differ",
+        "Denominators are contracts",
+        "Reconcile grouped totals"
       ],
       "resources": [
-        "postgres"
+        "postgres-select",
+        "cmu-db"
       ],
       "featured": false,
-      "editorial": {
-        "status": "summary"
-      },
-      "status": "summary",
-      "hasLab": false,
-      "labGoal": "",
-      "visualCount": 0,
-      "visualSummaries": [],
-      "followUpQuestions": [
-        "WHERE vs HAVING?",
-        "COUNT(*) vs COUNT(col)?",
-        "How do you do conditional aggregation?",
-        "When would a window function be better?"
+      "description": "SQL aggregation changes row grain by partitioning input rows into groups and computing one result per group. This chapter explains the logical order from WHERE filtering through GROUP BY, aggregate evaluation, HAVING, SELECT, and final ORDER BY. It distinguishes `COUNT(*)`, `COUNT(expression)`, distinct counts, conditional aggregates, and NULL behavior; covers grouping sets, rollups, and the danger of mixing metrics at incompatible grains; and connects exact results to hash and sort aggregation plans. You will learn to declare the output grain, make denominators explicit, avoid integer and divide-by-zero errors, separate row filters from group filters, and reconcile summaries against base data. A worked daily product metric example computes orders, customers, revenue, and failure rate without accidentally weighting joined rows. The production material covers incremental recomputation, late data, slowly changing definitions, approximate distinct counting, spill, skew, data quality, and metric governance. The goal is to make an aggregate a trustworthy semantic contract rather than a compact query whose population and NULL rules are implicit.",
+      "prerequisites": [
+        "sql-joins"
       ],
-      "estimatedMinutes": 1
+      "learningObjectives": [
+        "Predict grouped output grain and logical clause order for row filters, aggregates, HAVING, and final projection.",
+        "Choose correct count, distinct, conditional, NULL, denominator, and grouping-set semantics for a metric.",
+        "Validate and operate aggregations using reconciliation, incremental-window, late-data, plan, spill, and governance controls."
+      ],
+      "editorial": {
+        "status": "verified",
+        "verifiedOn": "2026-08-21"
+      },
+      "status": "verified",
+      "hasLab": true,
+      "labGoal": "Compute metrics in SQLite and verify grain, NULL, denominator, and reconciliation behavior.",
+      "visualCount": 2,
+      "visualSummaries": [
+        {
+          "type": "flow",
+          "title": "Logical aggregation pipeline"
+        },
+        {
+          "type": "compare",
+          "title": "Row count and value count"
+        }
+      ],
+      "followUpQuestions": [
+        "What does a left join do to `COUNT(*)` for an unmatched left row?",
+        "Why can aggregation spill to disk?",
+        "When should you retain numerator and denominator?"
+      ],
+      "estimatedMinutes": 9
     },
     {
       "slug": "sql-window-functions",
@@ -914,37 +950,54 @@
         "mle",
         "da"
       ],
-      "interviewAnswer": "Window functions compute values across related rows without collapsing them. Common examples are ROW_NUMBER, RANK, LAG, LEAD and running aggregates using OVER(PARTITION BY ... ORDER BY ...).",
+      "interviewAnswer": "A window function computes over rows related to the current row but does not collapse them. `PARTITION BY` resets groups, `ORDER BY` defines sequence and peers, and the frame defines which ordered rows an aggregate-like window sees. `ROW_NUMBER` is unique order, `RANK` leaves gaps across ties, and `DENSE_RANK` does not. Window functions logically run after WHERE, grouping, and HAVING, so filter their results in an outer query. Always specify deterministic tie-breakers and an explicit frame for running or rolling calculations.",
       "keyPoints": [
-        "Window vs GROUP BY",
-        "Partition and ordering",
-        "Ranking",
-        "Rolling metrics"
+        "Windows preserve row grain",
+        "Partition, order, and frame differ",
+        "Peers affect ranks and RANGE",
+        "Filter window outputs later",
+        "Temporal frames must exclude the future"
       ],
       "resources": [
-        "postgres"
+        "postgres-window",
+        "postgres-select",
+        "cmu-db"
       ],
       "featured": true,
+      "description": "Window functions calculate across related rows while preserving one output row for each current input row. They power ranking, deduplication, running totals, moving statistics, session comparisons, and change detection without collapsing detail through GROUP BY. This chapter separates partition, ordering, peer groups, and window frame; contrasts `ROW_NUMBER`, `RANK`, and `DENSE_RANK`; explains `LAG`, `LEAD`, and aggregate windows; and shows why default frames can make `LAST_VALUE` or cumulative aggregates surprising. You will learn SQL's logical stage constraints, use a subquery to filter window outputs, make tie ordering deterministic, and prevent future leakage in time-based features. A worked event example selects the latest valid row per entity and verifies ties. The performance sections cover sorts, indexes, partition skew, memory, spill, named windows, and incremental limits. The goal is to reason about the exact row set visible to every function, rather than assuming `PARTITION BY` alone defines the calculation. This framing also makes code review, boundary testing, historical reproducibility, and cross-dialect migration more reliable when defaults differ.",
+      "prerequisites": [
+        "sql-aggregation",
+        "sorting-searching"
+      ],
+      "learningObjectives": [
+        "Distinguish result partition, peer order, and ROWS/RANGE/GROUPS frame for common window functions.",
+        "Choose ranking, offset, cumulative, rolling, and deduplication patterns with deterministic ordering and NULL policies.",
+        "Prevent temporal leakage and diagnose window plans, sorts, skew, spill, and incremental limitations."
+      ],
       "editorial": {
-        "status": "summary"
+        "status": "verified",
+        "verifiedOn": "2026-08-21"
       },
-      "status": "summary",
-      "hasLab": false,
-      "labGoal": "",
-      "visualCount": 1,
+      "status": "verified",
+      "hasLab": true,
+      "labGoal": "Run SQLite window queries and verify ranking ties, latest-row determinism, cumulative frames, and row preservation.",
+      "visualCount": 2,
       "visualSummaries": [
         {
-          "type": "concept-map",
-          "title": "Window Functions"
+          "type": "layers",
+          "title": "Window definition layers"
+        },
+        {
+          "type": "compare",
+          "title": "Ranking peers"
         }
       ],
       "followUpQuestions": [
-        "ROW_NUMBER vs RANK vs DENSE_RANK?",
-        "How do you calculate a running average?",
-        "Window function vs GROUP BY?",
-        "What is a window frame?"
+        "How do RANK and DENSE_RANK differ?",
+        "Why filter window results in a subquery?",
+        "How can a rolling feature leak?"
       ],
-      "estimatedMinutes": 1
+      "estimatedMinutes": 10
     },
     {
       "slug": "sql-ctes-subqueries",
@@ -957,32 +1010,54 @@
         "mle",
         "da"
       ],
-      "interviewAnswer": "CTEs make complex SQL easier to reason about by naming intermediate results. They are often used to structure transformations before the final query.",
+      "interviewAnswer": "A subquery is a query embedded in another expression or table expression; it may be uncorrelated or reference outer rows. `EXISTS` is ideal for semi-join logic, and `NOT EXISTS` for anti-join logic that avoids NULL surprises. A CTE names a query result for the following statement and improves staged reasoning, but whether it is inlined or materialized is engine- and query-dependent. A recursive CTE combines an anchor with a recursive term evaluated against a working table until no new rows remain, so termination and cycle controls are essential.",
       "keyPoints": [
-        "Readability",
-        "Recursive CTE concept",
-        "Optimization depends on database",
-        "Avoid unnecessary nesting"
+        "Cardinality selects subquery form",
+        "EXISTS expresses membership",
+        "CTE names a relational stage",
+        "Materialization is not guaranteed",
+        "Recursive queries need termination"
       ],
       "resources": [
-        "postgres"
+        "postgres-with",
+        "postgres-select",
+        "cmu-db"
       ],
       "featured": false,
-      "editorial": {
-        "status": "summary"
-      },
-      "status": "summary",
-      "hasLab": false,
-      "labGoal": "",
-      "visualCount": 0,
-      "visualSummaries": [],
-      "followUpQuestions": [
-        "CTE vs subquery?",
-        "What is a correlated subquery?",
-        "EXISTS vs IN?",
-        "What is a recursive CTE?"
+      "description": "Subqueries and common table expressions (CTEs) name intermediate relational results. They can clarify a complex transformation, express existence and scalar lookup, isolate a change of grain, or recursively traverse a hierarchy. They do not automatically make a query faster, and their evaluation or materialization behavior depends on the database, version, references, volatility, and optimizer. This chapter develops scalar, row, table, correlated, `EXISTS`, `IN`, and derived-table forms; explains NULL-sensitive anti-joins; shows how non-recursive CTEs support readable stage contracts; and traces the anchor-and-recursive-term working-table model. You will learn when correlation creates repeated work, when an optimizer can decorrelate or inline, how to guard scalar cardinality, and how to bound cycles and depth in recursive queries. A worked funnel example computes one row per user at each stage before combining them. Production sections cover plan inspection, repeated references, temporary materialization, recursion safety, transaction snapshots, naming, testing, and portability. The objective is to structure reasoning without treating query syntax as an execution directive.",
+      "prerequisites": [
+        "sql-joins",
+        "sql-aggregation"
       ],
-      "estimatedMinutes": 1
+      "learningObjectives": [
+        "Choose scalar, table, correlated, EXISTS, anti-join, derived-table, or CTE form from result cardinality and semantics.",
+        "Trace recursive CTE anchor and working-table iterations while enforcing termination, cycle, and depth rules.",
+        "Inspect optimization, inlining, materialization, repeated work, and snapshot behavior instead of assuming syntax determines performance."
+      ],
+      "editorial": {
+        "status": "verified",
+        "verifiedOn": "2026-08-21"
+      },
+      "status": "verified",
+      "hasLab": true,
+      "labGoal": "Use SQLite CTEs for staged grain and recursion, verifying uniqueness, anti-join NULL safety, order, and cycle bounds.",
+      "visualCount": 2,
+      "visualSummaries": [
+        {
+          "type": "flow",
+          "title": "Recursive CTE working-table loop"
+        },
+        {
+          "type": "compare",
+          "title": "Inlining and materialization"
+        }
+      ],
+      "followUpQuestions": [
+        "When can a correlated subquery be efficient?",
+        "When would you force or choose materialization?",
+        "How do you stop a recursive CTE on cyclic data?"
+      ],
+      "estimatedMinutes": 10
     },
     {
       "slug": "transactions-indexes",
@@ -994,37 +1069,54 @@
         "mle",
         "da"
       ],
-      "interviewAnswer": "Transactions group operations into an atomic unit with ACID guarantees. Indexes speed reads by maintaining an auxiliary search structure, but they consume storage and make writes more expensive.",
+      "interviewAnswer": "A transaction makes a set of operations commit or roll back as one unit and preserves database constraints under the chosen isolation and durability mechanisms. An index is a maintained access structure—commonly a B-tree—that can reduce searched pages for selective equality, range, and ordering queries. Indexes consume storage and add work to inserts, updates, deletes, vacuum/maintenance, and concurrency. Composite order, predicate shape, selectivity, and table size determine usefulness; the optimizer may correctly choose a scan even when an index exists.",
       "keyPoints": [
-        "ACID",
-        "Commit/rollback",
-        "B-tree intuition",
-        "Read/write trade-off"
+        "Transaction boundary matches invariant",
+        "Rollback handles all failure paths",
+        "Indexes trade reads for writes",
+        "Composite order follows workload",
+        "Plan evidence beats index folklore"
       ],
       "resources": [
-        "postgres"
+        "postgres-indexes",
+        "postgres-transactions",
+        "cmu-db"
       ],
       "featured": false,
+      "description": "Transactions group database changes into an atomic unit, while indexes maintain additional access paths that accelerate selected reads at the cost of storage and write work. They solve different problems but interact: an index must remain transactionally consistent, updates create index maintenance and locking or versioning work, and query access paths influence how long a transaction holds resources. This chapter introduces ACID properties, commit and rollback, statement errors, savepoints, idempotent retry boundaries, B-tree and hash-style access, multicolumn order, covering/index-only scans, expression and partial indexes, selectivity, and write amplification. It separates index eligibility from optimizer choice and explains why an index can exist yet be slower than a sequential scan. You will design a transfer transaction with invariants and an index set for a time-filtered status query, then verify rollback and plan behavior. Detailed isolation anomalies are deferred to the dedicated isolation chapter; here the focus is transaction boundaries and index design. Production sections cover long transactions, deadlocks, bloat, online builds, monitoring, migrations, and rollback.",
+      "prerequisites": [
+        "sql-joins",
+        "big-o"
+      ],
+      "learningObjectives": [
+        "Define atomic transaction boundaries and application-level invariants with commit, rollback, savepoint, and retry behavior.",
+        "Choose B-tree, multicolumn, covering, expression, or partial index designs from predicates, ordering, selectivity, and write workload.",
+        "Diagnose index usage and transaction/index operational costs through plans, locks, versions, bloat, build strategy, and monitoring."
+      ],
       "editorial": {
-        "status": "summary"
+        "status": "verified",
+        "verifiedOn": "2026-08-21"
       },
-      "status": "summary",
-      "hasLab": false,
-      "labGoal": "",
-      "visualCount": 1,
+      "status": "verified",
+      "hasLab": true,
+      "labGoal": "Use SQLite to verify transaction rollback, uniqueness/idempotency, and a composite index query plan.",
+      "visualCount": 2,
       "visualSummaries": [
         {
-          "type": "flow",
-          "title": "Indexed query path"
+          "type": "layers",
+          "title": "Transaction correctness boundary"
+        },
+        {
+          "type": "compare",
+          "title": "Index read/write trade-off"
         }
       ],
       "followUpQuestions": [
-        "What does ACID mean?",
-        "Clustered vs non-clustered concept?",
-        "When does an index hurt?",
-        "What is a deadlock?"
+        "Why can a query ignore an available index?",
+        "What is an index-only scan?",
+        "How do you handle a serialization or deadlock failure?"
       ],
-      "estimatedMinutes": 1
+      "estimatedMinutes": 10
     },
     {
       "slug": "stored-procedures",
@@ -1036,33 +1128,54 @@
         "ds",
         "da"
       ],
-      "interviewAnswer": "Stored procedures package database-side logic such as selection, joins and transformations. In data pipelines, orchestration tools can call these procedures and move their outputs to downstream stages.",
+      "interviewAnswer": "A stored routine is versioned logic executed by the database. Functions usually return a value or relation and can participate in queries under engine rules; procedures are called as commands and may support transaction control depending on engine and call context. They are useful for data-local set operations and controlled database interfaces, but not a replacement for workflow orchestration. Keep routines set-based, parameterized, least-privileged, observable, idempotent where retried, and deployed with compatible application and schema versions.",
       "keyPoints": [
-        "Database-side logic",
-        "Parameters",
-        "Transactions",
-        "Separation from orchestration"
+        "Routine type follows side effects",
+        "Keep data-local work set-based",
+        "Parameterize dynamic SQL",
+        "Least privilege and search path",
+        "Orchestration remains external"
       ],
       "resources": [
-        "postgres",
-        "made-with-ml"
+        "postgres-routines",
+        "postgres-transactions",
+        "cmu-db"
       ],
       "featured": false,
-      "editorial": {
-        "status": "summary"
-      },
-      "status": "summary",
-      "hasLab": false,
-      "labGoal": "",
-      "visualCount": 0,
-      "visualSummaries": [],
-      "followUpQuestions": [
-        "Stored procedure vs view?",
-        "Why execute logic in the database?",
-        "How would ADF call a procedure?",
-        "How do you debug a failing pipeline activity?"
+      "description": "Stored functions and procedures execute reusable logic close to database data. They can centralize set-based transformations, enforce a privileged interface, reduce application round trips, and make some migrations atomic. They can also hide dependencies, concentrate load, couple code to one dialect, create security-definer escalation, and become an unobservable scheduler disguised as a routine. This chapter distinguishes SQL functions, procedures, triggers, views, and application jobs; explains parameters, result and transaction semantics, volatility and side effects, dynamic SQL and injection, set-oriented implementation, error handling, idempotent batches, and deployment versioning. You will build a small load procedure contract and compare it with an application-orchestrated pipeline. A key principle is separation of concerns: the routine owns a bounded database transaction or transformation, while an orchestrator owns schedules, retries across systems, lineage, backfills, alerts, and human recovery. Because routine capabilities vary strongly by engine, the chapter uses PostgreSQL documentation for concrete examples while clearly labeling portability boundaries.",
+      "prerequisites": [
+        "transactions-indexes",
+        "sql-ctes-subqueries"
       ],
-      "estimatedMinutes": 1
+      "learningObjectives": [
+        "Choose among function, procedure, trigger, view, and application job based on invocation, result, side-effect, and transaction needs.",
+        "Design set-based, parameterized, privilege-safe routines with explicit errors, idempotency, observability, and bounded transaction scope.",
+        "Deploy and operate database routines within versioned pipelines that support lineage, backfill, testing, rollback, and cross-system orchestration."
+      ],
+      "editorial": {
+        "status": "verified",
+        "verifiedOn": "2026-08-21"
+      },
+      "status": "verified",
+      "hasLab": true,
+      "labGoal": "Model an idempotent set-based partition load in SQLite and verify rerun, rollback, uniqueness, and reconciliation invariants.",
+      "visualCount": 2,
+      "visualSummaries": [
+        {
+          "type": "compare",
+          "title": "Database routine and orchestrator responsibilities"
+        },
+        {
+          "type": "flow",
+          "title": "Idempotent partition load"
+        }
+      ],
+      "followUpQuestions": [
+        "Function versus procedure in PostgreSQL?",
+        "When is a trigger appropriate?",
+        "How do you deploy a breaking routine signature change?"
+      ],
+      "estimatedMinutes": 10
     },
     {
       "slug": "vectors-matrices",
@@ -11474,35 +11587,54 @@
         "ds",
         "da"
       ],
-      "interviewAnswer": "OLTP systems optimize many small transactional reads/writes with strong consistency; OLAP systems optimize scans and aggregations over large historical datasets. Modeling and storage choices differ because workloads differ.",
+      "interviewAnswer": "OLTP handles many short, concurrent reads and writes over a small number of records, so it prioritizes transactions, constraints, selective indexes, low tail latency, and recovery. OLAP handles fewer but heavier scans, joins, and aggregations over large history, so it benefits from columnar compression, vectorized and parallel execution, dimensional models, and workload isolation. These are workload properties rather than strict product categories. Organizations commonly preserve a normalized operational source of truth and propagate committed changes into an analytical store, accepting and monitoring a freshness boundary instead of letting large scans contend with customer transactions.",
       "keyPoints": [
-        "Row-oriented often suits OLTP; columnar often suits analytics.",
-        "Do not run heavy analytical scans on critical transactional DBs.",
-        "Data freshness requirements drive architecture."
+        "Classify the workload, not the vendor",
+        "Transactions protect state changes",
+        "Analytics amortizes work over columns and batches",
+        "Replication creates a freshness boundary",
+        "Correctness needs reconciliation across systems"
       ],
       "resources": [
         "cmu-db",
-        "duckdb"
+        "duckdb-why",
+        "postgres-transactions"
       ],
       "featured": true,
+      "description": "Online transaction processing (OLTP) and online analytical processing (OLAP) describe workload families, not mutually exclusive product labels. OLTP systems serve many short, selective, concurrent state changes whose correctness depends on transactions, constraints, low tail latency, and predictable recovery. OLAP systems scan, join, and aggregate large portions of historical data for reporting, exploration, and model development; they favor columnar storage, vectorized execution, parallelism, compression, and workload isolation. This chapter derives those differences from access patterns, then connects them to row versus column layout, normalized versus dimensional models, indexing, materialized results, replication and change-data capture. You will learn why running an unbounded analytical query on a primary transaction database can harm customer traffic, why copying data introduces freshness and consistency trade-offs, and why a modern system may support both workload types without making their operational requirements identical. A worked commerce design follows an order from a transactional write into an analytical fact model and defines reconciliation, latency, privacy, rollback, and failure behavior. The goal is to choose boundaries from measured workload and correctness requirements rather than repeating that OLTP is simply “rows” and OLAP is simply “columns.”",
+      "prerequisites": [
+        "transactions-indexes",
+        "sql-aggregation"
+      ],
+      "learningObjectives": [
+        "Classify a database workload from access shape, concurrency, latency, correctness, and freshness requirements.",
+        "Explain how row/column layout, execution model, indexing, schema design, and isolation support different workloads.",
+        "Design and operate a transaction-to-analytics path with explicit delivery semantics, reconciliation, privacy, and recovery."
+      ],
       "editorial": {
-        "status": "summary"
+        "status": "verified",
+        "verifiedOn": "2026-08-21"
       },
-      "status": "summary",
-      "hasLab": false,
-      "labGoal": "",
-      "visualCount": 1,
+      "status": "verified",
+      "hasLab": true,
+      "labGoal": "Compare row-oriented and column-oriented projections with a tiny model, then verify that both produce identical analytical results.",
+      "visualCount": 2,
       "visualSummaries": [
         {
           "type": "compare",
-          "title": "OLTP vs OLAP"
+          "title": "Workload-driven database design"
+        },
+        {
+          "type": "flow",
+          "title": "Committed data to trusted analytics"
         }
       ],
       "followUpQuestions": [
-        "What assumptions does OLTP vs OLAP make?",
-        "How would you validate or debug OLTP vs OLAP in practice?"
+        "Why is columnar storage effective for analytics?",
+        "Why avoid application dual writes?",
+        "Can one database serve both workloads?"
       ],
-      "estimatedMinutes": 1
+      "estimatedMinutes": 11
     },
     {
       "slug": "star-schema",
@@ -11514,34 +11646,55 @@
         "ds",
         "da"
       ],
-      "interviewAnswer": "A star schema separates measurable events in fact tables from descriptive entities in dimensions. Grain must be defined first; many analytical errors come from joining tables at inconsistent grain.",
+      "interviewAnswer": "A star schema has a central fact table that records a business process at a declared grain and dimension tables that describe the who, what, where, when, and how. Start with the grain—for example, one row per order line—then choose dimensions and numeric facts consistent with it. Use conformed dimensions across facts, surrogate keys when historical dimension versions matter, and classify measures as additive, semi-additive, or non-additive. Validate uniqueness and referential integrity, reconcile source totals, handle late facts and dimensions explicitly, and define metrics above the model so users do not silently aggregate at the wrong grain.",
       "keyPoints": [
-        "Declare fact-table grain explicitly.",
-        "Dimensions describe who/what/where.",
-        "Slowly changing dimensions preserve history."
+        "Declare grain before columns",
+        "Facts record processes",
+        "Dimensions provide context",
+        "Additivity has dimensional limits",
+        "Conformed dimensions enable consistent drill-across"
       ],
       "resources": [
-        "dbt-docs"
+        "kimball-dimensional",
+        "dbt-best-practices",
+        "postgres-select"
       ],
       "featured": false,
+      "description": "A star schema publishes a business process as a fact table at one explicit grain surrounded by dimensions that provide descriptive context. Its value is not merely fewer joins: it makes repeated analytical questions predictable, metrics auditable, and filters consistent across tools. This chapter follows the dimensional design sequence—choose a business process, declare grain, identify dimensions, and define facts—then examines transaction, periodic snapshot, and accumulating snapshot facts; additive, semi-additive, and non-additive measures; conformed dimensions; surrogate keys; degenerate dimensions; role-playing dates; unknown members; bridges; and factless facts. You will learn to reject mixed-grain tables, distinguish event time from load time, preserve referential integrity for late-arriving data, and avoid summing ratios or balances across invalid dimensions. A worked order-line mart derives revenue and order metrics without double counting. The production sections cover incremental loading, reconciliation, semantic-layer alignment, access control, schema evolution, cost, and rollback. The aim is to make the grain sentence the executable contract that connects source events, SQL tests, metric definitions, and downstream machine-learning features.",
+      "prerequisites": [
+        "oltp-olap",
+        "sql-joins",
+        "sql-aggregation"
+      ],
+      "learningObjectives": [
+        "Design a star schema by declaring business process and grain before selecting dimensions and facts.",
+        "Classify facts and measures so aggregations remain valid across time, entities, and dimensional filters.",
+        "Validate and operate a dimensional mart using keys, reconciliation, late-data policy, semantic definitions, and rollback."
+      ],
       "editorial": {
-        "status": "summary"
+        "status": "verified",
+        "verifiedOn": "2026-08-21"
       },
-      "status": "summary",
-      "hasLab": false,
-      "labGoal": "",
-      "visualCount": 1,
+      "status": "verified",
+      "hasLab": true,
+      "labGoal": "Build a tiny star schema, calculate line-grain metrics, and verify uniqueness, referential coverage, and reconciliation invariants.",
+      "visualCount": 2,
       "visualSummaries": [
         {
           "type": "schema",
-          "title": "Star schema"
+          "title": "Order-line star at one declared grain"
+        },
+        {
+          "type": "compare",
+          "title": "Measure aggregation behavior"
         }
       ],
       "followUpQuestions": [
-        "What assumptions does Star Schemas, Facts & Dimensions make?",
-        "How would you validate or debug Star Schemas, Facts & Dimensions in practice?"
+        "What is the grain of a fact table?",
+        "Why use a surrogate dimension key?",
+        "What is a conformed dimension?"
       ],
-      "estimatedMinutes": 1
+      "estimatedMinutes": 11
     },
     {
       "slug": "slowly-changing-dimensions",
@@ -11553,29 +11706,54 @@
         "ds",
         "da"
       ],
-      "interviewAnswer": "SCD patterns define how dimension changes are represented. Type 1 overwrites history; Type 2 creates dated versions so historical facts can be analyzed with attributes valid at that time.",
+      "interviewAnswer": "SCD techniques define how dimension attribute changes affect historical analysis. Type 1 overwrites and is appropriate when only the corrected or latest value should be shown. Type 2 inserts a new surrogate-keyed row with effective intervals, so facts can retain the version valid at event time. Type 0 retains the original, and Type 3 stores limited prior state. For Type 2, enforce one current row per business key, non-overlapping half-open intervals, deterministic change detection, and idempotent handling of late or repeated events. Choose by attribute and question; not every change deserves preserved history.",
       "keyPoints": [
-        "Choose history semantics intentionally.",
-        "Surrogate keys often support Type 2.",
-        "Late-arriving changes need policy."
+        "History policy is per attribute",
+        "Type 1 rewrites interpretation",
+        "Type 2 versions effective state",
+        "Intervals must not overlap",
+        "Late corrections need explicit semantics"
       ],
       "resources": [
-        "dbt-docs"
+        "kimball-dimensional",
+        "dbt-best-practices",
+        "postgres-window"
       ],
       "featured": false,
-      "editorial": {
-        "status": "summary"
-      },
-      "status": "summary",
-      "hasLab": false,
-      "labGoal": "",
-      "visualCount": 0,
-      "visualSummaries": [],
-      "followUpQuestions": [
-        "What assumptions does Slowly Changing Dimensions make?",
-        "How would you validate or debug Slowly Changing Dimensions in practice?"
+      "description": "Slowly changing dimensions (SCDs) are policies for how analytical attributes change and which historical questions remain answerable. Type 1 overwrites an attribute and intentionally presents the latest value for all facts. Type 2 inserts a new dimension version with effective bounds, preserving as-was history and requiring facts or temporal joins to select the correct surrogate key. Type 0 retains the original; Type 3 keeps limited previous state, while hybrid types address specialized reporting needs. This chapter treats SCD choice per attribute and business question rather than as a fashionable table-wide setting. You will learn to define durable business identity, change detection, half-open intervals, current-row invariants, late and out-of-order corrections, inferred members, deletes, and idempotent incremental merges. A worked customer-tier history shows how the same sale is grouped differently under current-state and event-time semantics. The production material covers source replay, hash pitfalls, concurrency, backfills, privacy deletion, bitemporal needs, reconciliation, and rollback. The central lesson is that historical truth has multiple meanings—what was effective, what the system knew, and what has since been corrected—and the model must name which one it preserves.",
+      "prerequisites": [
+        "star-schema",
+        "sql-window-functions"
       ],
-      "estimatedMinutes": 1
+      "learningObjectives": [
+        "Choose an SCD policy per attribute from the historical questions and correction semantics it must support.",
+        "Implement and validate non-overlapping Type 2 versions with deterministic late-data and idempotency behavior.",
+        "Distinguish valid time, system time, current-state reporting, correction, deletion, and bitemporal requirements."
+      ],
+      "editorial": {
+        "status": "verified",
+        "verifiedOn": "2026-08-21"
+      },
+      "status": "verified",
+      "hasLab": true,
+      "labGoal": "Build Type 2 interval insertion, including a late change, and verify non-overlap, one-current, idempotency, and temporal lookup.",
+      "visualCount": 2,
+      "visualSummaries": [
+        {
+          "type": "flow",
+          "title": "Late Type 2 change repairs the timeline"
+        },
+        {
+          "type": "compare",
+          "title": "Two valid reporting semantics"
+        }
+      ],
+      "followUpQuestions": [
+        "When is Type 1 correct?",
+        "What invariants define a valid Type 2 history?",
+        "Why would you need bitemporal data?"
+      ],
+      "estimatedMinutes": 11
     },
     {
       "slug": "dbt-modeling",
@@ -11587,29 +11765,55 @@
         "ds",
         "da"
       ],
-      "interviewAnswer": "dbt manages SQL transformations as versioned models with dependencies, tests, documentation and incremental strategies inside the warehouse. It separates data transformation logic from extraction/loading infrastructure.",
+      "interviewAnswer": "dbt compiles templated SQL models into a directed acyclic graph using declared `source()` and `ref()` dependencies, then builds and tests selected nodes in dependency order. A maintainable project stages source data once, uses focused intermediate transformations, and publishes business-conformed marts with explicit grain and metrics. Materialization is a workload decision: views defer compute, tables precompute, incremental models update a bounded subset and need idempotent late-data logic, and snapshots preserve changing source state. Production quality requires version control, CI against isolated schemas, unit and data tests, contracts for public shapes, source freshness, atomic deployment, artifacts, monitoring, and a tested rollback or full rebuild.",
       "keyPoints": [
-        "Models form a DAG.",
-        "Tests protect assumptions such as uniqueness/not-null.",
-        "Incremental models need correct update keys/windows."
+        "Dependencies must be declared",
+        "Staging is source-conformed",
+        "Marts are business-conformed",
+        "Incremental logic must equal full refresh",
+        "Tests and contracts protect different boundaries"
       ],
       "resources": [
-        "dbt-docs"
+        "dbt-docs",
+        "dbt-best-practices",
+        "dbt-contracts"
       ],
       "featured": false,
-      "editorial": {
-        "status": "summary"
-      },
-      "status": "summary",
-      "hasLab": false,
-      "labGoal": "",
-      "visualCount": 0,
-      "visualSummaries": [],
-      "followUpQuestions": [
-        "What assumptions does dbt: Transformation-as-Code make?",
-        "How would you validate or debug dbt: Transformation-as-Code in practice?"
+      "description": "dbt turns analytical SQL transformations into a version-controlled dependency graph with compilation, environments, tests, documentation, and reusable metadata. The tool does not make a data model correct by itself: engineers still define grain, business semantics, materialization, incremental boundaries, and failure behavior. This chapter explains how `source()` and `ref()` create lineage and execution order; how staging, intermediate, and mart layers move from source-conformed to business-conformed data; and how views, tables, ephemeral models, incremental models, and snapshots trade freshness, cost, persistence, and recoverability. You will learn to separate unit tests of SQL logic from data tests of built relations, use source freshness and model contracts appropriately, design idempotent incremental builds, and use state-aware continuous integration without allowing partial production publication. A worked order mart traces raw inputs through staging and fact models with exact keys and reconciliation. Production guidance covers orchestration, concurrency, slim CI, backfills, artifacts, observability, secrets, warehouse permissions, deployment and rollback. The objective is to treat a dbt project as a governed analytical software system whose compiled SQL and datasets are both production artifacts—not as a folder of ad hoc queries.",
+      "prerequisites": [
+        "star-schema",
+        "sql-ctes-subqueries",
+        "sql-window-functions"
       ],
-      "estimatedMinutes": 1
+      "learningObjectives": [
+        "Structure a dbt dependency graph from source-conformed staging through purpose-built intermediates to business-conformed marts.",
+        "Choose materializations and incremental strategies from correctness, freshness, cost, rebuild, and late-data requirements.",
+        "Build a deployment and testing workflow that distinguishes SQL logic, dataset assertions, freshness, contracts, artifacts, and rollback."
+      ],
+      "editorial": {
+        "status": "verified",
+        "verifiedOn": "2026-08-21"
+      },
+      "status": "verified",
+      "hasLab": true,
+      "labGoal": "Build a minimal dependency-graph executor and verify topological order, isolated relation resolution, cycle rejection and reproducible output.",
+      "visualCount": 2,
+      "visualSummaries": [
+        {
+          "type": "flow",
+          "title": "Source-conformed to business-conformed"
+        },
+        {
+          "type": "compare",
+          "title": "Quality controls protect different boundaries"
+        }
+      ],
+      "followUpQuestions": [
+        "Why use `ref()` instead of a hard-coded table name?",
+        "When should a model be incremental?",
+        "How do unit tests differ from data tests?"
+      ],
+      "estimatedMinutes": 12
     },
     {
       "slug": "data-contracts-lineage",
@@ -11621,30 +11825,54 @@
         "ds",
         "da"
       ],
-      "interviewAnswer": "Data contracts make schemas, ownership and expectations explicit; lineage shows downstream dependencies. Together they reduce silent breakage and clarify impact when producers change data.",
+      "interviewAnswer": "A data contract is a versioned producer-consumer agreement for a dataset's identity, schema, field semantics, grain, quality expectations, freshness, ownership, security and compatibility policy. Tests measure whether an instance meets parts of that agreement; they are not the agreement itself. Lineage links datasets through jobs and concrete runs, enabling impact and root-cause analysis. Good governance validates contracts in CI and production, captures runtime lineage, assigns owners, classifies breaking changes, versions or dual-publishes incompatible changes, propagates access policy, and monitors both contract violations and missing lineage. Lineage shows provenance, not correctness.",
       "keyPoints": [
-        "Schema compatibility is not enough; semantics matter.",
-        "Owners and SLAs should be explicit.",
-        "Metric definitions should be centralized/versioned."
+        "Contract includes semantics, not only schema",
+        "Tests observe contract properties",
+        "Lineage records production relationships",
+        "Compatibility needs consumer evidence",
+        "Ownership and change process make metadata operational"
       ],
       "resources": [
-        "dbt-docs",
-        "google-rules-ml"
+        "dbt-contracts",
+        "openlineage-object-model",
+        "dbt-docs"
       ],
       "featured": false,
-      "editorial": {
-        "status": "summary"
-      },
-      "status": "summary",
-      "hasLab": false,
-      "labGoal": "",
-      "visualCount": 0,
-      "visualSummaries": [],
-      "followUpQuestions": [
-        "What assumptions does Data Contracts, Lineage & Semantic Consistency make?",
-        "How would you validate or debug Data Contracts, Lineage & Semantic Consistency in practice?"
+      "description": "A data contract is a versioned agreement at a producer-consumer boundary: identity, schema, semantics, quality expectations, freshness, ownership, compatibility, security classification and change process. Lineage records how datasets are produced and consumed through jobs and runs so teams can assess impact, trace incidents and understand provenance. Neither is sufficient alone. A schema can remain compatible while the meaning or population changes, and a lineage graph can show edges without proving that the data on them is correct. This chapter separates contracts from tests, service-level objectives and documentation; distinguishes design-time from runtime and column-level lineage; and explains how OpenLineage represents jobs, runs, datasets, events and extensible facets. You will learn to classify additive and breaking changes, evolve public datasets through deprecation and versions, propagate sensitivity, and avoid turning governance into unreviewed YAML. A worked customer mart change follows an identifier type migration through consumers and rollback. Production guidance covers ownership, CI, catalog integration, event delivery, graph completeness, incident response and access control. The outcome is a practical governance system that makes change safe without pretending every producer can guarantee perfect data.",
+      "prerequisites": [
+        "dbt-modeling",
+        "star-schema"
       ],
-      "estimatedMinutes": 1
+      "learningObjectives": [
+        "Define a useful data contract spanning structure, semantics, quality, service levels, ownership, security, compatibility and change policy.",
+        "Interpret design-time, runtime, dataset-, job-, run- and column-level lineage without overstating completeness or correctness.",
+        "Operate a compatible schema/semantic change using impact analysis, consumer validation, versioning, deprecation, monitoring and rollback."
+      ],
+      "editorial": {
+        "status": "verified",
+        "verifiedOn": "2026-08-21"
+      },
+      "status": "verified",
+      "hasLab": true,
+      "labGoal": "Validate a compact row contract, build a job-dataset lineage graph, and verify that breaking changes and downstream impact are detected.",
+      "visualCount": 2,
+      "visualSummaries": [
+        {
+          "type": "flow",
+          "title": "Safe incompatible dataset change"
+        },
+        {
+          "type": "compare",
+          "title": "Metadata answers different questions"
+        }
+      ],
+      "followUpQuestions": [
+        "How is a contract different from a data test?",
+        "What is runtime lineage?",
+        "What is the hardest breaking change to detect?"
+      ],
+      "estimatedMinutes": 11
     },
     {
       "slug": "partitioning-sharding",
@@ -12285,30 +12513,50 @@
         "ds",
         "da"
       ],
-      "interviewAnswer": "Normalization reduces update anomalies by separating facts according to functional dependencies; analytical systems may deliberately denormalize for read performance.",
+      "interviewAnswer": "Normalization organizes attributes around keys and functional dependencies to reduce redundancy and update anomalies. 1NF requires atomic relation-valued design in the chosen model; 2NF removes dependencies on only part of a composite candidate key; 3NF removes non-key attributes depending transitively on keys, with a formal dependency condition; BCNF requires every nontrivial determinant to be a superkey. A decomposition must also be lossless, and dependency preservation is desirable. Denormalize only for a measured workload and define how duplicate facts stay consistent.",
       "keyPoints": [
-        "Normalization serves transactional integrity.",
-        "Denormalization serves access patterns.",
-        "Know the grain/key of every table."
+        "Dependencies come from semantics",
+        "Candidate keys may be composite",
+        "Decomposition must be lossless",
+        "3NF and BCNF differ",
+        "Denormalization creates maintenance duty"
       ],
       "resources": [
         "cmu-db",
         "postgres"
       ],
       "featured": false,
-      "editorial": {
-        "status": "summary"
-      },
-      "status": "summary",
-      "hasLab": false,
-      "labGoal": "",
-      "visualCount": 0,
-      "visualSummaries": [],
-      "followUpQuestions": [
-        "What assumptions or limitations does Database Normalization: 1NF to 3NF have?",
-        "How would you validate Database Normalization: 1NF to 3NF on a real dataset?"
+      "description": "Relational normalization uses keys and functional dependencies to place facts where they can be inserted, updated, and deleted without contradictory copies. First, second, and third normal form are not a ritual of splitting tables; they are tests against a declared meaning of attributes. This chapter defines superkeys, candidate keys, prime attributes, determinants, functional and transitive dependencies, then derives 1NF, 2NF, 3NF, and Boyce-Codd normal form (BCNF). It explains lossless decomposition and dependency preservation, because individually clean-looking tables can still fail to reconstruct the original relation or enforce a rule locally. You will normalize an order-line relation, identify update, insertion, and deletion anomalies, and preserve historical prices rather than incorrectly deriving them from a current product table. The design section connects normalized operational schemas with foreign keys, temporal validity, generated identifiers, JSON, star schemas, materialized views, performance, and governance. The objective is to model one fact once under the correct key, then denormalize only for a measured read or analytics need with explicit ownership and refresh semantics.",
+      "prerequisites": [],
+      "learningObjectives": [
+        "Derive candidate keys and functional dependencies from domain semantics rather than sample coincidences.",
+        "Normalize a relation through 1NF, 2NF, 3NF, and BCNF while checking lossless join and dependency preservation.",
+        "Choose deliberate denormalization for operational or analytical workloads with integrity, history, refresh, lineage, and performance controls."
       ],
-      "estimatedMinutes": 1
+      "editorial": {
+        "status": "verified",
+        "verifiedOn": "2026-08-21"
+      },
+      "status": "verified",
+      "hasLab": true,
+      "labGoal": "Use SQLite constraints to model normalized orders and verify uniqueness, references, historical price stability, and revenue reconciliation.",
+      "visualCount": 2,
+      "visualSummaries": [
+        {
+          "type": "flow",
+          "title": "Order relation decomposition"
+        },
+        {
+          "type": "compare",
+          "title": "Normalized source and denormalized read model"
+        }
+      ],
+      "followUpQuestions": [
+        "How do 3NF and BCNF differ?",
+        "What is lossless decomposition?",
+        "Why preserve dependencies?"
+      ],
+      "estimatedMinutes": 10
     },
     {
       "slug": "query-plans",
@@ -12320,30 +12568,55 @@
         "ds",
         "da"
       ],
-      "interviewAnswer": "A query optimizer chooses scans, joins and access paths based on statistics and indexes. Explain plans reveal whether a slow query is scanning too much, joining badly or missing useful indexes/partition pruning.",
+      "interviewAnswer": "The optimizer transforms declarative SQL into a physical operator tree using statistics and a cost model. Read from leaf scans upward, tracking estimated rows, actual rows per loop, join algorithms, filters, sorts, memory, buffers, and spill. `EXPLAIN` estimates without running; `EXPLAIN ANALYZE` executes and can have side effects for writes. Large estimated-versus-actual cardinality errors often cause poor join order or memory choices. Costs are planner units, not milliseconds, so validate with representative runtime and workload impact before changing SQL, indexes, statistics, or configuration.",
       "keyPoints": [
-        "Index presence does not guarantee index use.",
-        "Join order/algorithm matters.",
-        "Predicate pushdown and partition pruning reduce data read."
+        "Plan is a physical operator tree",
+        "Cardinality drives choices",
+        "Actual rows times loops matters",
+        "Cost units are not time",
+        "Fix evidence, not node names"
       ],
       "resources": [
-        "cmu-db",
-        "postgres"
+        "postgres-explain",
+        "postgres-indexes",
+        "cmu-db"
       ],
       "featured": false,
-      "editorial": {
-        "status": "summary"
-      },
-      "status": "summary",
-      "hasLab": false,
-      "labGoal": "",
-      "visualCount": 0,
-      "visualSummaries": [],
-      "followUpQuestions": [
-        "What assumptions or limitations does Query Plans & SQL Performance have?",
-        "How would you validate Query Plans & SQL Performance on a real dataset?"
+      "description": "A query plan is the database's chosen physical program for a declarative SQL statement. It specifies scans, filters, joins, sorts, aggregates, exchanges, and materialization, with estimated rows and costs derived from statistics and a cost model. This chapter teaches plan reading from leaves to root, distinguishes estimated `EXPLAIN` from execution-producing `EXPLAIN ANALYZE`, and shows how cardinality errors cascade into bad join order, algorithm, memory, and parallelism choices. It covers sequential and index scans, nested-loop, hash, and merge joins, sorts and spills, hash aggregation, predicate pushdown, projection, sargability, prepared-plan/parameter effects, and why estimated cost is not milliseconds. You will diagnose a slow join by comparing estimates with actual rows and buffers, then fix the underlying distribution, predicate, statistics, index, or query semantics rather than blindly forcing a node. Production sections address safe plan capture, workload baselines, plan changes after upgrades, memory and temp I/O, concurrency, and regression monitoring. The goal is evidence-led optimization without cargo-cult hints.",
+      "prerequisites": [
+        "transactions-indexes",
+        "sql-joins",
+        "sql-aggregation"
       ],
-      "estimatedMinutes": 1
+      "learningObjectives": [
+        "Read physical plans from data sources to root and explain cardinality, loops, rows, cost, buffers, memory, and spill evidence.",
+        "Connect estimation errors and predicate/index shape to scan, join order, algorithm, aggregation, sorting, and parallel choices.",
+        "Optimize safely with representative execution evidence, workload-level measurement, reversible changes, and plan-regression monitoring."
+      ],
+      "editorial": {
+        "status": "verified",
+        "verifiedOn": "2026-08-21"
+      },
+      "status": "verified",
+      "hasLab": true,
+      "labGoal": "Use SQLite plan output and timing to verify index eligibility, result equivalence, and the difference between selective and broad predicates.",
+      "visualCount": 2,
+      "visualSummaries": [
+        {
+          "type": "flow",
+          "title": "Read a plan from leaves to root"
+        },
+        {
+          "type": "compare",
+          "title": "Estimated and actual evidence"
+        }
+      ],
+      "followUpQuestions": [
+        "Why can estimated and actual rows differ greatly?",
+        "Why might an index scan be slower for many rows?",
+        "What is the risk of EXPLAIN ANALYZE on UPDATE?"
+      ],
+      "estimatedMinutes": 10
     },
     {
       "slug": "isolation-levels",
@@ -12355,35 +12628,52 @@
         "mle",
         "da"
       ],
-      "interviewAnswer": "Isolation levels trade concurrency against anomalies such as dirty reads, non-repeatable reads and phantoms. Serializable provides the strongest familiar abstraction but may cost throughput/retries.",
+      "interviewAnswer": "Isolation controls how concurrent transactions appear to execute. Read Committed commonly gives each statement a fresh committed snapshot; repeatable/snapshot levels hold a stable transaction view but can still permit write skew in some systems; Serializable aims to make committed outcomes equivalent to some serial order and may abort transactions that threaten that guarantee. MVCC lets readers see versions rather than blocking every writer, but old snapshots have cleanup cost. Choose isolation from the invariant, use explicit locks or constraints where appropriate, and retry serialization failures and deadlocks as whole idempotent transactions.",
       "keyPoints": [
-        "ACID terms describe different guarantees.",
-        "MVCC is a common implementation technique.",
-        "Application invariants may require stronger handling than default isolation."
+        "Name the invariant first",
+        "Isolation controls histories",
+        "MVCC uses version visibility",
+        "Snapshot can allow write skew",
+        "Serializable requires retry handling"
       ],
       "resources": [
-        "cmu-db",
-        "postgres"
+        "postgres-transactions",
+        "cmu-db"
       ],
       "featured": false,
+      "description": "Transaction isolation defines which concurrent interleavings a database permits and what each transaction may observe. It is not equivalent to atomicity, and level names alone are insufficient because implementations differ. This chapter builds a history-based model, then explains dirty reads, nonrepeatable reads, phantoms, lost updates, write skew, and serialization anomalies. It covers multiversion concurrency control (MVCC), snapshots, locks, optimistic validation, PostgreSQL's current Read Committed, Repeatable Read, and Serializable behavior, serialization failures, deadlocks, and retry design. You will trace an on-call schedule where two individually valid updates violate a cross-row invariant under snapshot-style execution, then prevent it with a serializable transaction or explicit locking/materialized constraint. The operations section addresses transaction scope, deterministic lock order, read-only replicas, connection pools, long snapshots, timeouts, idempotency, metrics, and chaos testing. The objective is to choose the weakest level and explicit controls that actually preserve named invariants, then treat abort and retry as a normal part of concurrent correctness.",
+      "prerequisites": [
+        "transactions-indexes"
+      ],
+      "learningObjectives": [
+        "Classify concurrent histories by dirty read, nonrepeatable read, phantom, lost update, write skew, and serialization behavior.",
+        "Explain snapshot/MVCC visibility and compare target-engine isolation guarantees without relying solely on standard level names.",
+        "Implement invariant-preserving transactions with locks or serializable validation, bounded idempotent retries, timeouts, and contention monitoring."
+      ],
       "editorial": {
-        "status": "summary"
+        "status": "verified",
+        "verifiedOn": "2026-08-21"
       },
-      "status": "summary",
-      "hasLab": false,
-      "labGoal": "",
-      "visualCount": 1,
+      "status": "verified",
+      "hasLab": true,
+      "labGoal": "Simulate write skew and verify that a shared guard lock/serial critical section preserves the cross-row invariant.",
+      "visualCount": 2,
       "visualSummaries": [
         {
-          "type": "layers",
-          "title": "Isolation spectrum"
+          "type": "network",
+          "title": "Write-skew dependency pattern"
+        },
+        {
+          "type": "flow",
+          "title": "Retryable transaction loop"
         }
       ],
       "followUpQuestions": [
-        "What assumptions or limitations does Transactions & Isolation Levels have?",
-        "How would you validate Transactions & Isolation Levels on a real dataset?"
+        "What is write skew?",
+        "Why can MVCC create bloat?",
+        "How do deadlock and serialization failure differ?"
       ],
-      "estimatedMinutes": 1
+      "estimatedMinutes": 9
     },
     {
       "slug": "parquet-columnar",
@@ -12395,35 +12685,54 @@
         "ds",
         "da"
       ],
-      "interviewAnswer": "Columnar formats store values by column, enabling compression and selective scans for analytics. Parquet also stores metadata/statistics that engines can use for predicate pushdown and row-group pruning.",
+      "interviewAnswer": "Parquet stores data by column within row groups. Each row group has one contiguous column chunk per field, split into encoded and compressed pages, with footer metadata describing schema and locations and often statistics. Analytical readers can avoid unprojected columns and skip row groups or pages whose metadata proves a predicate cannot match. Similar adjacent values compress effectively through encodings such as dictionary and run-length encoding. Performance still depends on engine support, file and row-group size, sort order, statistics, filter form and object-store requests. Parquet is a file format, not a transaction manager; reliable tables need metadata, atomic commits, schema policy and compaction around the files.",
       "keyPoints": [
-        "Columnar is ideal for scans of a subset of columns.",
-        "Compression benefits from similar adjacent values.",
-        "File sizing/partitioning affect performance."
+        "Row groups partition rows",
+        "Column chunks make projection cheap",
+        "Pages carry encoding and compression",
+        "Statistics can prove non-matches",
+        "A file format is not a table transaction layer"
       ],
       "resources": [
-        "spark",
+        "parquet-concepts",
+        "parquet-motivation",
         "duckdb"
       ],
       "featured": false,
+      "description": "Apache Parquet is an open columnar file format for analytical data. A file is divided horizontally into row groups; each row group contains one contiguous column chunk per column, and column chunks contain encoded and compressed pages. That hierarchy lets readers project only required columns and use metadata statistics, dictionaries, page indexes and partition information to skip data that cannot match a predicate. This chapter derives the I/O and compression benefits, explains definition and repetition levels for nested structures, and separates file-format capabilities from query-engine behavior. You will learn why predicate pushdown is not the same as file pruning, how row-group size and sort order affect selectivity, why thousands of tiny files damage planning and throughput, and why a Parquet file alone does not provide table transactions, schema governance or safe concurrent updates. A worked event dataset estimates bytes avoided under projection and time-range pruning. Production guidance covers types, timestamps, nulls, dictionary fallback, compression, encryption, object-store requests, compaction, statistics, corruption, schema evolution and table formats. The aim is to reason from the query and physical layout to measured scan cost instead of assuming the `.parquet` suffix automatically makes analytics fast.",
+      "prerequisites": [
+        "oltp-olap",
+        "big-o"
+      ],
+      "learningObjectives": [
+        "Explain Parquet's file, row-group, column-chunk and page hierarchy and how it supports projection, encoding, compression and parallel reads.",
+        "Distinguish partition pruning, row-group/page skipping and predicate pushdown, then diagnose why an intended filter still scans data.",
+        "Choose and operate file size, row-group layout, sort order, schema, encoding and table metadata from real workloads and reliability needs."
+      ],
       "editorial": {
-        "status": "summary"
+        "status": "verified",
+        "verifiedOn": "2026-08-21"
       },
-      "status": "summary",
-      "hasLab": false,
-      "labGoal": "",
-      "visualCount": 1,
+      "status": "verified",
+      "hasLab": true,
+      "labGoal": "Expose dictionary encoding and min/max row-group pruning, then compare the result with an idiomatic PyArrow Parquet scan (Use It requires `pyarrow`).",
+      "visualCount": 2,
       "visualSummaries": [
         {
-          "type": "compare",
-          "title": "Row vs column storage"
+          "type": "layers",
+          "title": "Parquet physical hierarchy"
+        },
+        {
+          "type": "flow",
+          "title": "How a selective analytical scan avoids work"
         }
       ],
       "followUpQuestions": [
-        "What assumptions or limitations does Columnar Storage, Parquet & Predicate Pushdown have?",
-        "How would you validate Columnar Storage, Parquet & Predicate Pushdown on a real dataset?"
+        "What is a row group?",
+        "Why does sorting help pruning?",
+        "Why are tiny files harmful?"
       ],
-      "estimatedMinutes": 1
+      "estimatedMinutes": 12
     },
     {
       "slug": "warehouse-lake-lakehouse",
@@ -12435,35 +12744,55 @@
         "ds",
         "da"
       ],
-      "interviewAnswer": "Warehouses emphasize managed structured analytics; data lakes store flexible files/objects; lakehouse approaches add table metadata, transactions and governance over object storage. The right choice depends on workload and organizational needs.",
+      "interviewAnswer": "A warehouse integrates managed relational storage, SQL compute, transactions, optimization and governance for analytical workloads. A data lake stores varied data in scalable object storage and open formats for many engines, but bare files lack atomic table updates and consistent metadata. A lakehouse adds a transactional metadata/table layer over open files, providing snapshots, schema and partition evolution, time travel and data skipping while retaining direct multi-engine access. The right choice depends on workload, latency, governance, interoperability, skills and total operating cost. Evaluate concrete guarantees—especially commits, deletes, concurrency, catalog consistency and rollback—not the architecture label.",
       "keyPoints": [
-        "Avoid architecture-by-buzzword.",
-        "Table formats add schema/evolution/transaction semantics.",
-        "Compute-storage separation changes scaling/cost."
+        "Architecture is a capability bundle",
+        "Files are not tables",
+        "Snapshots make publication atomic",
+        "Open access trades against centralized control",
+        "One storage copy can still have many semantics"
       ],
       "resources": [
-        "spark",
-        "dbt-docs"
+        "lakehouse-paper",
+        "iceberg-docs",
+        "parquet-concepts"
       ],
       "featured": false,
+      "description": "A data warehouse, data lake and lakehouse are architectural patterns assembled from storage, metadata, transaction, governance and compute capabilities—not quality rankings. A warehouse offers managed relational tables, SQL optimization, transactions and governance with controlled storage and strong workload integration. A data lake places diverse data in scalable object storage with open files and multiple compute engines, gaining flexibility while requiring explicit metadata, quality and publication discipline. A lakehouse adds a transactional metadata/table layer over directly accessible open files to provide snapshots, atomic updates, schema and partition evolution, time travel and improved optimization. This chapter separates file format from table format, catalog, engine and semantic model; compares coupling, latency, interoperability, cost and operational burden; and explains why “one copy” does not mean one consistent interpretation. You will learn to select an architecture from workloads and ownership, design bronze/raw through curated publication without turning layers into dumping grounds, and manage small files, compaction, concurrent writes and rollback. A worked multi-engine platform uses immutable object storage plus snapshot metadata and reconciled marts. The goal is to evaluate concrete guarantees and failure behavior instead of choosing a fashionable label or assuming a lakehouse automatically replaces every operational and analytical system.",
+      "prerequisites": [
+        "oltp-olap",
+        "parquet-columnar",
+        "star-schema"
+      ],
+      "learningObjectives": [
+        "Compare warehouse, lake and lakehouse patterns across storage access, metadata, transactions, governance, workload support and operational ownership.",
+        "Explain how an open table format turns immutable files into atomic snapshots with evolution, pruning, concurrent commit and rollback.",
+        "Design a governed multi-workload analytical platform with explicit publication, reconciliation, security, cost, reliability and exit strategy."
+      ],
       "editorial": {
-        "status": "summary"
+        "status": "verified",
+        "verifiedOn": "2026-08-21"
       },
-      "status": "summary",
-      "hasLab": false,
-      "labGoal": "",
-      "visualCount": 1,
+      "status": "verified",
+      "hasLab": true,
+      "labGoal": "Model an immutable-file table snapshot, verify atomic pointer publication and rollback, and show why directory listing is not a consistent table view.",
+      "visualCount": 2,
       "visualSummaries": [
         {
           "type": "layers",
-          "title": "Data platform spectrum"
+          "title": "Lakehouse capability stack"
+        },
+        {
+          "type": "flow",
+          "title": "Atomic immutable-file commit"
         }
       ],
       "followUpQuestions": [
-        "What assumptions or limitations does Warehouse vs Data Lake vs Lakehouse have?",
-        "How would you validate Warehouse vs Data Lake vs Lakehouse on a real dataset?"
+        "What does a table format add above Parquet?",
+        "When is a warehouse still a strong choice?",
+        "What is the small-file problem?"
       ],
-      "estimatedMinutes": 1
+      "estimatedMinutes": 12
     },
     {
       "slug": "lda-qda",

@@ -1,0 +1,33 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Warehouse vs Data Lake vs Lakehouse — Code Lab</title><script>(()=>{const s=localStorage.getItem('atlas-theme');const t=s||((matchMedia('(prefers-color-scheme: dark)').matches)?'dark':'light');document.documentElement.dataset.theme=t})()</script><style>:root{--bg:#fff;--text:#121417;--muted:#5d6470;--line:#dfe3e8;--soft:#f6f7f8;--blue:#155eef;--code:#0d1117;color-scheme:light}html[data-theme=dark]{--bg:#0d1117;--text:#eef2f6;--muted:#a8b0ba;--line:#2b333d;--soft:#171d24;--blue:#8fb4ff;--code:#070a0e;color-scheme:dark}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.6 Inter,system-ui,sans-serif}main{max-width:980px;margin:auto;padding:44px 22px 80px}a{color:var(--blue)}h1{font-size:42px;line-height:1.05;margin:8px 0 12px}.k{font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--blue);font-weight:800}.lead{color:var(--muted);font-size:17px}.top{display:flex;justify-content:space-between;gap:16px}button{border:1px solid var(--line);background:var(--soft);color:var(--text);border-radius:8px;padding:7px 9px;cursor:pointer}section{border-top:1px solid var(--line);padding-top:22px;margin-top:26px}pre{background:var(--code);color:#e6edf3;padding:18px;border-radius:12px;overflow:auto;font:13px/1.55 ui-monospace,monospace}.links{display:flex;gap:12px;flex-wrap:wrap;margin:18px 0}.links a{border:1px solid var(--line);border-radius:8px;padding:7px 9px;text-decoration:none;font-size:12px}@media(max-width:600px){h1{font-size:34px}.top{display:block}}</style></head><body><main><div class="top"><div><div class="k">Data, ML & AI Atlas · Runnable Lab</div><h1>Warehouse vs Data Lake vs Lakehouse</h1></div><button id="t">◐ Theme</button></div><p class="lead">Model an immutable-file table snapshot, verify atomic pointer publication and rollback, and show why directory listing is not a consistent table view.</p><div class="links"><a href="../../index.html#/lesson/warehouse-lake-lakehouse">← Full lesson</a><a href="lab.py">Combined Python file</a><a href="README.md">README</a></div><section><h2>1 · Build it</h2><p>Minimal implementation with as little framework abstraction as practical.</p><pre>import json
+
+class Table:
+    def __init__(self):
+        self.files={}; self.snapshots={0:[]}; self.current=0
+    def stage(self,name,rows):
+        self.files[name]=list(rows)
+    def commit_append(self,base,new_files):
+        if base!=self.current: raise RuntimeError(&#x27;conflict&#x27;)
+        next_id=self.current+1
+        self.snapshots[next_id]=self.snapshots[base]+list(new_files)
+        self.current=next_id
+        return next_id
+    def read(self,snapshot=None):
+        sid=self.current if snapshot is None else snapshot
+        return [row for name in self.snapshots[sid] for row in self.files[name]]
+    def rollback(self,snapshot):
+        if snapshot not in self.snapshots: raise KeyError(snapshot)
+        self.current=snapshot</pre></section><section><h2>2 · Use it</h2><p>The same idea through a common library or practical API.</p><pre>table=Table()
+table.stage(&#x27;part-1&#x27;,[{&#x27;id&#x27;:1},{&#x27;id&#x27;:2}])
+s1=table.commit_append(0,[&#x27;part-1&#x27;])
+table.stage(&#x27;part-2&#x27;,[{&#x27;id&#x27;:3}])
+listed_before_commit=sorted(table.files)
+s2=table.commit_append(s1,[&#x27;part-2&#x27;])
+manifest=json.dumps({&#x27;snapshot&#x27;:s2,&#x27;files&#x27;:table.snapshots[s2]},sort_keys=True)</pre></section><section><h2>3 · Ship it</h2><p>Use a real table format and catalog with atomic compare-and-swap, snapshot-aware compaction/cleanup, versioned input/output evidence, cross-engine tests, metadata recovery and audited rollback.</p></section><section><h2>4 · Verify it</h2><p>Assertions and sanity checks that catch conceptual or implementation mistakes.</p><pre>assert listed_before_commit==[&#x27;part-1&#x27;,&#x27;part-2&#x27;]
+assert [r[&#x27;id&#x27;] for r in table.read(s1)]==[1,2]
+assert [r[&#x27;id&#x27;] for r in table.read(s2)]==[1,2,3]
+assert json.loads(manifest)[&#x27;files&#x27;]==[&#x27;part-1&#x27;,&#x27;part-2&#x27;]
+try: table.commit_append(s1,[&#x27;part-2&#x27;])
+except RuntimeError: pass
+else: raise AssertionError(&#x27;stale commit must conflict&#x27;)
+table.rollback(s1)
+assert [r[&#x27;id&#x27;] for r in table.read()]==[1,2]</pre></section></main><script>const b=document.getElementById('t');function u(){b.textContent=document.documentElement.dataset.theme==='dark'?'☀ Light':'☾ Dark'}u();b.onclick=()=>{const n=document.documentElement.dataset.theme==='dark'?'light':'dark';document.documentElement.dataset.theme=n;localStorage.setItem('atlas-theme',n);u()}</script></body></html>

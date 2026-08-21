@@ -9,35 +9,175 @@
     "mle",
     "da"
   ],
-  "interviewAnswer": "CTEs make complex SQL easier to reason about by naming intermediate results. They are often used to structure transformations before the final query.",
+  "interviewAnswer": "A subquery is a query embedded in another expression or table expression; it may be uncorrelated or reference outer rows. `EXISTS` is ideal for semi-join logic, and `NOT EXISTS` for anti-join logic that avoids NULL surprises. A CTE names a query result for the following statement and improves staged reasoning, but whether it is inlined or materialized is engine- and query-dependent. A recursive CTE combines an anchor with a recursive term evaluated against a working table until no new rows remain, so termination and cycle controls are essential.",
   "keyPoints": [
-    "Readability",
-    "Recursive CTE concept",
-    "Optimization depends on database",
-    "Avoid unnecessary nesting"
+    "Cardinality selects subquery form",
+    "EXISTS expresses membership",
+    "CTE names a relational stage",
+    "Materialization is not guaranteed",
+    "Recursive queries need termination"
   ],
   "resources": [
-    "postgres"
+    "postgres-with",
+    "postgres-select",
+    "cmu-db"
   ],
   "featured": false,
-  "why": "CTEs and subqueries test how you structure multi-step SQL and reason about readability versus optimizer behavior.",
-  "intuition": "A subquery nests a query inside another expression. A CTE names an intermediate query so complex logic reads like staged transformations.",
-  "deepDive": "CTEs improve organization and can be recursive. Modern optimizers may inline them, but materialization behavior is database/version specific. Correlated subqueries reference outer rows and can be expensive if not optimized. EXISTS is often a clear way to express “does any related row exist?” without duplicate joins.",
-  "workedExample": "Use a CTE to aggregate order spend per customer, then join that one-row-per-customer result to customer attributes. This makes grain explicit.",
+  "why": "Complex analytics often change grain several times: filter facts, aggregate to entity, rank events, and combine metrics. Named stages can make these contracts reviewable. Poor use can instead hide an accidental many-row scalar result, execute a correlated lookup repeatedly, or materialize a huge intermediate. Recursive queries can loop or explode on cyclic or high-branching data. Interview questions often contrast CTEs and subqueries; a strong answer says their logical semantics may be equivalent while physical behavior must be verified in the target engine. Production work adds version-specific optimizer behavior, snapshot consistency, and safety bounds.",
+  "intuition": "A subquery is a relation or value-producing question inside another question. Correlation means the inner question receives parameters from each outer row. A CTE gives an intermediate relation a name so the query reads as a pipeline of grain changes. A recursive CTE starts with seed rows, repeatedly expands the newest frontier, and stops when the frontier is empty—similar to graph traversal managed by the database.",
+  "deepDive": "The full explanation is organized into the structured sections below.",
+  "workedExample": "Create `eligible_events` with the date and quality policy. Create one CTE per stage grouped to user with minimum timestamp. Start from the intended user population and left-join each one-row-per-user stage. Compute ordering checks so signup must not precede view and purchase must not precede signup. Assert uniqueness at every stage, output row preservation, and stage counts that cannot increase down the funnel. Inspect whether the engine inlines stages; persist a stage only if reuse or cost evidence justifies it. Keep event-time cutoffs explicit to avoid future data in historical cohorts.",
   "code": "WITH spend AS (\n SELECT customer_id, SUM(amount) total\n FROM orders GROUP BY customer_id\n)\nSELECT c.customer_id, s.total\nFROM customers c LEFT JOIN spend s USING(customer_id);",
   "commonMistakes": [
-    "Assuming a CTE always materializes or is always faster.",
-    "Using SELECT * in deeply nested transformations and losing schema clarity.",
-    "Using correlated subqueries without checking the execution plan."
+    {
+      "mistake": "A CTE always materializes once and is therefore faster.",
+      "correction": "Inlining and materialization depend on engine, version, query properties, and references. Verify the actual plan."
+    },
+    {
+      "mistake": "`NOT IN (subquery)` is equivalent to `NOT EXISTS` in the presence of NULL.",
+      "correction": "A NULL in the IN result can make NOT IN comparisons UNKNOWN. Use explicit anti-join semantics and test NULLs."
+    },
+    {
+      "mistake": "`UNION` automatically makes every recursive hierarchy cycle-safe.",
+      "correction": "Rows with the same node but different path/depth remain distinct. Use explicit visited/cycle logic and bounds."
+    }
   ],
   "followUps": [
-    "CTE vs subquery?",
-    "What is a correlated subquery?",
-    "EXISTS vs IN?",
-    "What is a recursive CTE?"
+    {
+      "question": "When can a correlated subquery be efficient?",
+      "answer": "When the outer relation is small, an indexed probe is selective, or the optimizer decorrelates it into an efficient set plan."
+    },
+    {
+      "question": "When would you force or choose materialization?",
+      "answer": "When a costly stable intermediate is reused and the materialization cost is lower than repeated work, after checking memory, pushdown, and plan evidence."
+    },
+    {
+      "question": "How do you stop a recursive CTE on cyclic data?",
+      "answer": "Track visited nodes/path or use supported cycle syntax, enforce row/depth/time limits, and return cycle diagnostics according to the contract."
+    }
   ],
-  "production": "Prefer maintainable SQL with explicit grain/columns; performance decisions should come from query plans and realistic data, not blanket rules about CTEs.",
+  "production": "Name stages by grain, validate their keys and reconciliation, and treat materialization as an evidence-based physical choice. Guard scalar cardinality, NULL anti-joins, and recursive cycles/depth/row growth. Inspect actual loops, repeated scans, temp bytes, and pushdown on representative data. Version SQL with engine assumptions, maintain indexes/statistics, and bound untrusted recursion with clear incomplete-result semantics.",
   "editorial": {
-    "status": "summary"
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "Subqueries and common table expressions (CTEs) name intermediate relational results. They can clarify a complex transformation, express existence and scalar lookup, isolate a change of grain, or recursively traverse a hierarchy. They do not automatically make a query faster, and their evaluation or materialization behavior depends on the database, version, references, volatility, and optimizer. This chapter develops scalar, row, table, correlated, `EXISTS`, `IN`, and derived-table forms; explains NULL-sensitive anti-joins; shows how non-recursive CTEs support readable stage contracts; and traces the anchor-and-recursive-term working-table model. You will learn when correlation creates repeated work, when an optimizer can decorrelate or inline, how to guard scalar cardinality, and how to bound cycles and depth in recursive queries. A worked funnel example computes one row per user at each stage before combining them. Production sections cover plan inspection, repeated references, temporary materialization, recursion safety, transaction snapshots, naming, testing, and portability. The objective is to structure reasoning without treating query syntax as an execution directive.",
+  "prerequisites": [
+    "sql-joins",
+    "sql-aggregation"
+  ],
+  "learningObjectives": [
+    "Choose scalar, table, correlated, EXISTS, anti-join, derived-table, or CTE form from result cardinality and semantics.",
+    "Trace recursive CTE anchor and working-table iterations while enforcing termination, cycle, and depth rules.",
+    "Inspect optimization, inlining, materialization, repeated work, and snapshot behavior instead of assuming syntax determines performance."
+  ],
+  "deepSections": [
+    {
+      "id": "subquery-forms",
+      "title": "Subquery forms, cardinality, and NULL semantics",
+      "body": "A scalar subquery appears where one value is expected and must return at most one row; zero rows usually yield NULL, while multiple rows are an error. Make uniqueness or aggregation explicit rather than relying on current data. A table subquery appears in FROM and has a relational schema. Row and array forms are dialect-specific. `IN` compares against a set-like result, while `EXISTS` tests whether at least one row satisfies a correlated condition and does not need to project useful columns.\n\nA correlated subquery references columns from an outer query level. Logically it can be evaluated per outer row, although an optimizer may decorrelate it into a join or other plan. Correlation is expressive for existence, latest-related-value, and conditional logic, but performance depends on available indexes, cardinality, and decorrelation. Inspect the plan and actual loop counts.\n\nFor anti-membership, `NOT IN` can return UNKNOWN when its input contains NULL, producing surprising empty results. `NOT EXISTS` with an explicit equality predicate usually states the intent safely. Do not coalesce NULL keys to a sentinel without proving the sentinel cannot be real. Test empty subqueries, NULLs, duplicates, zero-row scalar results, and multi-row scalar violations."
+    },
+    {
+      "id": "nonrecursive-ctes",
+      "title": "Non-recursive CTEs as stage contracts",
+      "body": "A non-recursive `WITH name AS (query)` creates a named relation visible to the following statement. Use names that state grain and meaning, such as `eligible_orders`, `customer_totals`, or `ranked_events`. Select only needed columns and assert the key of each stage mentally or through data tests. This makes fanout and denominator changes easier to review than one deeply nested expression.\n\nA CTE is not inherently a temporary table, cache, or optimization. Current PostgreSQL can fold a side-effect-free, non-recursive, singly referenced CTE into the parent query, while multiple references and explicit materialization controls affect behavior. Other engines differ. Materialization can prevent repeated computation and create a useful boundary, or it can write and scan a large intermediate and block predicate pushdown. Inlining can enable global optimization, or repeat expensive work.\n\nIf an intermediate is reused across statements, needs indexes, or is too important to recompute, a temporary or persisted table may be clearer. That introduces lifecycle, transaction, cleanup, statistics, and concurrency concerns. Choose the artifact from its lifetime and reuse contract, not because CTE syntax feels modular."
+    },
+    {
+      "id": "recursive-ctes",
+      "title": "Recursive CTE evaluation, traversal, and cycles",
+      "body": "A recursive CTE has a non-recursive anchor and a recursive term combined by `UNION ALL` or `UNION`. Conceptually the anchor populates a result and working table. Each iteration evaluates the recursive term using the current working rows, appends produced rows, and replaces the working table until it is empty. SQL syntax is recursive while evaluation is iterative.\n\nHierarchy queries carry node ID, parent/path, depth, and accumulated values. `UNION` removes duplicate whole rows and can sometimes halt repeated states, but it is not a general cycle policy when depth or path differs. Track visited IDs in a path, use engine cycle syntax where available, validate the graph as acyclic when that is a domain invariant, and enforce depth or row limits. A cycle should produce a diagnostic rather than silently truncating if correctness matters.\n\nSearch output order is not automatically breadth-first or depth-first; compute an order key and apply final ORDER BY according to the engine's supported pattern. High fanout can grow exponentially even without cycles. Bound roots, depth, total rows, and time for interactive queries. Index the recursive join key and inspect iteration and row growth."
+    },
+    {
+      "id": "planning-testing",
+      "title": "Planning, validation, and production use",
+      "body": "Equivalent SQL forms can yield the same optimized plan, and similar-looking forms can differ because of NULL, duplicate, volatility, or cardinality semantics. Compare plans with representative parameters. For correlated work, inspect outer loops and inner rows. For CTEs, check whether materialized, how often scanned, whether predicates push down, and how estimates compare with actual rows. Avoid embedding version-specific optimizer folklore in permanent style rules.\n\nTest every stage's grain, key uniqueness, row counts, and reconciliation. A scalar stage requires zero-or-one proof; an entity aggregate requires one row per entity; an existence stage should not multiply the outer relation. For recursive output, validate maximum depth, unique path semantics, cycle cases, orphan nodes, multiple roots, and deterministic ordering.\n\nProduction queries run under a snapshot and transaction context. Repeated separate statements may see different data depending on isolation, while one statement's CTE stages ordinarily share the statement view. Monitor runtime, temporary bytes, repeated scans, recursion rows/depth, and failure limits. Version SQL and expected plans carefully, but alert primarily on resource and correctness regressions rather than exact plan text."
+    }
+  ],
+  "math": "For a correlated outer relation R, naive logical evaluation can cost Σ_{r∈R} cost(Q(r)); decorrelation may transform this into set-oriented joins. A recursive CTE defines R_0=anchor and R_{i+1}=recursive(R_i); the result is the union of generated iterations until the working set is empty, subject to duplicate and cycle semantics.",
+  "workedExamples": [
+    {
+      "title": "Build a conversion funnel from staged entity-grain CTEs",
+      "setup": "Raw events contain many rows per user. The report needs one row per user with first view, signup, and purchase times.",
+      "walkthrough": "Create `eligible_events` with the date and quality policy. Create one CTE per stage grouped to user with minimum timestamp. Start from the intended user population and left-join each one-row-per-user stage. Compute ordering checks so signup must not precede view and purchase must not precede signup. Assert uniqueness at every stage, output row preservation, and stage counts that cannot increase down the funnel. Inspect whether the engine inlines stages; persist a stage only if reuse or cost evidence justifies it. Keep event-time cutoffs explicit to avoid future data in historical cohorts.",
+      "conclusion": "Named stages improve review because each changes grain under an explicit contract; they do not remove the need to validate cardinality or examine the plan."
+    }
+  ],
+  "exercises": [
+    {
+      "difficulty": "recall",
+      "prompt": "What happens when a scalar subquery returns two rows?",
+      "solution": "It violates scalar cardinality and the statement errors; prove uniqueness or aggregate according to an explicit policy."
+    },
+    {
+      "difficulty": "application",
+      "prompt": "Find customers with no orders when order customer IDs may contain NULL.",
+      "solution": "Use `WHERE NOT EXISTS (SELECT 1 FROM orders o WHERE o.customer_id=c.id)` rather than NULL-sensitive NOT IN."
+    },
+    {
+      "difficulty": "diagnosis",
+      "prompt": "A recursive hierarchy query never finishes after a new parent relation is loaded. What do you inspect?",
+      "solution": "Look for a cycle or explosive fanout, add visited/cycle detection and explicit depth/row limits, and validate hierarchy constraints."
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "postgres-with",
+      "contribution": "Defines current non-recursive folding/materialization behavior and recursive working-table evaluation."
+    },
+    {
+      "resource": "postgres-select",
+      "contribution": "Provides scalar/table subquery, correlation, EXISTS, and logical expression semantics."
+    },
+    {
+      "resource": "cmu-db",
+      "contribution": "Grounds decorrelation, optimization, intermediate execution, cardinality, and physical materialization trade-offs."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "flow",
+      "title": "Recursive CTE working-table loop",
+      "items": [
+        "Evaluate anchor",
+        "Seed result and working table",
+        "Expand current working rows",
+        "Append valid new rows",
+        "Repeat until empty or bounded"
+      ],
+      "caption": "Recursive SQL iteratively expands a frontier; termination and cycle handling are part of correctness.",
+      "afterSection": "recursive-ctes"
+    },
+    {
+      "type": "compare",
+      "title": "Inlining and materialization",
+      "left": {
+        "title": "Inline/fold",
+        "items": [
+          "Optimizer sees whole query",
+          "Predicates can push down",
+          "May repeat work",
+          "No guaranteed stored boundary"
+        ]
+      },
+      "right": {
+        "title": "Materialize",
+        "items": [
+          "Compute intermediate",
+          "Can reuse scans",
+          "Consumes memory or temp I/O",
+          "May block optimization"
+        ]
+      },
+      "caption": "Neither physical choice is universally superior; inspect the target engine's plan.",
+      "afterSection": "nonrecursive-ctes"
+    }
+  ],
+  "lab": {
+    "goal": "Use SQLite CTEs for staged grain and recursion, verifying uniqueness, anti-join NULL safety, order, and cycle bounds.",
+    "language": "python",
+    "buildIt": "def expand(children,roots,max_depth):\n    out=[]; frontier=[(root,0,(root,)) for root in roots]\n    while frontier:\n        node,depth,path=frontier.pop(0); out.append((node,depth))\n        if depth==max_depth: continue\n        for child in children.get(node,[]):\n            if child in path: raise ValueError('cycle')\n            frontier.append((child,depth+1,path+(child,)))\n    return out",
+    "useIt": "import sqlite3\ncon=sqlite3.connect(':memory:')\ncon.executescript('CREATE TABLE edge(parent TEXT, child TEXT); INSERT INTO edge VALUES (\"a\",\"b\"),(\"a\",\"c\"),(\"b\",\"d\");')\nrows=con.execute('WITH RECURSIVE tree(node,depth,path) AS (SELECT \"a\",0,\"/a/\" UNION ALL SELECT e.child,t.depth+1,t.path||e.child||\"/\" FROM tree t JOIN edge e ON e.parent=t.node WHERE t.depth<10 AND instr(t.path,\"/\"||e.child||\"/\")=0) SELECT node,depth FROM tree ORDER BY depth,node').fetchall()",
+    "verifyIt": "assert rows == [('a',0),('b',1),('c',1),('d',2)]\nassert expand({'a':['b','c'],'b':['d']},['a'],10)==rows\ntry: expand({'a':['b'],'b':['a']},['a'],10)\nexcept ValueError: pass\nelse: raise AssertionError('cycle must fail')\nassert len({node for node,_ in rows})==len(rows)",
+    "shipIt": "Add stage-grain tests, recursion row/depth/time limits, cycle diagnostics, plan and temp-I/O monitoring, and engine-version checks for materialization behavior."
   }
 }

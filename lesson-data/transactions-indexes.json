@@ -8,48 +8,175 @@
     "mle",
     "da"
   ],
-  "interviewAnswer": "Transactions group operations into an atomic unit with ACID guarantees. Indexes speed reads by maintaining an auxiliary search structure, but they consume storage and make writes more expensive.",
+  "interviewAnswer": "A transaction makes a set of operations commit or roll back as one unit and preserves database constraints under the chosen isolation and durability mechanisms. An index is a maintained access structure—commonly a B-tree—that can reduce searched pages for selective equality, range, and ordering queries. Indexes consume storage and add work to inserts, updates, deletes, vacuum/maintenance, and concurrency. Composite order, predicate shape, selectivity, and table size determine usefulness; the optimizer may correctly choose a scan even when an index exists.",
   "keyPoints": [
-    "ACID",
-    "Commit/rollback",
-    "B-tree intuition",
-    "Read/write trade-off"
+    "Transaction boundary matches invariant",
+    "Rollback handles all failure paths",
+    "Indexes trade reads for writes",
+    "Composite order follows workload",
+    "Plan evidence beats index folklore"
   ],
   "resources": [
-    "postgres"
+    "postgres-indexes",
+    "postgres-transactions",
+    "cmu-db"
   ],
   "featured": false,
-  "why": "Transactions protect correctness under concurrent updates; indexes trade storage/write cost for faster access. Both matter in ML/data applications with databases.",
-  "intuition": "A transaction groups changes so they behave as one logical unit. An index is an auxiliary search structure that helps find rows without scanning the whole table.",
-  "deepDive": "ACID: atomicity, consistency, isolation, durability. Isolation levels trade concurrency for protection against anomalies. B-tree indexes are common for equality/range queries; composite index column order matters. Indexes speed reads but consume storage and slow writes/maintenance. An index cannot rescue every query—low-selectivity filters or functions can still scan heavily.",
-  "workedExample": "A service that writes prediction + audit metadata should commit both together. An index on (customer_id, event_time) can accelerate recent-history lookup for one customer.",
+  "why": "A transfer that debits without crediting corrupts money; a feature publication that exposes partial partitions corrupts training. Transactions provide a correctness boundary, but applications must choose that boundary and safely retry failures. Indexes can turn a point lookup from scanning a table into a shallow tree probe, yet excessive or poorly ordered indexes slow ingestion and occupy memory and disk. Long transactions retain old versions and block maintenance. Interview questions often list ACID and index types; engineering requires invariant, workload, recovery, concurrency, migration, and measurement reasoning.",
+  "intuition": "A transaction is a sealed change set: observers should see an allowed before or after state, not a half-applied business action. An index is the database's maintained lookup map. Like a book index, it accelerates questions organized by its leading entries but must be updated whenever indexed content changes. A map for every imaginable question becomes heavier than the book itself, so indexes are selected from real query and write patterns.",
+  "deepDive": "The full explanation is organized into the structured sections below.",
+  "workedExample": "Start one transaction, insert the unique idempotency key, lock or conditionally update accounts in a consistent ID order, assert both affected-row counts and nonnegative balance policy, insert ledger rows, then commit. Any failure rolls back all database changes. Retry the entire action only for classified transient errors, using the unique transfer ID to recognize an uncertain prior commit. Create a composite history index on `(account_id, occurred_at DESC)` with only carefully selected included columns. Use an actual plan for representative high- and low-activity accounts, and measure write/replication impact before rollout.",
   "code": "BEGIN;\nUPDATE inventory SET qty=qty-1 WHERE sku='A';\nINSERT INTO audit_log(event) VALUES('reserve A');\nCOMMIT;\n\nCREATE INDEX idx_events_customer_time ON events(customer_id,event_time);",
   "commonMistakes": [
-    "Adding indexes to every column.",
-    "Assuming transactions eliminate all concurrency anomalies at every isolation level.",
-    "Ignoring index order in composite indexes."
+    {
+      "mistake": "ACID consistency means every business rule is automatically enforced.",
+      "correction": "The database preserves constraints and transaction semantics you declare; application invariants still require correct schema and transaction logic."
+    },
+    {
+      "mistake": "An index always makes matching queries faster.",
+      "correction": "Low selectivity, small tables, random fetches, stale statistics, casts, or wide output can make a scan cheaper."
+    },
+    {
+      "mistake": "Create a single-column index for every filtered column.",
+      "correction": "Indexes cost writes and storage, and workload-shaped composite/partial designs may be more useful. Verify plans before adding or removing."
+    }
   ],
   "followUps": [
-    "What does ACID mean?",
-    "Clustered vs non-clustered concept?",
-    "When does an index hurt?",
-    "What is a deadlock?"
+    {
+      "question": "Why can a query ignore an available index?",
+      "answer": "The cost estimate favors another path due to selectivity, size, clustering, returned rows, predicate mismatch, statistics, or parameter values."
+    },
+    {
+      "question": "What is an index-only scan?",
+      "answer": "A path where required columns are available from the index and visibility conditions let the engine avoid or reduce base-table fetches; it is not guaranteed by merely including columns."
+    },
+    {
+      "question": "How do you handle a serialization or deadlock failure?",
+      "answer": "Roll back and retry the whole idempotent transaction with bounded backoff, while investigating contention if rates rise."
+    }
   ],
-  "production": "Monitor slow queries, lock contention and write amplification. Schema/index changes need migration plans and load testing on realistic cardinalities.",
-  "visual": {
-    "type": "flow",
-    "title": "Indexed query path",
-    "items": [
-      "Query",
-      "Index lookup",
-      "Matching pages",
-      "Rows returned"
-    ],
-    "caption": "An index can reduce the amount of data scanned, at the cost of storage and write overhead.",
-    "accent": 1,
-    "orientation": "horizontal"
-  },
+  "production": "Keep transactions short, invariant-scoped, and fully rolled back on failure; classify retries and coordinate external effects with idempotency/outbox patterns. Design indexes from important query shapes and representative plans, balancing read latency against write, storage, cache, maintenance, and replication cost. Monitor transaction age, locks, retries, bloat, index use, log volume, and plan regressions. Roll out builds and removals in separate reversible stages.",
   "editorial": {
-    "status": "summary"
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "Transactions group database changes into an atomic unit, while indexes maintain additional access paths that accelerate selected reads at the cost of storage and write work. They solve different problems but interact: an index must remain transactionally consistent, updates create index maintenance and locking or versioning work, and query access paths influence how long a transaction holds resources. This chapter introduces ACID properties, commit and rollback, statement errors, savepoints, idempotent retry boundaries, B-tree and hash-style access, multicolumn order, covering/index-only scans, expression and partial indexes, selectivity, and write amplification. It separates index eligibility from optimizer choice and explains why an index can exist yet be slower than a sequential scan. You will design a transfer transaction with invariants and an index set for a time-filtered status query, then verify rollback and plan behavior. Detailed isolation anomalies are deferred to the dedicated isolation chapter; here the focus is transaction boundaries and index design. Production sections cover long transactions, deadlocks, bloat, online builds, monitoring, migrations, and rollback.",
+  "prerequisites": [
+    "sql-joins",
+    "big-o"
+  ],
+  "learningObjectives": [
+    "Define atomic transaction boundaries and application-level invariants with commit, rollback, savepoint, and retry behavior.",
+    "Choose B-tree, multicolumn, covering, expression, or partial index designs from predicates, ordering, selectivity, and write workload.",
+    "Diagnose index usage and transaction/index operational costs through plans, locks, versions, bloat, build strategy, and monitoring."
+  ],
+  "deepSections": [
+    {
+      "id": "transaction-boundaries",
+      "title": "Transactions, ACID, and application invariants",
+      "body": "Atomicity means a transaction's changes take effect together or not at all. Consistency means committed transitions preserve declared constraints and application invariants; the database cannot infer every business rule. Isolation governs interactions among concurrent transactions and has its own dedicated chapter. Durability means a reported commit survives failures according to the system's persistence and replication contract—not that every replica is instantly current.\n\nBegin a transaction at the smallest boundary that contains one invariant-preserving action. Validate inputs, execute changes, check affected-row counts, and commit; on any error, roll back. Some systems mark a transaction failed until rollback after a statement error. Savepoints permit partial rollback inside a transaction but do not justify swallowing integrity failures casually. Keep network calls outside database transactions when possible because unpredictable waits retain connections, locks, and versions.\n\nRetries must repeat the whole logical transaction when the database reports a retryable concurrency failure. Make external effects idempotent or coordinate them with an outbox/inbox pattern; a database rollback cannot undo an already-sent email or remote charge. Use unique idempotency keys and constraints so a client timeout after commit does not duplicate the operation."
+    },
+    {
+      "id": "index-structures",
+      "title": "B-tree access and alternative indexes",
+      "body": "A B-tree keeps sorted keys in balanced pages, supporting logarithmic-height equality and range navigation plus ordered scans. Leaf entries identify table rows or contain enough data for an index-only path when visibility and engine conditions permit. Equality on leading columns followed by a range/order often fits a composite B-tree. The exact prefix rules and skip-scan capabilities vary, so verify target behavior.\n\nHash indexes focus on equality in systems that support them. Other specialized structures serve text, spatial, array, JSON, or block-range workloads. Index type must match operator classes and predicates. An expression index can support a normalized or computed predicate such as lowercased email, but the query expression and immutability rules must align. A partial index stores rows satisfying a predicate, reducing size and write cost for a stable selective subset; queries must imply that predicate.\n\nA covering index includes columns needed to answer a query without fetching all base rows, but wider entries reduce fanout and increase maintenance. Clustered or table-order relationships affect locality differently by engine. Avoid treating vendor names as universal semantics. Indexes accelerate access paths; they do not replace uniqueness constraints, data validation, or full-text/vector systems where a different retrieval model is needed."
+    },
+    {
+      "id": "workload-index-design",
+      "title": "Composite order, selectivity, and write cost",
+      "body": "Design indexes from frequent, important query shapes: equality predicates, range predicates, join keys, ordering, returned columns, and table/cardinality distribution. A composite `(tenant_id, event_time)` index supports tenant equality followed by time range and ordered retrieval. Reversing it may suit global time queries but not isolate one tenant efficiently. Separate single-column indexes are not always equivalent to one composite path, though optimizers can combine indexes in some cases.\n\nSelectivity matters. If a predicate returns a large fraction of rows, sequential access can be cheaper than random index probes plus heap fetches. Small tables may be faster to scan. Parameter values can change the best plan. Functions, implicit casts, collation, NULL conditions, and mismatched expressions can prevent the intended access. Use plans with representative values and inspect actual rows and buffers.\n\nEvery index adds storage and update work. Inserting must place entries; updating indexed columns may create new entries; deleting leaves maintenance; cache capacity is divided among structures. Redundant indexes compound write amplification. Track index usage but account for rare critical queries and constraint backing before removal. Consolidate only when semantics and plans remain correct."
+    },
+    {
+      "id": "operations-indexes",
+      "title": "Concurrency, maintenance, and safe index changes",
+      "body": "Transactions and indexes interact through locks, multiversion visibility, and maintenance. An index lookup can find versions that are not visible to the current snapshot; the engine checks visibility. Long-running transactions can prevent cleanup of old versions, increase bloat, and hold locks. Large updates can generate substantial log, replication lag, and index churn. Deadlocks arise from inconsistent resource ordering and should be handled through consistent access order plus retry of a chosen victim.\n\nIndex builds consume CPU, I/O, memory, and locks. Online or concurrent build modes reduce blocking but take longer and have failure/retry semantics. Validate the resulting index and plan before relying on it, then remove old structures in a separate rollback-aware step. Schema migrations must account for application versions that overlap deployment.\n\nMonitor transaction age, lock waits, deadlocks, rollback/retry rate, log volume, replication lag, index size, scan/use counts, cache hit, bloat, and query latency. Set statement and idle-transaction timeouts appropriate to workload. Periodically review indexes against workload evidence. A safe change has capacity estimates, staged rollout, and a reversal path."
+    }
+  ],
+  "math": "A balanced B-tree with fanout b and n entries has height O(log_b n), often only a few page levels. Total write work includes base-row change plus each affected index entry. A composite index orders lexicographically by its columns; efficient navigable ranges depend on constraints over leading order. Transaction atomicity is all-or-nothing, while isolation guarantees require a separate concurrency model.",
+  "workedExamples": [
+    {
+      "title": "Transfer balance and index account history",
+      "setup": "A transfer debits one account, credits another, records one immutable transfer ID, and serves recent history by account and time.",
+      "walkthrough": "Start one transaction, insert the unique idempotency key, lock or conditionally update accounts in a consistent ID order, assert both affected-row counts and nonnegative balance policy, insert ledger rows, then commit. Any failure rolls back all database changes. Retry the entire action only for classified transient errors, using the unique transfer ID to recognize an uncertain prior commit. Create a composite history index on `(account_id, occurred_at DESC)` with only carefully selected included columns. Use an actual plan for representative high- and low-activity accounts, and measure write/replication impact before rollout.",
+      "conclusion": "The transaction protects the financial invariant while the index serves one validated access pattern; idempotency and operations complete the design."
+    }
+  ],
+  "exercises": [
+    {
+      "difficulty": "recall",
+      "prompt": "Why can `(tenant_id,event_time)` serve a tenant time range better than `(event_time,tenant_id)`?",
+      "solution": "Equality on the leading tenant key narrows a contiguous index range before scanning ordered event time."
+    },
+    {
+      "difficulty": "application",
+      "prompt": "A request writes the database then calls a payment API inside the transaction. What risk?",
+      "solution": "The remote call holds database resources and cannot be undone by rollback. Use idempotent external workflow/outbox coordination and a short database transaction."
+    },
+    {
+      "difficulty": "diagnosis",
+      "prompt": "After adding five indexes, ingestion slows and replication lag rises. Why?",
+      "solution": "Every row change maintains more index entries and generates additional I/O/log work. Measure usage and consolidate or remove redundant noncritical indexes safely."
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "postgres-indexes",
+      "contribution": "Defines official B-tree and specialized index capabilities, multicolumn, partial, expression, and index-only behavior."
+    },
+    {
+      "resource": "postgres-transactions",
+      "contribution": "Grounds transaction behavior and retry-relevant concurrency failures referenced without duplicating the isolation chapter."
+    },
+    {
+      "resource": "cmu-db",
+      "contribution": "Provides B-tree/storage, recovery, concurrency, and access-path cost foundations."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "layers",
+      "title": "Transaction correctness boundary",
+      "items": [
+        "Validate command and idempotency key",
+        "Apply all invariant-related writes",
+        "Check constraints and affected rows",
+        "Commit durably or roll back",
+        "Publish external effects safely"
+      ],
+      "caption": "A business action must not expose a partially applied database state.",
+      "afterSection": "transaction-boundaries"
+    },
+    {
+      "type": "compare",
+      "title": "Index read/write trade-off",
+      "left": {
+        "title": "Read benefit",
+        "items": [
+          "Selective page access",
+          "Ordered range scan",
+          "Join probes",
+          "Potential covering path"
+        ]
+      },
+      "right": {
+        "title": "Write/ops cost",
+        "items": [
+          "Entry maintenance",
+          "More log and storage",
+          "Cache pressure",
+          "Build and cleanup"
+        ]
+      },
+      "caption": "An index is a maintained structure, so read acceleration always has lifecycle cost.",
+      "afterSection": "workload-index-design"
+    }
+  ],
+  "lab": {
+    "goal": "Use SQLite to verify transaction rollback, uniqueness/idempotency, and a composite index query plan.",
+    "language": "python",
+    "buildIt": "def transfer(con,transfer_id,source,target,amount):\n    with con:\n        con.execute('INSERT INTO transfer(id) VALUES (?)',(transfer_id,))\n        changed=con.execute('UPDATE account SET balance=balance-? WHERE id=? AND balance>=?',(amount,source,amount)).rowcount\n        if changed!=1: raise ValueError('insufficient or missing source')\n        if con.execute('UPDATE account SET balance=balance+? WHERE id=?',(amount,target)).rowcount!=1: raise ValueError('missing target')",
+    "useIt": "import sqlite3\ncon=sqlite3.connect(':memory:')\ncon.executescript('CREATE TABLE account(id INTEGER PRIMARY KEY,balance INTEGER CHECK(balance>=0)); CREATE TABLE transfer(id TEXT PRIMARY KEY); CREATE TABLE history(account_id INTEGER,occurred_at INTEGER,amount INTEGER); CREATE INDEX history_account_time ON history(account_id,occurred_at DESC); INSERT INTO account VALUES (1,100),(2,0);')\ntransfer(con,'t1',1,2,30)\nplan=con.execute('EXPLAIN QUERY PLAN SELECT amount FROM history WHERE account_id=? AND occurred_at>=? ORDER BY occurred_at DESC',(1,0)).fetchall()",
+    "verifyIt": "assert con.execute('SELECT SUM(balance) FROM account').fetchone()[0]==100\nassert con.execute('SELECT balance FROM account ORDER BY id').fetchall()==[(70,),(30,)]\ntry: transfer(con,'t2',1,99,10)\nexcept ValueError: pass\nelse: raise AssertionError('missing target must fail')\nassert con.execute('SELECT balance FROM account ORDER BY id').fetchall()==[(70,),(30,)]\nassert any('history_account_time' in str(row) for row in plan)",
+    "shipIt": "Add bounded retries, consistent lock order, idempotency/outbox integration, transaction-age monitoring, representative EXPLAIN ANALYZE checks, and reversible online index rollout."
   }
 }

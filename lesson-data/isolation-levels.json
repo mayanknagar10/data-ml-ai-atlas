@@ -8,42 +8,199 @@
     "mle",
     "da"
   ],
-  "interviewAnswer": "Isolation levels trade concurrency against anomalies such as dirty reads, non-repeatable reads and phantoms. Serializable provides the strongest familiar abstraction but may cost throughput/retries.",
+  "interviewAnswer": "Isolation controls how concurrent transactions appear to execute. Read Committed commonly gives each statement a fresh committed snapshot; repeatable/snapshot levels hold a stable transaction view but can still permit write skew in some systems; Serializable aims to make committed outcomes equivalent to some serial order and may abort transactions that threaten that guarantee. MVCC lets readers see versions rather than blocking every writer, but old snapshots have cleanup cost. Choose isolation from the invariant, use explicit locks or constraints where appropriate, and retry serialization failures and deadlocks as whole idempotent transactions.",
   "keyPoints": [
-    "ACID terms describe different guarantees.",
-    "MVCC is a common implementation technique.",
-    "Application invariants may require stronger handling than default isolation."
+    "Name the invariant first",
+    "Isolation controls histories",
+    "MVCC uses version visibility",
+    "Snapshot can allow write skew",
+    "Serializable requires retry handling"
   ],
   "resources": [
-    "cmu-db",
-    "postgres"
+    "postgres-transactions",
+    "cmu-db"
   ],
   "featured": false,
-  "why": "Transactions & Isolation Levels is a recurring foundation across data science and machine learning because it affects both theoretical correctness and practical system behavior.",
-  "intuition": "ACID terms describe different guarantees.",
-  "deepDive": "Isolation levels trade concurrency against anomalies such as dirty reads, non-repeatable reads and phantoms. Serializable provides the strongest familiar abstraction but may cost throughput/retries. MVCC is a common implementation technique. Application invariants may require stronger handling than default isolation. The interview-level skill is not merely recalling the definition: explain the assumptions, what diagnostic evidence you would inspect, and what alternative you would choose when those assumptions fail.",
-  "workedExample": "Two concurrent inventory reservations can oversell stock if reads/writes are not coordinated correctly.",
+  "why": "Two requests can each read a valid state, make disjoint writes, and jointly violate a rule. Inventory becomes negative, one on-call doctor becomes zero, or duplicate jobs are created even though each statement is atomic. Raising isolation blindly can reduce throughput or still miss a target-engine nuance. Holding locks during network calls causes contention, while ignoring serialization aborts turns correct database protection into user errors. Interviewers ask anomalies and levels; production requires a concrete invariant, engine-specific guarantee, transaction design, retries, monitoring, and behavior under replica lag or uncertain commits.",
+  "intuition": "Imagine concurrent transactions as proposed edits to shared history. Lower isolation lets more overlapping views proceed. MVCC gives each reader a versioned photograph, allowing readers and writers to overlap. But two photographs can each justify a different disjoint write that would never both happen in any valid serial execution. Serializable mechanisms detect or prevent such dangerous combinations, sometimes by making one proposal retry.",
+  "deepDive": "The full explanation is organized into the structured sections below.",
+  "workedExample": "Under a stable snapshot, each transaction sees two on-call doctors, updates a different row, and can commit without a direct write conflict, leaving zero—write skew. Options include a serializable transaction with retry; locking a shared schedule guard row before checking/updating; or redesigning the invariant into an enforceable representation. Test with two concurrent connections and a barrier after reads. On serialization/deadlock failure, roll back and retry the whole idempotent action. Keep any notification outside the transaction through an outbox.",
   "commonMistakes": [
-    "Using the concept mechanically without checking assumptions or data semantics.",
-    "Reporting one metric/result without examining uncertainty, slices or failure modes."
+    {
+      "mistake": "Atomic transactions automatically prevent every race.",
+      "correction": "Atomicity is all-or-nothing for one transaction; isolation determines allowed interactions among concurrent transactions."
+    },
+    {
+      "mistake": "Repeatable Read always equals serializable.",
+      "correction": "Many snapshot implementations preserve a view but permit write skew. Check the target engine's documented guarantees."
+    },
+    {
+      "mistake": "Retry the last failed statement after a serialization error.",
+      "correction": "The transaction's reads and decisions came from an invalidated snapshot; roll back and retry the entire logical transaction."
+    }
   ],
   "followUps": [
-    "What assumptions or limitations does Transactions & Isolation Levels have?",
-    "How would you validate Transactions & Isolation Levels on a real dataset?"
+    {
+      "question": "What is write skew?",
+      "answer": "Concurrent transactions read overlapping invariant state, write disjoint rows, and jointly violate the invariant without a direct write-write conflict."
+    },
+    {
+      "question": "Why can MVCC create bloat?",
+      "answer": "Long snapshots keep old row versions potentially visible, delaying reclamation while updates create new versions."
+    },
+    {
+      "question": "How do deadlock and serialization failure differ?",
+      "answer": "A deadlock is a lock wait cycle; serialization failure is an abort to prevent a nonserializable outcome. Both commonly require whole-transaction retry."
+    }
   ],
-  "production": "In production, make assumptions explicit, validate on representative slices, compare with a simple baseline and monitor the signals that can drift.",
-  "visual": {
-    "type": "layers",
-    "title": "Isolation spectrum",
-    "items": [
-      "Read uncommitted",
-      "Read committed",
-      "Repeatable read",
-      "Serializable"
-    ],
-    "caption": "Higher isolation prevents more anomalies but can reduce concurrency."
-  },
+  "production": "Map every critical invariant to constraints, conditional writes, locks, or a documented serializable transaction. Keep transactions short, order locks consistently, classify errors, and use bounded jittered whole-transaction retries with idempotency for uncertain commits. Account for replica lag and external systems. Monitor long transactions, locks, deadlocks, serialization aborts, retries, pools, bloat, and invariant checks, and test true concurrent histories.",
   "editorial": {
-    "status": "summary"
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "Transaction isolation defines which concurrent interleavings a database permits and what each transaction may observe. It is not equivalent to atomicity, and level names alone are insufficient because implementations differ. This chapter builds a history-based model, then explains dirty reads, nonrepeatable reads, phantoms, lost updates, write skew, and serialization anomalies. It covers multiversion concurrency control (MVCC), snapshots, locks, optimistic validation, PostgreSQL's current Read Committed, Repeatable Read, and Serializable behavior, serialization failures, deadlocks, and retry design. You will trace an on-call schedule where two individually valid updates violate a cross-row invariant under snapshot-style execution, then prevent it with a serializable transaction or explicit locking/materialized constraint. The operations section addresses transaction scope, deterministic lock order, read-only replicas, connection pools, long snapshots, timeouts, idempotency, metrics, and chaos testing. The objective is to choose the weakest level and explicit controls that actually preserve named invariants, then treat abort and retry as a normal part of concurrent correctness.",
+  "prerequisites": [
+    "transactions-indexes"
+  ],
+  "learningObjectives": [
+    "Classify concurrent histories by dirty read, nonrepeatable read, phantom, lost update, write skew, and serialization behavior.",
+    "Explain snapshot/MVCC visibility and compare target-engine isolation guarantees without relying solely on standard level names.",
+    "Implement invariant-preserving transactions with locks or serializable validation, bounded idempotent retries, timeouts, and contention monitoring."
+  ],
+  "deepSections": [
+    {
+      "id": "histories-anomalies",
+      "title": "Concurrent histories and anomalies",
+      "body": "A history interleaves reads, writes, commits, and aborts from transactions. Serial execution completes one transaction before another. Serializable execution may interleave but has an outcome equivalent to some serial order. Conflict and serialization theory provide formal tests, while applications begin with invariants over rows and predicates.\n\nA dirty read observes uncommitted data that may roll back. A nonrepeatable read sees a row change between reads. A phantom occurs when a predicate query returns a changed set because rows are inserted, deleted, or updated into the predicate. Lost update overwrites another transaction's change based on stale state. Some databases prevent simple lost writes even at common levels, but read-modify-write patterns still need conditional updates or locks.\n\nWrite skew occurs when transactions read overlapping predicate state but write different rows, so neither write conflicts directly. Each sees the invariant satisfied and both commits break it. This is the classic limitation of many snapshot-isolation designs. Anomaly labels help, but the real task is to show the forbidden final state and how the chosen mechanism rules it out."
+    },
+    {
+      "id": "mvcc-levels",
+      "title": "MVCC, snapshots, and engine-specific levels",
+      "body": "MVCC stores row versions with visibility metadata so a query can read a consistent snapshot while concurrent updates create newer versions. Readers avoid many writer locks, but updates still coordinate and visibility checks occur through indexes and table storage. Long transactions keep old versions potentially visible, delaying cleanup and increasing bloat or history retention.\n\nIn current PostgreSQL, Read Uncommitted behaves as Read Committed. At Read Committed, each statement sees a snapshot as of that statement, so two SELECTs in one transaction can see different committed data. PostgreSQL Repeatable Read uses a transaction snapshot and prevents the standard phantom phenomenon in its documented behavior, yet serialization anomalies such as write skew can remain. Serializable uses Serializable Snapshot Isolation to detect dangerous structures and abort a transaction when needed. Other databases map names differently.\n\nRead-only replicas add another timeline: a locally consistent snapshot may lag the primary. Read-your-writes and monotonic-read requirements need routing or causal/session guarantees. Isolation applies to a database transaction, not automatically to caches, object storage, queues, or external APIs."
+    },
+    {
+      "id": "preserving-invariants",
+      "title": "Locks, constraints, conditional writes, and serializable execution",
+      "body": "Use declarative uniqueness, foreign keys, checks, and exclusion constraints where they encode the invariant; they are enforced under concurrency more reliably than application prechecks. A conditional update such as decrementing inventory only where stock is sufficient combines check and write and verifies affected rows. `SELECT ... FOR UPDATE` locks existing rows that will be changed, but predicate invariants involving absence or multiple rows may require range/predicate locking, a materialized guard row, advisory mechanism, or serializable execution.\n\nAcquire locks in a consistent global order to reduce deadlocks. Keep the transaction short and do not wait on users or remote services. Locks protect only the resources and predicates actually covered; locking two doctor rows may preserve an on-call count if every writer follows the same protocol, while an uncoordinated code path can still violate it.\n\nSerializable execution is often the clearest general guard for complex read-then-write invariants, but aborts are expected under contention. The application must retry the entire transaction from a new snapshot. Do not retry only the failed final statement using stale decisions. Bound attempts, add jittered backoff, surface exhaustion, and make external effects idempotent or move them through an outbox after commit."
+    },
+    {
+      "id": "operating-isolation",
+      "title": "Deadlocks, retries, and operational controls",
+      "body": "A deadlock is a wait cycle among transactions; the database detects it and aborts a victim. It can occur at any isolation level. Consistent lock order, smaller batches, and shorter transactions reduce risk but do not eliminate every dynamic cycle. Lock timeouts and statement timeouts bound waits; distinguish timeout, deadlock, serialization failure, connection loss, and permanent constraint error because retry policy differs.\n\nAn uncertain commit occurs when the connection fails after the server may have committed. Retrying without an idempotency key can duplicate effects. Store a unique operation ID and query its outcome, or design the mutation as an idempotent upsert/ledger action. Backoff prevents retry storms, and a retry budget protects latency.\n\nMonitor transaction duration and age, active/idle state, lock waits, deadlocks, serialization abort rate, retries, pool utilization, replica lag, and invariant violations. Load tests must use concurrent workers and adversarial timing; sequential unit tests cannot demonstrate isolation. Document which operations require which level and lock protocol. Review changes that add a read or widen a predicate because they can change conflict patterns and performance."
+    }
+  ],
+  "math": "A schedule is serializable when its observable outcome is equivalent to some serial ordering of transactions. Snapshot visibility can prevent dirty/nonrepeatable reads while permitting write skew when T1 and T2 read a shared predicate and write disjoint rows. Serializable mechanisms prevent or abort cycles/dangerous structures; aborted transactions are not committed counterexamples and must be retried from the beginning.",
+  "workedExamples": [
+    {
+      "title": "Preserve at least one doctor on call",
+      "setup": "Two on-call rows are true. Each doctor concurrently checks that another doctor remains and turns their own row off.",
+      "walkthrough": "Under a stable snapshot, each transaction sees two on-call doctors, updates a different row, and can commit without a direct write conflict, leaving zero—write skew. Options include a serializable transaction with retry; locking a shared schedule guard row before checking/updating; or redesigning the invariant into an enforceable representation. Test with two concurrent connections and a barrier after reads. On serialization/deadlock failure, roll back and retry the whole idempotent action. Keep any notification outside the transaction through an outbox.",
+      "conclusion": "Row-level atomic writes are insufficient for a predicate invariant; the design must make concurrent decisions conflict or validate serializability."
+    }
+  ],
+  "exercises": [
+    {
+      "difficulty": "recall",
+      "prompt": "What anomaly has two transactions read a shared predicate and update disjoint rows to violate it?",
+      "solution": "Write skew, commonly possible under snapshot isolation without serializable validation or an explicit conflict."
+    },
+    {
+      "difficulty": "application",
+      "prompt": "How can you safely decrement inventory?",
+      "solution": "Use a conditional atomic update constrained by available stock and check the affected row, or lock the relevant inventory record inside the invariant transaction."
+    },
+    {
+      "difficulty": "diagnosis",
+      "prompt": "A service duplicates an order after a timeout retry even though transactions are atomic. Why?",
+      "solution": "The first commit outcome was uncertain and the retry lacked a unique idempotency key, so it created a second independent transaction."
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "postgres-transactions",
+      "contribution": "Defines current PostgreSQL level mappings, statement/transaction snapshots, Repeatable Read behavior, Serializable aborts, and retry guidance."
+    },
+    {
+      "resource": "cmu-db",
+      "contribution": "Provides transaction histories, MVCC, locking, deadlocks, serializability, recovery, and concurrency-control foundations."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "network",
+      "title": "Write-skew dependency pattern",
+      "nodes": [
+        {
+          "id": "t1",
+          "label": "T1 reads both",
+          "x": 0.2,
+          "y": 0.2,
+          "kind": "a"
+        },
+        {
+          "id": "t2",
+          "label": "T2 reads both",
+          "x": 0.8,
+          "y": 0.2,
+          "kind": "a"
+        },
+        {
+          "id": "a",
+          "label": "row A off",
+          "x": 0.2,
+          "y": 0.75,
+          "kind": "b"
+        },
+        {
+          "id": "b",
+          "label": "row B off",
+          "x": 0.8,
+          "y": 0.75,
+          "kind": "b"
+        }
+      ],
+      "edges": [
+        [
+          "t1",
+          "a"
+        ],
+        [
+          "t2",
+          "b"
+        ],
+        [
+          "t1",
+          "b"
+        ],
+        [
+          "t2",
+          "a"
+        ]
+      ],
+      "directed": true,
+      "caption": "Transactions share a predicate read but write different rows, so snapshot visibility alone may not create a direct write conflict.",
+      "afterSection": "histories-anomalies"
+    },
+    {
+      "type": "flow",
+      "title": "Retryable transaction loop",
+      "items": [
+        "Begin fresh transaction",
+        "Read and validate invariant",
+        "Apply bounded writes",
+        "Commit",
+        "On serialization/deadlock: rollback, backoff, retry whole action"
+      ],
+      "caption": "A retry must recompute decisions from a fresh snapshot and preserve idempotency.",
+      "afterSection": "preserving-invariants"
+    }
+  ],
+  "lab": {
+    "goal": "Simulate write skew and verify that a shared guard lock/serial critical section preserves the cross-row invariant.",
+    "language": "python",
+    "buildIt": "def snapshot_decision(snapshot,self_id):\n    if sum(snapshot.values()) < 2: return None\n    return self_id\n\ndef apply_writes(state,writes):\n    for doctor in writes: state[doctor]=False\n    return state",
+    "useIt": "from threading import Lock,Thread\nstate={'a':True,'b':True}; guard=Lock()\ndef safe_off(doctor):\n    with guard:\n        if sum(state.values()) < 2: return False\n        state[doctor]=False; return True\nresults=[]\nthreads=[Thread(target=lambda d=d: results.append(safe_off(d))) for d in state]\nfor t in threads:t.start()\nfor t in threads:t.join()",
+    "verifyIt": "snapshot={'a':True,'b':True}\nwrites=[snapshot_decision(snapshot,'a'),snapshot_decision(snapshot,'b')]\nunsafe=apply_writes(dict(snapshot),[w for w in writes if w])\nassert sum(unsafe.values())==0\nassert sum(state.values())==1\nassert sorted(results)==[False,True]\nassert all(value in (True,False) for value in state.values())",
+    "shipIt": "Implement the invariant with target-database constraints/locking or Serializable transactions, whole-transaction idempotent retries, consistent lock order, timeouts, and monitoring of abort/lock rates."
   }
 }

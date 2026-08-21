@@ -8,36 +8,175 @@
     "ds",
     "da"
   ],
-  "interviewAnswer": "Stored procedures package database-side logic such as selection, joins and transformations. In data pipelines, orchestration tools can call these procedures and move their outputs to downstream stages.",
+  "interviewAnswer": "A stored routine is versioned logic executed by the database. Functions usually return a value or relation and can participate in queries under engine rules; procedures are called as commands and may support transaction control depending on engine and call context. They are useful for data-local set operations and controlled database interfaces, but not a replacement for workflow orchestration. Keep routines set-based, parameterized, least-privileged, observable, idempotent where retried, and deployed with compatible application and schema versions.",
   "keyPoints": [
-    "Database-side logic",
-    "Parameters",
-    "Transactions",
-    "Separation from orchestration"
+    "Routine type follows side effects",
+    "Keep data-local work set-based",
+    "Parameterize dynamic SQL",
+    "Least privilege and search path",
+    "Orchestration remains external"
   ],
   "resources": [
-    "postgres",
-    "made-with-ml"
+    "postgres-routines",
+    "postgres-transactions",
+    "cmu-db"
   ],
   "featured": false,
-  "why": "Stored procedures appear in enterprise data systems and are relevant when explaining SQL-centric ETL experience.",
-  "intuition": "A stored procedure packages database-side SQL logic behind a callable name so applications or orchestrators can execute a consistent transformation close to the data.",
-  "deepDive": "Procedures can contain parameterized queries, branching, temporary tables, transactions and error handling. Benefits include centralized logic and reduced data movement; drawbacks include vendor coupling, harder versioning/testing and hidden business logic if poorly managed. Orchestrators such as ADF can call procedures as pipeline activities.",
-  "workedExample": "A new user story requires data from several tables. A procedure joins/filters them into the required shape; ADF triggers the procedure and moves the output to the next pipeline stage.",
+  "why": "Moving data-heavy logic to the database can avoid network transfer and use optimized relational execution. A routine can offer one audited operation instead of broad table privileges. But a slow row-by-row procedure can monopolize connections and locks; an unqualified security-definer routine can be exploited through object resolution; hidden triggers make write behavior surprising; and a scheduled procedure has no cross-system lineage or recovery plan. Interviews may focus on definition syntax. Production design must include ownership, transactional boundaries, deployment compatibility, performance, observability, and what happens after partial external failure.",
+  "intuition": "A stored routine is an API whose server happens to be the database. That location is powerful when the work is mostly relational and must share one transaction. It is constraining when logic calls many services, requires rich libraries, or evolves independently. Treat the routine like production code: typed inputs, narrow privileges, predictable side effects, tests, metrics, versioning, and a caller that understands retry semantics.",
+  "deepDive": "The full explanation is organized into the structured sections below.",
+  "workedExample": "Accept a typed date and run ID, reject an unbounded range, and acquire a concurrency guard for that partition. Build results into a staging relation using set-based SQL, validate row grain, counts, and reconciliations, then merge or replace the target partition within one transaction. Record source snapshot, definition version, row counts, and success atomically. A retry with the same run ID returns the existing result or safely recomputes according to policy. The orchestrator supplies schedule, backoff, backfill fan-out, alerts, and lineage across upstream and downstream systems.",
   "code": "-- conceptual\nCREATE PROCEDURE get_customer_features @as_of DATE AS\nSELECT ...\nFROM a JOIN b ON ...\nWHERE event_date <= @as_of;",
   "commonMistakes": [
-    "Putting every business rule into opaque database procedures with no version control.",
-    "Building dynamic SQL unsafely from user input.",
-    "Confusing a stored procedure with the orchestration pipeline itself."
+    {
+      "mistake": "Stored procedures are always faster because they run in the database.",
+      "correction": "Data locality can help, but row loops, poor plans, locks, and hidden work can be slower. Measure set-based alternatives and end-to-end cost."
+    },
+    {
+      "mistake": "A security-definer routine is safe because callers cannot access tables directly.",
+      "correction": "Unsafe search path, dynamic SQL, excessive owner rights, or callable helpers can escalate privileges. Harden the whole boundary."
+    },
+    {
+      "mistake": "A scheduled procedure is a complete data pipeline.",
+      "correction": "Cross-system dependencies, lineage, retries, backfills, alerts, and recovery still need orchestration and operational state."
+    }
   ],
   "followUps": [
-    "Stored procedure vs view?",
-    "Why execute logic in the database?",
-    "How would ADF call a procedure?",
-    "How do you debug a failing pipeline activity?"
+    {
+      "question": "Function versus procedure in PostgreSQL?",
+      "answer": "Functions return a value/relation and are used in queries; procedures are called with CALL and can have transaction-control capabilities under allowed context."
+    },
+    {
+      "question": "When is a trigger appropriate?",
+      "answer": "For tightly local automatic behavior that must accompany writes and whose hidden coupling, ordering, performance, and recursion risks are accepted; prefer constraints or explicit workflows where possible."
+    },
+    {
+      "question": "How do you deploy a breaking routine signature change?",
+      "answer": "Add a compatible/versioned interface, migrate callers, observe, and remove the old version later rather than replacing it underneath mixed deployments."
+    }
   ],
-  "production": "Keep SQL/procedure definitions in source control, test with representative data, log parameters/run IDs and separate database logic from orchestration concerns.",
+  "production": "Treat routines as least-privileged versioned APIs. Keep large work set-based, parameterize values, harden dynamic identifiers and search path, define transaction and retry ownership, and make loads idempotent by run/partition key. Let an orchestrator manage cross-system workflow. Monitor duration, rows, locks, spill, error class, freshness, and permissions, and use expand-contract rollout with a tested prior-version fallback.",
   "editorial": {
-    "status": "summary"
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "Stored functions and procedures execute reusable logic close to database data. They can centralize set-based transformations, enforce a privileged interface, reduce application round trips, and make some migrations atomic. They can also hide dependencies, concentrate load, couple code to one dialect, create security-definer escalation, and become an unobservable scheduler disguised as a routine. This chapter distinguishes SQL functions, procedures, triggers, views, and application jobs; explains parameters, result and transaction semantics, volatility and side effects, dynamic SQL and injection, set-oriented implementation, error handling, idempotent batches, and deployment versioning. You will build a small load procedure contract and compare it with an application-orchestrated pipeline. A key principle is separation of concerns: the routine owns a bounded database transaction or transformation, while an orchestrator owns schedules, retries across systems, lineage, backfills, alerts, and human recovery. Because routine capabilities vary strongly by engine, the chapter uses PostgreSQL documentation for concrete examples while clearly labeling portability boundaries.",
+  "prerequisites": [
+    "transactions-indexes",
+    "sql-ctes-subqueries"
+  ],
+  "learningObjectives": [
+    "Choose among function, procedure, trigger, view, and application job based on invocation, result, side-effect, and transaction needs.",
+    "Design set-based, parameterized, privilege-safe routines with explicit errors, idempotency, observability, and bounded transaction scope.",
+    "Deploy and operate database routines within versioned pipelines that support lineage, backfill, testing, rollback, and cross-system orchestration."
+  ],
+  "deepSections": [
+    {
+      "id": "routine-types",
+      "title": "Functions, procedures, triggers, and views",
+      "body": "Capabilities vary by database. In current PostgreSQL, a function is invoked within a query or data-manipulation expression and declares a return type; a procedure is invoked with `CALL`, has no function return value, can use output parameters, and under allowed call context may commit or roll back during execution. Other engines use different terminology and restrictions. Check target documentation rather than transporting assumptions.\n\nA view stores a query definition and behaves like a virtual relation; a materialized view stores results with refresh semantics. A trigger runs implicitly on events and can enforce local invariants or auditing but makes side effects less visible. Prefer constraints for declarative integrity, explicit calls for business workflows, and triggers only when unavoidable automatic coupling is understood.\n\nDefine routine contract: schema-qualified name, parameter types and defaults, result columns, NULL behavior, privileges, volatility/side effects, exception behavior, transaction ownership, and supported version. Avoid overloading that creates ambiguous calls. Returning sets can keep work relational; scalar loops that issue a query per row often recreate an N+1 problem inside the database."
+    },
+    {
+      "id": "implementation-security",
+      "title": "Set-based implementation, dynamic SQL, and security",
+      "body": "Express transformations as set operations so the optimizer can choose joins, aggregation, indexes, and parallel execution. Procedural control is appropriate for bounded branching, metadata operations, or coordination, but row-by-row loops over large tables multiply execution overhead and lock duration. Stage large changes, batch with deterministic keys, and measure plans for the SQL inside routines.\n\nUse typed parameters for values. When identifiers must be dynamic, construct SQL through engine quoting/format facilities and allowlists; value parameterization cannot substitute table names. Never concatenate untrusted text into executable SQL. Validate range and cardinality inputs to prevent unbounded work. Be clear whether a routine sees caller settings, timezone, locale, and search path.\n\nInvoker-rights routines use caller privileges; security-definer routines use owner privileges and need rigorous hardening: minimal owner rights, trusted schema qualification, controlled search path, revoked public execution where appropriate, and audit. A routine can become an authorization boundary only if object resolution and every reachable operation are safe. Do not log secrets or full sensitive parameters."
+    },
+    {
+      "id": "transactions-errors",
+      "title": "Transaction ownership, errors, and idempotency",
+      "body": "Decide whether the caller or procedure owns the transaction. Nested transaction behavior is usually savepoint-like or unsupported rather than independent commits. A routine called inside an explicit transaction may not be allowed to commit even if procedures can in other contexts. Hidden commits break caller atomicity. Keep one clear owner and document which failures abort the transaction.\n\nRaise domain-specific errors with enough context for diagnosis but not sensitive data. Check affected-row counts and invariants. Do not catch every exception and return success; rollback and observability depend on accurate failure. Separate retryable concurrency or transient conditions from permanent validation failures. Long routines should support cancellation and avoid holding locks during external calls.\n\nScheduled and retried loads need idempotency. Use a stable run or partition key, write to staging, validate, and merge or swap atomically. Record run status and source version under a transaction that cannot report success before results are visible. If partial commits are intentional for large batches, checkpoints and restart logic must make the weaker atomicity explicit."
+    },
+    {
+      "id": "pipeline-operations",
+      "title": "Routines inside data pipelines",
+      "body": "A database routine can own the database-local transformation boundary. A workflow orchestrator should own schedule, dependencies across warehouses and services, credentials, retries, backfill ranges, concurrency, lineage, alerting, and manual intervention. Calling one giant procedure from cron is not a complete pipeline: it lacks structured state and may rerun blindly after an uncertain timeout.\n\nVersion routine definitions in migrations with review and tests. Coordinate application and schema compatibility through expand-and-contract deployment: add a compatible routine/version, deploy callers, observe, then remove the old interface later. `CREATE OR REPLACE` may not allow every signature change and can alter in-flight behavior. Use explicit versioned names when simultaneous callers require different contracts.\n\nMonitor call rate, duration, rows read/written, lock waits, temp/spill, failures by class, retries, and source/output freshness. Capture query identifiers and plans for expensive internal statements. Test permissions, search path, NULLs, empty data, duplicates, reruns, cancellation, deadlocks, and rollback. Keep an application-side fallback or prior routine version until the new path is proven."
+    }
+  ],
+  "math": "A routine's useful atomic boundary is a transition S→S' that preserves declared invariants or rolls back. Row-at-a-time execution over n rows can issue Theta(n) statements/round trips inside the engine, while one set-based statement lets the optimizer choose a relational plan. Retry safety requires applying the same logical run identifier more than once without duplicating committed effects.",
+  "workedExamples": [
+    {
+      "title": "Load a daily aggregate partition idempotently",
+      "setup": "An orchestrator calls a database routine for one business date; retries and late corrections are possible.",
+      "walkthrough": "Accept a typed date and run ID, reject an unbounded range, and acquire a concurrency guard for that partition. Build results into a staging relation using set-based SQL, validate row grain, counts, and reconciliations, then merge or replace the target partition within one transaction. Record source snapshot, definition version, row counts, and success atomically. A retry with the same run ID returns the existing result or safely recomputes according to policy. The orchestrator supplies schedule, backoff, backfill fan-out, alerts, and lineage across upstream and downstream systems.",
+      "conclusion": "The procedure gives a reliable database-local transaction, while orchestration remains visible and recoverable outside it."
+    }
+  ],
+  "exercises": [
+    {
+      "difficulty": "recall",
+      "prompt": "Why is row-by-row procedural SQL often slow?",
+      "solution": "It repeats statement/executor overhead and prevents the optimizer from planning the transformation as one relational operation."
+    },
+    {
+      "difficulty": "application",
+      "prompt": "Where should a pipeline's cross-service retries and backfill schedule live?",
+      "solution": "In an orchestrator; the routine should own a bounded database-local transformation/transaction with an idempotent interface."
+    },
+    {
+      "difficulty": "diagnosis",
+      "prompt": "A security-definer routine starts resolving an attacker-created table. What likely failed?",
+      "solution": "The routine used an unsafe search path or unqualified object names. Pin trusted schemas and minimize owner privileges."
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "postgres-routines",
+      "contribution": "Defines current PostgreSQL function/procedure differences, invocation, result, and transaction-control capabilities."
+    },
+    {
+      "resource": "postgres-transactions",
+      "contribution": "Grounds error, transaction context, and retry semantics surrounding routine execution."
+    },
+    {
+      "resource": "cmu-db",
+      "contribution": "Provides relational execution, transaction, storage, and query-planning foundations for set-based routine design."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "compare",
+      "title": "Database routine and orchestrator responsibilities",
+      "left": {
+        "title": "Stored routine",
+        "items": [
+          "Data-local set logic",
+          "One database transaction",
+          "Constraints and validation",
+          "Narrow privilege interface"
+        ]
+      },
+      "right": {
+        "title": "Orchestrator",
+        "items": [
+          "Schedule and dependencies",
+          "Cross-system retries",
+          "Backfills and lineage",
+          "Alerts and human recovery"
+        ]
+      },
+      "caption": "A routine can be one reliable task without becoming the entire workflow system.",
+      "afterSection": "pipeline-operations"
+    },
+    {
+      "type": "flow",
+      "title": "Idempotent partition load",
+      "items": [
+        "Validate date and run ID",
+        "Build staging set",
+        "Check grain and reconciliation",
+        "Merge/swap atomically",
+        "Record version and success"
+      ],
+      "caption": "Retry safety comes from a stable partition/run contract and an atomic publish boundary.",
+      "afterSection": "transactions-errors"
+    }
+  ],
+  "lab": {
+    "goal": "Model an idempotent set-based partition load in SQLite and verify rerun, rollback, uniqueness, and reconciliation invariants.",
+    "language": "python",
+    "buildIt": "def load_day(con,day,run_id):\n    with con:\n        prior=con.execute('SELECT status FROM run WHERE run_id=?',(run_id,)).fetchone()\n        if prior: return prior[0]\n        con.execute('INSERT INTO run(run_id,day,status) VALUES (?,?,\"running\")',(run_id,day))\n        con.execute('DELETE FROM daily WHERE day=?',(day,))\n        con.execute('INSERT INTO daily(day,customer,total) SELECT day,customer,SUM(amount) FROM event WHERE day=? GROUP BY day,customer',(day,))\n        con.execute('UPDATE run SET status=\"success\" WHERE run_id=?',(run_id,))\n        return 'success'",
+    "useIt": "import sqlite3\ncon=sqlite3.connect(':memory:')\ncon.executescript('CREATE TABLE event(day TEXT,customer TEXT,amount REAL); CREATE TABLE daily(day TEXT,customer TEXT,total REAL,PRIMARY KEY(day,customer)); CREATE TABLE run(run_id TEXT PRIMARY KEY,day TEXT,status TEXT); INSERT INTO event VALUES (\"2026-01-01\",\"a\",2),(\"2026-01-01\",\"a\",3),(\"2026-01-01\",\"b\",4);')\nfirst=load_day(con,'2026-01-01','run-1'); second=load_day(con,'2026-01-01','run-1')",
+    "verifyIt": "assert first==second=='success'\nassert con.execute('SELECT customer,total FROM daily ORDER BY customer').fetchall()==[('a',5.0),('b',4.0)]\nassert con.execute('SELECT COUNT(*) FROM run WHERE run_id=\"run-1\"').fetchone()[0]==1\nassert con.execute('SELECT SUM(total) FROM daily').fetchone()[0]==con.execute('SELECT SUM(amount) FROM event').fetchone()[0]",
+    "shipIt": "Add explicit privilege tests, concurrency guard, source snapshot/version, affected-row metrics, cancellation, plan monitoring, orchestrator-owned retries, and expand-contract routine deployment."
   }
 }

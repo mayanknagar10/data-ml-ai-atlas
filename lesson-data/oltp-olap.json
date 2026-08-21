@@ -8,52 +8,177 @@
     "ds",
     "da"
   ],
-  "interviewAnswer": "OLTP systems optimize many small transactional reads/writes with strong consistency; OLAP systems optimize scans and aggregations over large historical datasets. Modeling and storage choices differ because workloads differ.",
+  "interviewAnswer": "OLTP handles many short, concurrent reads and writes over a small number of records, so it prioritizes transactions, constraints, selective indexes, low tail latency, and recovery. OLAP handles fewer but heavier scans, joins, and aggregations over large history, so it benefits from columnar compression, vectorized and parallel execution, dimensional models, and workload isolation. These are workload properties rather than strict product categories. Organizations commonly preserve a normalized operational source of truth and propagate committed changes into an analytical store, accepting and monitoring a freshness boundary instead of letting large scans contend with customer transactions.",
   "keyPoints": [
-    "Row-oriented often suits OLTP; columnar often suits analytics.",
-    "Do not run heavy analytical scans on critical transactional DBs.",
-    "Data freshness requirements drive architecture."
+    "Classify the workload, not the vendor",
+    "Transactions protect state changes",
+    "Analytics amortizes work over columns and batches",
+    "Replication creates a freshness boundary",
+    "Correctness needs reconciliation across systems"
   ],
   "resources": [
     "cmu-db",
-    "duckdb"
+    "duckdb-why",
+    "postgres-transactions"
   ],
   "featured": true,
-  "why": "OLTP vs OLAP appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
-  "intuition": "Row-oriented often suits OLTP; columnar often suits analytics.",
-  "deepDive": "OLTP systems optimize many small transactional reads/writes with strong consistency; OLAP systems optimize scans and aggregations over large historical datasets. Modeling and storage choices differ because workloads differ. Do not run heavy analytical scans on critical transactional DBs. Data freshness requirements drive architecture. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
-  "workedExample": "Orders are written to an OLTP database, then replicated/loaded into a warehouse for cohort analysis.",
+  "why": "A dashboard that scans years of orders can evict useful pages, consume I/O, hold resources, and increase lock or MVCC pressure on the system accepting new orders. Conversely, forcing an analytical warehouse to serve millisecond point updates may create cost and concurrency problems. Data teams therefore separate workloads, but separation creates another system whose state can lag, duplicate, omit, or reinterpret the operational source. Good architecture balances customer-facing correctness with analytical usability and proves that the copy is trustworthy. Interviews test the contrast; engineering requires knowing the failure modes at the boundary.",
+  "intuition": "Think of a checkout ledger and an investigation table. Checkout repeatedly finds a few accounts and writes a valid new state before a deadline. An investigation reads millions of historical rows, selects a handful of columns, groups them in several ways, and can tolerate seconds but not inconsistent definitions. A single engine may perform both, yet the physical layout, resource scheduling, schema, and replicas used for each path should follow these different shapes.",
+  "deepDive": "The full explanation is organized into the structured sections below.",
+  "workedExample": "The operational transaction writes normalized order, line, inventory, and outbox records under constraints. A log consumer reads only committed changes, deduplicates by source position, and lands immutable raw events. Transformations create an order-line fact at declared grain, join effective customer/product dimension versions, handle cancellations as explicit adjustments, and publish a daily aggregate. A watermark reports the latest complete commit time. At each daily cutoff, row counts, order IDs, gross amount, refunds, and net amount reconcile to source controls. A bad transformation version writes a new table and swaps consumers only after validation; rollback restores the prior version without changing operational orders.",
   "commonMistakes": [
-    "Applying the method without checking its assumptions or data-generating process.",
-    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+    {
+      "mistake": "OLTP means row storage and OLAP means column storage in every system.",
+      "correction": "Those layouts often suit the workload shapes, but hybrid engines exist; classify access, mutation, concurrency, and correctness first."
+    },
+    {
+      "mistake": "A read replica makes analytics safe automatically.",
+      "correction": "Heavy queries can still consume replica resources, lag may violate freshness, and schema/semantic coupling remains."
+    },
+    {
+      "mistake": "Exactly-once delivery removes the need for reconciliation.",
+      "correction": "Transport guarantees cannot prove correct transformation semantics, source coverage, deletes, or business measures."
+    }
   ],
   "followUps": [
-    "What assumptions does OLTP vs OLAP make?",
-    "How would you validate or debug OLTP vs OLAP in practice?"
+    {
+      "question": "Why is columnar storage effective for analytics?",
+      "answer": "It reads only projected columns, compresses similar values well, and supports vectorized processing over batches, reducing I/O and per-value overhead."
+    },
+    {
+      "question": "Why avoid application dual writes?",
+      "answer": "Independent destinations cannot commit atomically in ordinary application code, so partial failure creates divergent truth. Transactional outbox or log-based CDC couples publication to the source commit."
+    },
+    {
+      "question": "Can one database serve both workloads?",
+      "answer": "Yes, but success depends on workload isolation, physical design, concurrency control, freshness, and measured service objectives rather than the hybrid label itself."
+    }
   ],
-  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
-  "visual": {
-    "type": "compare",
-    "title": "OLTP vs OLAP",
-    "left": {
-      "title": "OLTP",
-      "items": [
-        "Many small reads/writes",
-        "Normalized schemas",
-        "Low-latency transactions"
-      ]
-    },
-    "right": {
-      "title": "OLAP",
-      "items": [
-        "Large scans/aggregations",
-        "Columnar storage",
-        "Analytics-oriented models"
-      ]
-    },
-    "caption": "Operational and analytical workloads optimize for different access patterns."
-  },
+  "production": "Define an owner and service-level objectives for transaction latency, analytical freshness, reconciliation, recovery point, and recovery time. Isolate heavy compute, bound queries, monitor tail latency, locks, MVCC age, queueing, scan/spill, CDC lag, schema failures, and control-total differences. Make ingestion idempotent and replayable, version transformations, test backfills, propagate security classifications and deletion, and retain a tested rollback to the last trusted analytical snapshot.",
   "editorial": {
-    "status": "summary"
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "Online transaction processing (OLTP) and online analytical processing (OLAP) describe workload families, not mutually exclusive product labels. OLTP systems serve many short, selective, concurrent state changes whose correctness depends on transactions, constraints, low tail latency, and predictable recovery. OLAP systems scan, join, and aggregate large portions of historical data for reporting, exploration, and model development; they favor columnar storage, vectorized execution, parallelism, compression, and workload isolation. This chapter derives those differences from access patterns, then connects them to row versus column layout, normalized versus dimensional models, indexing, materialized results, replication and change-data capture. You will learn why running an unbounded analytical query on a primary transaction database can harm customer traffic, why copying data introduces freshness and consistency trade-offs, and why a modern system may support both workload types without making their operational requirements identical. A worked commerce design follows an order from a transactional write into an analytical fact model and defines reconciliation, latency, privacy, rollback, and failure behavior. The goal is to choose boundaries from measured workload and correctness requirements rather than repeating that OLTP is simply “rows” and OLAP is simply “columns.”",
+  "prerequisites": [
+    "transactions-indexes",
+    "sql-aggregation"
+  ],
+  "learningObjectives": [
+    "Classify a database workload from access shape, concurrency, latency, correctness, and freshness requirements.",
+    "Explain how row/column layout, execution model, indexing, schema design, and isolation support different workloads.",
+    "Design and operate a transaction-to-analytics path with explicit delivery semantics, reconciliation, privacy, and recovery."
+  ],
+  "deepSections": [
+    {
+      "id": "workload-shape",
+      "title": "Workload shape and service objectives",
+      "body": "Classify a workload along several axes. Selectivity asks what fraction of rows and columns a query touches. Mutation granularity asks whether writes affect individual entities or arrive as batches. Concurrency asks how many operations overlap and whether they contend for the same keys. Latency needs include median and tail percentiles, not only average response. Correctness includes atomicity, isolation, durability, constraints, and read-after-write expectations. Analytics adds freshness, reproducibility, and definition consistency. Scale alone does not decide the category: a huge key-value lookup service can remain transactional, while a small laptop scan can be analytical.\n\nTypical OLTP operations insert an order, authorize a payment, or update inventory with narrow predicates and short transactions. Indexes trade write work for selective reads. Normalized schemas reduce duplicated mutable facts and allow constraints to protect relationships. The system must recover without exposing partial state and degrade safely when dependencies fail. Long user or network waits should not occur inside a database transaction.\n\nTypical OLAP queries aggregate history, join multiple subjects, compute windows, or explore unanticipated slices. They often touch many rows but few columns and reuse scans across batches of values. Throughput, bytes scanned, spill, and queue time matter alongside latency. Workload managers, separate compute, caching, summaries, and materialized views prevent one query from monopolizing resources. Interactive BI and batch training are both analytical but may need different queues and freshness targets."
+    },
+    {
+      "id": "physical-design",
+      "title": "Physical layout and execution",
+      "body": "A row-oriented layout keeps values from one record near one another. Fetching or updating an entire customer row can therefore require few page accesses. A columnar layout stores values of a column together within blocks. A query reading three columns from a hundred-column table can avoid the others, and similar adjacent values compress well. Analytical engines commonly execute operators over vectors rather than paying interpretation and function-call overhead per scalar value. Parallel scans and aggregations use multiple cores and partitions.\n\nThe labels are tendencies, not guarantees. Transaction engines can use column stores, analytics engines can maintain row-oriented components, and hybrid systems can choose layouts adaptively. Secondary indexes, clustered order, zone maps, partition metadata, and materialized aggregates change how much data is touched. The optimizer still needs accurate cardinality and cost estimates. Columnar storage does not rescue a query that selects every column, misses pruning, explodes a join, or creates severe skew.\n\nWrites expose the opposite trade-off. Updating one logical row scattered across many column segments can be expensive, so column stores may buffer, append deltas, and compact later. Analytical tables often prefer immutable files and batch rewrites. Every design should be evaluated using the actual mix: scanned columns, predicate selectivity, update rate, file sizes, compression, concurrency, and failure recovery—not a synthetic headline benchmark."
+    },
+    {
+      "id": "modeling-boundary",
+      "title": "Operational and analytical models",
+      "body": "Operational schemas organize mutable facts around entities and invariants. Normalization reduces update anomalies, but it does not automatically make a schema understandable for cross-functional analysis. Analytical models publish stable business processes at declared grain. A fact table may record one order line, while dimensions describe customer, product, channel, and calendar context. Denormalization and conformed dimensions simplify repeated group-by queries and centralize metric meaning.\n\nThe analytical model is not a careless copy. It chooses event time, processing time, currency conversion, late-arriving behavior, deletion policy, and historical interpretation. Measures must be classified as additive, semi-additive, or non-additive. Surrogate keys can preserve dimension history. Semantic metrics must identify their numerator, denominator, filters, time grain, and eligible population. A warehouse query is reproducible only when inputs and transformation versions are recoverable.\n\nSome use cases should query operational data directly: a customer viewing the order they just placed needs authoritative current state. Others need historical, cross-system context that an OLTP schema should not carry. Operational analytical processing, read replicas, federated queries, and lakehouse engines can narrow the physical separation, but they do not eliminate ownership, freshness, resource, or semantic boundaries. Decide which system is authoritative for each question."
+    },
+    {
+      "id": "data-movement",
+      "title": "Moving committed state into analytics",
+      "body": "Batch extraction periodically snapshots or queries source ranges. Change-data capture (CDC) reads a commit log or equivalent stream and emits ordered row changes. Dual-writing independently from application code is dangerous: one destination can succeed while the other fails. An outbox written in the source transaction or log-based CDC ties publication to committed state more safely. Delivery is commonly at least once, so downstream processing needs stable event identifiers, source positions, idempotent merges, and replay.\n\nA change event can be delivered correctly yet produce a wrong table because schema, ordering, delete, or temporal semantics were misunderstood. Capture inserts, updates, deletes, transaction boundaries where needed, and source schema evolution. Watermarks express progress, not truth. Reconcile source counts and control totals at a stable cutoff. Measure end-to-end freshness from source commit time, backlog, duplicate and reject rates, and silent gaps. Backfills should use the same semantics as incremental processing and must not race with the live stream.\n\nSecurity follows data. Minimize copied personal data, tokenize identifiers, propagate classification, enforce purpose-based access, and implement deletion across replicas and backups under policy. Recovery needs checkpoints, replayable raw events or snapshots, versioned transformations, quarantines, and a tested rollback or rebuild path. Separation protects workloads only when resource, correctness, and operational ownership are explicit."
+    }
+  ],
+  "math": "A useful workload vector is W=(s,c,m,q,L,F,I), where s is row selectivity, c is projected-column fraction, m is mutation granularity/rate, q is concurrency, L is a latency distribution, F is required freshness, and I is the isolation/correctness contract. OLTP tends toward small s, high q, fine mutations, tight tail L, and strong I. OLAP tends toward large s, small c, batch mutations, heavier operators, and an explicit F. These tendencies guide design; they are not definitions enforced by a product name.",
+  "workedExamples": [
+    {
+      "title": "Orders from checkout to daily revenue",
+      "setup": "Checkout must atomically create an order, reserve inventory, and expose the result immediately; finance needs historical daily net revenue by product and region.",
+      "walkthrough": "The operational transaction writes normalized order, line, inventory, and outbox records under constraints. A log consumer reads only committed changes, deduplicates by source position, and lands immutable raw events. Transformations create an order-line fact at declared grain, join effective customer/product dimension versions, handle cancellations as explicit adjustments, and publish a daily aggregate. A watermark reports the latest complete commit time. At each daily cutoff, row counts, order IDs, gross amount, refunds, and net amount reconcile to source controls. A bad transformation version writes a new table and swaps consumers only after validation; rollback restores the prior version without changing operational orders.",
+      "conclusion": "The design protects checkout latency while making the analytical copy observable, replayable, historically meaningful, and financially reconcilable."
+    }
+  ],
+  "exercises": [
+    {
+      "difficulty": "recall",
+      "prompt": "Name three workload properties more useful than a product's OLTP/OLAP label.",
+      "solution": "Examples include row and column selectivity, mutation granularity, concurrency, tail latency, freshness, isolation, query complexity, and recovery requirements."
+    },
+    {
+      "difficulty": "application",
+      "prompt": "A dashboard query causes checkout p99 latency spikes. Propose a safer boundary.",
+      "solution": "Move the scan to isolated analytical compute fed from committed changes, publish a freshness watermark, reconcile control totals, and route read-after-write customer views to authoritative transactional state."
+    },
+    {
+      "difficulty": "diagnosis",
+      "prompt": "CDC lag is zero but yesterday's revenue is low. What should you inspect?",
+      "solution": "Check source cutoff coverage, deletes/cancellations, schema rejects, duplicate/idempotency logic, transformation and join semantics, timezone/currency rules, and source-to-fact control-total reconciliation."
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "cmu-db",
+      "contribution": "Provides database storage, indexing, query processing, transactions, recovery, and distributed architecture foundations behind workload trade-offs."
+    },
+    {
+      "resource": "duckdb-why",
+      "contribution": "Explains an analytical engine's official rationale for columnar-vectorized execution and large scan/join/aggregation workloads."
+    },
+    {
+      "resource": "postgres-transactions",
+      "contribution": "Grounds transactional isolation, snapshots, anomalies, and retry behavior on the operational side."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "compare",
+      "title": "Workload-driven database design",
+      "left": {
+        "title": "OLTP tendency",
+        "items": [
+          "Narrow reads and writes",
+          "High concurrency",
+          "Constraints and transactions",
+          "Tight tail latency",
+          "Selective indexes"
+        ]
+      },
+      "right": {
+        "title": "OLAP tendency",
+        "items": [
+          "Wide historical scans",
+          "Batch/vector execution",
+          "Columnar compression",
+          "Parallel joins and aggregates",
+          "Freshness watermark"
+        ]
+      },
+      "caption": "These are workload tendencies; hybrid engines can combine mechanisms, but service objectives still differ.",
+      "afterSection": "workload-shape"
+    },
+    {
+      "type": "flow",
+      "title": "Committed data to trusted analytics",
+      "items": [
+        "Operational transaction",
+        "Outbox / commit log",
+        "Idempotent raw landing",
+        "Tested transformations",
+        "Dimensional marts",
+        "Reconciliation + freshness"
+      ],
+      "caption": "The boundary is trustworthy only when every committed change is replayable, transformed consistently, and reconciled.",
+      "afterSection": "data-movement"
+    }
+  ],
+  "lab": {
+    "goal": "Compare row-oriented and column-oriented projections with a tiny model, then verify that both produce identical analytical results.",
+    "language": "python",
+    "buildIt": "def row_scan(rows, region):\n    touched=0; total=0.0\n    for row in rows:\n        touched += len(row)\n        if row['region']==region:\n            total += row['amount']\n    return total,touched\n\ndef column_scan(columns, region):\n    touched=0; total=0.0\n    for value,amount in zip(columns['region'],columns['amount']):\n        touched += 2\n        if value==region:\n            total += amount\n    return total,touched",
+    "useIt": "import sqlite3\nrows=[{'order_id':1,'region':'EU','amount':10.0,'note':'a'},{'order_id':2,'region':'US','amount':7.0,'note':'b'},{'order_id':3,'region':'EU','amount':4.0,'note':'c'}]\ncolumns={key:[row[key] for row in rows] for key in rows[0]}\ncon=sqlite3.connect(':memory:')\ncon.execute('CREATE TABLE orders(order_id INTEGER,region TEXT,amount REAL,note TEXT)')\ncon.executemany('INSERT INTO orders VALUES(:order_id,:region,:amount,:note)',rows)\nsql_total=con.execute(\"SELECT SUM(amount) FROM orders WHERE region='EU'\").fetchone()[0]",
+    "verifyIt": "row_total,row_touched=row_scan(rows,'EU')\ncolumn_total,column_touched=column_scan(columns,'EU')\nassert row_total==column_total==sql_total==14.0\nassert column_touched < row_touched\nassert sum(columns['amount'])==21.0\nassert len(rows)==len(columns['order_id'])",
+    "shipIt": "Benchmark representative filters and projections on the target engine, isolate analytical resources, publish freshness and reconciliation metrics, and keep a rollback-ready versioned output."
   }
 }

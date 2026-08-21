@@ -9,54 +9,170 @@
     "mle",
     "da"
   ],
-  "interviewAnswer": "INNER JOIN returns matching rows; LEFT JOIN keeps every row from the left side and fills unmatched right-side columns with NULL; FULL OUTER JOIN keeps rows from both sides. Choose based on what records must survive the join.",
+  "interviewAnswer": "A join pairs rows whose predicate evaluates true. Inner join keeps matches; left join also preserves unmatched left rows with NULL-extended right columns; full join preserves unmatched rows from both sides. Cardinality depends on key multiplicities: a key appearing a times on the left and b times on the right contributes a×b inner matches. Define each table's grain, validate key uniqueness and match rates, and be careful placing right-side filters after a left join because `WHERE` can remove NULL-extended rows. The optimizer may implement the same logic with nested-loop, hash, or merge join.",
   "keyPoints": [
-    "Join keys",
-    "Duplicate amplification",
-    "NULL behavior",
-    "Many-to-many joins"
+    "Declare row grain first",
+    "Multiplicity determines output rows",
+    "Outer joins preserve one side",
+    "NULL makes predicates unknown",
+    "Logical join differs from physical algorithm"
   ],
   "resources": [
-    "postgres"
+    "postgres-select",
+    "cmu-db"
   ],
   "featured": true,
-  "why": "Joins test whether you understand relational grain, keys and duplicate amplification—not just SQL syntax. They are central to feature building, analytics and ETL.",
-  "intuition": "A join decides which rows survive when two tables are connected by a key. Before writing SQL, state the grain of each table and whether the key is one-to-one, one-to-many or many-to-many.",
-  "deepDive": "INNER JOIN keeps only matching rows. LEFT JOIN preserves every left-side row and fills unmatched right columns with NULL. FULL OUTER JOIN preserves unmatched rows from both sides. A many-to-many join multiplies rows, which is often the source of silent metric inflation. Join predicates belong in ON when they define matching logic; filters in WHERE can accidentally turn a LEFT JOIN into INNER-like behavior by removing NULL matches.",
-  "workedExample": "customers has one row per customer while orders has many rows per customer. Joining them creates one row per order, not one row per customer. If you later average a customer-level feature without re-aggregating, heavy buyers are overrepresented.",
+  "why": "Joins reconstruct business entities from normalized or separately produced tables. They also cause some of the most expensive silent data errors: duplicated dimension keys multiply facts, unmatched entities disappear under an inner join, filters collapse an outer join, and inconsistent IDs create false misses. In ML, row multiplication can overweight users or leak labels; in analytics, it can inflate revenue. Interview questions test syntax, but experienced reviewers ask for expected row counts, uniqueness, unmatched policy, and reconciliation. Production systems must additionally manage skewed keys, stale statistics, memory spills, indexes, and changing upstream contracts.",
+  "intuition": "Write a sentence for one row in each input. A customer row represents one customer; an order row represents one order. Joining on customer ID creates one row per matching customer-order pair, not automatically one row per customer. Outer joins add placeholder rows for an input that found no partner. This pair-making model makes duplicate multiplication and filter placement predictable before any SQL executes.",
+  "deepDive": "The full explanation is organized into the structured sections below.",
+  "workedExample": "Validate customer IDs as unique. Aggregate valid orders to customer grain before joining, producing total spend and order count. Left-join aggregates to customers. Put order eligibility predicates inside the aggregation or ON semantics rather than filtering right columns after NULL extension. Assert output rows and unique customer IDs equal the customer input, inspect match categories, fill a missing aggregate with zero only when it structurally means no qualifying orders, and reconcile total spend with the aggregate input. A missing amount within a matched order remains a data-quality state, not zero.",
   "code": "SELECT c.customer_id, o.order_id, o.amount\nFROM customers c\nLEFT JOIN orders o\n  ON c.customer_id = o.customer_id;",
   "commonMistakes": [
-    "Ignoring table grain and creating duplicate amplification.",
-    "Filtering right-table columns in WHERE after a LEFT JOIN and unintentionally dropping unmatched rows.",
-    "Joining on non-unique or dirty keys without checking cardinality."
+    {
+      "mistake": "A left join always preserves exactly the left row count.",
+      "correction": "It preserves every left row but can multiply it when multiple right rows match. Exact preservation also needs a many-to-one contract."
+    },
+    {
+      "mistake": "Move every filter to WHERE for readability.",
+      "correction": "For outer joins, moving a right-side predicate from ON to WHERE can remove NULL-extended unmatched rows and change semantics."
+    },
+    {
+      "mistake": "Use DISTINCT to fix duplicate join output.",
+      "correction": "It hides the cardinality error and may remove legitimate facts. Diagnose key multiplicity and choose an explicit duplicate policy."
+    }
   ],
   "followUps": [
-    "INNER vs LEFT JOIN?",
-    "What happens in a many-to-many join?",
-    "How do NULLs behave in joins?",
-    "How would you detect duplicate amplification?"
+    {
+      "question": "When is `EXISTS` better than a join?",
+      "answer": "When the question is whether a right-side match exists and no right columns are needed; it avoids multiplying left rows by match count."
+    },
+    {
+      "question": "Why can a hash join spill?",
+      "answer": "The build-side hash state and buffers exceed available memory, often because cardinality was large or underestimated."
+    },
+    {
+      "question": "How do you debug a join that became slow without SQL changes?",
+      "answer": "Compare current and prior plans, statistics, cardinalities, key skew, indexes, spill, and estimated-versus-actual rows."
+    }
   ],
-  "production": "In feature pipelines, validate join cardinality, row counts and uniqueness before/after joins. Point-in-time joins are essential to prevent temporal leakage.",
-  "visual": {
-    "type": "compare",
-    "title": "Join semantics",
-    "left": {
-      "title": "INNER JOIN",
-      "items": [
-        "Keep matched keys only",
-        "Unmatched rows disappear"
-      ]
-    },
-    "right": {
-      "title": "LEFT JOIN",
-      "items": [
-        "Keep all left rows",
-        "Missing right values become NULL"
-      ]
-    },
-    "caption": "Always reason from table grain and which records must survive."
-  },
+  "production": "Declare grain, keys, multiplicity, NULL and unmatched policies, and temporal validity. Enforce constraints where possible and test row counts, uniqueness, match categories, expansion factor, and measure reconciliation. Monitor plan changes, estimate error, hot keys, spill, and latency. Keep statistics and indexes healthy, secure the combined data, and publish versioned idempotent outputs with rollback.",
   "editorial": {
-    "status": "summary"
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "A SQL join combines rows according to a predicate, but its most important property is cardinality: how many output rows each input key can produce. This chapter develops joins from Cartesian product and filtering, then covers inner, left, right, full, cross, self, semi, and anti semantics; NULL and three-valued logic; duplicate multiplication; key normalization; and physical nested-loop, hash, and merge join strategies. You will learn to state table grain before joining, place predicates correctly for outer joins, enforce one-to-one or many-to-one expectations with constraints and tests, and reconcile measures after combination. A worked customer-order example preserves customers without orders while distinguishing structural absence from unknown amounts. The performance section connects logical SQL to optimizer choices, indexes, statistics, memory, spill, skew, and join order without assuming a particular plan from query text. The objective is not merely to recall join syntax. It is to predict the output population, prove which unmatched rows survive, catch unintended many-to-many expansion, and operate joins safely as data distributions and schemas change.",
+  "prerequisites": [
+    "hash-tables",
+    "normalization-db"
+  ],
+  "learningObjectives": [
+    "Predict output grain, matched multiplicity, and unmatched-row behavior for every major join type.",
+    "Explain NULL predicate behavior and distinguish semi/anti existence tests from value-producing joins.",
+    "Validate join correctness and diagnose physical plans using keys, constraints, statistics, indexes, memory, and skew."
+  ],
+  "deepSections": [
+    {
+      "id": "logical-semantics",
+      "title": "Logical join semantics and grain",
+      "body": "Conceptually, an inner join starts from candidate row pairs and retains those for which the ON predicate is true. A cross join retains the Cartesian product. A left outer join also emits one NULL-extended result for each left row with no true match; right and full joins extend the analogous sides. A self-join aliases one relation into distinct roles, such as employee and manager. SQL is bag-based by default, so duplicate input rows remain and duplicate matches multiply.\n\nState grain and keys before querying. If R has a_k rows and S has b_k rows for join key k, an equality inner join contributes a_k b_k rows. A many-to-one enrichment requires at most one right row for each key. Primary, unique, and foreign-key constraints make part of this contract executable, but historical or staged data may violate it before constraints are applied. Measure row counts, distinct keys, maximum multiplicity, and unmatched keys.\n\nA semi join asks whether a match exists and returns each qualifying left row once; `EXISTS` expresses it. An anti join returns left rows for which no match exists using `NOT EXISTS`. Joining solely to filter can duplicate left rows when multiple matches exist, so existence queries are semantically safer. `DISTINCT` after a wrong join hides evidence and can discard legitimate duplicate facts."
+    },
+    {
+      "id": "null-predicates",
+      "title": "NULL, predicates, and outer-join filters",
+      "body": "SQL uses three-valued logic: comparisons with NULL usually produce UNKNOWN rather than true or false. Join matching retains only TRUE predicates, so two NULL keys do not ordinarily match under equality. If missing-key equivalence is required, use a dialect-supported null-safe comparison and document why; coalescing to a sentinel risks colliding with real data.\n\nPredicate location matters with outer joins. A right-table condition in the ON clause restricts which right rows match while retaining unmatched left rows. The same condition in a WHERE clause runs after NULL extension; UNKNOWN rows fail the filter and the query can behave like an inner join for that condition. This is not a performance trick but a change in result semantics.\n\n`NOT IN` is dangerous when its subquery can contain NULL: comparisons can become UNKNOWN and return no rows unexpectedly. `NOT EXISTS` states the anti-join intent and handles correlation explicitly. Also distinguish `COUNT(*)`, which counts NULL-extended rows, from `COUNT(right.key)`, which ignores NULL and can count actual matches. Test empty tables, NULL keys, duplicate keys, and unmatched rows with tiny fixtures."
+    },
+    {
+      "id": "physical-joins",
+      "title": "Nested-loop, hash, and merge join algorithms",
+      "body": "The optimizer chooses a physical algorithm for equivalent logical semantics. A nested-loop join scans or probes the inner side for outer rows. It is effective when the outer side is small and an index makes each inner lookup cheap; without an index, scanning a large inner relation repeatedly can be disastrous. A hash join builds a hash table on one equality-join side and probes it with the other. It suits equijoins and depends on build-side size, memory, hash distribution, and spill behavior.\n\nA merge join consumes both inputs in join-key order, advancing through sorted groups. It can handle large sorted inputs and range-like predicates in some engines, but obtaining order may require sorts. Duplicate groups require emitting all matching combinations. Physical details vary by system, so use the actual plan rather than inferring the algorithm from SQL syntax.\n\nJoin order has a large search space and intermediate cardinality determines cost. Optimizers estimate selectivity from statistics and constraints; correlated columns, stale statistics, or skewed hot keys can cause severe estimation errors. Push selective filters when semantics allow, project unused columns, index relevant lookup keys, and refresh statistics. Do not force a plan before understanding why estimates differ from actual rows."
+    },
+    {
+      "id": "join-assurance",
+      "title": "Correctness checks and production operation",
+      "body": "Turn expected relationships into checks. Before a many-to-one merge, assert right-key uniqueness. Compare input and output row counts under the declared grain. Use match indicators or grouped counts to quantify left-only, right-only, and matched keys. Reconcile additive measures: if an enrichment should not duplicate facts, total amount before and after should agree. Inspect the highest-multiplicity keys rather than averaging away skew.\n\nNormalize key types, whitespace, case, Unicode, and timezone only according to domain rules. Preserve raw identifiers for audit. Define late-arriving dimension behavior, effective-date joins for slowly changing dimensions, and whether missing dimension records fail, quarantine, or produce an unknown member. Temporal joins must prevent using attributes that became known after an event or prediction time.\n\nIn production, monitor duplicate rates, unmatched rates, row expansion factor, reconciliation differences, plan shape, estimated-versus-actual rows, spill, and latency. Version contracts and outputs, make jobs idempotent, and retain a rollback dataset. Apply access controls because joining two permitted datasets can create a more sensitive combined view."
+    }
+  ],
+  "math": "For equality key k with multiplicities a_k in R and b_k in S, inner-join cardinality is Σ_k a_k b_k. A left join adds one output for each left row whose key has b_k=0. A many-to-one left enrichment requires b_k≤1 and therefore preserves the left row count.",
+  "workedExamples": [
+    {
+      "title": "Enrich customers with order aggregates",
+      "setup": "Customers are one row per customer. Orders are one row per order, and customers with no orders must remain.",
+      "walkthrough": "Validate customer IDs as unique. Aggregate valid orders to customer grain before joining, producing total spend and order count. Left-join aggregates to customers. Put order eligibility predicates inside the aggregation or ON semantics rather than filtering right columns after NULL extension. Assert output rows and unique customer IDs equal the customer input, inspect match categories, fill a missing aggregate with zero only when it structurally means no qualifying orders, and reconcile total spend with the aggregate input. A missing amount within a matched order remains a data-quality state, not zero.",
+      "conclusion": "Pre-aggregation and explicit cardinality keep the output at customer grain, while separate missingness policies preserve meaning."
+    }
+  ],
+  "exercises": [
+    {
+      "difficulty": "recall",
+      "prompt": "A key appears 3 times left and 4 times right. How many inner matches?",
+      "solution": "Twelve, because every matching left row pairs with every matching right row."
+    },
+    {
+      "difficulty": "application",
+      "prompt": "Return customers having at least one failed payment without duplicating customers.",
+      "solution": "Use a correlated `EXISTS` subquery or a semi-join pattern rather than joining all failed payments into the customer rows."
+    },
+    {
+      "difficulty": "diagnosis",
+      "prompt": "A left join loses customers after adding `WHERE orders.status='paid'`. Why?",
+      "solution": "Unmatched rows have NULL status, so the WHERE predicate is UNKNOWN and removes them. Put qualifying-order logic in ON or a prefiltered/aggregated relation."
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "postgres-select",
+      "contribution": "Defines official join, ON, outer-row, grouping, and logical table-expression semantics."
+    },
+    {
+      "resource": "cmu-db",
+      "contribution": "Provides relational execution, join algorithms, cardinality estimation, indexing, and optimizer foundations."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "compare",
+      "title": "Inner and left join preservation",
+      "left": {
+        "title": "Inner join",
+        "items": [
+          "Matched pairs only",
+          "Unmatched rows removed",
+          "Duplicates multiply",
+          "Use for intersection"
+        ]
+      },
+      "right": {
+        "title": "Left join",
+        "items": [
+          "All left rows retained",
+          "Unmatched right becomes NULL",
+          "Matches still multiply",
+          "Use for enrichment"
+        ]
+      },
+      "caption": "Outer preservation does not prevent duplicate expansion when multiple matches exist.",
+      "afterSection": "logical-semantics"
+    },
+    {
+      "type": "flow",
+      "title": "Join assurance loop",
+      "items": [
+        "Declare grain and keys",
+        "Check multiplicity",
+        "Execute explicit join",
+        "Measure matches and expansion",
+        "Reconcile measures"
+      ],
+      "caption": "Correctness is established with contracts and postconditions, not syntax alone.",
+      "afterSection": "join-assurance"
+    }
+  ],
+  "lab": {
+    "goal": "Model join cardinality with tiny tables and verify preservation, unmatched, duplication, and reconciliation invariants.",
+    "language": "python",
+    "buildIt": "def inner_join(left,right,key):\n    out=[]\n    for lrow in left:\n        for rrow in right:\n            if lrow.get(key) is not None and lrow.get(key)==rrow.get(key):\n                out.append({**lrow,**rrow})\n    return out\n\ndef left_join(left,right,key):\n    out=[]\n    right_fields=set().union(*(r.keys() for r in right)) if right else set()\n    for lrow in left:\n        matches=[r for r in right if lrow.get(key) is not None and lrow.get(key)==r.get(key)]\n        if matches:\n            out.extend({**lrow,**r} for r in matches)\n        else:\n            out.append({**{f:None for f in right_fields if f not in lrow},**lrow})\n    return out",
+    "useIt": "import sqlite3\ncon=sqlite3.connect(':memory:')\ncon.executescript('CREATE TABLE customer(id INTEGER PRIMARY KEY); CREATE TABLE orders(id INTEGER, customer_id INTEGER, amount REAL); INSERT INTO customer VALUES (1),(2),(3); INSERT INTO orders VALUES (10,1,5),(11,1,7),(12,2,3);')\nrows=con.execute('SELECT c.id, COUNT(o.id), COALESCE(SUM(o.amount),0) FROM customer c LEFT JOIN orders o ON o.customer_id=c.id GROUP BY c.id ORDER BY c.id').fetchall()",
+    "verifyIt": "assert rows == [(1,2,12.0),(2,1,3.0),(3,0,0)]\nassert len(rows)==3 and len({r[0] for r in rows})==3\nassert sum(r[2] for r in rows)==15.0\ndup=con.execute('SELECT COUNT(*) FROM customer c JOIN orders o ON o.customer_id=c.id').fetchone()[0]\nassert dup==3",
+    "shipIt": "Translate these invariants into warehouse tests: key uniqueness, row expansion, unmatched rates, temporal validity, measure reconciliation, plan regression, and rollback-ready outputs."
   }
 }

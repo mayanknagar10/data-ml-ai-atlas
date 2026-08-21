@@ -8,42 +8,178 @@
     "ds",
     "da"
   ],
-  "interviewAnswer": "A star schema separates measurable events in fact tables from descriptive entities in dimensions. Grain must be defined first; many analytical errors come from joining tables at inconsistent grain.",
+  "interviewAnswer": "A star schema has a central fact table that records a business process at a declared grain and dimension tables that describe the who, what, where, when, and how. Start with the grain—for example, one row per order line—then choose dimensions and numeric facts consistent with it. Use conformed dimensions across facts, surrogate keys when historical dimension versions matter, and classify measures as additive, semi-additive, or non-additive. Validate uniqueness and referential integrity, reconcile source totals, handle late facts and dimensions explicitly, and define metrics above the model so users do not silently aggregate at the wrong grain.",
   "keyPoints": [
-    "Declare fact-table grain explicitly.",
-    "Dimensions describe who/what/where.",
-    "Slowly changing dimensions preserve history."
+    "Declare grain before columns",
+    "Facts record processes",
+    "Dimensions provide context",
+    "Additivity has dimensional limits",
+    "Conformed dimensions enable consistent drill-across"
   ],
   "resources": [
-    "dbt-docs"
+    "kimball-dimensional",
+    "dbt-best-practices",
+    "postgres-select"
   ],
   "featured": false,
-  "why": "Star Schemas, Facts & Dimensions appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
-  "intuition": "Declare fact-table grain explicitly.",
-  "deepDive": "A star schema separates measurable events in fact tables from descriptive entities in dimensions. Grain must be defined first; many analytical errors come from joining tables at inconsistent grain. Dimensions describe who/what/where. Slowly changing dimensions preserve history. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
-  "workedExample": "One row per order-line fact joined to customer/product/date dimensions.",
+  "why": "Analytical teams repeatedly join operational tables, interpret mutable codes, and calculate the same metric differently. A dimensional model moves this logic into a governed publication layer. The wrong design, however, can make errors systematic: an order-level amount repeated on every line inflates revenue, a current customer tier rewrites historical segmentation, and an unmatched dimension can drop facts. Star schemas are valuable when their grain, history, and aggregation contracts are explicit and tested—not because a diagram looks like a star.",
+  "intuition": "Treat the fact table as a notebook where every line represents the same kind of occurrence. Dimensions are dictionaries attached to that line. If one notebook line sometimes means an order and sometimes an order item, no grouping can be trusted. Once every line has the same meaning, measures can be summed or counted only along dimensions for which that operation is valid.",
+  "deepDive": "The full explanation is organized into the structured sections below.",
+  "workedExample": "Declare the fact grain as one row per accepted order line, identified by order_id and line_id. Join the product and customer Type 2 versions effective at order time and role-play the date dimension. Store quantity, gross line amount, allocated discount, refunded amount, and net amount; retain order_id as a degenerate dimension. Do not copy header order total to every line. `SUM(net_amount)` and `SUM(quantity)` are additive; order count is `COUNT(DISTINCT order_id)` at query time or comes from a separate order fact. Tests enforce key uniqueness, dimension coverage, non-overlapping versions, and `gross-discount-refund=net`. Daily source control totals reconcile at the same timezone cutoff. A late customer uses an explicit inferred member and is re-keyed idempotently when the version arrives.",
   "commonMistakes": [
-    "Applying the method without checking its assumptions or data-generating process.",
-    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+    {
+      "mistake": "Choose columns first and infer the fact grain afterward.",
+      "correction": "Declare the business process and row meaning first; every dimension and measure must be valid at that grain."
+    },
+    {
+      "mistake": "Every numeric column is safely summable.",
+      "correction": "Balances, ratios, prices, and distinct counts have aggregation restrictions; store atomic components and document valid dimensions."
+    },
+    {
+      "mistake": "Join facts directly because they share dimension keys.",
+      "correction": "Two fact tables often have different grains and create fanout. Aggregate each to a compatible conformed grain before combining."
+    }
   ],
   "followUps": [
-    "What assumptions does Star Schemas, Facts & Dimensions make?",
-    "How would you validate or debug Star Schemas, Facts & Dimensions in practice?"
+    {
+      "question": "What is the grain of a fact table?",
+      "answer": "The exact real-world meaning of one row, including entity identifiers and time/event semantics. It determines valid keys, dimensions, facts, and aggregations."
+    },
+    {
+      "question": "Why use a surrogate dimension key?",
+      "answer": "It separates warehouse row-version identity from mutable source keys and lets a fact reference the historical dimension version effective for the event."
+    },
+    {
+      "question": "What is a conformed dimension?",
+      "answer": "A governed dimension with consistent keys and semantics across business processes, enabling compatible filtering and drill-across among facts."
+    }
   ],
-  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
-  "visual": {
-    "type": "schema",
-    "title": "Star schema",
-    "center": "Fact table",
-    "satellites": [
-      "Dim customer",
-      "Dim product",
-      "Dim date",
-      "Dim geography"
-    ],
-    "caption": "A fact table captures events/measures; dimensions provide descriptive context for slicing and grouping."
-  },
+  "production": "Publish the grain, ownership, freshness, history, and metric contracts. Enforce uniqueness, referential coverage, temporal interval validity, accepted unknown-member behavior, and source reconciliation. Build idempotently into versioned or atomically swapped targets, monitor freshness, volume, fanout, unknown rates, control totals, cost, and sensitive access, and retain a tested rollback version. Require compatible aggregation before combining facts of different grains.",
   "editorial": {
-    "status": "summary"
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "A star schema publishes a business process as a fact table at one explicit grain surrounded by dimensions that provide descriptive context. Its value is not merely fewer joins: it makes repeated analytical questions predictable, metrics auditable, and filters consistent across tools. This chapter follows the dimensional design sequence—choose a business process, declare grain, identify dimensions, and define facts—then examines transaction, periodic snapshot, and accumulating snapshot facts; additive, semi-additive, and non-additive measures; conformed dimensions; surrogate keys; degenerate dimensions; role-playing dates; unknown members; bridges; and factless facts. You will learn to reject mixed-grain tables, distinguish event time from load time, preserve referential integrity for late-arriving data, and avoid summing ratios or balances across invalid dimensions. A worked order-line mart derives revenue and order metrics without double counting. The production sections cover incremental loading, reconciliation, semantic-layer alignment, access control, schema evolution, cost, and rollback. The aim is to make the grain sentence the executable contract that connects source events, SQL tests, metric definitions, and downstream machine-learning features.",
+  "prerequisites": [
+    "oltp-olap",
+    "sql-joins",
+    "sql-aggregation"
+  ],
+  "learningObjectives": [
+    "Design a star schema by declaring business process and grain before selecting dimensions and facts.",
+    "Classify facts and measures so aggregations remain valid across time, entities, and dimensional filters.",
+    "Validate and operate a dimensional mart using keys, reconciliation, late-data policy, semantic definitions, and rollback."
+  ],
+  "deepSections": [
+    {
+      "id": "four-step-design",
+      "title": "Business process, grain, dimensions, and facts",
+      "body": "Begin with a measurable business process such as orders, shipments, subscriptions, support interactions, or daily account balances. Do not begin from a source table list or a desired dashboard. Write the grain as a sentence with identifiers and time semantics: one row per order line at acceptance time, or one row per account per calendar day after close. The grain determines which dimensions and facts can coexist without duplication.\n\nDimensions contain descriptive attributes used to filter, group, label, and navigate: customer, product, store, promotion, date, channel, or status. They usually have one row per dimension entity or historical version. Facts are measurements or event indicators at the declared grain. Foreign keys connect the fact to dimension versions. A degenerate dimension such as order number can remain in the fact when it has identity but no independent descriptive attributes. Role-playing dimensions reuse one date dimension as order date, ship date, and delivery date through separate keys.\n\nReject columns from a coarser or finer grain unless they are allocated or modeled separately. An order total repeated on each order line is not line-level revenue. Header facts can live in an order fact, while line quantity and extended amount live in an order-line fact. The grain should appear in documentation, uniqueness tests, model names, reviews, and metric contracts."
+    },
+    {
+      "id": "fact-types",
+      "title": "Fact table and measure types",
+      "body": "A transaction fact records an event at its lowest useful grain, such as one scan, click, payment, or order line. It is sparse over time and naturally supports event counts and additive amounts. A periodic snapshot records the state of many entities at regular intervals, such as account balance per day or inventory per product-store-week. An accumulating snapshot tracks milestones of a process on one row, such as order placed, packed, shipped, and delivered, and is updated as the process advances. Factless facts record that an event or coverage relationship occurred even without a numeric measure, such as attendance or promotion eligibility.\n\nAn additive measure can be summed across every relevant dimension. Extended sales amount is often additive across product, customer, and time when currency rules are consistent. A semi-additive measure cannot be summed across some dimension: an account balance can be summed across accounts at one instant but not across daily snapshots. A non-additive measure such as a ratio, percentage, or unit price should be recomputed from additive components or summarized with a justified weighting. Distinct counts also require care because group-level distinct values do not add.\n\nStore atomic components when possible: numerator and denominator, local amount and currency, quantity and unit amount. Define null, zero, cancellation, refund, and adjustment semantics. Event time, effective time, and load time answer different questions and should not be collapsed into one ambiguous timestamp."
+    },
+    {
+      "id": "dimensions-history",
+      "title": "Conformed dimensions, keys, and historical context",
+      "body": "A conformed dimension has consistent keys, attribute meaning, and value domains across multiple fact tables, allowing users to drill across processes such as orders and returns. Conformance is a governance commitment, not merely identical column names. Shared definitions for customer segment or fiscal calendar must have an owner and change policy. Multiple marts can use a bus matrix to show which business processes share which dimensions.\n\nWarehouse surrogate keys decouple analytical identity from mutable or reused source keys and can identify a specific historical version. Keep the durable business key for lineage. A fact should reference the dimension version effective at the event time when historical analysis requires as-was context. Type 1 overwrites current attributes; Type 2 inserts versions. These choices are attribute-specific and driven by questions, not a blanket table setting.\n\nLate-arriving facts may reference a dimension that has not been processed. Options include an explicit unknown or inferred member that is later completed, retry/quarantine, or an ordered dependency. Never silently inner-join the fact away. Unknown, not-applicable, redacted, and lookup-failed states may need distinct members. Enforce one active version per business key, non-overlapping effective intervals, stable surrogate keys, and referential coverage from facts."
+    },
+    {
+      "id": "operating-marts",
+      "title": "Testing, metrics, and production operation",
+      "body": "Make the grain executable with uniqueness over its natural key or event identifier. Test fact foreign keys against dimensions, including the intended unknown member policy. Reconcile row counts, quantities, gross amounts, discounts, refunds, and net amounts to source controls at a stable cutoff. Test accepted values and temporal relationships, and inspect the largest unmatched or high-multiplicity keys. Aggregate-level tests should verify important metric identities, not only column nullability.\n\nA semantic layer or governed metric definition sits above physical tables. It declares entity, measure, aggregation, time dimension, filters, and join path. The star makes these definitions easier but does not prevent a BI tool from double counting across a bridge or joining two fact tables directly. Publish supported drill paths and pre-aggregations where cost requires them. Protect sensitive dimension attributes with masking, row policies, and purpose-limited marts; surrogate keys are not anonymization.\n\nIncremental loads need deterministic keys, overlap windows for late data, idempotent merges, and full-refresh equivalence tests. Large facts need appropriate partitioning, clustering, compaction, statistics, and workload budgets. Use versioned build outputs or atomic swaps so readers never see partial tables. Monitor freshness, volume, duplicates, unknown-member rate, reconciliation differences, query cost, and downstream breakage. Retain the previous trusted version for rollback."
+    }
+  ],
+  "math": "Let fact table F have declared grain key G. Correctness requires G→all non-derived fact attributes within the table and uniqueness of G for a snapshot of the model. A measure m is additive over a set of dimensions D when, for disjoint partitions along D, m(union groups)=sum m(group). Ratios generally violate this property; store additive numerator and denominator and compute their ratio after aggregation.",
+  "workedExamples": [
+    {
+      "title": "Order-line sales mart",
+      "setup": "Operational orders have headers, items, products, customers, payments, and refunds. Analysts need net revenue, units, and orders by product category, customer segment, and order day.",
+      "walkthrough": "Declare the fact grain as one row per accepted order line, identified by order_id and line_id. Join the product and customer Type 2 versions effective at order time and role-play the date dimension. Store quantity, gross line amount, allocated discount, refunded amount, and net amount; retain order_id as a degenerate dimension. Do not copy header order total to every line. `SUM(net_amount)` and `SUM(quantity)` are additive; order count is `COUNT(DISTINCT order_id)` at query time or comes from a separate order fact. Tests enforce key uniqueness, dimension coverage, non-overlapping versions, and `gross-discount-refund=net`. Daily source control totals reconcile at the same timezone cutoff. A late customer uses an explicit inferred member and is re-keyed idempotently when the version arrives.",
+      "conclusion": "A precise line grain supports product analysis without inflating header measures, while explicit dimension history preserves as-was segmentation."
+    }
+  ],
+  "exercises": [
+    {
+      "difficulty": "recall",
+      "prompt": "What are the four core dimensional design steps?",
+      "solution": "Select a business process, declare its grain, identify dimensions, and identify facts consistent with that grain."
+    },
+    {
+      "difficulty": "application",
+      "prompt": "Model daily bank balances for analysis by account and branch.",
+      "solution": "Use a periodic snapshot fact at one account per closing day, join account/branch/date dimensions, and mark balance semi-additive: sum across accounts at one date but not across dates."
+    },
+    {
+      "difficulty": "diagnosis",
+      "prompt": "Revenue doubles after joining orders to items. What likely happened?",
+      "solution": "An order-grain amount was repeated across item-grain rows or a dimension key was non-unique. Reassert both grains, inspect multiplicities, and move/allocate the measure appropriately."
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "kimball-dimensional",
+      "contribution": "Provides the canonical four-step dimensional process, fact and dimension patterns, conformed dimensions, and additive-measure guidance."
+    },
+    {
+      "resource": "dbt-best-practices",
+      "contribution": "Connects source-conformed staging to business-conformed marts and maintainable transformation project structure."
+    },
+    {
+      "resource": "postgres-select",
+      "contribution": "Grounds the join and aggregation semantics used to validate grain, fanout, and analytical results."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "schema",
+      "title": "Order-line star at one declared grain",
+      "center": "fact_order_line\none row per order + line",
+      "satellites": [
+        "dim_customer\nas-was version",
+        "dim_product\nas-was version",
+        "dim_order_date\ncalendar + fiscal",
+        "dim_channel\nsales context",
+        "degenerate order_id"
+      ],
+      "caption": "Every dimension key and measure must describe the same order-line event; header facts belong at another grain.",
+      "afterSection": "four-step-design"
+    },
+    {
+      "type": "compare",
+      "title": "Measure aggregation behavior",
+      "left": {
+        "title": "Safe additive components",
+        "items": [
+          "Quantity",
+          "Gross amount",
+          "Discount amount",
+          "Refund amount",
+          "Numerator + denominator"
+        ]
+      },
+      "right": {
+        "title": "Needs an explicit rule",
+        "items": [
+          "Daily balance over time",
+          "Unit price",
+          "Conversion rate",
+          "Distinct customers",
+          "Inventory snapshots"
+        ]
+      },
+      "caption": "Store atomic components and state the dimensions across which aggregation remains meaningful.",
+      "afterSection": "fact-types"
+    }
+  ],
+  "lab": {
+    "goal": "Build a tiny star schema, calculate line-grain metrics, and verify uniqueness, referential coverage, and reconciliation invariants.",
+    "language": "python",
+    "buildIt": "def validate_star(facts, dimensions):\n    grain=[(row['order_id'],row['line_id']) for row in facts]\n    if len(grain)!=len(set(grain)): raise ValueError('duplicate fact grain')\n    product_keys=set(dimensions['product'])\n    if any(row['product_key'] not in product_keys for row in facts): raise ValueError('missing product')\n    return {\n        'gross':sum(row['gross'] for row in facts),\n        'net':sum(row['gross']-row['discount']-row['refund'] for row in facts),\n        'orders':len({row['order_id'] for row in facts})\n    }",
+    "useIt": "import sqlite3\ncon=sqlite3.connect(':memory:')\ncon.executescript('CREATE TABLE dim_product(product_key INTEGER PRIMARY KEY, category TEXT); CREATE TABLE fact_line(order_id INTEGER,line_id INTEGER,product_key INTEGER,gross REAL,discount REAL,refund REAL,PRIMARY KEY(order_id,line_id),FOREIGN KEY(product_key) REFERENCES dim_product(product_key)); INSERT INTO dim_product VALUES(1,\"book\"),(2,\"game\"); INSERT INTO fact_line VALUES(10,1,1,20,2,0),(10,2,2,15,0,5),(11,1,1,8,0,0);')\nrows=con.execute('SELECT order_id,line_id,product_key,gross,discount,refund FROM fact_line').fetchall()\nfacts=[dict(zip(['order_id','line_id','product_key','gross','discount','refund'],row)) for row in rows]\nmetrics=validate_star(facts,{'product':{1,2}})",
+    "verifyIt": "assert metrics=={'gross':43.0,'net':36.0,'orders':2}\nassert con.execute('SELECT COUNT(*) FROM fact_line').fetchone()[0]==3\nassert con.execute('SELECT COUNT(DISTINCT order_id) FROM fact_line').fetchone()[0]==2\nby_category=dict(con.execute('SELECT p.category,SUM(f.gross-f.discount-f.refund) FROM fact_line f JOIN dim_product p USING(product_key) GROUP BY p.category'))\nassert by_category=={'book':26.0,'game':10.0}\nassert sum(by_category.values())==metrics['net']",
+    "shipIt": "Turn the grain, foreign-key, measure-identity, and source-control checks into CI and production tests; build atomically, monitor unknown members and reconciliation, and keep the prior mart version for rollback."
   }
 }

@@ -8,41 +8,166 @@
     "ds",
     "da"
   ],
-  "interviewAnswer": "Warehouses emphasize managed structured analytics; data lakes store flexible files/objects; lakehouse approaches add table metadata, transactions and governance over object storage. The right choice depends on workload and organizational needs.",
+  "interviewAnswer": "A warehouse integrates managed relational storage, SQL compute, transactions, optimization and governance for analytical workloads. A data lake stores varied data in scalable object storage and open formats for many engines, but bare files lack atomic table updates and consistent metadata. A lakehouse adds a transactional metadata/table layer over open files, providing snapshots, schema and partition evolution, time travel and data skipping while retaining direct multi-engine access. The right choice depends on workload, latency, governance, interoperability, skills and total operating cost. Evaluate concrete guarantees—especially commits, deletes, concurrency, catalog consistency and rollback—not the architecture label.",
   "keyPoints": [
-    "Avoid architecture-by-buzzword.",
-    "Table formats add schema/evolution/transaction semantics.",
-    "Compute-storage separation changes scaling/cost."
+    "Architecture is a capability bundle",
+    "Files are not tables",
+    "Snapshots make publication atomic",
+    "Open access trades against centralized control",
+    "One storage copy can still have many semantics"
   ],
   "resources": [
-    "spark",
-    "dbt-docs"
+    "lakehouse-paper",
+    "iceberg-docs",
+    "parquet-concepts"
   ],
   "featured": false,
-  "why": "Warehouse vs Data Lake vs Lakehouse is a recurring foundation across data science and machine learning because it affects both theoretical correctness and practical system behavior.",
-  "intuition": "Avoid architecture-by-buzzword.",
-  "deepDive": "Warehouses emphasize managed structured analytics; data lakes store flexible files/objects; lakehouse approaches add table metadata, transactions and governance over object storage. The right choice depends on workload and organizational needs. Table formats add schema/evolution/transaction semantics. Compute-storage separation changes scaling/cost. The interview-level skill is not merely recalling the definition: explain the assumptions, what diagnostic evidence you would inspect, and what alternative you would choose when those assumptions fail.",
-  "workedExample": "Raw logs land in object storage while curated analytical tables expose reliable schemas for BI and ML.",
+  "why": "Raw object storage is cheap and flexible but can become an unowned swamp of incompatible files. A warehouse can deliver excellent governance and SQL performance but may be costly or restrictive for direct ML and unstructured workloads. Lakehouse designs address multi-engine access and table reliability, yet bring metadata, compaction, compatibility and operational responsibilities. Migration decisions affect years of data and platform investment, so teams need a capability and failure analysis rather than a vendor slogan.",
+  "intuition": "A lake is a shared depot of durable packages. Parquet describes how one package is packed. A catalog says what datasets exist. A table format maintains a signed manifest of which packages form version 42 and atomically points readers to that manifest. Compute engines open the packages and run queries. A warehouse bundles many of these responsibilities behind one managed counter; a lakehouse exposes more components and direct access, which can increase flexibility and coordination work.",
+  "deepDive": "The full explanation is organized into the structured sections below.",
+  "workedExample": "Committed source changes land as encrypted immutable files with source positions and schemas. An open table format publishes each landing batch through an atomic snapshot instead of directory listing. Refined tables deduplicate and standardize identities; a fact/dimension publication uses a shared release manifest so consumers see compatible cutoffs. SQL compute serves governed marts, while approved ML engines read the same snapshot through supported table APIs. Every output stores input snapshot IDs and code revision. Compaction rewrites small files as a validated table commit. Metrics track freshness, rejected events, source reconciliation, file sizes, pruning and engine cost. If a transformation is wrong, the publication pointer returns to the prior trusted release while the bad snapshot remains isolated for diagnosis. Privacy deletion creates supported delete/rewrite commits and later expires prohibited files under audited retention policy.",
   "commonMistakes": [
-    "Using the concept mechanically without checking assumptions or data semantics.",
-    "Reporting one metric/result without examining uncertainty, slices or failure modes."
+    {
+      "mistake": "A lakehouse is simply Parquet files in object storage.",
+      "correction": "The defining management capabilities come from transactional metadata/catalog, snapshots, evolution and engine support around the files."
+    },
+    {
+      "mistake": "Open format guarantees every engine behaves identically.",
+      "correction": "Readers differ in types, deletes, evolution, extensions and optimization; interoperability must be tested against the table protocol."
+    },
+    {
+      "mistake": "Time travel is a complete backup strategy.",
+      "correction": "Retention or corruption can remove needed files/metadata, and the same administrative failure domain may affect history; define independent recovery."
+    }
   ],
   "followUps": [
-    "What assumptions or limitations does Warehouse vs Data Lake vs Lakehouse have?",
-    "How would you validate Warehouse vs Data Lake vs Lakehouse on a real dataset?"
+    {
+      "question": "What does a table format add above Parquet?",
+      "answer": "Atomic snapshots, file manifests, concurrent commit rules, schema/partition evolution, delete semantics, time travel and rollback metadata."
+    },
+    {
+      "question": "When is a warehouse still a strong choice?",
+      "answer": "When managed SQL performance, integrated governance, predictable operations and team simplicity matter more than direct multi-engine file access."
+    },
+    {
+      "question": "What is the small-file problem?",
+      "answer": "Many tiny objects make metadata requests, planning and task scheduling dominate useful I/O and reduce compression/throughput, requiring transactional compaction."
+    }
   ],
-  "production": "In production, make assumptions explicit, validate on representative slices, compare with a simple baseline and monitor the signals that can drift.",
-  "visual": {
-    "type": "layers",
-    "title": "Data platform spectrum",
-    "items": [
-      "Data lake · flexible/raw",
-      "Lakehouse · open tables + governance",
-      "Warehouse · managed analytics"
-    ],
-    "caption": "The architectural choice balances flexibility, governance, latency and workload patterns."
-  },
+  "production": "Select architecture from concrete workload and guarantee requirements. Publish versioned atomic snapshots, record source/code versions, coordinate compatible multi-table releases, and reconcile every layer. Isolate compute, monitor metadata, file sizes, pruning, scan cost, compaction and freshness; test concurrent commits and cross-engine semantics. Enforce catalog/storage security and deletion, back up/recover metadata, retain rollback snapshots safely, and include operations, egress and exit costs in platform decisions.",
   "editorial": {
-    "status": "summary"
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "A data warehouse, data lake and lakehouse are architectural patterns assembled from storage, metadata, transaction, governance and compute capabilities—not quality rankings. A warehouse offers managed relational tables, SQL optimization, transactions and governance with controlled storage and strong workload integration. A data lake places diverse data in scalable object storage with open files and multiple compute engines, gaining flexibility while requiring explicit metadata, quality and publication discipline. A lakehouse adds a transactional metadata/table layer over directly accessible open files to provide snapshots, atomic updates, schema and partition evolution, time travel and improved optimization. This chapter separates file format from table format, catalog, engine and semantic model; compares coupling, latency, interoperability, cost and operational burden; and explains why “one copy” does not mean one consistent interpretation. You will learn to select an architecture from workloads and ownership, design bronze/raw through curated publication without turning layers into dumping grounds, and manage small files, compaction, concurrent writes and rollback. A worked multi-engine platform uses immutable object storage plus snapshot metadata and reconciled marts. The goal is to evaluate concrete guarantees and failure behavior instead of choosing a fashionable label or assuming a lakehouse automatically replaces every operational and analytical system.",
+  "prerequisites": [
+    "oltp-olap",
+    "parquet-columnar",
+    "star-schema"
+  ],
+  "learningObjectives": [
+    "Compare warehouse, lake and lakehouse patterns across storage access, metadata, transactions, governance, workload support and operational ownership.",
+    "Explain how an open table format turns immutable files into atomic snapshots with evolution, pruning, concurrent commit and rollback.",
+    "Design a governed multi-workload analytical platform with explicit publication, reconciliation, security, cost, reliability and exit strategy."
+  ],
+  "deepSections": [
+    {
+      "id": "capability-model",
+      "title": "Compare capabilities, not labels",
+      "body": "A warehouse traditionally provides relational tables, SQL, statistics, cost-based optimization, concurrency and workload management, transactions, role-based access, backup and managed operations. Storage may be proprietary or open, and modern warehouses can query external files. Strengths include integrated behavior and predictable governance; trade-offs can include data movement, compute/storage pricing, limited direct library access, vendor coupling and less natural handling of arbitrary binary data.\n\nA lake uses filesystem or object-store primitives and open file formats. Multiple engines can read the same durable data, and raw structured, semi-structured and unstructured inputs coexist. Storage/compute separation supports independent scaling. But a directory listing is not a table transaction, and different writers can create schema drift, partial batches and incompatible partition conventions. Catalog, security, discovery, quality, lifecycle and performance must be supplied. Cheap storage does not mean cheap queries or operations.\n\nA lakehouse retains direct-access files while adding a metadata layer that defines atomic table snapshots and management features. The original lakehouse paper highlights transactions, versioning, auditing, indexing/caching and query optimization over open storage. Systems differ: supported engines, isolation, delete models, streaming, catalog protocol and optimization are not interchangeable. Warehouses also adopted open-format access, while lakehouse platforms added managed SQL services, so examine APIs and guarantees rather than drawing a rigid product boundary."
+    },
+    {
+      "id": "table-layer",
+      "title": "Files, manifests, snapshots, and commits",
+      "body": "Data files such as Parquet are commonly immutable. A table snapshot references a complete logical set of data and delete files through manifests or equivalent metadata. Readers resolve one snapshot and see a consistent version without discovering state from an object listing. A writer creates new files and metadata, validates assumptions, then atomically changes the table's current metadata pointer through a catalog operation. If another writer commits first, optimistic concurrency checks decide whether the operation can be safely retried or must fail.\n\nThis indirection enables append, overwrite, delete, compaction, schema and partition evolution, time travel and rollback without mutating files in place. Stable field identifiers can make rename safer than name-only matching. Hidden partition transforms let queries filter logical columns without exposing physical directory columns. Metadata statistics and manifests prune files before Parquet row-group pruning. A catalog provides table identity, namespaces, pointer updates, locking/coordination and access integration; its availability and correctness are part of table reliability.\n\nAtomicity is usually table-scoped, not automatically multi-table. A fact and dimension commit can expose different cutoffs unless a higher-level publication pointer or compatible transaction mechanism coordinates them. Snapshot isolation does not guarantee application invariants under every concurrent write; examine conflict detection for append, overwrite, merge and compaction. Time travel is limited by metadata/file retention and is not a substitute for backup or privacy-compliant deletion."
+    },
+    {
+      "id": "layered-data",
+      "title": "Raw, refined, and published data products",
+      "body": "Layer names such as bronze, silver and gold are useful only when each boundary has a contract. A raw/landing layer preserves source evidence, ingestion metadata and replayability with minimal irreversible transformation. It still needs ownership, encryption, schema capture, retention and quarantine; “raw” is not permission to store unrestricted sensitive data forever. A refined layer deduplicates, validates, standardizes types and identities, and applies reusable domain logic. Published marts or features define business grain, semantics, service levels and access for consumers.\n\nEach transition should be idempotent and record source cutoff, code version and output snapshot. Promotion should expose only complete snapshots. Reconciliation follows data through layers: input/output counts, control totals, rejected records and deletion handling. Streaming and batch paths must converge on the same table semantics or declare differences. A medallion diagram does not solve late events, source corrections, mutable dimensions or cross-table consistency.\n\n“One copy of data” is an aspiration, not semantic reality. Different snapshots, materialized views, feature windows, caches and masked projections exist for valid reasons. Direct file access can bypass row policies or semantic definitions if governance is enforced only through one SQL engine. Use catalog-level authorization and storage controls, supported engine integrations, audited access and purpose-specific views. Publish authoritative products while allowing sandbox exploration over appropriately governed inputs."
+    },
+    {
+      "id": "operating-platform",
+      "title": "Performance, reliability, cost, and exit",
+      "body": "Object stores favor large sequential objects, while distributed writers can create many tiny files. Small files increase listing/metadata, planning, request and task overhead. Compaction rewrites them into better layouts but consumes compute and creates concurrent-commit conflicts; perform it through the table protocol and expire unreferenced files only after snapshot retention. Partitioning and clustering should follow measured filters and volume. Monitor files per snapshot/partition, size distribution, manifest growth, pruning, scan bytes, spill, compaction backlog and metadata latency.\n\nSeparate workloads with compute pools, quotas, priorities and cost attribution. Cache and materialize hot paths, but track invalidation and staleness. Test engine interoperability for data types, deletes, schema evolution and snapshot features before claiming openness. Upgrade table-format and catalog versions deliberately. Back up catalog metadata or support reconstruction according to the chosen system; data files without valid metadata may be difficult to interpret. Run disaster exercises for catalog loss, accidental overwrite and regional outage.\n\nSecurity requires identity propagation, least privilege at catalog and storage, encryption, row/column controls, audit, residency, retention and deletion across snapshots. Cost models include storage requests, egress, metadata services, compaction, idle compute, duplicated caches, people and incident complexity. An exit strategy records open formats, export paths, contract/lineage metadata and performance dependencies. Choose the simplest capability bundle that meets current and plausible workloads, and revisit with measured evidence."
+    }
+  ],
+  "math": "Let snapshot S_k reference metadata M_k and a set of immutable data/delete files F_k. A reader is snapshot-consistent when all planning and reads resolve from one S_k. A commit proposes S_{k+1}=T(S_k,Δ) and atomically swaps the catalog pointer only if validation against the current snapshot succeeds. File creation before pointer swap is not publication; orphan cleanup must respect concurrent writers and retained snapshots.",
+  "workedExamples": [
+    {
+      "title": "Shared analytical storage for BI and ML",
+      "setup": "A company needs governed SQL marts, Python feature generation, streaming updates and reproducible historical training over orders and events.",
+      "walkthrough": "Committed source changes land as encrypted immutable files with source positions and schemas. An open table format publishes each landing batch through an atomic snapshot instead of directory listing. Refined tables deduplicate and standardize identities; a fact/dimension publication uses a shared release manifest so consumers see compatible cutoffs. SQL compute serves governed marts, while approved ML engines read the same snapshot through supported table APIs. Every output stores input snapshot IDs and code revision. Compaction rewrites small files as a validated table commit. Metrics track freshness, rejected events, source reconciliation, file sizes, pruning and engine cost. If a transformation is wrong, the publication pointer returns to the prior trusted release while the bad snapshot remains isolated for diagnosis. Privacy deletion creates supported delete/rewrite commits and later expires prohibited files under audited retention policy.",
+      "conclusion": "Open files enable multiple engines, while snapshot metadata, publication coordination and governance make the shared storage a reliable platform."
+    }
+  ],
+  "exercises": [
+    {
+      "difficulty": "recall",
+      "prompt": "What is the difference between a file format and a table format?",
+      "solution": "A file format encodes values within individual files; a table format defines metadata, snapshots, commits, evolution and delete behavior across a logical collection of files."
+    },
+    {
+      "difficulty": "application",
+      "prompt": "Choose a starting architecture for a small SQL-only team with strict governance and no direct file consumers.",
+      "solution": "A managed warehouse is often the simpler fit; verify cost, portability and recovery rather than adding a multi-engine lakehouse layer without a workload need."
+    },
+    {
+      "difficulty": "diagnosis",
+      "prompt": "Readers sometimes see both compacted files and their originals. What failed?",
+      "solution": "They discovered files through listing or compaction bypassed atomic table metadata. Readers must resolve one snapshot and cleanup must follow retention/concurrency rules."
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "lakehouse-paper",
+      "contribution": "Introduces the architecture's open direct-access storage, transactional metadata, management/optimization goals and data-independence trade-offs."
+    },
+    {
+      "resource": "iceberg-docs",
+      "contribution": "Provides a concrete open table format's official snapshot, atomic update, evolution, filtering, time-travel and rollback behavior."
+    },
+    {
+      "resource": "parquet-concepts",
+      "contribution": "Separates the underlying columnar file hierarchy from the table-level metadata and commit protocol."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "layers",
+      "title": "Lakehouse capability stack",
+      "items": [
+        "Consumers: BI, SQL, data science, ML, streaming",
+        "Compute engines and workload isolation",
+        "Catalog, policy, lineage and semantic products",
+        "Transactional table snapshots and manifests",
+        "Open columnar files on durable object storage"
+      ],
+      "caption": "The file layer supplies efficient representation; higher layers supply identity, commits, governance, optimization and user-facing meaning.",
+      "afterSection": "capability-model"
+    },
+    {
+      "type": "flow",
+      "title": "Atomic immutable-file commit",
+      "items": [
+        "Read current snapshot",
+        "Write new data files",
+        "Create manifests + snapshot",
+        "Validate concurrent assumptions",
+        "Atomically swap catalog pointer",
+        "Readers discover new version",
+        "Expire old files after retention"
+      ],
+      "caption": "Files written before the pointer swap are not yet table state; cleanup must not race with writers or retained snapshots.",
+      "afterSection": "table-layer"
+    }
+  ],
+  "lab": {
+    "goal": "Model an immutable-file table snapshot, verify atomic pointer publication and rollback, and show why directory listing is not a consistent table view.",
+    "language": "python",
+    "buildIt": "import json\n\nclass Table:\n    def __init__(self):\n        self.files={}; self.snapshots={0:[]}; self.current=0\n    def stage(self,name,rows):\n        self.files[name]=list(rows)\n    def commit_append(self,base,new_files):\n        if base!=self.current: raise RuntimeError('conflict')\n        next_id=self.current+1\n        self.snapshots[next_id]=self.snapshots[base]+list(new_files)\n        self.current=next_id\n        return next_id\n    def read(self,snapshot=None):\n        sid=self.current if snapshot is None else snapshot\n        return [row for name in self.snapshots[sid] for row in self.files[name]]\n    def rollback(self,snapshot):\n        if snapshot not in self.snapshots: raise KeyError(snapshot)\n        self.current=snapshot",
+    "useIt": "table=Table()\ntable.stage('part-1',[{'id':1},{'id':2}])\ns1=table.commit_append(0,['part-1'])\ntable.stage('part-2',[{'id':3}])\nlisted_before_commit=sorted(table.files)\ns2=table.commit_append(s1,['part-2'])\nmanifest=json.dumps({'snapshot':s2,'files':table.snapshots[s2]},sort_keys=True)",
+    "verifyIt": "assert listed_before_commit==['part-1','part-2']\nassert [r['id'] for r in table.read(s1)]==[1,2]\nassert [r['id'] for r in table.read(s2)]==[1,2,3]\nassert json.loads(manifest)['files']==['part-1','part-2']\ntry: table.commit_append(s1,['part-2'])\nexcept RuntimeError: pass\nelse: raise AssertionError('stale commit must conflict')\ntable.rollback(s1)\nassert [r['id'] for r in table.read()]==[1,2]",
+    "shipIt": "Use a real table format and catalog with atomic compare-and-swap, snapshot-aware compaction/cleanup, versioned input/output evidence, cross-engine tests, metadata recovery and audited rollback."
   }
 }

@@ -8,31 +8,176 @@
     "ds",
     "da"
   ],
-  "interviewAnswer": "A query optimizer chooses scans, joins and access paths based on statistics and indexes. Explain plans reveal whether a slow query is scanning too much, joining badly or missing useful indexes/partition pruning.",
+  "interviewAnswer": "The optimizer transforms declarative SQL into a physical operator tree using statistics and a cost model. Read from leaf scans upward, tracking estimated rows, actual rows per loop, join algorithms, filters, sorts, memory, buffers, and spill. `EXPLAIN` estimates without running; `EXPLAIN ANALYZE` executes and can have side effects for writes. Large estimated-versus-actual cardinality errors often cause poor join order or memory choices. Costs are planner units, not milliseconds, so validate with representative runtime and workload impact before changing SQL, indexes, statistics, or configuration.",
   "keyPoints": [
-    "Index presence does not guarantee index use.",
-    "Join order/algorithm matters.",
-    "Predicate pushdown and partition pruning reduce data read."
+    "Plan is a physical operator tree",
+    "Cardinality drives choices",
+    "Actual rows times loops matters",
+    "Cost units are not time",
+    "Fix evidence, not node names"
   ],
   "resources": [
-    "cmu-db",
-    "postgres"
+    "postgres-explain",
+    "postgres-indexes",
+    "cmu-db"
   ],
   "featured": false,
-  "why": "Query Plans & SQL Performance is a recurring foundation across data science and machine learning because it affects both theoretical correctness and practical system behavior.",
-  "intuition": "Index presence does not guarantee index use.",
-  "deepDive": "A query optimizer chooses scans, joins and access paths based on statistics and indexes. Explain plans reveal whether a slow query is scanning too much, joining badly or missing useful indexes/partition pruning. Join order/algorithm matters. Predicate pushdown and partition pruning reduce data read. The interview-level skill is not merely recalling the definition: explain the assumptions, what diagnostic evidence you would inspect, and what alternative you would choose when those assumptions fail.",
-  "workedExample": "Use EXPLAIN to discover a full scan on a billion-row event table where a selective index/partition could help.",
+  "why": "A logically correct query can scan too much data, repeat an inner probe millions of times, spill a hash table, or choose a plan based on stale statistics. Index folklore and SQL formatting do not reveal this. Plans explain where rows flow and estimates diverge, making optimization a testable process. Interview questions may ask why an index is unused; production engineers must also account for cache state, concurrent workload, parameter distributions, temp I/O, maintenance, and the risk that a plan change helps one query while harming writes or other tenants.",
+  "intuition": "SQL describes the answer; the plan is the execution recipe. Each node consumes rows from children and emits rows upward. Row-count estimates are the recipe's quantities. If the optimizer thinks ten rows will flow where ten million actually do, it may choose a tiny nested-loop or memory allocation that becomes disastrous. Follow the rows, compare predictions with measurements, and find the first meaningful divergence.",
+  "deepDive": "The full explanation is organized into the structured sections below.",
+  "workedExample": "Capture `EXPLAIN ANALYZE` safely for representative tenant parameters with buffers. Read leaves upward. Find the tenant filter estimated hundreds but returning millions because tenant and date are correlated and statistics are stale/coarse. The underestimated outer side drives repeated nested index probes and later sort spill. Verify join grain, update statistics or extended statistics, consider a workload-shaped composite/partial index, and compare an alternative hash/merge plan without forcing it permanently. Test small and large tenants, ingestion impact, cache, temp I/O, and concurrent load, then deploy with rollback thresholds.",
   "commonMistakes": [
-    "Using the concept mechanically without checking assumptions or data semantics.",
-    "Reporting one metric/result without examining uncertainty, slices or failure modes."
+    {
+      "mistake": "Planner cost 100 means about 100 milliseconds.",
+      "correction": "Costs are engine-specific relative units for plan comparison, not direct wall-clock time."
+    },
+    {
+      "mistake": "Any sequential scan indicates a missing index.",
+      "correction": "Scanning can be optimal for small tables or broad retrieval; compare selectivity, buffers, locality, and actual runtime."
+    },
+    {
+      "mistake": "Read the first expensive-looking top node and add a hint.",
+      "correction": "Trace leaves upward, actual rows and loops, and the earliest estimate divergence; hints can mask changing root causes."
+    }
   ],
   "followUps": [
-    "What assumptions or limitations does Query Plans & SQL Performance have?",
-    "How would you validate Query Plans & SQL Performance on a real dataset?"
+    {
+      "question": "Why can estimated and actual rows differ greatly?",
+      "answer": "Stale or coarse statistics, correlation, skew, expressions, parameter values, casts, or incorrect semantic assumptions can defeat the estimator."
+    },
+    {
+      "question": "Why might an index scan be slower for many rows?",
+      "answer": "Many random base-row fetches and low selectivity can cost more than a sequential read."
+    },
+    {
+      "question": "What is the risk of EXPLAIN ANALYZE on UPDATE?",
+      "answer": "It executes the write. Use a safe environment or explicit transaction and rollback while accounting for locks and side effects."
+    }
   ],
-  "production": "In production, make assumptions explicit, validate on representative slices, compare with a simple baseline and monitor the signals that can drift.",
+  "production": "Capture plans and parameters safely, read rows/loops/buffers/memory/spill from leaves upward, and fix semantic or estimation root causes before forcing access paths. Benchmark representative scale, skew, cache, and concurrency plus write/maintenance impact. Roll out indexes/statistics/query changes reversibly and monitor latency, temp I/O, plan regressions, and estimated-versus-actual cardinality over time.",
   "editorial": {
-    "status": "summary"
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "A query plan is the database's chosen physical program for a declarative SQL statement. It specifies scans, filters, joins, sorts, aggregates, exchanges, and materialization, with estimated rows and costs derived from statistics and a cost model. This chapter teaches plan reading from leaves to root, distinguishes estimated `EXPLAIN` from execution-producing `EXPLAIN ANALYZE`, and shows how cardinality errors cascade into bad join order, algorithm, memory, and parallelism choices. It covers sequential and index scans, nested-loop, hash, and merge joins, sorts and spills, hash aggregation, predicate pushdown, projection, sargability, prepared-plan/parameter effects, and why estimated cost is not milliseconds. You will diagnose a slow join by comparing estimates with actual rows and buffers, then fix the underlying distribution, predicate, statistics, index, or query semantics rather than blindly forcing a node. Production sections address safe plan capture, workload baselines, plan changes after upgrades, memory and temp I/O, concurrency, and regression monitoring. The goal is evidence-led optimization without cargo-cult hints.",
+  "prerequisites": [
+    "transactions-indexes",
+    "sql-joins",
+    "sql-aggregation"
+  ],
+  "learningObjectives": [
+    "Read physical plans from data sources to root and explain cardinality, loops, rows, cost, buffers, memory, and spill evidence.",
+    "Connect estimation errors and predicate/index shape to scan, join order, algorithm, aggregation, sorting, and parallel choices.",
+    "Optimize safely with representative execution evidence, workload-level measurement, reversible changes, and plan-regression monitoring."
+  ],
+  "deepSections": [
+    {
+      "id": "plan-anatomy",
+      "title": "Plan anatomy and safe measurement",
+      "body": "Plans are trees or DAG-like structures of physical operators. Leaves access tables or indexes; upper nodes filter, join, aggregate, sort, materialize, exchange, or project. Indentation identifies parent/child flow. Estimated startup and total cost are cost-model units for comparing alternatives, accompanied by estimated rows and row width. They are not promises of milliseconds.\n\n`EXPLAIN` obtains a plan without executing it. `EXPLAIN ANALYZE` runs the statement and reports actual timing, rows, and loops, so write queries really write unless wrapped and rolled back safely. Timing instrumentation has overhead, and warm cache differs from cold or production concurrency. Add buffer, I/O, memory, and verbose options supported by the engine when needed, while redacting literals and sensitive schema data.\n\nActual rows reported per loop must be multiplied by loops to understand work. 'Rows removed by filter' shows late discard. A node's inclusive time contains child work, so do not sum every node as independent duration. Identify the longest/resource-heavy branch and earliest estimate divergence, then reproduce with representative parameters and data."
+    },
+    {
+      "id": "operators-access",
+      "title": "Scans, joins, sorts, and aggregates",
+      "body": "A sequential scan reads a table or partition and can be optimal for small tables or predicates returning a large fraction. An index scan navigates an index then retrieves qualifying rows; random base-table access may dominate for many matches. Bitmap paths can combine or batch index locations. Index-only paths depend on covered columns and visibility/engine conditions. Partition pruning and predicate pushdown reduce data only when predicates are compatible and semantics allow.\n\nNested loops suit a small outer side with cheap inner probes. Hash joins build equality-key state and can spill if build data exceeds memory. Merge joins consume compatible order and handle sorted groups. Sorts may be in-memory or external; top-N methods can reduce work for LIMIT under conditions. Hash aggregation maintains per-group state, while sort aggregation consumes grouped order.\n\nOperators are not inherently good or bad. A nested loop with ten indexed probes is excellent; with ten million full inner scans it is not. A sequential scan can beat an index for bulk retrieval. Judge rows, loops, buffers, locality, memory, spill, and required output—not the presence of a favored node."
+    },
+    {
+      "id": "estimation-sargability",
+      "title": "Cardinality estimation, statistics, and predicate shape",
+      "body": "Optimizers estimate base selectivity from statistics such as row counts, null fractions, distinct values, histograms, and frequent values. Combining predicates often assumes independence unless extended statistics capture dependencies. Correlated columns, skew, rapidly changing tables, expressions, and multi-column relationships create errors. Errors propagate: underestimated filters choose wrong join order and undersized memory; overestimates can avoid useful indexes or parallelize excessively.\n\nRefresh statistics after major distribution changes and increase detail selectively for important skew. Constraints and uniqueness provide stronger information. Compare estimated and actual rows at every node and fix the first consequential mismatch. A bad estimate may also reveal wrong join semantics or hidden casts rather than merely stale statistics.\n\nA predicate is sargable when it can constrain an access method. Applying a function or incompatible cast to an indexed column may prevent a range; rewrite to compare the column directly, add a justified expression index, or normalize at write time. Leading wildcards and arithmetic can have similar effects. Never rewrite in a way that changes timezone, collation, NULL, or boundary semantics just to obtain an index."
+    },
+    {
+      "id": "optimization-process",
+      "title": "A disciplined production optimization loop",
+      "body": "Begin with the user-visible symptom and workload: latency percentile, throughput, resource saturation, lock waits, or cost. Capture query identity, parameter distribution, plan, execution counters, and concurrency. Confirm correctness and expected row grain. Remove unnecessary columns/rows, fix fanout, and improve predicate semantics before adding structures. Then consider indexes, statistics, query rewrite, partitioning, materialized results, memory, or architecture.\n\nTest on representative volume and skew, not only a small clone. Measure repeated runs, cold/warm behavior as relevant, write impact, storage, maintenance, and other queries. A new covering index can accelerate one report while slowing ingestion and eviction. Configuration memory is often per operation or connection; multiplying it globally can exhaust a busy server. Hints or forced plans are last-resort, version-sensitive commitments.\n\nRoll out reversibly and monitor plan hash/shape carefully alongside latency, rows, buffers, spill, and error. Plan text can legitimately change after statistics or upgrades, so alert on performance and cardinality regressions rather than any difference. Maintain workload baselines and reevaluate indexes. Document assumptions and a rollback trigger."
+    }
+  ],
+  "math": "Optimizer chooses plan p minimizing estimated cost C(p|statistics,parameters,configuration). If a nested-loop outer emits N actual rows and inner executes L=N loops at cost q, work is roughly Nq even when estimated N was tiny. Cardinality estimation error ratio actual/estimated propagates multiplicatively through joins and controls algorithm and memory decisions.",
+  "workedExamples": [
+    {
+      "title": "Diagnose a slow customer-order join",
+      "setup": "A report changed from seconds to minutes after one tenant imported millions of orders; SQL text and indexes did not change.",
+      "walkthrough": "Capture `EXPLAIN ANALYZE` safely for representative tenant parameters with buffers. Read leaves upward. Find the tenant filter estimated hundreds but returning millions because tenant and date are correlated and statistics are stale/coarse. The underestimated outer side drives repeated nested index probes and later sort spill. Verify join grain, update statistics or extended statistics, consider a workload-shaped composite/partial index, and compare an alternative hash/merge plan without forcing it permanently. Test small and large tenants, ingestion impact, cache, temp I/O, and concurrent load, then deploy with rollback thresholds.",
+      "conclusion": "The root cause is distribution and estimation, not that nested loops are universally bad; the fix aligns optimizer evidence with the current workload."
+    }
+  ],
+  "exercises": [
+    {
+      "difficulty": "recall",
+      "prompt": "What does loops=1000 on an inner plan node imply?",
+      "solution": "The node executed 1,000 times; multiply its per-loop actual rows/time to understand total work."
+    },
+    {
+      "difficulty": "application",
+      "prompt": "A query returns 70% of a table. Should an index scan be assumed faster?",
+      "solution": "No. A sequential scan may be cheaper than many index probes and base fetches; inspect the representative plan and buffers."
+    },
+    {
+      "difficulty": "diagnosis",
+      "prompt": "A date predicate applies `DATE(timestamp_col)` and misses the timestamp index. What can you do?",
+      "solution": "Rewrite to a semantically correct timestamp range or create a justified expression index, carefully preserving timezone and boundary meaning."
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "postgres-explain",
+      "contribution": "Defines official plan cost, row, loops, ANALYZE, buffer, scan, join, sort, and aggregate interpretation."
+    },
+    {
+      "resource": "postgres-indexes",
+      "contribution": "Grounds access-path eligibility and why index design must match operators and workload."
+    },
+    {
+      "resource": "cmu-db",
+      "contribution": "Provides optimizer search, cost models, statistics, cardinality estimation, and execution-operator foundations."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "flow",
+      "title": "Read a plan from leaves to root",
+      "items": [
+        "Access base rows",
+        "Apply filters",
+        "Join row streams",
+        "Aggregate or sort",
+        "Project final result",
+        "Compare estimates with actuals"
+      ],
+      "caption": "Track cardinality and work as rows flow upward, locating the first important estimation error.",
+      "afterSection": "plan-anatomy"
+    },
+    {
+      "type": "compare",
+      "title": "Estimated and actual evidence",
+      "left": {
+        "title": "EXPLAIN",
+        "items": [
+          "Does not execute",
+          "Estimated rows/cost",
+          "Safe for writes",
+          "Based on statistics"
+        ]
+      },
+      "right": {
+        "title": "EXPLAIN ANALYZE",
+        "items": [
+          "Executes statement",
+          "Actual rows/loops/time",
+          "Can mutate data",
+          "Instrumentation overhead"
+        ]
+      },
+      "caption": "Use execution evidence carefully and never assume ANALYZE is read-only.",
+      "afterSection": "optimization-process"
+    }
+  ],
+  "lab": {
+    "goal": "Use SQLite plan output and timing to verify index eligibility, result equivalence, and the difference between selective and broad predicates.",
+    "language": "python",
+    "buildIt": "def plan_text(con,sql,params=()):\n    return ' '.join(str(row) for row in con.execute('EXPLAIN QUERY PLAN '+sql,params))",
+    "useIt": "import sqlite3\ncon=sqlite3.connect(':memory:')\ncon.execute('CREATE TABLE event(tenant INTEGER,ts INTEGER,value TEXT)')\ncon.executemany('INSERT INTO event VALUES (?,?,?)',((i%10,i,str(i)) for i in range(1000)))\ncon.execute('CREATE INDEX event_tenant_ts ON event(tenant,ts)')\nselective='SELECT value FROM event WHERE tenant=? AND ts>=?'\nindexed_plan=plan_text(con,selective,(3,900))\nrows=con.execute(selective,(3,900)).fetchall()",
+    "verifyIt": "assert all(int(value[0])>=903 for value in rows)\nassert 'event_tenant_ts' in indexed_plan\nscan_plan=plan_text(con,'SELECT COUNT(*) FROM event WHERE value LIKE ?',('%9%',))\nassert 'SCAN' in scan_plan.upper()\nexpected=con.execute('SELECT value FROM event').fetchall()\nactual=con.execute('SELECT value FROM event WHERE tenant>=0').fetchall()\nassert sorted(expected)==sorted(actual)",
+    "shipIt": "Repeat with the production engine's EXPLAIN ANALYZE, representative parameters and concurrency; record rows, loops, buffers, spill, write impact, and rollback thresholds."
   }
 }

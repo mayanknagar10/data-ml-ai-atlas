@@ -9,35 +9,170 @@
     "mle",
     "da"
   ],
-  "interviewAnswer": "GROUP BY changes the grain of the result by aggregating rows into groups. WHERE filters before aggregation; HAVING filters after aggregation.",
+  "interviewAnswer": "`GROUP BY` partitions filtered input rows by key and returns one result row per observed group; aggregate functions summarize rows within each group. `WHERE` filters rows before grouping, while `HAVING` filters groups after aggregates. `COUNT(*)` counts rows, `COUNT(col)` counts non-NULL values, and distinct or conditional metrics must be explicit. Always state the output grain and denominator, because joins or duplicate inputs can change weighting. Physical execution may use hash or sort aggregation and can spill when state exceeds memory.",
   "keyPoints": [
-    "Row grain",
-    "COUNT(*) vs COUNT(column)",
-    "WHERE vs HAVING",
-    "Conditional aggregation"
+    "Aggregation changes grain",
+    "WHERE rows, HAVING groups",
+    "COUNT variants differ",
+    "Denominators are contracts",
+    "Reconcile grouped totals"
   ],
   "resources": [
-    "postgres"
+    "postgres-select",
+    "cmu-db"
   ],
   "featured": false,
-  "why": "Aggregation tests row-grain reasoning and is ubiquitous in analytics and feature engineering.",
-  "intuition": "GROUP BY collapses rows sharing group keys. WHERE filters input rows before grouping; HAVING filters groups after aggregate values exist.",
-  "deepDive": "Every selected non-aggregated column must be functionally compatible with the group grain. COUNT(*) counts rows while COUNT(column) ignores NULL. Conditional aggregation with CASE computes multiple metrics in one pass. Be careful that joins before aggregation may duplicate facts and inflate sums.",
-  "workedExample": "To find customers with at least five completed orders, filter completed rows in WHERE, group by customer, then HAVING COUNT(*)>=5.",
+  "why": "Dashboards, features, experiments, finance, and monitoring depend on aggregates. A plausible number can be wrong because a join duplicated facts, NULLs were skipped, an average averaged averages, or a denominator included the wrong population. Aggregates also concentrate state: millions of high-cardinality groups can exhaust memory or create skew. Interviewers ask GROUP BY syntax, but senior reasoning states the metric grain, eligibility, numerator, denominator, missingness, and validation. Production work adds late arrivals, correction windows, incremental idempotency, and definition versioning so the same metric remains interpretable over time.",
+  "intuition": "Imagine sorting eligible rows into labeled buckets. Every grouping-key combination creates a bucket, and each aggregate inspects that bucket. The output has bucket grain, not input-row grain. WHERE decides which cards reach the buckets; HAVING decides which completed buckets are shown. If an earlier join copied a card three times, the aggregate faithfully counts it three times—aggregation cannot repair an incorrect input population.",
+  "deepDive": "The full explanation is organized into the structured sections below.",
+  "workedExample": "Filter to the reporting date and valid event policy, then group by date and product. Compute `COUNT(*)` as order rows, `COUNT(DISTINCT customer_id)` as customers, conditional successful revenue, and failed eligible orders divided by eligible orders using numeric casting and `NULLIF`. Do not join a one-to-many tag table before aggregation unless its fanout is intended. Assert one row per product-date, reconcile total qualifying revenue with the filtered base, test no-order and all-NULL amounts, and record exact distinct cost. Persist the numerator and denominator alongside the rate for audit and later weighted rollup.",
   "code": "SELECT customer_id, COUNT(*) AS n_orders, SUM(amount) AS revenue\nFROM orders\nWHERE status='completed'\nGROUP BY customer_id\nHAVING COUNT(*) >= 5;",
   "commonMistakes": [
-    "Using WHERE with an aggregate expression instead of HAVING.",
-    "Forgetting COUNT(column) ignores NULL.",
-    "Aggregating after a duplicate-amplifying join without checking grain."
+    {
+      "mistake": "`COUNT(column)` counts table rows.",
+      "correction": "It excludes rows where that column is NULL; use `COUNT(*)` for rows and choose distinctness deliberately."
+    },
+    {
+      "mistake": "WHERE and HAVING are interchangeable filters.",
+      "correction": "WHERE filters input rows before grouping; HAVING filters completed groups and can reference aggregates."
+    },
+    {
+      "mistake": "Average subgroup averages to get the total average.",
+      "correction": "That weights every group equally. Combine sums and counts unless equal group weighting is the intended estimand."
+    }
   ],
   "followUps": [
-    "WHERE vs HAVING?",
-    "COUNT(*) vs COUNT(col)?",
-    "How do you do conditional aggregation?",
-    "When would a window function be better?"
+    {
+      "question": "What does a left join do to `COUNT(*)` for an unmatched left row?",
+      "answer": "The NULL-extended joined row still exists, so `COUNT(*)` is one; `COUNT(right.primary_key)` is zero."
+    },
+    {
+      "question": "Why can aggregation spill to disk?",
+      "answer": "Group state or sort runs exceed available memory, often due to high cardinality, wide state, or underestimated groups."
+    },
+    {
+      "question": "When should you retain numerator and denominator?",
+      "answer": "For audit, correct weighted rollups, uncertainty, and debugging; a stored ratio alone loses information."
+    }
   ],
-  "production": "Feature pipelines should document output grain and validate counts/sums against source totals so join/aggregation mistakes are caught early.",
+  "production": "Version metric grain, eligibility, dimensions, NULL rules, numerator, denominator, timezone, units, and exact/approximate status. Build idempotent incremental recomputation with late-data correction. Test uniqueness, base-to-summary reconciliation, zero denominators, and fanout. Monitor group cardinality, freshness, NULLs, spill, skew, and definition changes, and retain additive components plus rollback-ready outputs.",
   "editorial": {
-    "status": "summary"
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "SQL aggregation changes row grain by partitioning input rows into groups and computing one result per group. This chapter explains the logical order from WHERE filtering through GROUP BY, aggregate evaluation, HAVING, SELECT, and final ORDER BY. It distinguishes `COUNT(*)`, `COUNT(expression)`, distinct counts, conditional aggregates, and NULL behavior; covers grouping sets, rollups, and the danger of mixing metrics at incompatible grains; and connects exact results to hash and sort aggregation plans. You will learn to declare the output grain, make denominators explicit, avoid integer and divide-by-zero errors, separate row filters from group filters, and reconcile summaries against base data. A worked daily product metric example computes orders, customers, revenue, and failure rate without accidentally weighting joined rows. The production material covers incremental recomputation, late data, slowly changing definitions, approximate distinct counting, spill, skew, data quality, and metric governance. The goal is to make an aggregate a trustworthy semantic contract rather than a compact query whose population and NULL rules are implicit.",
+  "prerequisites": [
+    "sql-joins"
+  ],
+  "learningObjectives": [
+    "Predict grouped output grain and logical clause order for row filters, aggregates, HAVING, and final projection.",
+    "Choose correct count, distinct, conditional, NULL, denominator, and grouping-set semantics for a metric.",
+    "Validate and operate aggregations using reconciliation, incremental-window, late-data, plan, spill, and governance controls."
+  ],
+  "deepSections": [
+    {
+      "id": "grain-logical-order",
+      "title": "Output grain and logical query processing",
+      "body": "Start by writing 'one output row per ...'. Every selected non-aggregate expression must be functionally determined by the grouping keys under the database's rules. Without GROUP BY, aggregates treat eligible rows as one group and commonly return one row even for empty input; specific aggregate results on empty sets differ, with count returning zero while many others return NULL.\n\nA useful logical order is FROM/JOIN, WHERE, GROUP BY, aggregate computation, HAVING, SELECT, DISTINCT, ORDER BY, and LIMIT, though optimizers may physically reorder equivalent work. WHERE cannot reference the aggregate result at its query level because grouping has not occurred. HAVING can. Use a subquery when a later row-level stage must filter a derived aggregate alias.\n\nGrouping by too many columns preserves a finer grain than intended; grouping by too few combines populations. Selecting an arbitrary representative column is unsafe even if a permissive dialect allows it. Functional dependencies and keys can justify omitted columns, but portability and clarity often favor explicit grouping or a dimension join after aggregation."
+    },
+    {
+      "id": "aggregate-semantics",
+      "title": "Counts, NULLs, conditional metrics, and denominators",
+      "body": "`COUNT(*)` counts input rows in the group, including rows whose individual columns are NULL. `COUNT(x)` counts rows where x is non-NULL. `COUNT(DISTINCT x)` counts distinct non-NULL x values, which can be expensive and has dialect-specific multi-column forms. `SUM`, `AVG`, `MIN`, and `MAX` generally ignore NULL inputs and may return NULL for an empty eligible set. Decide whether NULL means unknown, not applicable, or structural absence before coalescing.\n\nConditional aggregation expresses multiple metrics over one population through `FILTER (WHERE ...)` where supported or `CASE` expressions. For a rate, explicitly define eligible denominator and qualifying numerator, cast to an appropriate numeric type, and protect zero denominators with `NULLIF` or a policy. A NULL rate for no eligible observations is often more honest than zero.\n\nAvoid averaging precomputed group averages unless groups should receive equal weight. To recover the overall mean, combine sum and count or use a weighted average. Ratios are especially sensitive to grain: sum numerators and denominators at the correct base grain, then divide, rather than averaging row-level or subgroup ratios accidentally."
+    },
+    {
+      "id": "advanced-grouping",
+      "title": "Distinctness, rollups, windows, and compatible grains",
+      "body": "`GROUPING SETS`, `ROLLUP`, and `CUBE` produce multiple aggregation grains in one query. Their subtotal NULLs may represent 'all values' rather than a missing key, so use grouping metadata to distinguish them. These constructs can be efficient and consistent but require clear labels and downstream grain awareness.\n\nAn aggregate collapses rows; a window aggregate retains one output per current row. Use GROUP BY for one row per group and a window function when a group statistic must align back to detail rows. Joining multiple independently aggregated tables can create a fanout if they are not first reduced to compatible keys. Aggregate each fact source to the target grain before combining metrics.\n\nExact distinct counts require state proportional to observed values in a straightforward plan. Approximate structures can trade controlled error for bounded memory at large scale, but the metric must be labeled approximate and its merge/window guarantees documented. Deduplicating before aggregation needs an explicit identity and survivor policy; `DISTINCT` is not a substitute for event-idempotency design."
+    },
+    {
+      "id": "execution-governance",
+      "title": "Execution, incremental updates, and metric governance",
+      "body": "Hash aggregation maintains a table of group states and is effective when groups fit memory. Sort aggregation orders rows by grouping keys and scans runs; it may exploit existing order and spill through external sorting. High-cardinality or skewed groups affect memory, parallel balance, and spill. Plans and implementation vary, so inspect actual nodes, estimates, memory, and disk use.\n\nIncremental aggregation must define source watermark, correction window, and idempotency. Appending a recomputed day can duplicate results; merge/upsert by a stable grain and version. Late or corrected facts require recomputing affected partitions or supporting retractions. Distinct-state mergeability and non-additive metrics complicate incremental rollups. Store additive components such as sum and count where later recombination is expected.\n\nGovern metrics as versioned definitions: owner, grain, eligibility, dimensions, numerator, denominator, timezone, currency/unit, late-data behavior, privacy threshold, and quality checks. Monitor base rows, group cardinality, NULL rates, reconciliation totals, freshness, plan spill, and abrupt distribution changes. Preserve backfills and previous versions for audit and rollback."
+    }
+  ],
+  "math": "For groups G_k partitioning eligible rows, SUM_k=Σ_{i∈G_k}x_i and AVG_k=SUM_k/N_k over non-NULL eligible x. Overall average across groups is (Σ_k SUM_k)/(Σ_k N_k), not generally the unweighted mean of AVG_k. A rate is Σ indicators(numerator condition)/Σ indicators(denominator eligibility), with explicit zero-denominator policy.",
+  "workedExamples": [
+    {
+      "title": "Daily product metrics at product-day grain",
+      "setup": "Orders contain product, customer, amount, status, and event date; retries have already been deduplicated by order ID.",
+      "walkthrough": "Filter to the reporting date and valid event policy, then group by date and product. Compute `COUNT(*)` as order rows, `COUNT(DISTINCT customer_id)` as customers, conditional successful revenue, and failed eligible orders divided by eligible orders using numeric casting and `NULLIF`. Do not join a one-to-many tag table before aggregation unless its fanout is intended. Assert one row per product-date, reconcile total qualifying revenue with the filtered base, test no-order and all-NULL amounts, and record exact distinct cost. Persist the numerator and denominator alongside the rate for audit and later weighted rollup.",
+      "conclusion": "The metric remains recomposable and diagnosable because its grain, population, missingness, and additive components are explicit."
+    }
+  ],
+  "exercises": [
+    {
+      "difficulty": "recall",
+      "prompt": "How do `COUNT(*)` and `COUNT(amount)` differ?",
+      "solution": "The first counts eligible rows; the second counts only rows where amount is non-NULL."
+    },
+    {
+      "difficulty": "application",
+      "prompt": "Compute a global rate from per-region successes and trials.",
+      "solution": "Sum successes across regions and divide by summed trials. Do not unweightedly average regional rates unless equal region weight is intended."
+    },
+    {
+      "difficulty": "diagnosis",
+      "prompt": "Revenue doubles after joining product tags before grouping. Why?",
+      "solution": "The one-to-many tag join duplicated each order across tags. Aggregate orders first or allocate measures with an explicit multi-tag policy."
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "postgres-select",
+      "contribution": "Defines grouping, aggregate, WHERE, HAVING, grouping-set, and logical query semantics."
+    },
+    {
+      "resource": "cmu-db",
+      "contribution": "Provides hash/sort aggregation, execution-state, cardinality, parallelism, and spill foundations."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "flow",
+      "title": "Logical aggregation pipeline",
+      "items": [
+        "FROM and JOIN",
+        "WHERE eligible rows",
+        "GROUP BY buckets",
+        "Compute aggregates",
+        "HAVING groups",
+        "SELECT and ORDER"
+      ],
+      "caption": "Logical stage order explains why row filters and group filters are not interchangeable.",
+      "afterSection": "grain-logical-order"
+    },
+    {
+      "type": "compare",
+      "title": "Row count and value count",
+      "left": {
+        "title": "COUNT(*)",
+        "items": [
+          "Counts input rows",
+          "Includes NULL-valued columns",
+          "Counts outer placeholder row",
+          "Use for row population"
+        ]
+      },
+      "right": {
+        "title": "COUNT(x)",
+        "items": [
+          "Counts non-NULL x",
+          "Varies by column",
+          "Can be zero after left join",
+          "Use for observed values"
+        ]
+      },
+      "caption": "Choose count semantics from the metric definition, especially after outer joins.",
+      "afterSection": "aggregate-semantics"
+    }
+  ],
+  "lab": {
+    "goal": "Compute metrics in SQLite and verify grain, NULL, denominator, and reconciliation behavior.",
+    "language": "python",
+    "buildIt": "def grouped_sum(rows,key,value):\n    out={}\n    for row in rows:\n        group=row[key]\n        if row[value] is not None: out[group]=out.get(group,0)+row[value]\n    return out",
+    "useIt": "import sqlite3\ncon=sqlite3.connect(':memory:')\ncon.executescript('CREATE TABLE orders(product TEXT, customer TEXT, amount REAL, status TEXT); INSERT INTO orders VALUES (\"a\",\"u1\",10,\"ok\"),(\"a\",\"u2\",NULL,\"failed\"),(\"b\",\"u1\",5,\"ok\");')\nrows=con.execute('SELECT product, COUNT(*) n, COUNT(amount) observed, SUM(CASE WHEN status=\"ok\" THEN amount ELSE 0 END) revenue, 1.0*SUM(status=\"failed\")/NULLIF(COUNT(*),0) fail_rate FROM orders GROUP BY product ORDER BY product').fetchall()",
+    "verifyIt": "assert rows == [('a',2,1,10.0,0.5),('b',1,1,5.0,0.0)]\nassert len({row[0] for row in rows}) == len(rows)\nassert sum(row[3] for row in rows) == 15.0\nassert grouped_sum([{'g':'a','x':1},{'g':'a','x':None},{'g':'b','x':2}],'g','x') == {'a':1,'b':2}",
+    "shipIt": "Persist versioned grain plus additive numerator/denominator components, reconcile against base data, handle late corrections idempotently, and monitor group cardinality, NULLs, and spill."
   }
 }

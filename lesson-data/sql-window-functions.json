@@ -9,46 +9,175 @@
     "mle",
     "da"
   ],
-  "interviewAnswer": "Window functions compute values across related rows without collapsing them. Common examples are ROW_NUMBER, RANK, LAG, LEAD and running aggregates using OVER(PARTITION BY ... ORDER BY ...).",
+  "interviewAnswer": "A window function computes over rows related to the current row but does not collapse them. `PARTITION BY` resets groups, `ORDER BY` defines sequence and peers, and the frame defines which ordered rows an aggregate-like window sees. `ROW_NUMBER` is unique order, `RANK` leaves gaps across ties, and `DENSE_RANK` does not. Window functions logically run after WHERE, grouping, and HAVING, so filter their results in an outer query. Always specify deterministic tie-breakers and an explicit frame for running or rolling calculations.",
   "keyPoints": [
-    "Window vs GROUP BY",
-    "Partition and ordering",
-    "Ranking",
-    "Rolling metrics"
+    "Windows preserve row grain",
+    "Partition, order, and frame differ",
+    "Peers affect ranks and RANGE",
+    "Filter window outputs later",
+    "Temporal frames must exclude the future"
   ],
   "resources": [
-    "postgres"
+    "postgres-window",
+    "postgres-select",
+    "cmu-db"
   ],
   "featured": true,
-  "why": "Window functions are a common SQL interview discriminator because they solve ranking, lag/lead and rolling calculations without collapsing row-level detail.",
-  "intuition": "GROUP BY reduces many rows into one row per group. A window function keeps the original rows but lets each row look across a defined set of neighboring rows.",
-  "deepDive": "The OVER clause defines the window. PARTITION BY resets calculations by group; ORDER BY defines sequence; a frame such as ROWS BETWEEN controls which ordered rows contribute. ROW_NUMBER assigns unique positions, RANK leaves gaps after ties, DENSE_RANK does not. LAG/LEAD access prior/future rows and are useful for temporal features.",
-  "workedExample": "To find each customer’s latest order, assign ROW_NUMBER() OVER(PARTITION BY customer_id ORDER BY order_date DESC) and keep row_number=1. This avoids a separate aggregate-plus-join pattern.",
+  "why": "Window functions replace complex self-joins for many analytics and feature tasks, but compact syntax can hide wrong populations. An incomplete ORDER BY makes deduplication nondeterministic. A default peer-aware frame includes tied future-looking rows. A rolling feature can leak later events into training. Large skewed partitions force sorts or spill. Interviews ask ranking differences, while production reviews should also demand stable ordering, event-time availability, frame endpoints, NULL behavior, and validation at partition boundaries.",
+  "intuition": "GROUP BY packs each bucket into one summary row. A window keeps every card on the table but lets the current card look sideways at a declared neighborhood. Partition chooses the table section, ordering lines cards up, and frame draws the neighborhood around the current card. Ranking functions mainly use peers and order; aggregate windows use the frame. Confusing those layers is the source of most window bugs.",
+  "deepDive": "The full explanation is organized into the structured sections below.",
+  "workedExample": "Filter invalid events first. Compute `ROW_NUMBER() OVER (PARTITION BY entity_id ORDER BY event_time DESC, ingestion_seq DESC, event_id DESC)`. In an outer query keep row number one. Assert one output row per entity, inspect peer/conflict counts, and test NULL timestamps according to explicit placement. For historical features, restrict eligible events to the prediction cutoff before ranking; otherwise a future correction can become the selected row and leak. Compare results with a grouped maximum plus join only after accounting for duplicate maxima.",
   "code": "SELECT * FROM (\n  SELECT o.*,\n         ROW_NUMBER() OVER(\n           PARTITION BY customer_id ORDER BY order_date DESC\n         ) AS rn\n  FROM orders o\n) x\nWHERE rn = 1;",
   "commonMistakes": [
-    "Confusing PARTITION BY with GROUP BY.",
-    "Ignoring tie behavior between ROW_NUMBER, RANK and DENSE_RANK.",
-    "Using LAG/LEAD without an explicit, meaningful ordering."
+    {
+      "mistake": "`PARTITION BY` defines a rolling window frame.",
+      "correction": "It defines independent partitions. ORDER BY and the frame clause determine ordered neighborhoods within each partition."
+    },
+    {
+      "mistake": "`ROW_NUMBER` makes duplicate ties deterministic.",
+      "correction": "It assigns unique numbers, but peer order is unspecified unless ORDER BY includes a deterministic tie-breaker."
+    },
+    {
+      "mistake": "Default `LAST_VALUE` returns the final partition value.",
+      "correction": "With common default frames it often ends at the current row's peer group. Specify the intended full frame explicitly."
+    }
   ],
   "followUps": [
-    "ROW_NUMBER vs RANK vs DENSE_RANK?",
-    "How do you calculate a running average?",
-    "Window function vs GROUP BY?",
-    "What is a window frame?"
+    {
+      "question": "How do RANK and DENSE_RANK differ?",
+      "answer": "Both share a rank across peers; RANK leaves gaps equal to prior peer-group size, while DENSE_RANK increments by one distinct order value."
+    },
+    {
+      "question": "Why filter window results in a subquery?",
+      "answer": "Window evaluation occurs after same-level WHERE and HAVING, so those clauses cannot reference the window result at that level."
+    },
+    {
+      "question": "How can a rolling feature leak?",
+      "answer": "A following or full-partition frame, or ranking before the historical cutoff filter, can use events not available at prediction time."
+    }
   ],
-  "production": "Window functions are useful in feature generation, deduplication and event sequencing, but large partitions/orderings can be expensive; inspect execution plans and partition strategies.",
-  "visual": {
-    "type": "concept-map",
-    "title": "Window Functions",
-    "items": [
-      "Window vs GROUP BY",
-      "Partition and ordering",
-      "Ranking",
-      "Rolling metrics"
-    ],
-    "caption": "A compact concept map for the most important ideas in this lesson."
-  },
+  "production": "Specify partition, deterministic order, peer policy, frame type/endpoints, NULL placement, and information cutoff. Test empty/singleton partitions, ties, late events, and boundaries. Inspect sorts, compatible windows, partition skew, memory, and spill. Version dedup and feature survivor rules, recompute affected windows on corrections, and monitor conflict/tie rates plus temporal leakage checks.",
   "editorial": {
-    "status": "summary"
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "description": "Window functions calculate across related rows while preserving one output row for each current input row. They power ranking, deduplication, running totals, moving statistics, session comparisons, and change detection without collapsing detail through GROUP BY. This chapter separates partition, ordering, peer groups, and window frame; contrasts `ROW_NUMBER`, `RANK`, and `DENSE_RANK`; explains `LAG`, `LEAD`, and aggregate windows; and shows why default frames can make `LAST_VALUE` or cumulative aggregates surprising. You will learn SQL's logical stage constraints, use a subquery to filter window outputs, make tie ordering deterministic, and prevent future leakage in time-based features. A worked event example selects the latest valid row per entity and verifies ties. The performance sections cover sorts, indexes, partition skew, memory, spill, named windows, and incremental limits. The goal is to reason about the exact row set visible to every function, rather than assuming `PARTITION BY` alone defines the calculation. This framing also makes code review, boundary testing, historical reproducibility, and cross-dialect migration more reliable when defaults differ.",
+  "prerequisites": [
+    "sql-aggregation",
+    "sorting-searching"
+  ],
+  "learningObjectives": [
+    "Distinguish result partition, peer order, and ROWS/RANGE/GROUPS frame for common window functions.",
+    "Choose ranking, offset, cumulative, rolling, and deduplication patterns with deterministic ordering and NULL policies.",
+    "Prevent temporal leakage and diagnose window plans, sorts, skew, spill, and incremental limitations."
+  ],
+  "deepSections": [
+    {
+      "id": "window-anatomy",
+      "title": "Partition, order, peers, and frame",
+      "body": "The `OVER` clause defines a window. `PARTITION BY` divides result rows into independent partitions; omitting it uses one partition. Window `ORDER BY` defines order inside each partition and identifies peers—rows equal on all ordering expressions. It does not guarantee final display order, which requires query-level ORDER BY. Add a stable unique tie-breaker when row identity or reproducibility matters.\n\nA frame is a subset around the current row, described with `ROWS`, `RANGE`, or `GROUPS` and boundaries such as unbounded preceding, a finite offset, current row, or following. `ROWS` counts physical ordered rows. `RANGE` and `GROUPS` treat peer/order values differently. When ORDER BY is present, default frames in PostgreSQL include rows from the partition start through the current row's last peer, which can surprise aggregate windows.\n\nRanking and offset functions have function-specific behavior and do not all use frames the same way. Aggregate functions used with OVER aggregate the frame. State all three dimensions even when defaults happen to work. Reuse a named WINDOW clause when several functions need exactly the same partition/order definition, while checking whether their frame needs differ."
+    },
+    {
+      "id": "ranking-offsets",
+      "title": "Ranking, offsets, and deterministic deduplication",
+      "body": "`ROW_NUMBER` assigns consecutive unique positions according to window order; peers still receive different numbers, and their order is nondeterministic without a tie-breaker. `RANK` gives peers the same rank and leaves gaps afterward. `DENSE_RANK` gives peers the same rank without gaps. `NTILE` divides ordered rows into a requested number of buckets, whose sizes may differ. Choose based on product semantics rather than presentation.\n\n`LAG` and `LEAD` access offset rows and are useful for deltas, previous states, and interval boundaries. Define partition, sequence, and what a missing neighbor means. A default value can obscure whether the neighbor was absent or truly had that value. Time difference calculations should use typed timestamps and an event ordering that resolves identical times.\n\nFor latest-row deduplication, compute row number partitioned by business ID and ordered by event timestamp descending plus ingestion/version and a unique ID, then keep row number one in an outer query. This encodes a survivor policy. If equal timestamps can represent distinct facts, deduplication may be wrong. Keep metrics for duplicates and conflicting payloads rather than silently dropping them."
+    },
+    {
+      "id": "running-rolling",
+      "title": "Running totals, rolling windows, and leakage",
+      "body": "A cumulative sum commonly uses `ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW` with deterministic order. A finite moving calculation uses a frame such as a number of preceding rows, but 'last seven rows' is not 'last seven days' when events are irregular. Range-based interval frames can express time ranges in supporting dialects, or a calendar spine and explicit join can define expected periods.\n\n`LAST_VALUE` with the default frame often returns the current row or last peer, not the final partition value, because the frame ends at the current peer. Use an explicit full-partition frame when the business question asks for the partition's final row—and ensure using it is not future leakage. Similarly, centered or following frames deliberately see future rows and are invalid for online features unless the prediction timestamp includes them.\n\nFor ML and forecasting, define the information cutoff. A feature at time t may include events strictly before t, or through t if the current event is available; the choice affects frame end and tie order. Validate features by simulating historical execution at each cutoff, not only checking the final table."
+    },
+    {
+      "id": "execution-window",
+      "title": "Logical evaluation and physical execution",
+      "body": "Window functions logically run after FROM, WHERE, GROUP BY, and HAVING and before final ORDER BY. They can appear in SELECT and ORDER BY at their query level, so filtering on a window result requires a subquery or dialect-specific qualifier. Aggregation can feed a window function in the same query level because grouping occurs first; a window result cannot feed a same-level aggregate.\n\nExecution commonly requires data ordered by partition and order keys. An existing compatible index or earlier plan order may reduce sorting, but filtering, joins, multiple incompatible windows, or cost choices can introduce sorts. Large or skewed partitions consume memory and may spill. Align compatible window specifications, select only required columns, filter eligible rows before the window where semantics allow, and inspect actual plans.\n\nWindow results are difficult to maintain incrementally when a late row changes ranks or all subsequent cumulative values. Define correction windows and recomputation boundaries. Monitor partition sizes, peer/tie rates, sort and spill, late events, and nondeterministic conflicts. Version feature/order definitions and preserve source cutoffs for reproducibility."
+    }
+  ],
+  "math": "Within partition P ordered by key, ROW_NUMBER assigns 1..|P|; RANK(row)=1+number of rows with strictly smaller order key, while DENSE_RANK is 1+number of distinct smaller keys. For explicit cumulative ROWS frame, C_i=Σ_{j=1}^i x_j. A k-row moving frame uses indexes max(1,i-k+1)..i, which is not necessarily a fixed time interval.",
+  "workedExamples": [
+    {
+      "title": "Select the latest valid event per entity",
+      "setup": "Events may share an event timestamp because of retries; ingestion sequence and event ID provide deterministic resolution.",
+      "walkthrough": "Filter invalid events first. Compute `ROW_NUMBER() OVER (PARTITION BY entity_id ORDER BY event_time DESC, ingestion_seq DESC, event_id DESC)`. In an outer query keep row number one. Assert one output row per entity, inspect peer/conflict counts, and test NULL timestamps according to explicit placement. For historical features, restrict eligible events to the prediction cutoff before ranking; otherwise a future correction can become the selected row and leak. Compare results with a grouped maximum plus join only after accounting for duplicate maxima.",
+      "conclusion": "The window pattern combines selection and an auditable survivor policy, but temporal eligibility must be applied before the ranking."
+    }
+  ],
+  "exercises": [
+    {
+      "difficulty": "recall",
+      "prompt": "Scores 100,100,90 receive what RANK and DENSE_RANK values?",
+      "solution": "RANK gives 1,1,3; DENSE_RANK gives 1,1,2."
+    },
+    {
+      "difficulty": "application",
+      "prompt": "Write the conceptual frame for a cumulative sum excluding future rows.",
+      "solution": "Partition as needed, deterministic ORDER BY, and `ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW`."
+    },
+    {
+      "difficulty": "diagnosis",
+      "prompt": "Latest-row selection changes between runs for duplicate timestamps. Why?",
+      "solution": "The window order has peers without a unique tie-breaker. Add ingestion/version and stable ID according to a documented survivor policy."
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "postgres-window",
+      "contribution": "Defines official window placement, ranking, partitions, order, named windows, and frame behavior."
+    },
+    {
+      "resource": "postgres-select",
+      "contribution": "Provides SELECT logical evaluation and complete frame syntax used to reason about filtering and defaults."
+    },
+    {
+      "resource": "cmu-db",
+      "contribution": "Supplies sorting, execution, memory, and query-plan foundations for large window workloads."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "layers",
+      "title": "Window definition layers",
+      "items": [
+        "Input rows after filtering/grouping",
+        "PARTITION BY independent groups",
+        "ORDER BY sequence and peers",
+        "Frame around current row",
+        "Window result without row collapse"
+      ],
+      "caption": "Partition, ordering, and frame answer different questions and must be reasoned about separately.",
+      "afterSection": "window-anatomy"
+    },
+    {
+      "type": "compare",
+      "title": "Ranking peers",
+      "left": {
+        "title": "RANK",
+        "items": [
+          "Peers share rank",
+          "Gaps after ties",
+          "Competition ranking",
+          "100,100,90 → 1,1,3"
+        ]
+      },
+      "right": {
+        "title": "DENSE_RANK",
+        "items": [
+          "Peers share rank",
+          "No gaps",
+          "Distinct-value ranking",
+          "100,100,90 → 1,1,2"
+        ]
+      },
+      "caption": "Tie semantics determine which ranking function matches the business rule.",
+      "afterSection": "ranking-offsets"
+    }
+  ],
+  "lab": {
+    "goal": "Run SQLite window queries and verify ranking ties, latest-row determinism, cumulative frames, and row preservation.",
+    "language": "python",
+    "buildIt": "def row_number(rows,partition_key,order_key):\n    groups={}\n    for row in rows: groups.setdefault(row[partition_key],[]).append(row)\n    out=[]\n    for group in groups.values():\n        for number,row in enumerate(sorted(group,key=order_key),1): out.append({**row,'row_number':number})\n    return out",
+    "useIt": "import sqlite3\ncon=sqlite3.connect(':memory:')\ncon.executescript('CREATE TABLE events(entity TEXT, ts INTEGER, seq INTEGER, value INTEGER); INSERT INTO events VALUES (\"a\",10,1,5),(\"a\",10,2,7),(\"a\",20,1,3),(\"b\",5,1,4);')\nrows=con.execute('SELECT entity,ts,seq,value, ROW_NUMBER() OVER(PARTITION BY entity ORDER BY ts DESC,seq DESC) rn, SUM(value) OVER(PARTITION BY entity ORDER BY ts,seq ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) running FROM events ORDER BY entity,ts,seq').fetchall()",
+    "verifyIt": "assert len(rows)==4\nlatest=[row for row in rows if row[4]==1]\nassert {(r[0],r[1],r[2]) for r in latest} == {('a',20,1),('b',5,1)}\na=[r for r in rows if r[0]=='a']\nassert [r[5] for r in a] == [5,12,15]\nassert len({(r[0],r[4]) for r in rows})==len(rows)",
+    "shipIt": "Add deterministic IDs, explicit frame and NULL semantics, cutoff tests, plan/spill monitoring, partition limits, and correction-window recomputation for late data."
   }
 }
