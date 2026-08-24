@@ -374,7 +374,16 @@ function updateActiveNav(){
 }
 function updateReadingProgress(){
  const bar=$('#readingProgressBar');if(!bar)return;
- const doc=document.documentElement;const max=Math.max(1,doc.scrollHeight-window.innerHeight);const pct=Math.max(0,Math.min(1,window.scrollY/max));bar.style.transform=`scaleX(${pct})`;
+ if(document.body.dataset.view!=='lesson'){bar.style.transform='scaleX(0)';return}
+ const article=document.querySelector('.chapter-article');
+ const doc=document.documentElement;
+ const fallbackMax=Math.max(1,doc.scrollHeight-window.innerHeight);
+ if(!article){const pct=Math.max(0,Math.min(1,window.scrollY/fallbackMax));bar.style.transform=`scaleX(${pct})`;return}
+ const top=article.getBoundingClientRect().top+window.scrollY;
+ const start=Math.max(0,top-96);
+ const end=Math.max(start+1,top+article.offsetHeight-window.innerHeight+96);
+ const pct=Math.max(0,Math.min(1,(window.scrollY-start)/(end-start)));
+ bar.style.transform=`scaleX(${pct})`;
 }
 let chapterTocObserver=null;
 function wireChapterToc(){

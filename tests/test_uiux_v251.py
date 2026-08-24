@@ -14,10 +14,10 @@ class UiUxV251Tests(unittest.TestCase):
         cls.background = (ROOT / "background.js").read_text(encoding="utf-8")
 
     def test_v252_assets_are_cache_busted(self):
-        self.assertIn('styles.css?v=2.5.4', self.index)
-        self.assertIn('chapter-reader.js?v=2.5.4', self.index)
-        self.assertIn('background.js?v=2.5.4', self.index)
-        self.assertIn('app.js?v=2.5.4', self.index)
+        self.assertIn('styles.css?v=2.5.5', self.index)
+        self.assertIn('chapter-reader.js?v=2.5.5', self.index)
+        self.assertIn('background.js?v=2.5.5', self.index)
+        self.assertIn('app.js?v=2.5.5', self.index)
 
     def test_lesson_view_quiets_background_without_disabling_motion(self):
         self.assertIn("document.body.dataset.view='lesson'", self.app)
@@ -54,7 +54,7 @@ class UiUxV251Tests(unittest.TestCase):
     def test_reading_progress_has_solid_separation_rail(self):
         self.assertIn('--progress-shell:#f6f8fb', self.styles)
         self.assertIn('--progress-shell:#0c1117', self.styles)
-        self.assertIn('.reading-progress::after', self.styles)
+        self.assertIn('.header-reading-progress', self.styles)
         self.assertIn('background:var(--progress-shell)', self.styles)
         self.assertIn('body[data-view="lesson"] .topbar', self.styles)
 

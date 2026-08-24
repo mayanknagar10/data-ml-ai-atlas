@@ -10,7 +10,7 @@ class LessonRuntimeV253Tests(unittest.TestCase):
     def test_core_assets_share_v253_cache_key(self):
         index=(ROOT/'index.html').read_text(encoding='utf-8')
         for asset in ('styles.css','data.js','analyzer.js','chapter-loader.js','chapter-reader.js','background.js','app.js'):
-            self.assertIn(f'{asset}?v=2.5.4', index, asset)
+            self.assertIn(f'{asset}?v=2.5.5', index, asset)
 
     def test_app_and_reader_runtime_contract(self):
         app=(ROOT/'app.js').read_text(encoding='utf-8')

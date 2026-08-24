@@ -1,3 +1,9 @@
+
+## v2.5.5
+- Moved lesson reading progress into the sticky header boundary to eliminate all content overlap.
+- Disabled the legacy standalone reading-progress rail.
+- Bumped synchronized frontend cache keys to v2.5.5.
+
 # Changelog
 
 
