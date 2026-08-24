@@ -116,7 +116,7 @@ assert book.count('class="concept-visual') >= visual_count, 'book visual renderi
 index=(ROOT/'index.html').read_text(encoding='utf-8')
 assert '#/labs' in index and '#/analyzer' in index and 'prefers-color-scheme: dark' in index, 'main site navigation/theme missing'
 assert 'Plus+Jakarta+Sans' in index and 'Source+Serif+4' in index and 'STIX+Two+Text' in index, 'publication font stack missing'
-assert 'atlasBackground' in index and 'background.js?v=2.4.3' in index and 'motionBtn' not in index, 'always-on ambient background wiring missing'
+assert 'atlasBackground' in index and re.search(r'background\.js\?v=2\.4\.\d+', index) and 'motionBtn' not in index, 'always-on ambient background wiring missing'
 assert 'MathJax' in index and 'tex-svg.js' in index, 'MathJax typesetting bootstrap missing'
 styles=(ROOT/'styles.css').read_text(encoding='utf-8')
 assert not any(marker in styles for marker in ('<<<<<<<','=======','>>>>>>>')), 'styles.css contains unresolved merge conflict markers'

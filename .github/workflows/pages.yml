@@ -37,7 +37,7 @@ jobs:
         run: python scripts/check_site.py
 
       - name: Validate JavaScript syntax
-        run: node --check app.js && node --check analyzer.js
+        run: node --check app.js && node --check analyzer.js && node --check background.js
 
       - name: Validate resume + JD analyzer
         run: node scripts/check_analyzer.js
