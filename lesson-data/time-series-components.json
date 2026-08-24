@@ -8,29 +8,57 @@
     "da",
     "as"
   ],
-  "interviewAnswer": "A time series can contain trend, seasonal patterns, longer cycles and irregular remainder. I identify these structures before selecting a model because validation and feature construction depend on them.",
+  "interviewAnswer": "A time series is often described through level, trend, seasonal patterns, longer cycles, calendar effects, interventions and remainder. An additive representation Y_t=T_t+S_t+R_t fits seasonal amplitude that is roughly constant in target units; a multiplicative representation Y_t=T_t*S_t*R_t, often handled by logs, fits variation proportional to level. Components are modeling constructs, not uniquely observed truths: the decomposition depends on smoothing window, period, transform, endpoints and assumptions. I begin with frequency and timestamp quality, plot raw and transformed series, use domain calendars and spectral or ACF evidence for candidate seasons, and distinguish deterministic repeating seasonality from stochastic dependence. Multiple or evolving seasons need flexible bases or MSTL-like methods. I estimate components inside each training origin, inspect remainder structure and outliers, and never use a full-series decomposition as a leakage-free forecast feature.",
   "keyPoints": [
-    "Plot the series first.",
-    "Seasonality has a known calendar frequency; cycles need not.",
-    "Multiple seasonalities can coexist."
+    "Trend, seasonality, cycle and remainder are representation choices whose estimates depend on method and scale.",
+    "Additive seasonality has constant amplitude; multiplicative seasonality scales with level and is often modeled on logs.",
+    "Calendar effects such as trading days, holidays and moving festivals are not captured by a fixed numeric period alone.",
+    "A decomposition is useful only if the remainder and component stability are checked across time and forecast origins.",
+    "Full-series smoothing uses future observations and cannot be inserted directly into historical backtests or online features."
   ],
   "resources": [
-    "fpp3"
+    "fpp3",
+    "statsmodels-tsa",
+    "openintro-stats"
   ],
   "featured": true,
-  "why": "Trend, Seasonality, Cycles & Remainder appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
-  "intuition": "Plot the series first.",
-  "deepDive": "A time series can contain trend, seasonal patterns, longer cycles and irregular remainder. I identify these structures before selecting a model because validation and feature construction depend on them. Seasonality has a known calendar frequency; cycles need not. Multiple seasonalities can coexist. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
-  "workedExample": "Hourly demand may have daily and weekly seasonality plus a long-term growth trend.",
+  "why": "Forecasting methods encode different assumptions about what persists. A weekly seasonal pattern may be stable while trend changes; a retail holiday moves dates; a demand amplitude grows with business scale; an apparent cycle may be one structural break. Treating all structure as autoregression obscures operations, while assuming a clean decomposition can invent components at boundaries. Component analysis improves baseline choice, transformations, model architecture and diagnostics, but only when timestamp semantics, seasonal periods and point-in-time estimation are respected.",
+  "intuition": "Think of the observed series as several transparent sheets stacked together: a slowly moving level, a repeating weekly pattern, occasional event shapes and noise. On an additive scale each sheet contributes a fixed number of units. On a multiplicative scale the seasonal sheet stretches when the level rises. The sheets are not handed to us; a decomposition algorithm chooses how to distribute the ink.",
+  "deepDive": "Component representations separate predictable structures by timescale and mechanism. Additive and transformed multiplicative forms, calendar regressors, multiple seasons and robust smoothers support interpretation and model design. Identification is not unique, boundary estimates are fragile and all fitted components must remain origin-local in evaluation.",
+  "workedExample": "A site's weekend traffic is about 80% of weekday level. When total traffic doubles, the weekend dip doubles in units, favoring a multiplicative or log-additive representation over a fixed additive dip.",
   "commonMistakes": [
-    "Applying the method without checking its assumptions or data-generating process.",
-    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+    {
+      "misconception": "A decomposition reveals the true components.",
+      "correction": "Components depend on constraints, smoother settings, period, scale and sample; compare plausible representations."
+    },
+    {
+      "misconception": "Use full-series STL components as ML features in backtests.",
+      "correction": "The smoother uses observations after historical origins; refit or update components within each training window."
+    },
+    {
+      "misconception": "Every regular-looking oscillation is seasonality.",
+      "correction": "Seasonality repeats on a known calendar; cycles, trend and sampling artifacts can create apparent oscillation."
+    },
+    {
+      "misconception": "Logging only changes the chart scale.",
+      "correction": "It changes the loss geometry, additive structure and back-transformation estimand and requires positive-domain handling."
+    }
   ],
   "followUps": [
-    "What assumptions does Trend, Seasonality, Cycles & Remainder make?",
-    "How would you validate or debug Trend, Seasonality, Cycles & Remainder in practice?"
+    {
+      "question": "How do you choose additive versus multiplicative seasonality?",
+      "answer": "Assess whether seasonal amplitude is roughly constant in units or proportional to level, then validate transformed forecasts on the original decision scale."
+    },
+    {
+      "question": "Why is a centered moving average leaky?",
+      "answer": "Its estimate at time t uses observations after t, which were unavailable at a forecast origin ending at t."
+    },
+    {
+      "question": "What should remain after decomposition?",
+      "answer": "Ideally a stable remainder without actionable trend or seasonal structure, though this is a diagnostic goal rather than proof of model adequacy."
+    }
   ],
-  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "production": "Version frequency, timezone, aggregation, periods, calendar and event definitions, transformation and inverse transform, smoother settings and seasonal normalization. Estimate every fitted component within forecast origins and persist component-level predictions. Test irregular timestamps, missing cycles, daylight-saving changes, zeros and endpoints. Monitor trend bias, seasonal phase errors, remainder variance and residual autocorrelation. Alert on calendar or operating-schedule changes, retain seasonal-naive and raw-scale fallbacks and rollback when component extrapolation or reconstruction becomes unstable.",
   "visual": {
     "type": "layers",
     "title": "Time-series decomposition",
@@ -43,6 +71,133 @@
     "caption": "Decomposition separates recurring structure from long-run movement and irregular variation."
   },
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-22"
+  },
+  "math": "Additive decomposition writes Y_t=T_t+S_t+R_t with seasonal constraints such as sum over one cycle S=0. Multiplicative form Y_t=T_t S_t R_t becomes log Y_t=log T_t+log S_t+log R_t for positive data. A centered moving average of length m estimates slow structure but uses future points and loses endpoints. Seasonal indices can average detrended values by phase. Fourier terms sin(2 pi kt/m), cos(2 pi kt/m) represent smooth deterministic seasonality; higher K increases flexibility. Components are not identifiable without constraints because a pattern can be shifted between trend and seasonality.",
+  "code": "residual=y[interior]-reconstruction[interior]; component_rmse=float(np.sqrt(np.mean(residual**2))); seasonal_correlation=float(np.corrcoef(seasonal,pattern)[0,1])",
+  "lab": {
+    "language": "python",
+    "goal": "Estimate additive trend and monthly seasonality from a synthetic series and verify normalization and interior reconstruction.",
+    "buildIt": "import numpy as np\nrng=np.random.default_rng(2); n=120; t=np.arange(n); true_trend=20+.08*t; pattern=np.array([-2,-1,0,1,2,3,2,1,0,-1,-2,-3.]); y=true_trend+pattern[t%12]+rng.normal(scale=.15,size=n)\nwindow=12; kernel=np.ones(window)/window; raw=np.convolve(y,kernel,mode='valid'); trend=np.full(n,np.nan); trend[6:6+len(raw)]=raw\ndetrended=y-trend; seasonal=np.array([np.nanmean(detrended[(t%12)==k]) for k in range(12)]); seasonal-=seasonal.mean(); reconstruction=trend+seasonal[t%12]; interior=np.isfinite(trend)",
+    "useIt": "residual=y[interior]-reconstruction[interior]; component_rmse=float(np.sqrt(np.mean(residual**2))); seasonal_correlation=float(np.corrcoef(seasonal,pattern)[0,1])",
+    "verifyIt": "assert abs(seasonal.sum())<1e-12\nassert seasonal_correlation>.99\nassert component_rmse<.25\nassert interior.sum()==n-window+1\nassert np.isnan(trend[:6]).all() and np.isnan(trend[6+len(raw):]).all()\nassert np.allclose(reconstruction[interior]+residual,y[interior])",
+    "shipIt": "Persist periods, transforms and component states per origin, test calendar edges and endpoints, and monitor component-level drift with a seasonal-naive fallback."
+  },
+  "description": "Time-series components provide a vocabulary for level, trend, seasonality, cycles, calendar events, interventions and remainder. This chapter compares additive and multiplicative representations, explains log and Box-Cox-style transforms, and distinguishes fixed seasonal periods from holidays, trading-day effects and moving events. It derives moving-average trend and seasonal-index estimates, introduces Fourier bases and multiple seasonality, and discusses changing amplitude, damped trends, structural breaks, outliers and boundary uncertainty. It emphasizes that components are not uniquely observed and that decomposition choices allocate structure differently. Worked examples identify proportional seasonality and distinguish a one-time level shift from a recurring cycle. The lab simulates trend plus monthly seasonality, estimates a centered moving-average trend and phase means, and verifies reconstruction and zero-sum constraints on interior points. Production guidance validates frequency and timezone, versions calendar definitions and transforms, estimates components inside each backtest origin, monitors component drift and retains raw-series baselines when decomposition becomes unstable. The chapter keeps descriptive smoothing separate from the one-sided state available to a live forecaster.",
+  "prerequisites": [
+    "time-series-split",
+    "expectation-variance"
+  ],
+  "learningObjectives": [
+    "Identify plausible trend, seasonal, calendar, cycle and remainder structures from domain and diagnostics.",
+    "Choose additive, multiplicative or transformed representations from amplitude and support.",
+    "Estimate simple trend and seasonal components and understand identifiability and endpoint limitations.",
+    "Use component diagnostics without future leakage and monitor their stability in production."
+  ],
+  "deepSections": [
+    {
+      "id": "component-semantics",
+      "title": "Components represent mechanisms and timescales",
+      "body": "Level is the local baseline around which observations vary. Trend is persistent direction over the forecast-relevant horizon, not necessarily a global straight line. Seasonality repeats at a known calendar or operational frequency such as hour of day or day of week. Cycles vary over longer durations without a fixed period and are difficult to distinguish from smooth trend in short samples. Calendar effects include month length, trading days, holidays and moving events; interventions include launches, outages and policy shifts. Remainder collects unmodeled structure, noise and anomalies. Start with timestamp audits, aggregation rules and domain mechanisms. A daily series from a global service can mix time zones and create artificial seasons. A short series cannot identify a multi-year cycle reliably. Name components by how they will be forecast or acted on, not by visual resemblance alone."
+    },
+    {
+      "id": "additive-multiplicative",
+      "title": "Scale determines how seasonal amplitude behaves",
+      "body": "In an additive model, a December effect of plus 100 units remains plus 100 as the level changes. In a multiplicative model, December might be twenty percent above level, so its unit amplitude grows. Plot seasonal ranges against local level and inspect residual variance. Log transforms convert positive multiplicative structure to additive and stabilize some variance, but zeros and negatives need domain-aware transforms. Back-transforming a mean log forecast does not automatically yield the mean on the original scale; distributional correction may be needed. Percent effects can also become unstable near zero. Box-Cox transforms generalize the log under positivity and a fitted parameter that must be training-only. Evaluate all forecasts after the intended inverse transform and on the business scale. Do not choose multiplicative form solely because the series rises."
+    },
+    {
+      "id": "season-calendar",
+      "title": "Periods and calendars encode different kinds of repetition",
+      "body": "A period m means the statistical pattern repeats every m observations, which requires regular sampling. Weekly seasonality in hourly data has period 168, but daylight-saving transitions produce 23- or 25-hour days and need timezone-aware handling. Month seasonality is not exactly 30 days. Trading-day counts and moving holidays require explicit regressors or event windows. Fourier bases represent smooth seasonality compactly; categorical phase indicators represent arbitrary shapes but use more parameters. Multiple seasons such as intraday and weekly can overlap and change over time. Interactions may be required when weekend intraday shape differs from weekdays. Inspect enough complete cycles and validate at forecast horizons. An ACF peak suggests repetition but can also arise from trend; detrend or difference appropriately before interpreting it."
+    },
+    {
+      "id": "estimation-remainder",
+      "title": "Every decomposition imposes smoothing and identifiability choices",
+      "body": "Classical decomposition estimates trend with moving averages, then seasonal phase averages, and assigns the rest to remainder. Centered windows use future observations and are descriptive, not causal online filters. Endpoint trend values are missing or extrapolated. STL uses locally weighted regressions and can robustify against outliers, while MSTL iterates over multiple seasons. Smoother widths trade adaptation against noise and determine which variation is called trend. Enforce seasonal normalization so level and seasonal components are identifiable. Inspect remainder mean, variance, autocorrelation, seasonal residual patterns and outliers. Remaining structure means the decomposition is incomplete for forecasting; a white-looking remainder does not prove components will remain stable. Compare reconstruction and component stability across plausible settings rather than selecting the prettiest plot."
+    },
+    {
+      "id": "forecast-operations",
+      "title": "Components become origin-local forecast states",
+      "body": "For historical origin o, estimate transformation, trend, seasonal indices and event effects using only data available by o. Forecast each component according to its mechanism: damp or extrapolate trend, repeat stable seasonality, populate known calendars and model residual dependence. Full-series decomposition leaks future trend into the past and exaggerates backtest quality. Store component forecasts and their sum so failures can be attributed. Monitor seasonal phase error, trend bias, remainder scale and event residuals by horizon. A changed operating schedule can invalidate seasonal indices instantly; a level shift can be mistaken for persistent trend. Use robust fallback seasonal-naive forecasts, cap implausible extrapolation and version calendars, periods, transforms and smoothing parameters with the model."
+    }
+  ],
+  "workedExamples": [
+    {
+      "title": "Proportional seasonality",
+      "body": "A site's weekend traffic is about 80% of weekday level. When total traffic doubles, the weekend dip doubles in units, favoring a multiplicative or log-additive representation over a fixed additive dip."
+    },
+    {
+      "title": "Break is not a cycle",
+      "body": "Demand jumps after a permanent store expansion and remains high. Calling the shift a long cycle encourages a forecast back toward the old level; an intervention or state-change model better represents the mechanism."
+    }
+  ],
+  "exercises": [
+    {
+      "prompt": "Seasonal amplitude doubles when level doubles. Which representation is natural?",
+      "solution": "A multiplicative model, often expressed additively after a log or another positive-domain transform, subject to validation."
+    },
+    {
+      "prompt": "Why normalize additive seasonal indices to sum to zero?",
+      "solution": "It prevents an arbitrary constant from being shifted between level or trend and the seasonal component."
+    },
+    {
+      "prompt": "How should moving holidays be modeled?",
+      "solution": "With explicit calendar or event regressors and windows available for future dates, not a fixed observation period alone."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "compare",
+      "title": "Seasonal scale",
+      "left": {
+        "title": "Additive",
+        "items": [
+          "Fixed unit amplitude",
+          "Y=T+S+R",
+          "Can handle zero or negative values",
+          "Original-unit interpretation"
+        ]
+      },
+      "right": {
+        "title": "Multiplicative",
+        "items": [
+          "Amplitude follows level",
+          "Y=T×S×R",
+          "Often log-additive",
+          "Back-transform needs care"
+        ]
+      },
+      "caption": "Choose the representation from mechanism and out-of-sample performance on the decision scale.",
+      "afterSection": "additive-multiplicative"
+    },
+    {
+      "type": "flow",
+      "title": "Component-aware forecast",
+      "items": [
+        "Audit timestamps and frequency",
+        "Choose scale and candidate periods",
+        "Estimate trend and seasons in training",
+        "Diagnose remainder",
+        "Forecast each mechanism",
+        "Recombine, invert and monitor"
+      ],
+      "caption": "Each fitted component is an origin-local model state, not a timeless property of the full series.",
+      "afterSection": "forecast-operations"
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "fpp3",
+      "contribution": "Provides component definitions, additive and multiplicative decomposition, transformations and calendar-aware forecasting guidance."
+    },
+    {
+      "resource": "statsmodels-tsa",
+      "contribution": "Verifies current decomposition, STL and MSTL implementation context."
+    },
+    {
+      "resource": "openintro-stats",
+      "contribution": "Supports means, variance, correlation and smoothing interpretation used in the worked derivation."
+    }
+  ]
 }

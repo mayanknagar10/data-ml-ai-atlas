@@ -9,33 +9,59 @@
     "da",
     "as"
   ],
-  "interviewAnswer": "For forecasts I choose metrics based on business cost and scale. MAE is easy to interpret, RMSE emphasizes large misses, MAPE can break near zero, and scaled metrics like MASE help compare across series. I always compare against naive and seasonal-naive baselines.",
+  "interviewAnswer": "Forecast metrics must match the decision, scale, horizon and forecast object. I start with chronological forecast errors e_{s,o,h}=y_{s,o+h}-yhat_{s,o,h} from identical origins. MAE targets the conditional median and is interpretable in target units; RMSE targets the conditional mean and emphasizes large errors. MAPE is undefined or unstable near zero and asymmetric, so I usually prefer MASE or RMSSE for cross-series comparison, using a training-only naive or seasonal-naive scale. WAPE is an aggregate ratio, not an average item percentage, and can hide where error occurs. I report signed bias, horizon and series slices, baseline skill and business-weighted cost. For quantiles or distributions I use proper scores such as pinball loss, interval score or CRPS plus empirical coverage and sharpness. I never choose a model from one pooled number: I preserve paired errors, quantify uncertainty with temporal blocks or independent series, and inspect high-impact regimes.",
   "keyPoints": [
-    "MAE/RMSE",
-    "MAPE caveat",
-    "MASE",
-    "naive baseline"
+    "Metric choice determines the statistical functional being estimated: mean, median, quantile or full distribution.",
+    "Scale-free metrics still encode a denominator and weighting policy; compute scaling terms from training history only.",
+    "MAPE and sMAPE are unreliable around zero and can reward systematically low forecasts.",
+    "Evaluate identical origins by horizon, series and regime before applying declared business weights.",
+    "Probabilistic forecasts require proper scoring rules together with calibration and sharpness diagnostics."
   ],
   "resources": [
     "fpp3",
-    "fpppy",
-    "statquest"
+    "forecast-accuracy-paper",
+    "proper-scoring-rules",
+    "sklearn-model-evaluation"
   ],
   "featured": false,
-  "why": "A sophisticated model that cannot beat “use last week” is not delivering value. Metric choice can also reverse which model appears best.",
-  "intuition": "Metrics are lenses: RMSE zooms in on big errors, MAE treats errors linearly, percentage metrics normalize by scale but become unstable around zero.",
-  "deepDive": "For multiple SKUs with very different scales, MASE or weighted business metrics can be more meaningful than raw MAE. Quantile/pinball loss is useful when under-forecast and over-forecast costs differ.",
-  "workedExample": "Suppose two models have MAE 8 and 9, but the second avoids rare 100-unit stockout misses. A business-weighted metric may prefer the second even though MAE does not.",
+  "why": "A forecast can be good under one loss and bad under another because losses value errors differently. Squaring errors makes a few misses dominate; absolute loss treats every unit equally; an asymmetric stockout cost may make underprediction far more expensive. Aggregation can reverse rankings when one model wins on large series and another wins on most series. Percentage metrics become explosive for intermittent or near-zero demand, while unweighted averages can let thousands of tiny series overwhelm revenue exposure. A metric is therefore part of the product contract, not a decorative report. It connects model outputs to decisions, determines which functional training should target, and defines how evidence is accumulated across horizons and entities.",
+  "intuition": "Think of each error as a bill. MAE charges one dollar per unit of miss. RMSE charges increasingly more for exceptional misses. MASE expresses the bill relative to how much a naive forecast usually misses on that series. Pinball loss charges different rates on the two sides of a requested quantile. A useful scorecard shows who paid the bill, at which horizon and in which operating condition, instead of hiding everything in one total.",
+  "deepDive": "Forecast evaluation begins with a forecast-level ledger and a declared estimand. Point losses, scaled losses, aggregate ratios, business costs and proper probabilistic scores answer different questions. Reliable comparisons preserve matched origins, expose weighting and denominator choices, and quantify uncertainty under temporal and cross-series dependence.",
+  "workedExample": "Actual demand is 0.1 and a forecast is 0.3. The absolute error is only 0.2 units, but absolute percentage error is 200 percent. A second item with actual 100 and forecast 90 has a much larger ten-unit miss but only ten percent error. Whether that ordering is useful depends on the decision, not on the word percentage.",
   "commonMistakes": [
-    "Using MAPE when actuals can be zero.",
-    "Reporting one aggregate metric that hides catastrophic errors on critical products."
+    {
+      "misconception": "Lower RMSE means a model is universally more accurate.",
+      "correction": "It means lower average squared error on a declared evaluation population; other losses, horizons or business weights can reverse the choice."
+    },
+    {
+      "misconception": "MAPE is always comparable because it is a percentage.",
+      "correction": "Zeros, near-zeros, negatives and arbitrary-zero scales make it undefined, unstable or meaningless."
+    },
+    {
+      "misconception": "Coverage alone validates prediction intervals.",
+      "correction": "Intervals can achieve coverage by being excessively wide; pair calibration with sharpness and a proper score."
+    },
+    {
+      "misconception": "Every forecast row is an independent sample for confidence intervals.",
+      "correction": "Horizons, origins and neighboring periods share information; use paired, block- or series-aware uncertainty."
+    }
   ],
   "followUps": [
-    "When would you use pinball loss?",
-    "What baseline would you use for seasonal demand?"
+    {
+      "question": "When would you choose MAE over RMSE?",
+      "answer": "When median behavior and linear unit cost are appropriate or rare large errors should not dominate as strongly; still report tail failures separately."
+    },
+    {
+      "question": "Why is MASE useful across series?",
+      "answer": "It normalizes absolute error by a training-only naive benchmark on each series, giving an interpretable relative scale."
+    },
+    {
+      "question": "How should quantile forecasts be evaluated?",
+      "answer": "Use pinball loss for each requested quantile, inspect empirical coverage by slice, and check quantile ordering and downstream cost."
+    }
   ],
-  "production": "Production dashboards should track overall accuracy, segment-level accuracy, bias, service-level impact and baseline-relative improvement.",
-  "math": "MASE = MAE(model) / MAE(naive in-sample one-step forecast).",
+  "production": "Version the forecast ledger schema, loss equations, sign convention, transform inversion, seasonal scale denominator, baseline, horizon and business weights, eligibility and label-maturity policy. Preserve paired model and baseline forecasts. Monitor bias, MAE or cost, negative skill, tail loss and probabilistic calibration by horizon, series class and regime. Track denominator drift and data-quality exclusions. Use block- or series-aware uncertainty for release decisions, set critical-slice non-regression gates, canary changes and retain a baseline or prior model for rollback.",
+  "math": "For error e_i=y_i-yhat_i, MAE=n^{-1} sum |e_i| and RMSE=sqrt(n^{-1} sum e_i^2). Minimizing expected absolute loss yields a conditional median; minimizing squared loss yields a conditional mean. For seasonal period m, MASE uses n^{-1}sum|e_i| divided by (T-m)^{-1}sum_{t=m+1}^T|y_t-y_{t-m}| computed on training data; RMSSE replaces absolute deviations with squared deviations and takes a square root. WAPE=sum|e_i|/sum|y_i| is a pooled ratio. For quantile q, pinball loss is (q-1{e<0})e. A central (1-alpha) interval [l,u] has interval score (u-l)+(2/alpha)(l-y)1{y<l}+(2/alpha)(y-u)1{y>u}. Skill against baseline B is 1-L_model/L_B when lower loss is better.",
   "visual": {
     "type": "concept-map",
     "title": "Forecasting Metrics & Baselines",
@@ -48,6 +74,137 @@
     "caption": "A compact concept map for the most important ideas in this lesson."
   },
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-22"
+  },
+  "code": "from sklearn.metrics import mean_absolute_error, mean_squared_error, mean_pinball_loss\nofficial_mae=float(mean_absolute_error(y,pred)); official_rmse=float(np.sqrt(mean_squared_error(y,pred))); official_q90=float(mean_pinball_loss(y,pred+2,alpha=.9))",
+  "lab": {
+    "language": "python",
+    "goal": "Implement a multi-metric forecast scorecard, verify standard losses, and expose percentage-error and scaling behavior.",
+    "buildIt": "import numpy as np\ny_train=np.array([10.,12.,11.,13.,12.,14.,13.,15.,14.,16.,15.,17.])\ny=np.array([0.1,10.,12.,20.,25.]); pred=np.array([0.3,9.,15.,18.,24.])\ne=y-pred; mae=float(np.mean(np.abs(e))); rmse=float(np.sqrt(np.mean(e**2))); bias=float(np.mean(e)); mape=float(np.mean(np.abs(e/y))); wape=float(np.sum(np.abs(e))/np.sum(np.abs(y)))\nscale=np.mean(np.abs(y_train[1:]-y_train[:-1])); mase=mae/scale\ndef pinball(actual,forecast,q):\n    err=actual-forecast; return float(np.mean(np.maximum(q*err,(q-1)*err)))\nq90=pinball(y,pred+2,.9)",
+    "useIt": "from sklearn.metrics import mean_absolute_error, mean_squared_error, mean_pinball_loss\nofficial_mae=float(mean_absolute_error(y,pred)); official_rmse=float(np.sqrt(mean_squared_error(y,pred))); official_q90=float(mean_pinball_loss(y,pred+2,alpha=.9))",
+    "verifyIt": "assert np.isclose(mae,official_mae) and np.isclose(rmse,official_rmse)\nassert np.isclose(q90,official_q90)\nassert np.isclose(wape,np.sum(np.abs(e))/np.sum(np.abs(y)))\nassert mape>mae and abs(e[0])<abs(e[2]) and abs(e[0]/y[0])>abs(e[2]/y[2])\nassert scale>0 and np.isclose(mase,mae/scale)\nassert bias<mae and all(v>=0 for v in (mae,rmse,mase,wape,q90))",
+    "shipIt": "Generate immutable forecast-level metric ledgers, compute training-only scales and paired baselines, publish horizon and cohort scorecards, and alert on bias, negative skill and calibration failures."
+  },
+  "description": "Forecasting metrics translate forecast errors into model-selection and operating decisions. This chapter connects MAE and RMSE to median and mean targets, explains signed bias and error distributions, and distinguishes per-observation averages from aggregate ratios. It derives MASE and RMSSE using training-only naive or seasonal-naive denominators and analyzes MAPE, sMAPE and WAPE failures around zeros, negatives, intermittency and changing scale. It covers horizon, origin, series, regime and business weighting; macro versus micro aggregation; baseline skill; paired model comparisons; temporal dependence and block-aware uncertainty. It separates point, quantile, interval and distributional evaluation, introducing pinball loss, empirical coverage, sharpness, interval score, log score and CRPS without treating calibration alone as sufficient. Worked examples show ranking reversal and percentage-error instability. The lab implements a forecast scorecard, verifies core values against scikit-learn, and demonstrates why MAPE explodes near zero while MASE remains interpretable. Production guidance versions metric definitions, denominators and cohorts, delays scoring until labels mature, and monitors bias, negative skill and interval miscalibration by operational slice.",
+  "prerequisites": [
+    "time-series-split",
+    "naive-seasonal-baselines",
+    "expectation-variance"
+  ],
+  "learningObjectives": [
+    "Select point and probabilistic losses that align with the forecast output and downstream decision.",
+    "Compute MAE, RMSE, MASE, RMSSE, WAPE, bias, pinball and interval scores correctly.",
+    "Design horizon- and series-aware aggregation with explicit business weights and paired uncertainty.",
+    "Diagnose zero denominators, metric gaming, delayed labels and misleading pooled improvements."
+  ],
+  "deepSections": [
+    {
+      "id": "estimand-loss",
+      "title": "Loss functions choose what the forecast means",
+      "body": "A point forecast is incomplete until its target functional is named. Squared loss is optimized by the conditional mean, while absolute loss is optimized by a conditional median. They coincide only for special symmetric distributions. If shortage and overage costs differ linearly, the optimal forecast is a quantile determined by the cost ratio, not automatically the mean. RMSE has the same units as the target but is not the typical error; its square emphasizes tails, data faults and rare peaks. MAE is more robust and directly additive across units, yet may underweight catastrophic misses. Report signed mean error or cumulative bias separately because absolute scores can hide chronic underforecasting. Never train a median model and judge it as though it estimates the mean without explaining the mismatch. Translate domain cost into an explicit loss curve when possible, and keep statistical scores as diagnostics so a temporary price table does not erase general forecast quality."
+    },
+    {
+      "id": "scaling-percentages",
+      "title": "Scale-free does not mean assumption-free",
+      "body": "MAPE divides each error by the realized value. It is undefined at zero, unstable near zero, unsuitable for arbitrary-zero scales and asymmetric because the same absolute miss has different percentage penalties depending on the outcome. sMAPE changes the denominator but remains unstable and has competing definitions. WAPE pools absolute errors before dividing by total actual volume. It is useful as an aggregate volume-relative summary for nonnegative targets, but large series dominate and the denominator can drift across evaluation windows. MASE scales MAE by an in-sample naive error, making one mean the model matches the chosen naive benchmark. RMSSE does the squared analogue and was used in hierarchical retail evaluation. The denominator must use only the training era available at each origin; computing it on test outcomes leaks scale information. For seasonal data use a seasonal-naive difference with the declared period. Constant histories can give zero denominators, requiring an explicit exclusion, epsilon policy or alternative score rather than silent infinities."
+    },
+    {
+      "id": "aggregation-slices",
+      "title": "Keep the forecast ledger before aggregating",
+      "body": "Store one record per series, origin, target timestamp and horizon with prediction, outcome, baseline, weight and regime labels. First inspect loss by horizon because uncertainty and action value change with lead time. Then inspect series-level distributions: macro averaging gives each series equal influence, while micro or volume weighting gives high-exposure rows more influence. Both can be legitimate and should be reported together. Declare whether weights reflect revenue, units, service levels or decision frequency, and keep them fixed before comparing models. Overall means can hide a model that improves routine periods while failing holidays, cold starts or high-value products. Compute paired loss differences on exactly the same eligible forecast events. Confidence intervals should resample independent series when entities are independent, contiguous temporal blocks when errors cluster over time, or both in a hierarchical bootstrap. Row-level iid standard errors are usually too optimistic."
+    },
+    {
+      "id": "probabilistic-scores",
+      "title": "Probability forecasts need truthful and diagnostic evaluation",
+      "body": "A nominal 90 percent interval that covers 90 percent of outcomes may still be uselessly wide. Coverage measures calibration but not concentration; sharpness measures width but must be judged subject to calibration. Interval score rewards narrow intervals and penalizes misses according to the nominal alpha. Quantile or pinball loss is proper for a requested quantile and supports asymmetric decisions. CRPS evaluates the entire univariate predictive distribution and resembles an integrated quantile loss. Log score strongly penalizes assigning tiny density to what occurs and is sensitive to density tails and numerical flooring. Proper scores discourage a forecaster from improving expected score by reporting a distribution other than its belief. Evaluate calibration by horizon, series scale and regime, inspect probability integral transform or quantile coverage patterns, and distinguish aleatoric forecast spread from model or data uncertainty. Joint path forecasts require additional multivariate or scenario checks because good marginals do not guarantee realistic temporal trajectories."
+    },
+    {
+      "id": "decision-monitoring",
+      "title": "A metric specification is a versioned production interface",
+      "body": "Write a metric card containing error sign convention, units, transform inversion, missing-label policy, denominator window, seasonal period, horizon weights, series weights, clipping, eligibility and baseline version. Mature labels before scoring and distinguish preliminary from revised outcomes. Monitor numerator and denominator separately so an apparent MASE improvement is not caused by a more volatile scaling era. Alert on sustained signed bias, negative baseline skill, tail error, service-level breach and interval undercoverage, not only average loss. Segment data-quality incidents from model misses but retain both views because the user experiences the combined system. Use shadow forecasts for paired comparisons, predeclare promotion thresholds and require improvement on critical slices with no intolerable regression. Preserve the prior model and baseline route for rollback when online error or latency exceeds guardrails."
+    }
+  ],
+  "workedExamples": [
+    {
+      "title": "Near-zero percentage explosion",
+      "body": "Actual demand is 0.1 and a forecast is 0.3. The absolute error is only 0.2 units, but absolute percentage error is 200 percent. A second item with actual 100 and forecast 90 has a much larger ten-unit miss but only ten percent error. Whether that ordering is useful depends on the decision, not on the word percentage."
+    },
+    {
+      "title": "Aggregation reverses a ranking",
+      "body": "Model A beats B by one unit on 900 small series, while B beats A by 100 units on ten revenue-critical series. Equal-series MAE favors A; volume-weighted cost can favor B. Reporting both reveals the stakeholder choice instead of pretending there is one neutral winner."
+    }
+  ],
+  "exercises": [
+    {
+      "prompt": "Which point forecast minimizes expected squared error?",
+      "solution": "The conditional mean, assuming the expectation exists."
+    },
+    {
+      "prompt": "Why must a MASE denominator come from training data?",
+      "solution": "Using evaluation outcomes leaks future scale and makes the score depend on information unavailable at the forecast origin."
+    },
+    {
+      "prompt": "A 90 percent interval has 99 percent coverage and doubles in width. Is it necessarily better?",
+      "solution": "No. It may be over-dispersed; inspect sharpness and a proper interval or distributional score alongside calibration."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "compare",
+      "title": "Point-loss behavior",
+      "left": {
+        "title": "Absolute loss",
+        "items": [
+          "Targets conditional median",
+          "Linear penalty",
+          "Robust to isolated extremes",
+          "Easy target-unit interpretation"
+        ]
+      },
+      "right": {
+        "title": "Squared loss",
+        "items": [
+          "Targets conditional mean",
+          "Quadratic penalty",
+          "Tail misses dominate",
+          "Sensitive to data faults"
+        ]
+      },
+      "caption": "Metric choice changes both the preferred forecast and which failures dominate evaluation.",
+      "afterSection": "estimand-loss"
+    },
+    {
+      "type": "flow",
+      "title": "Forecast scorecard",
+      "items": [
+        "Keep paired forecast events",
+        "Slice by horizon and regime",
+        "Compute point and proper scores",
+        "Apply declared series weights",
+        "Quantify dependent uncertainty",
+        "Gate and monitor releases"
+      ],
+      "caption": "Aggregation comes after event-level diagnostics and an explicit weighting policy.",
+      "afterSection": "aggregation-slices"
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "fpp3",
+      "contribution": "Provides forecast-accuracy definitions, rolling-origin evaluation, scaled errors and distributional score guidance."
+    },
+    {
+      "resource": "forecast-accuracy-paper",
+      "contribution": "Analyzes percentage and relative metric failures and introduces MASE."
+    },
+    {
+      "resource": "proper-scoring-rules",
+      "contribution": "Provides the formal foundation for proper scoring rules and truthful probabilistic evaluation."
+    },
+    {
+      "resource": "sklearn-model-evaluation",
+      "contribution": "Verifies the reference MAE, MSE and pinball-loss implementations used in the runnable lab."
+    }
+  ]
 }

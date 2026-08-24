@@ -1,6 +1,6 @@
 # Data, ML & AI Atlas — Curriculum
 
-**45 modules · 394 topics · 306 curated resources**
+**45 modules · 394 topics · 312 curated resources**
 
 ## 01. 🐍 Python & Software Engineering
 
@@ -232,7 +232,7 @@ Deep-complete: **10/10** · Visual models: **20/10**
 
 Potential outcomes, DAGs and quasi-experimental identification strategies.
 
-Deep-complete: **9/10** · Visual models: **18/10**
+Deep-complete: **10/10** · Visual models: **20/10**
 
 - ⬆️ **Causal Inference vs Prediction** — ✅ deep · 🖼 visual
 - • **DAGs, Confounders & Colliders** — ✅ deep · 🖼 visual
@@ -243,23 +243,23 @@ Deep-complete: **9/10** · Visual models: **18/10**
 - • **Instrumental Variables** — ✅ deep · 🖼 visual
 - • **Regression Discontinuity** — ✅ deep · 🖼 visual
 - • **Synthetic Control** — ✅ deep · 🖼 visual
-- ⬆️ **Heterogeneous Treatment Effects & Uplift Modeling** — ◻ interview-ready
+- ⬆️ **Heterogeneous Treatment Effects & Uplift Modeling** — ✅ deep · 🖼 visual
 
 ## 16. ⏱️ Time Series & Forecasting
 
 Temporal structure, classical and modern forecasting, uncertainty and operational forecasting.
 
-Deep-complete: **0/20** · Visual models: **13/20**
+Deep-complete: **5/20** · Visual models: **18/20**
 
-- 🔥 **Time-Series Splits & Backtesting** — ◻ interview-ready · 🖼 visual
-- ⬆️ **Stationarity, ACF & PACF** — ◻ interview-ready · 🖼 visual
+- 🔥 **Time-Series Splits & Backtesting** — ✅ deep · 🖼 visual
+- ⬆️ **Stationarity, ACF & PACF** — ✅ deep · 🖼 visual
 - ⬆️ **ARIMA / SARIMA** — ◻ interview-ready · 🖼 visual
 - • **Exponential Smoothing / ETS** — ◻ interview-ready · 🖼 visual
-- 🔥 **Forecasting Metrics & Baselines** — ◻ interview-ready · 🖼 visual
+- 🔥 **Forecasting Metrics & Baselines** — ✅ deep · 🖼 visual
 - • **Prophet & Decomposable Forecasting** — ◻ interview-ready
-- 🔥 **Trend, Seasonality, Cycles & Remainder** — ◻ interview-ready · 🖼 visual
+- 🔥 **Trend, Seasonality, Cycles & Remainder** — ✅ deep · 🖼 visual
 - 🔥 **Lags, Rolling Windows & Leakage** — ◻ interview-ready · 🖼 visual
-- 🔥 **Naive, Seasonal-Naive & Drift Baselines** — ◻ interview-ready · 🖼 visual
+- 🔥 **Naive, Seasonal-Naive & Drift Baselines** — ✅ deep · 🖼 visual
 - ⬆️ **Classical Decomposition & STL** — ◻ interview-ready · 🖼 visual
 - ⬆️ **Dynamic Regression / ARIMAX** — ◻ interview-ready
 - • **State-Space Models & Kalman Filtering** — ◻ interview-ready · 🖼 visual

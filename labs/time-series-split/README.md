@@ -1,6 +1,6 @@
 # Time-Series Splits & Backtesting — Code Lab
 
-Backtest without future leakage using expanding windows.
+Build expanding-window splits with a gap, verify temporal boundaries, and compare paired rolling-mean and last-value forecasts.
 
 ## 1. Build it
 

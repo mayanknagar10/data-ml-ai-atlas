@@ -9,39 +9,65 @@
     "da",
     "as"
   ],
-  "interviewAnswer": "Random train/test splitting is usually wrong for forecasting because it leaks the future into the past. I split chronologically and evaluate with rolling or expanding-window backtests that mimic how the model will actually be used.",
+  "interviewAnswer": "Time-series evaluation must simulate what was knowable at each forecast origin. I never randomly shuffle future rows into training. I define the operational origin schedule, forecast horizon, data latency, update cadence and retraining policy, then use expanding or rolling windows whose training timestamps and feature event times precede each origin. A gap or embargo is needed when labels, rolling windows or delayed features overlap the validation period. Multi-step forecasts are evaluated by horizon because one-step recursive backtests hide error accumulation. Every transformation, lag, model selection and calibration step is refit within each training window. I compare against naive, seasonal-naive and current-production baselines using the same origins, aggregate across series and time according to business exposure, and preserve paired errors. The final backtest includes realistic missing releases, revisions, cold starts, outages and computation cutoffs; one convenient historical split is not sufficient evidence.",
   "keyPoints": [
-    "chronological split",
-    "rolling/expanding windows",
-    "no future leakage",
-    "match deployment horizon"
+    "Forecast origins, horizons and information-release times define the evaluation boundary.",
+    "Expanding windows mimic accumulating history; rolling windows mimic forgetting or fixed training budgets.",
+    "A gap prevents overlapping labels, windows or delayed availability from crossing the split.",
+    "All preprocessing, feature creation and selection must be origin-local and point-in-time correct.",
+    "Report horizon, series and regime performance with paired baselines and realistic production constraints."
   ],
   "resources": [
     "fpp3",
-    "fpppy",
+    "sklearn-cross-validation",
     "statsmodels-tsa"
   ],
   "featured": true,
-  "why": "Forecast validation is easy to make unrealistically optimistic. A model should only use information that would have existed at the prediction timestamp.",
-  "intuition": "Imagine standing at each historical date and pretending it is “today.” Train only on the past, forecast the next horizon, record the error, then move forward.",
-  "deepDive": "Random cross-validation breaks temporal ordering. Use a final untouched future holdout for the last estimate, while rolling-origin validation compares models/hyperparameters. Feature engineering must also be point-in-time correct: rolling means, target encodings, and joins cannot peek ahead.",
-  "workedExample": "For monthly demand, train Jan–Dec 2024 and validate Jan–Mar 2025; then train through Mar and validate Apr–Jun. Compare errors across windows instead of trusting one lucky split.",
+  "why": "Temporal dependence makes ordinary cross-validation optimistic. A random split can train on tomorrow's season, revised values or later behavior from the same episode. Even an ordered holdout can misrepresent a system that retrains weekly, forecasts 28 days, receives labels late or has overlapping rolling targets. Forecasting also has fewer independent regimes than rows: thousands of hourly points may contain only a handful of holidays and structural breaks. A trustworthy backtest is a replay of the production clock, including when exogenous variables become known and when models are updated. It reveals horizon decay, regime fragility, compute limits and whether a sophisticated method actually beats seasonal repetition.",
+  "intuition": "Stand at a historical date and cover everything that had not arrived yet. Build the exact model and features available then, issue the same horizons production would issue, move the clock forward and repeat. Each origin is a rehearsal. If a value was published later, revised later or derived from a window crossing the origin, it stays covered even if today's warehouse contains it.",
+  "deepDive": "Backtesting is a temporal simulation design. It aligns origin, horizon, release calendar, label maturity, retraining and feature state, then aggregates paired errors over a declared deployment population. Rolling-origin evaluation, gaps and nested tuning protect the information boundary; stress windows and operational replay expose distribution shift and latency failures.",
+  "workedExample": "A target is total demand over the next seven days. A training row dated one day before a validation origin uses six outcome days that lie inside validation. Ending training rows at least seven days before the origin prevents label overlap.",
   "commonMistakes": [
-    "Using random K-fold CV on dependent time-series observations.",
-    "Computing rolling features on the full dataset before splitting, which leaks future information."
+    {
+      "misconception": "Disabling shuffle makes ordinary K-fold valid for time series.",
+      "correction": "Some folds still train on observations after validation; use forward-only origins and point-in-time features."
+    },
+    {
+      "misconception": "One-step accuracy represents a 30-step recursive forecast.",
+      "correction": "Recursive errors alter future inputs and accumulate; simulate and score the complete horizon path."
+    },
+    {
+      "misconception": "Historical tables contain historical information states.",
+      "correction": "Backfills and revisions can overwrite what was known; preserve or reconstruct data vintages and ingestion times."
+    },
+    {
+      "misconception": "Averaging all forecast rows is a neutral summary.",
+      "correction": "It weights series, origins and horizons by row count; define business and macro weighting explicitly."
+    }
   ],
   "followUps": [
-    "When is random splitting acceptable for temporal data?",
-    "How do you choose expanding vs sliding windows?"
+    {
+      "question": "When should you use a rolling rather than expanding window?",
+      "answer": "When older regimes are plausibly harmful or cost requires fixed history, validated across multiple window lengths and origins."
+    },
+    {
+      "question": "Why add a gap?",
+      "answer": "To prevent overlapping labels, rolling features, delayed availability or near-duplicate temporal information from crossing the training-origin boundary."
+    },
+    {
+      "question": "How do you tune models in a backtest?",
+      "answer": "Run inner forward-only splits entirely inside each outer training era or freeze tuning from an earlier period, then evaluate the full selected procedure."
+    }
   ],
-  "production": "Backtests should mirror prediction cadence, horizon, retraining frequency and data availability. Production feature pipelines need event-time/point-in-time semantics.",
-  "code": "# sklearn-style rolling evaluation\nfrom sklearn.model_selection import TimeSeriesSplit\n\ntscv = TimeSeriesSplit(n_splits=5)\nfor train_idx, val_idx in tscv.split(X):\n    X_train, X_val = X.iloc[train_idx], X.iloc[val_idx]\n    y_train, y_val = y.iloc[train_idx], y.iloc[val_idx]",
+  "production": "Version series eligibility, origins, horizons, target windows, gap, train-window policy, feature release calendar, data vintages, preprocessing, refit cadence, compute cutoff, baseline and aggregation weights. Assert that every event and ingestion timestamp precedes its forecast origin and that labels do not overlap holdouts. Persist forecast-level ledgers and replay fallbacks, cold starts and delayed inputs. Report horizon, series and regime errors with paired block-aware uncertainty. Keep offline-online metric parity, canary releases and retain the prior model and forecast bundle for rollback.",
+  "code": "from sklearn.model_selection import TimeSeriesSplit\ncv=TimeSeriesSplit(n_splits=4,test_size=12,gap=2); official=list(cv.split(y)); mae_mean=float(np.mean(errors_mean)); mae_last=float(np.mean(errors_last))",
   "lab": {
-    "goal": "Backtest without future leakage using expanding windows.",
     "language": "python",
-    "buildIt": "import numpy as np\nfrom sklearn.metrics import mean_absolute_error\ny=np.arange(30)+np.sin(np.arange(30))\nerrors=[]\nfor cutoff in range(15,27,3):\n    train=y[:cutoff]; val=y[cutoff:cutoff+3]\n    pred=np.repeat(train[-1],len(val)) # naive baseline\n    errors.append(mean_absolute_error(val,pred))\nprint(errors, np.mean(errors))\n",
-    "useIt": "from sklearn.model_selection import TimeSeriesSplit\nfor tr,va in TimeSeriesSplit(n_splits=4).split(y):\n    assert tr.max()<va.min()\n",
-    "verifyIt": "assert len(errors)==4\nassert all(e>=0 for e in errors)\n"
+    "goal": "Build expanding-window splits with a gap, verify temporal boundaries, and compare paired rolling-mean and last-value forecasts.",
+    "buildIt": "import numpy as np\ny=10+np.sin(np.arange(120)*2*np.pi/12)+np.arange(120)*.03\ndef expanding_splits(n,n_splits,test_size,gap):\n    first=n-n_splits*test_size\n    for start in range(first,n,test_size):\n        train=np.arange(0,start-gap); test=np.arange(start,start+test_size); yield train,test\nsplits=list(expanding_splits(len(y),4,12,2)); errors_mean=[]; errors_last=[]\nfor train,test in splits:\n    mean_pred=np.full(len(test),y[train[-12:]].mean()); last_pred=np.full(len(test),y[train[-1]])\n    errors_mean.extend(np.abs(y[test]-mean_pred)); errors_last.extend(np.abs(y[test]-last_pred))",
+    "useIt": "from sklearn.model_selection import TimeSeriesSplit\ncv=TimeSeriesSplit(n_splits=4,test_size=12,gap=2); official=list(cv.split(y)); mae_mean=float(np.mean(errors_mean)); mae_last=float(np.mean(errors_last))",
+    "verifyIt": "assert all(np.array_equal(a,c) and np.array_equal(b,d) for (a,b),(c,d) in zip(splits,official))\nassert all(train.max()+2<test.min() for train,test in splits)\nassert all(np.all(np.diff(train)==1) and np.all(np.diff(test)==1) for train,test in splits)\nassert len(errors_mean)==len(errors_last)==48\nassert mae_mean>=0 and mae_last>=0\nassert splits[-1][1].max()==len(y)-1",
+    "shipIt": "Persist origin and vintage manifests, assert cutoff and label gaps, store paired forecast errors by horizon, and replay the exact production refit and fallback schedule."
   },
   "visual": {
     "type": "flow",
@@ -56,6 +82,124 @@
     "orientation": "horizontal"
   },
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-22"
+  },
+  "math": "For origins o in O and horizons h in H, a forecast yhat_{o,h} is trained only on information I_o and targets Y_{o+h}. Backtest loss is a weighted aggregate sum_{o,h,s} w_{o,h,s} L(Y_{s,o+h},yhat_{s,o,h}) divided by sum weights. Expanding windows use training start fixed and end o; rolling windows use [o-W+1,o]. A gap g ends training no later than o-g. Errors sharing origins, horizons or series are dependent, so uncertainty should resample blocks or independent series and keep model comparisons paired. Hyperparameter selection inside each outer origin requires an inner temporal split.",
+  "description": "Time-series splitting and backtesting recreate historical forecast decisions under the information that existed at each origin. This chapter distinguishes simple holdout, expanding-window, rolling-window, blocked and prequential evaluation; defines origins, horizons, gaps, embargoes, label maturity and release calendars; and explains why random K-fold and globally computed lags leak. It covers direct, recursive and multi-output horizons, rolling feature state, panel series, cold starts, nested temporal tuning, refit cadence and fixed-versus-updated model comparisons. It develops horizon- and series-aware aggregation, paired uncertainty, regime slices and stress windows while requiring seasonal-naive and production baselines. Worked examples expose overlapping-label leakage and a revised macroeconomic feature that did not exist at forecast time. The lab implements expanding splits with a gap, verifies scikit-learn's TimeSeriesSplit boundaries and compares a rolling-mean forecast against a last-value baseline across identical origins. Production guidance persists origin manifests, data vintages, feature cutoffs and model versions and treats replay parity as a release gate.",
+  "prerequisites": [
+    "cross-validation",
+    "data-leakage"
+  ],
+  "learningObjectives": [
+    "Design forecast origins, horizons, gaps and training windows that mirror deployment.",
+    "Construct point-in-time features and nested tuning without future or revision leakage.",
+    "Aggregate paired errors by horizon, series, regime and business exposure with valid uncertainty.",
+    "Replay retraining, latency, data vintages and failure behavior as part of release evaluation."
+  ],
+  "deepSections": [
+    {
+      "id": "forecast-contract",
+      "title": "Start from the operational forecast contract",
+      "body": "Specify which series are forecast, decision timestamp, origin frequency, horizon set, target aggregation, data cutoff, feature publication latency, model refresh schedule and action. A daily model predicting the next 28 days has 28 horizon-specific tasks at every origin; one-step evaluation does not represent them. Decide whether forecasts use actual future promotions, planned promotions or predicted promotions. Record whether targets are event-time values or later revised truth. The evaluation population may weight revenue, items, stores or forecast events differently. Cold-start series and discontinued items need inclusion rules. Define the production baseline and compute budget before model selection. A backtest that refits at every point is unfair if production refits monthly, while freezing a model is unfair if production updates online. The contract determines the split, not the other way around."
+    },
+    {
+      "id": "window-design",
+      "title": "Window geometry encodes adaptation assumptions",
+      "body": "An expanding window retains all history and lets training size grow, suitable when old relationships remain useful. A rolling window fixes length W and forgets early regimes, useful under drift or bounded cost but more variable. A single terminal holdout is simple and preserves chronology, yet one regime can dominate conclusions. Multiple rolling origins expose stability. Blocked folds with disjoint training blocks estimate another question and may waste history. Set validation length to cover complete seasonal cycles and relevant events. A gap separates training labels or features from the origin when a target window extends forward, observations arrive late or nearby records share information. For panel data, maintain time order within every series and decide whether new entities, future time or both are the novelty. Group-time splits may be necessary for unseen stores or devices."
+    },
+    {
+      "id": "point-in-time",
+      "title": "Reconstruct data vintages, not today's cleaned table",
+      "body": "At origin o, each feature must have been available with its historical value. Trailing averages end before the target and use only the entity's past. Centered smoothers, backward fills and full-series decomposition leak. Revised economic releases, corrected inventory and backfilled labels require vintage snapshots or bitemporal tables; joining the latest value rewrites the past. Fit imputers, scalers, encoders, decomposition, feature selection and calibration on the training window only. Known-future covariates such as calendar can extend past the origin; planned price is known only if the plan existed then. If a forecast uses another model's output, replay that upstream model version and latency. Automated lineage tests should assert event time and ingestion time do not exceed the origin cutoff."
+    },
+    {
+      "id": "multi-horizon-tuning",
+      "title": "Evaluation must match the forecasting strategy",
+      "body": "Recursive forecasting feeds predictions back as lags, so simulate the full path and measure accumulated error. Direct models fit separate horizons and need aligned target rows. Multi-output models forecast the vector jointly. Report every operational horizon and a declared weighted summary; improvements at h=1 can hide degradation at h=28. Hyperparameter and feature selection consume backtest evidence. Use inner rolling origins within each outer training window or reserve an earlier tuning era, then score the selected procedure at outer origins. Do not tune once using all validation periods and call their errors out of sample. Preserve forecasts from every candidate origin for paired comparison. Consider the computational schedule: a procedure that misses its delivery deadline has failed regardless of offline accuracy."
+    },
+    {
+      "id": "aggregation-operations",
+      "title": "Backtest outputs become a production evidence ledger",
+      "body": "Store origin, target timestamp, horizon, series ID, prediction, interval, model, feature-vintage IDs, latency and eventual outcome. Calculate errors by horizon, season, demand level, regime, promotion and series lifecycle. Aggregate macro and volume-weighted views separately. Estimate paired differences versus baselines using series or temporal block bootstrap, recognizing few rare events. Include stress windows such as holidays, outages and structural breaks without selecting only favorable periods. Replay missing data, late upstream forecasts and fallback behavior. Monitor the same cohort-indexed metrics after launch so offline and online definitions match. Freeze the backtest manifest before promotion, canary the model and retain the prior forecasts and artifact for rollback."
+    }
+  ],
+  "workedExamples": [
+    {
+      "title": "Overlapping target leakage",
+      "body": "A target is total demand over the next seven days. A training row dated one day before a validation origin uses six outcome days that lie inside validation. Ending training rows at least seven days before the origin prevents label overlap."
+    },
+    {
+      "title": "Revised feature leakage",
+      "body": "A GDP value stored today includes a later revision. A forecast made at the historical origin only had the first release. Replaying the revised value gives the model information production did not have; use the vintage available by that origin."
+    }
+  ],
+  "exercises": [
+    {
+      "prompt": "A target uses days t+1 through t+14. What minimum row-label gap is needed before an origin?",
+      "solution": "Training target windows must end before the origin, so exclude training rows whose 14-day target overlaps the validation era; exact index gap follows timestamp convention."
+    },
+    {
+      "prompt": "Why can a monthly terminal holdout be weak evidence?",
+      "solution": "It represents one regime and may miss other seasons, events and structural shifts; use multiple origins spanning operational conditions."
+    },
+    {
+      "prompt": "How should a planned promotion feature be replayed?",
+      "solution": "Use the plan version available at each historical origin, not the promotion that was ultimately executed or recorded later."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "compare",
+      "title": "Window strategies",
+      "left": {
+        "title": "Expanding window",
+        "items": [
+          "Keeps all past history",
+          "Training set grows",
+          "Stable when old regimes help",
+          "Increasing compute"
+        ]
+      },
+      "right": {
+        "title": "Rolling window",
+        "items": [
+          "Fixed recent history",
+          "Forgets old regimes",
+          "Adapts to drift",
+          "Window length is tuned"
+        ]
+      },
+      "caption": "Both remain forward-only; their difference is the assumption about usefulness of old data.",
+      "afterSection": "window-design"
+    },
+    {
+      "type": "flow",
+      "title": "One forecast-origin replay",
+      "items": [
+        "Freeze data vintage at origin",
+        "Build trailing features",
+        "Fit complete pipeline",
+        "Issue all horizons",
+        "Record latency and fallbacks",
+        "Join mature outcomes later"
+      ],
+      "caption": "Repeating this clock simulation across origins creates the evidence ledger used for release and monitoring.",
+      "afterSection": "point-in-time"
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "fpp3",
+      "contribution": "Provides authoritative time-series cross-validation, forecast accuracy and practical forecasting workflow guidance."
+    },
+    {
+      "resource": "sklearn-cross-validation",
+      "contribution": "Verifies TimeSeriesSplit expanding windows, test sizes and gap behavior used in the lab."
+    },
+    {
+      "resource": "statsmodels-tsa",
+      "contribution": "Supports implementation context for refitted time-series models and stateful forecast outputs."
+    }
+  ]
 }

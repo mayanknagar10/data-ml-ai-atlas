@@ -8,36 +8,64 @@
     "da",
     "as"
   ],
-  "interviewAnswer": "Forecasting should start with naive baselines. Last-value, seasonal-naive and drift forecasts often perform surprisingly well; a complex model is useful only if it beats the baseline out-of-sample.",
+  "interviewAnswer": "Forecast baselines are executable hypotheses about persistence. Mean forecasts assume reversion to a stable level; naive forecasts repeat the last observation and are optimal for a random walk under squared loss; drift extrapolates the average first-to-last slope; seasonal-naive repeats the last observed value from the same seasonal phase. I implement every baseline with exactly the data, update cadence and horizon available at each historical origin, and choose seasonal periods from the operational calendar rather than autocorrelation alone. I compare candidate models with paired errors by horizon and series, not only an aggregate. A complex model must beat relevant baselines such as seasonal-naive, current production and a known-future calendar rule after latency and cost. Baselines also serve as fallbacks and monitoring controls: if a model loses to them persistently, the issue may be drift, leakage in development or pipeline failure rather than insufficient architecture.",
   "keyPoints": [
-    "Seasonal-naive repeats last comparable season.",
-    "Drift extrapolates average trend.",
-    "Baseline defines whether complexity adds value."
+    "Each baseline encodes a concrete assumption about level, trend or seasonal persistence.",
+    "Naive and seasonal-naive forecasts must be generated recursively and point-in-time for every requested horizon.",
+    "A baseline is only fair when it receives the same information, origin schedule and target definition as the model.",
+    "Skill should be reported against multiple relevant baselines by horizon and series, with paired uncertainty.",
+    "Production baselines are low-dependency fallbacks and sentinels for data, model and regime failures."
   ],
   "resources": [
-    "fpp3"
+    "fpp3",
+    "forecast-accuracy-paper",
+    "statsmodels-tsa"
   ],
   "featured": true,
-  "why": "Naive, Seasonal-Naive & Drift Baselines appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
-  "intuition": "Seasonal-naive repeats last comparable season.",
-  "deepDive": "Forecasting should start with naive baselines. Last-value, seasonal-naive and drift forecasts often perform surprisingly well; a complex model is useful only if it beats the baseline out-of-sample. Drift extrapolates average trend. Baseline defines whether complexity adds value. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
-  "workedExample": "Forecast next Monday’s sales using last Monday before evaluating ARIMA or a neural model.",
+  "why": "Forecasting datasets contain strong persistence and seasonality, so sophisticated methods can appear accurate while adding no decision value. A seasonal-naive forecast may dominate a poorly backtested neural model, and a last-value rule may react faster to a level shift than a smooth trend model. Baselines expose leakage and metric errors, calibrate how hard a series is, and give operations a safe fallback when features or services fail. They are not intentionally weak straw men: the correct baseline matches the actual calendar, horizon, data latency and decision.",
+  "intuition": "Before explaining tomorrow with a complex model, ask what happens if tomorrow looks like today, the same weekday last week or a continuation of the simplest observed drift. These rules are hard to beat because many series genuinely repeat. The complex model earns its place only by improving the decisions where these persistence assumptions fail.",
+  "deepDive": "Naive, mean, drift and seasonal-naive methods are statistical models with clear data-generating assumptions. They anchor scaled metrics, backtest skill and fallback behavior. Robust use handles horizons, irregular calendars, transformations, panels and cold starts and preserves paired error ledgers for monitoring.",
+  "workedExample": "A series moves from 10 at t=1 to 22 at t=7. Average drift is (22-10)/(7-1)=2 per step, so forecasts at h=1 and h=3 are 24 and 28. Endpoint noise makes this rule fragile.",
   "commonMistakes": [
-    "Applying the method without checking its assumptions or data-generating process.",
-    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+    {
+      "misconception": "A baseline should be weak so the new model looks useful.",
+      "correction": "Use the strongest simple and production-relevant rules that share the same legal information."
+    },
+    {
+      "misconception": "Rolling one-step seasonal-naive evaluates a fixed 28-day forecast.",
+      "correction": "It refreshes with future actuals; issue all 28 steps from each origin when that matches production."
+    },
+    {
+      "misconception": "Seasonal period is always the number of rows per calendar cycle.",
+      "correction": "Irregular timestamps, daylight saving and moving holidays require calendar-aware semantics rather than fixed offsets alone."
+    },
+    {
+      "misconception": "Positive average skill means the model is safe everywhere.",
+      "correction": "Inspect critical horizons, series, regimes and guardrails; aggregation can hide systematic losses."
+    }
   ],
   "followUps": [
-    "What assumptions does Naive, Seasonal-Naive & Drift Baselines make?",
-    "How would you validate or debug Naive, Seasonal-Naive & Drift Baselines in practice?"
+    {
+      "question": "When is naive forecasting hard to beat?",
+      "answer": "For random-walk-like series, very short horizons or sudden level shifts where old history adds little stable information."
+    },
+    {
+      "question": "What if the MASE denominator is zero?",
+      "answer": "The in-sample naive differences are all zero, so MASE is undefined; expose the case and use another declared metric or pooling rule."
+    },
+    {
+      "question": "Why keep current production as a baseline?",
+      "answer": "It measures incremental release value and captures business rules or features absent from textbook persistence baselines."
+    }
   ],
-  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "production": "Version baseline formulas, seasonal calendars, periods, origin and update cadence, transformation, cold-start fallback chain and aggregation. Generate baselines using the same data cutoff and known-future inputs as the candidate where appropriate. Persist paired forecast-level errors and report skill by horizon, series, lifecycle and regime with block-aware uncertainty. Package low-dependency baseline fallbacks, test calendar boundaries and monitor fallback frequency, negative skill and joint data failures. Roll back when the primary persistently loses on decision-critical evidence.",
   "lab": {
-    "goal": "Build naive and seasonal-naive forecasts before complex models.",
     "language": "python",
-    "buildIt": "import numpy as np\ny=np.array([10,12,11,13,15,16,14,11,13,12,14,16,17,15],float)\nh=7\nlast=np.repeat(y[-1],h)\nseasonal=y[-7:]\nprint('last',last,'seasonal',seasonal)\n",
-    "useIt": "def mae(a,b): return np.mean(np.abs(a-b))\nactual=np.array([12,14,13,15,17,18,16],float)\nprint('MAE last',mae(actual,last),'seasonal',mae(actual,seasonal))\n",
-    "verifyIt": "assert len(seasonal)==h\n",
-    "shipIt": "Ship a seasonal-naive fallback beside every forecasting service; if the complex model cannot beat it by segment/horizon, revisit the model or data."
+    "goal": "Implement mean, naive, drift and seasonal-naive forecasts over shared rolling origins and verify their formulas and seasonal skill.",
+    "buildIt": "import numpy as np\nrng=np.random.default_rng(5); n=144; t=np.arange(n); y=20+.04*t+3*np.sin(2*np.pi*t/12)+rng.normal(scale=.15,size=n)\ndef forecasts(history,h,period=12):\n    mean=np.full(h,np.mean(history)); naive=np.full(h,history[-1]); slope=(history[-1]-history[0])/(len(history)-1); drift=history[-1]+slope*np.arange(1,h+1); seasonal=np.resize(history[-period:],h); return {'mean':mean,'naive':naive,'drift':drift,'seasonal':seasonal}\nerrors={k:[] for k in ('mean','naive','drift','seasonal')}\nfor origin in range(72,n-12,12):\n    pred=forecasts(y[:origin],12); actual=y[origin:origin+12]\n    for k in errors: errors[k].extend(np.abs(actual-pred[k]))\nmae={k:float(np.mean(v)) for k,v in errors.items()}",
+    "useIt": "fixture=np.array([10.,12.,14.,16.]); f=forecasts(fixture,6,period=2); skill_vs_naive=1-mae['seasonal']/mae['naive']",
+    "verifyIt": "assert np.allclose(f['naive'],16)\nassert np.allclose(f['mean'],13)\nassert np.allclose(f['drift'],[18,20,22,24,26,28])\nassert np.allclose(f['seasonal'],[14,16,14,16,14,16])\nassert mae['seasonal']<mae['naive']*.25 and skill_vs_naive>.75\nassert all(len(v)==60 for v in errors.values())",
+    "shipIt": "Persist every baseline beside model forecasts, version calendars and fallback chains, and gate releases on paired skill at critical horizons and regimes."
   },
   "visual": {
     "type": "curve",
@@ -95,6 +123,125 @@
     "yLabel": "value"
   },
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-22"
+  },
+  "math": "Mean forecast yhat_{T+h}=T^-1 sum_{t=1}^T y_t. Naive yhat_{T+h}=y_T for all h. Drift yhat_{T+h}=y_T+h(y_T-y_1)/(T-1). Seasonal-naive with period m is yhat_{T+h}=y_{T+h-m(k+1)} for the most recent observed same phase, equivalently repeating the final seasonal cycle for short horizons. Forecast skill can be 1-L_model/L_baseline for a declared aggregate loss; it is negative when the model loses. MASE divides absolute forecast error by the in-sample mean absolute seasonal-naive difference, connecting evaluation to the baseline scale.",
+  "code": "fixture=np.array([10.,12.,14.,16.]); f=forecasts(fixture,6,period=2); skill_vs_naive=1-mae['seasonal']/mae['naive']",
+  "description": "Naive forecasting baselines turn simple persistence assumptions into rigorous benchmarks and fallbacks. This chapter derives historical-mean, last-value, drift and seasonal-naive forecasts and explains their links to stable-level, random-walk, linear-drift and repeating-season data-generating processes. It covers multi-step recursion, multiple seasonal periods, transformations, irregular calendars, intermittent demand, panels, cold starts and known-future event rules. It shows how baselines define MASE denominators and relative skill, why comparisons must share forecast origins and information, and how horizon and series aggregation can reverse rankings. Worked examples calculate drift and multi-step seasonal-naive forecasts. The lab implements all four methods over rolling origins, verifies formulas and demonstrates that seasonal-naive beats last-value on a seasonal synthetic series. Production guidance deploys baselines as low-dependency fallbacks, logs paired model-versus-baseline errors, monitors persistent negative skill and distinguishes model failure from data or regime change. Strong business rules and the current production system remain mandatory comparators when they use additional legal information.",
+  "prerequisites": [
+    "time-series-split",
+    "time-series-components"
+  ],
+  "learningObjectives": [
+    "Derive and implement mean, naive, drift and seasonal-naive multi-step forecasts.",
+    "Match baseline assumptions and seasonal periods to the operational series and calendar.",
+    "Measure paired forecast skill by horizon, series and regime without aggregation artifacts.",
+    "Use baselines as production fallbacks and monitoring sentinels with explicit trigger rules."
+  ],
+  "deepSections": [
+    {
+      "id": "baseline-assumptions",
+      "title": "A baseline is a small model, not a deliberately bad forecast",
+      "body": "The historical mean is appropriate when observations fluctuate around a stable level and old history remains representative. The naive last-value forecast follows a random-walk assumption and adapts immediately to level changes, though uncertainty grows with horizon. Drift adds a straight-line extrapolation based on first and last values; it is sensitive to endpoint noise and can become implausible far ahead. Seasonal-naive repeats the most recent seasonal phase and is the minimum serious benchmark for stable calendar repetition. Current production, analyst rules and known-future schedules may be stronger operational baselines. Document which data each receives. A model that uses planned promotions cannot fairly compare against a baseline denied the same known plan if the question is incremental modeling value rather than total system value."
+    },
+    {
+      "id": "horizon-calendar",
+      "title": "Generate each baseline for the actual horizon and calendar",
+      "body": "Naive repeats the last available observation across horizons; it does not peek at actual intermediate outcomes unless the system will update before each horizon. Drift advances h slope units from the origin. Seasonal-naive indexes the last available same phase and repeats cycles when h exceeds m. Irregular timestamps require calendar joins rather than array offsets: one week earlier may be missing, daylight saving changes hourly counts and monthly periods vary. Moving holidays need event baselines or explicit calendars. For multiple seasonality, compare daily and weekly seasonal-naive variants or combine simple patterns. If production issues forecasts once but backtesting rolls one step at a time and refreshes with actuals, the baseline gets unfair information. Align issuance cadence, latency and horizon exactly."
+    },
+    {
+      "id": "panels-cold-start",
+      "title": "Panel baselines need lifecycle and aggregation rules",
+      "body": "A global collection can include mature seasonal series, new products, intermittent items and discontinued entities. Seasonal-naive is unavailable before one complete cycle, so define a fallback chain such as last value, category-level seasonal factor or pooled mean. New-series baselines may borrow group information but then are no longer purely local and must be trained point-in-time. Zero demand is a valid value distinct from missing observation. Aggregate-level naive forecasts can differ from sums of bottom-level baselines; decide whether coherence is required. Series with different scales need macro metrics or scaled errors alongside volume-weighted loss. Report baseline availability and fallback use by lifecycle. Do not exclude hard cold starts from evaluation just because the preferred seasonal baseline cannot score them."
+    },
+    {
+      "id": "skill-evaluation",
+      "title": "Paired errors reveal where complexity earns value",
+      "body": "Store the model and every baseline forecast for the same series-origin-horizon target. Compute paired loss differences, win rates and skill by horizon and regime. Overall averages can hide that a model wins long horizons but loses the first day, or improves large series while harming the median item. MASE uses a training-only naive scale and needs a nonzero denominator; RMSSE emphasizes large errors. Relative skill can explode when baseline loss is nearly zero. Use block or series bootstrap for uncertainty, keeping pairs together. Avoid declaring success from in-sample fit or one terminal window. A baseline can be optimal under one loss and not another; compare on the operational scorecard including cost and bias."
+    },
+    {
+      "id": "fallback-monitoring",
+      "title": "Baselines protect the forecasting service",
+      "body": "Package last-value and seasonal-naive logic with minimal dependencies and tested calendar behavior. If primary model inference times out, features are stale or prediction is nonfinite, route to the declared fallback and log the reason. Monitor rolling paired loss after target maturity, baseline win rate, signed bias and fallback frequency. Persistent negative skill can signal data drift, a broken feature, an overfit model or a changed seasonal period. A sudden simultaneous failure of model and baseline suggests target or source issues. Promotion gates should require improvement over relevant baselines across critical horizons and no unacceptable guardrail regressions. Keep baseline forecasts in the same ledger so rollback decisions use exact paired evidence."
+    }
+  ],
+  "workedExamples": [
+    {
+      "title": "Drift forecast",
+      "body": "A series moves from 10 at t=1 to 22 at t=7. Average drift is (22-10)/(7-1)=2 per step, so forecasts at h=1 and h=3 are 24 and 28. Endpoint noise makes this rule fragile."
+    },
+    {
+      "title": "Seasonal-naive beyond one cycle",
+      "body": "The final weekly cycle is [10,12,11,13,15,18,16]. A ten-day forecast repeats all seven values then begins [10,12,11] again, using no future actuals."
+    }
+  ],
+  "exercises": [
+    {
+      "prompt": "A series begins at 5 and ends at 11 after four observations. What is one-step drift?",
+      "solution": "The slope is (11-5)/(4-1)=2, so the one-step forecast is 13."
+    },
+    {
+      "prompt": "Why can seasonal-naive be unfairly strong in a one-step rolling test?",
+      "solution": "It may refresh with actual observations after each step, information unavailable to a fixed multi-horizon forecast issued once."
+    },
+    {
+      "prompt": "What should happen before one full seasonal cycle exists?",
+      "solution": "Use a versioned cold-start fallback such as last value or pooled group seasonality and evaluate those cases explicitly."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "compare",
+      "title": "Persistence hypotheses",
+      "left": {
+        "title": "Naive and drift",
+        "items": [
+          "Last level persists",
+          "Optional linear endpoint slope",
+          "Fast level-shift response",
+          "Weak seasonal structure"
+        ]
+      },
+      "right": {
+        "title": "Seasonal naive",
+        "items": [
+          "Last seasonal phase repeats",
+          "Strong calendar benchmark",
+          "Needs one full cycle",
+          "Fails when season changes"
+        ]
+      },
+      "caption": "Baseline diversity separates level, trend and seasonal sources of forecast skill.",
+      "afterSection": "baseline-assumptions"
+    },
+    {
+      "type": "flow",
+      "title": "Baseline as release control",
+      "items": [
+        "Generate at every model origin",
+        "Store paired forecasts",
+        "Score by horizon and series",
+        "Estimate skill and uncertainty",
+        "Route failures to fallback",
+        "Monitor negative skill after maturity"
+      ],
+      "caption": "The same baseline definitions support development, serving resilience and post-launch diagnosis.",
+      "afterSection": "fallback-monitoring"
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "fpp3",
+      "contribution": "Provides naive, drift and seasonal-naive definitions and benchmark-centered evaluation guidance."
+    },
+    {
+      "resource": "forecast-accuracy-paper",
+      "contribution": "Provides scaled-error reasoning and the seasonal-naive basis of MASE."
+    },
+    {
+      "resource": "statsmodels-tsa",
+      "contribution": "Supports the surrounding forecast-model API and benchmark integration context."
+    }
+  ]
 }

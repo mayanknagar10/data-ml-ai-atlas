@@ -1,6 +1,6 @@
 # Naive, Seasonal-Naive & Drift Baselines — Code Lab
 
-Build naive and seasonal-naive forecasts before complex models.
+Implement mean, naive, drift and seasonal-naive forecasts over shared rolling origins and verify their formulas and seasonal skill.
 
 ## 1. Build it
 

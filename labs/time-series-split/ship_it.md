@@ -1,3 +1,3 @@
 # Ship it
 
-Backtests should mirror prediction cadence, horizon, retraining frequency and data availability. Production feature pipelines need event-time/point-in-time semantics.
+Persist origin and vintage manifests, assert cutoff and label gaps, store paired forecast errors by horizon, and replay the exact production refit and fallback schedule.

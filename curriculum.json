@@ -6826,37 +6826,55 @@
         "da",
         "as"
       ],
-      "interviewAnswer": "Random train/test splitting is usually wrong for forecasting because it leaks the future into the past. I split chronologically and evaluate with rolling or expanding-window backtests that mimic how the model will actually be used.",
+      "interviewAnswer": "Time-series evaluation must simulate what was knowable at each forecast origin. I never randomly shuffle future rows into training. I define the operational origin schedule, forecast horizon, data latency, update cadence and retraining policy, then use expanding or rolling windows whose training timestamps and feature event times precede each origin. A gap or embargo is needed when labels, rolling windows or delayed features overlap the validation period. Multi-step forecasts are evaluated by horizon because one-step recursive backtests hide error accumulation. Every transformation, lag, model selection and calibration step is refit within each training window. I compare against naive, seasonal-naive and current-production baselines using the same origins, aggregate across series and time according to business exposure, and preserve paired errors. The final backtest includes realistic missing releases, revisions, cold starts, outages and computation cutoffs; one convenient historical split is not sufficient evidence.",
       "keyPoints": [
-        "chronological split",
-        "rolling/expanding windows",
-        "no future leakage",
-        "match deployment horizon"
+        "Forecast origins, horizons and information-release times define the evaluation boundary.",
+        "Expanding windows mimic accumulating history; rolling windows mimic forgetting or fixed training budgets.",
+        "A gap prevents overlapping labels, windows or delayed availability from crossing the split.",
+        "All preprocessing, feature creation and selection must be origin-local and point-in-time correct.",
+        "Report horizon, series and regime performance with paired baselines and realistic production constraints."
       ],
       "resources": [
         "fpp3",
-        "fpppy",
+        "sklearn-cross-validation",
         "statsmodels-tsa"
       ],
       "featured": true,
+      "description": "Time-series splitting and backtesting recreate historical forecast decisions under the information that existed at each origin. This chapter distinguishes simple holdout, expanding-window, rolling-window, blocked and prequential evaluation; defines origins, horizons, gaps, embargoes, label maturity and release calendars; and explains why random K-fold and globally computed lags leak. It covers direct, recursive and multi-output horizons, rolling feature state, panel series, cold starts, nested temporal tuning, refit cadence and fixed-versus-updated model comparisons. It develops horizon- and series-aware aggregation, paired uncertainty, regime slices and stress windows while requiring seasonal-naive and production baselines. Worked examples expose overlapping-label leakage and a revised macroeconomic feature that did not exist at forecast time. The lab implements expanding splits with a gap, verifies scikit-learn's TimeSeriesSplit boundaries and compares a rolling-mean forecast against a last-value baseline across identical origins. Production guidance persists origin manifests, data vintages, feature cutoffs and model versions and treats replay parity as a release gate.",
+      "prerequisites": [
+        "cross-validation",
+        "data-leakage"
+      ],
+      "learningObjectives": [
+        "Design forecast origins, horizons, gaps and training windows that mirror deployment.",
+        "Construct point-in-time features and nested tuning without future or revision leakage.",
+        "Aggregate paired errors by horizon, series, regime and business exposure with valid uncertainty.",
+        "Replay retraining, latency, data vintages and failure behavior as part of release evaluation."
+      ],
       "editorial": {
-        "status": "summary"
+        "status": "verified",
+        "verifiedOn": "2026-08-22"
       },
-      "status": "summary",
+      "status": "verified",
       "hasLab": true,
-      "labGoal": "Backtest without future leakage using expanding windows.",
-      "visualCount": 1,
+      "labGoal": "Build expanding-window splits with a gap, verify temporal boundaries, and compare paired rolling-mean and last-value forecasts.",
+      "visualCount": 2,
       "visualSummaries": [
         {
+          "type": "compare",
+          "title": "Window strategies"
+        },
+        {
           "type": "flow",
-          "title": "Rolling-origin validation"
+          "title": "One forecast-origin replay"
         }
       ],
       "followUpQuestions": [
-        "When is random splitting acceptable for temporal data?",
-        "How do you choose expanding vs sliding windows?"
+        "When should you use a rolling rather than expanding window?",
+        "Why add a gap?",
+        "How do you tune models in a backtest?"
       ],
-      "estimatedMinutes": 2
+      "estimatedMinutes": 10
     },
     {
       "slug": "stationarity-acf",
@@ -6868,36 +6886,55 @@
         "da",
         "as"
       ],
-      "interviewAnswer": "Stationarity means the statistical behavior of a series is stable enough over time for many classical models to learn consistent relationships. I inspect trend/seasonality and autocorrelation; differencing or transformation can help when the level is non-stationary.",
+      "interviewAnswer": "Weak stationarity means constant mean and variance and autocovariance depending only on lag, not calendar time. Many forecasting models need a stable transformed process or stable residuals rather than a stationary raw business series. I plot the series and rolling regimes, remove known trend or seasonality, and difference only when persistence diagnostics and domain logic justify it. The ACF at lag k measures correlation between y_t and y_{t-k}; the PACF measures the incremental linear association after intermediate lags. For an AR(p), PACF tends to cut off after p while ACF decays; for an MA(q), ACF tends to cut off after q, but finite samples, seasonality and mixed models blur these heuristics. ADF and KPSS use opposite nulls and are sensitive to deterministic terms, breaks and sample size. I treat tests as supporting evidence, avoid overdifferencing, and validate model residuals and forecast performance on rolling origins.",
       "keyPoints": [
-        "weak stationarity",
-        "autocorrelation",
-        "ACF/PACF",
-        "differencing"
+        "Stationarity is a property of a stochastic process and representation, not a guarantee from one flat-looking plot.",
+        "Trend, seasonality, changing variance and structural breaks can create persistent sample autocorrelation.",
+        "ACF describes lag correlation; PACF isolates incremental linear lag association conditional on shorter lags.",
+        "Differencing can remove stochastic trend but can also over-difference, amplify noise and erase long-run information.",
+        "Unit-root tests depend on deterministic terms and have limited power; combine them with plots, domain knowledge and backtests."
       ],
       "resources": [
         "fpp3",
-        "statsmodels-tsa"
+        "statsmodels-tsa",
+        "openintro-stats"
       ],
       "featured": false,
+      "description": "Stationarity, autocorrelation and partial autocorrelation provide the core diagnostic language for linear time-series dependence. This chapter defines strict and weak stationarity, distinguishes deterministic trend from unit-root stochastic trend, and analyzes changing variance, seasonality and structural breaks. It derives the ACF and PACF, explains canonical AR and MA cutoff-versus-decay patterns, seasonal spikes, confidence bands and the limits of data-driven order selection. It develops first, seasonal and fractional differencing intuition, variance-stabilizing transforms, overdifferencing symptoms and cointegration warnings. It compares ADF and KPSS null hypotheses and shows how deterministic terms and breaks affect conclusions. Worked examples derive the AR(1) ACF and expose a trending series with spurious persistence. The lab simulates stationary AR(1) and random-walk processes, verifies sample ACF behavior against statsmodels and checks contrasting ADF evidence. Production guidance estimates diagnostics within training windows, monitors residual autocorrelation and regime shifts and chooses transformations by rolling forecast performance rather than a single test.",
+      "prerequisites": [
+        "time-series-components",
+        "expectation-variance"
+      ],
+      "learningObjectives": [
+        "Define weak stationarity and diagnose trend, variance, seasonal and break violations.",
+        "Compute and interpret ACF and PACF for AR, MA and seasonal dependence.",
+        "Choose first, seasonal or variance transforms while recognizing overdifferencing and cointegration risks.",
+        "Use unit-root and residual diagnostics as conditional evidence within rolling forecast evaluation."
+      ],
       "editorial": {
-        "status": "summary"
+        "status": "verified",
+        "verifiedOn": "2026-08-22"
       },
-      "status": "summary",
-      "hasLab": false,
-      "labGoal": "",
-      "visualCount": 1,
+      "status": "verified",
+      "hasLab": true,
+      "labGoal": "Simulate stationary AR(1) and a random walk, compute ACF, and verify theoretical decay plus the effect of differencing.",
+      "visualCount": 2,
       "visualSummaries": [
         {
-          "type": "bars",
-          "title": "Autocorrelation by lag"
+          "type": "compare",
+          "title": "Lag diagnostics"
+        },
+        {
+          "type": "flow",
+          "title": "Stationarity decision"
         }
       ],
       "followUpQuestions": [
-        "What does an ACF spike at a seasonal lag mean?",
-        "What is over-differencing?"
+        "What is the difference between ACF and PACF?",
+        "When is seasonal differencing useful?",
+        "Why can ADF and KPSS disagree?"
       ],
-      "estimatedMinutes": 1
+      "estimatedMinutes": 10
     },
     {
       "slug": "arima",
@@ -6994,37 +7031,57 @@
         "da",
         "as"
       ],
-      "interviewAnswer": "For forecasts I choose metrics based on business cost and scale. MAE is easy to interpret, RMSE emphasizes large misses, MAPE can break near zero, and scaled metrics like MASE help compare across series. I always compare against naive and seasonal-naive baselines.",
+      "interviewAnswer": "Forecast metrics must match the decision, scale, horizon and forecast object. I start with chronological forecast errors e_{s,o,h}=y_{s,o+h}-yhat_{s,o,h} from identical origins. MAE targets the conditional median and is interpretable in target units; RMSE targets the conditional mean and emphasizes large errors. MAPE is undefined or unstable near zero and asymmetric, so I usually prefer MASE or RMSSE for cross-series comparison, using a training-only naive or seasonal-naive scale. WAPE is an aggregate ratio, not an average item percentage, and can hide where error occurs. I report signed bias, horizon and series slices, baseline skill and business-weighted cost. For quantiles or distributions I use proper scores such as pinball loss, interval score or CRPS plus empirical coverage and sharpness. I never choose a model from one pooled number: I preserve paired errors, quantify uncertainty with temporal blocks or independent series, and inspect high-impact regimes.",
       "keyPoints": [
-        "MAE/RMSE",
-        "MAPE caveat",
-        "MASE",
-        "naive baseline"
+        "Metric choice determines the statistical functional being estimated: mean, median, quantile or full distribution.",
+        "Scale-free metrics still encode a denominator and weighting policy; compute scaling terms from training history only.",
+        "MAPE and sMAPE are unreliable around zero and can reward systematically low forecasts.",
+        "Evaluate identical origins by horizon, series and regime before applying declared business weights.",
+        "Probabilistic forecasts require proper scoring rules together with calibration and sharpness diagnostics."
       ],
       "resources": [
         "fpp3",
-        "fpppy",
-        "statquest"
+        "forecast-accuracy-paper",
+        "proper-scoring-rules",
+        "sklearn-model-evaluation"
       ],
       "featured": false,
+      "description": "Forecasting metrics translate forecast errors into model-selection and operating decisions. This chapter connects MAE and RMSE to median and mean targets, explains signed bias and error distributions, and distinguishes per-observation averages from aggregate ratios. It derives MASE and RMSSE using training-only naive or seasonal-naive denominators and analyzes MAPE, sMAPE and WAPE failures around zeros, negatives, intermittency and changing scale. It covers horizon, origin, series, regime and business weighting; macro versus micro aggregation; baseline skill; paired model comparisons; temporal dependence and block-aware uncertainty. It separates point, quantile, interval and distributional evaluation, introducing pinball loss, empirical coverage, sharpness, interval score, log score and CRPS without treating calibration alone as sufficient. Worked examples show ranking reversal and percentage-error instability. The lab implements a forecast scorecard, verifies core values against scikit-learn, and demonstrates why MAPE explodes near zero while MASE remains interpretable. Production guidance versions metric definitions, denominators and cohorts, delays scoring until labels mature, and monitors bias, negative skill and interval miscalibration by operational slice.",
+      "prerequisites": [
+        "time-series-split",
+        "naive-seasonal-baselines",
+        "expectation-variance"
+      ],
+      "learningObjectives": [
+        "Select point and probabilistic losses that align with the forecast output and downstream decision.",
+        "Compute MAE, RMSE, MASE, RMSSE, WAPE, bias, pinball and interval scores correctly.",
+        "Design horizon- and series-aware aggregation with explicit business weights and paired uncertainty.",
+        "Diagnose zero denominators, metric gaming, delayed labels and misleading pooled improvements."
+      ],
       "editorial": {
-        "status": "summary"
+        "status": "verified",
+        "verifiedOn": "2026-08-22"
       },
-      "status": "summary",
-      "hasLab": false,
-      "labGoal": "",
-      "visualCount": 1,
+      "status": "verified",
+      "hasLab": true,
+      "labGoal": "Implement a multi-metric forecast scorecard, verify standard losses, and expose percentage-error and scaling behavior.",
+      "visualCount": 2,
       "visualSummaries": [
         {
-          "type": "concept-map",
-          "title": "Forecasting Metrics & Baselines"
+          "type": "compare",
+          "title": "Point-loss behavior"
+        },
+        {
+          "type": "flow",
+          "title": "Forecast scorecard"
         }
       ],
       "followUpQuestions": [
-        "When would you use pinball loss?",
-        "What baseline would you use for seasonal demand?"
+        "When would you choose MAE over RMSE?",
+        "Why is MASE useful across series?",
+        "How should quantile forecasts be evaluated?"
       ],
-      "estimatedMinutes": 1
+      "estimatedMinutes": 11
     },
     {
       "slug": "prophet",
@@ -7088,7 +7145,7 @@
       "featured": true,
       "description": "Causal inference and prediction solve different statistical problems. This chapter contrasts forecasts under the observed policy with outcomes under explicit interventions and builds a workflow from target question to estimand, identification, estimation and sensitivity analysis. It introduces potential outcomes, average treatment effects, consistency, exchangeability, positivity, interference and causal DAGs; distinguishes total, direct, mediated, intention-to-treat and per-protocol questions; and uses target-trial emulation to align eligibility, assignment, time zero and follow-up. It explains why predictive importance, coefficients and high accuracy do not identify effects, while randomized and quasi-experimental designs can identify effects without maximizing prediction. Worked examples expose confounding by indication and treatment-policy feedback. The lab simulates a beneficial treatment preferentially assigned to high-risk units, shows the naive association has the wrong sign, and recovers the effect with covariate adjustment under the simulated assumptions. Production guidance versions causal questions and cohorts, monitors overlap and treatment policy, reports sensitivity and uncertainty, and prevents decision systems from retraining on their own interventions without evaluation design.",
       "prerequisites": [
-        "experiment-design",
+        "sampling-design",
         "selection-nonresponse-bias"
       ],
       "learningObjectives": [
@@ -11590,7 +11647,7 @@
       "description": "Synthetic control constructs a transparent counterfactual for an aggregate intervention from a weighted donor pool. This chapter derives constrained donor weights, predictor and pretreatment-outcome matching, convex-hull support and post-treatment gaps. It explains donor eligibility, spillovers, anticipation, time-varying latent confounding, intervention timing and why good pre-fit is necessary but not sufficient. It develops pretreatment RMSPE, leave-one-out donors, alternative windows, in-space and in-time placebos, post/pre fit ratios and researcher-choice sensitivity. It contrasts classical nonnegative simplex weights with regression, augmented and matrix-completion extensions while preserving the target case-study question. Worked examples compute a weighted counterfactual and diagnose an influential donor. The lab fits simplex-constrained weights to a simulated panel, verifies recovery of the donor mixture and known post-treatment effect, and checks that weights are frozen after intervention. Production guidance versions donor pools and source revisions, reports paths and weights, monitors spillovers and concurrent shocks, and avoids automatic causal claims from forecast accuracy.",
       "prerequisites": [
         "difference-in-differences",
-        "optimization-convexity"
+        "convexity"
       ],
       "learningObjectives": [
         "Construct and interpret simplex-constrained donor weights and a synthetic counterfactual trajectory.",
@@ -11632,29 +11689,55 @@
         "ds",
         "as"
       ],
-      "interviewAnswer": "Heterogeneous treatment-effect models estimate how intervention effects differ across units. The target is incremental impact, not outcome probability, so ordinary response prediction can rank the wrong people.",
+      "interviewAnswer": "Heterogeneous treatment-effect modeling estimates CATE tau(x)=E[Y(1)-Y(0)|X=x] or learns a treatment policy, not an observable individual-effect label. Identification still needs randomized assignment or conditional exchangeability, positivity, consistency and an interference assumption. S-learners use one outcome model with treatment; T-learners fit separate outcome models; X-, R- and DR-learners use imputation or orthogonal residuals to improve robustness. Causal trees and forests split for effect differences and use honesty or cross-fitting so discovery does not reuse estimation outcomes. I evaluate global ATE recovery, calibration of predicted effects in held-out groups, rank-weighted treatment effects, policy value and overlap—not ordinary RMSE against factual outcomes. I predefine actionable baseline features, separate discovery from confirmation, report uncertainty and subgroup support, and validate any targeting policy prospectively. A high predicted uplift is not a known personal effect.",
       "keyPoints": [
-        "CATE/uplift differs from propensity to respond.",
-        "Use randomized/identified treatment data.",
-        "Evaluate policy value and uplift curves carefully."
+        "CATE is a conditional average causal estimand; individual treatment effects remain unobserved.",
+        "Meta-learners differ in how they estimate outcome and propensity nuisance functions and handle imbalance.",
+        "Honesty, sample splitting and cross-fitting reduce adaptive subgroup and nuisance overfitting.",
+        "Evaluate effect ranking, calibration and policy value on held-out causal evidence rather than factual prediction loss alone.",
+        "Targeting requires positivity, actionability, capacity, fairness, uncertainty and prospective policy validation."
       ],
       "resources": [
-        "causal-mixtape"
+        "causal-forest-paper",
+        "causal-tree-paper",
+        "dml-paper"
       ],
       "featured": false,
-      "editorial": {
-        "status": "summary"
-      },
-      "status": "summary",
-      "hasLab": false,
-      "labGoal": "",
-      "visualCount": 0,
-      "visualSummaries": [],
-      "followUpQuestions": [
-        "What assumptions does Heterogeneous Treatment Effects & Uplift Modeling make?",
-        "How would you validate or debug Heterogeneous Treatment Effects & Uplift Modeling in practice?"
+      "description": "Heterogeneous treatment-effect and uplift modeling estimates how average causal effects vary with pretreatment features and turns those estimates into constrained policies. This chapter defines CATE, group effects, uplift and policy value while emphasizing that individual causal labels are never observed. It compares S-, T-, X-, R- and doubly robust learners; explains outcome and propensity nuisance estimation, treatment imbalance, cross-fitting and orthogonality; and develops honest causal trees and forests for adaptive subgroup discovery and inference. It covers uplift curves, Qini-style rankings, calibration by predicted-effect groups, best linear projection, RATE, policy-value estimation and prospective validation. Worked examples contrast predictive risk with treatment benefit and expose subgroup search bias. The lab simulates randomized heterogeneous effects, fits separate forest response surfaces and verifies held-out CATE ranking and calibration against known simulation truth. Production guidance restricts features to actionable pretreatment data, monitors overlap and policy capacity, quantifies uncertainty and fairness, preserves exploration and requires randomized confirmation before high-stakes personalized treatment.",
+      "prerequisites": [
+        "potential-outcomes",
+        "random-forest"
       ],
-      "estimatedMinutes": 1
+      "learningObjectives": [
+        "Define CATE, uplift and policy value without treating individual effects as observed labels.",
+        "Choose and implement S-, T-, X-, R-, DR- or forest learners for the design and sample regime.",
+        "Evaluate held-out heterogeneity through causal calibration, ranking, subgroup effects and policy value.",
+        "Deploy bounded targeting policies with overlap, uncertainty, fairness and prospective validation."
+      ],
+      "editorial": {
+        "status": "verified",
+        "verifiedOn": "2026-08-21"
+      },
+      "status": "verified",
+      "hasLab": true,
+      "labGoal": "Fit a T-learner on randomized heterogeneous effects and verify held-out CATE accuracy, ranking and calibration against known simulation truth.",
+      "visualCount": 2,
+      "visualSummaries": [
+        {
+          "type": "compare",
+          "title": "Two meta-learner strategies"
+        },
+        {
+          "type": "flow",
+          "title": "CATE to policy evidence"
+        }
+      ],
+      "followUpQuestions": [
+        "When is a T-learner attractive?",
+        "What is honesty in a causal tree?",
+        "How do you validate CATE predictions?"
+      ],
+      "estimatedMinutes": 10
     },
     {
       "slug": "time-series-components",
@@ -11666,34 +11749,55 @@
         "da",
         "as"
       ],
-      "interviewAnswer": "A time series can contain trend, seasonal patterns, longer cycles and irregular remainder. I identify these structures before selecting a model because validation and feature construction depend on them.",
+      "interviewAnswer": "A time series is often described through level, trend, seasonal patterns, longer cycles, calendar effects, interventions and remainder. An additive representation Y_t=T_t+S_t+R_t fits seasonal amplitude that is roughly constant in target units; a multiplicative representation Y_t=T_t*S_t*R_t, often handled by logs, fits variation proportional to level. Components are modeling constructs, not uniquely observed truths: the decomposition depends on smoothing window, period, transform, endpoints and assumptions. I begin with frequency and timestamp quality, plot raw and transformed series, use domain calendars and spectral or ACF evidence for candidate seasons, and distinguish deterministic repeating seasonality from stochastic dependence. Multiple or evolving seasons need flexible bases or MSTL-like methods. I estimate components inside each training origin, inspect remainder structure and outliers, and never use a full-series decomposition as a leakage-free forecast feature.",
       "keyPoints": [
-        "Plot the series first.",
-        "Seasonality has a known calendar frequency; cycles need not.",
-        "Multiple seasonalities can coexist."
+        "Trend, seasonality, cycle and remainder are representation choices whose estimates depend on method and scale.",
+        "Additive seasonality has constant amplitude; multiplicative seasonality scales with level and is often modeled on logs.",
+        "Calendar effects such as trading days, holidays and moving festivals are not captured by a fixed numeric period alone.",
+        "A decomposition is useful only if the remainder and component stability are checked across time and forecast origins.",
+        "Full-series smoothing uses future observations and cannot be inserted directly into historical backtests or online features."
       ],
       "resources": [
-        "fpp3"
+        "fpp3",
+        "statsmodels-tsa",
+        "openintro-stats"
       ],
       "featured": true,
+      "description": "Time-series components provide a vocabulary for level, trend, seasonality, cycles, calendar events, interventions and remainder. This chapter compares additive and multiplicative representations, explains log and Box-Cox-style transforms, and distinguishes fixed seasonal periods from holidays, trading-day effects and moving events. It derives moving-average trend and seasonal-index estimates, introduces Fourier bases and multiple seasonality, and discusses changing amplitude, damped trends, structural breaks, outliers and boundary uncertainty. It emphasizes that components are not uniquely observed and that decomposition choices allocate structure differently. Worked examples identify proportional seasonality and distinguish a one-time level shift from a recurring cycle. The lab simulates trend plus monthly seasonality, estimates a centered moving-average trend and phase means, and verifies reconstruction and zero-sum constraints on interior points. Production guidance validates frequency and timezone, versions calendar definitions and transforms, estimates components inside each backtest origin, monitors component drift and retains raw-series baselines when decomposition becomes unstable. The chapter keeps descriptive smoothing separate from the one-sided state available to a live forecaster.",
+      "prerequisites": [
+        "time-series-split",
+        "expectation-variance"
+      ],
+      "learningObjectives": [
+        "Identify plausible trend, seasonal, calendar, cycle and remainder structures from domain and diagnostics.",
+        "Choose additive, multiplicative or transformed representations from amplitude and support.",
+        "Estimate simple trend and seasonal components and understand identifiability and endpoint limitations.",
+        "Use component diagnostics without future leakage and monitor their stability in production."
+      ],
       "editorial": {
-        "status": "summary"
+        "status": "verified",
+        "verifiedOn": "2026-08-22"
       },
-      "status": "summary",
-      "hasLab": false,
-      "labGoal": "",
-      "visualCount": 1,
+      "status": "verified",
+      "hasLab": true,
+      "labGoal": "Estimate additive trend and monthly seasonality from a synthetic series and verify normalization and interior reconstruction.",
+      "visualCount": 2,
       "visualSummaries": [
         {
-          "type": "layers",
-          "title": "Time-series decomposition"
+          "type": "compare",
+          "title": "Seasonal scale"
+        },
+        {
+          "type": "flow",
+          "title": "Component-aware forecast"
         }
       ],
       "followUpQuestions": [
-        "What assumptions does Trend, Seasonality, Cycles & Remainder make?",
-        "How would you validate or debug Trend, Seasonality, Cycles & Remainder in practice?"
+        "How do you choose additive versus multiplicative seasonality?",
+        "Why is a centered moving average leaky?",
+        "What should remain after decomposition?"
       ],
-      "estimatedMinutes": 1
+      "estimatedMinutes": 10
     },
     {
       "slug": "lag-features",
@@ -11745,34 +11849,55 @@
         "da",
         "as"
       ],
-      "interviewAnswer": "Forecasting should start with naive baselines. Last-value, seasonal-naive and drift forecasts often perform surprisingly well; a complex model is useful only if it beats the baseline out-of-sample.",
+      "interviewAnswer": "Forecast baselines are executable hypotheses about persistence. Mean forecasts assume reversion to a stable level; naive forecasts repeat the last observation and are optimal for a random walk under squared loss; drift extrapolates the average first-to-last slope; seasonal-naive repeats the last observed value from the same seasonal phase. I implement every baseline with exactly the data, update cadence and horizon available at each historical origin, and choose seasonal periods from the operational calendar rather than autocorrelation alone. I compare candidate models with paired errors by horizon and series, not only an aggregate. A complex model must beat relevant baselines such as seasonal-naive, current production and a known-future calendar rule after latency and cost. Baselines also serve as fallbacks and monitoring controls: if a model loses to them persistently, the issue may be drift, leakage in development or pipeline failure rather than insufficient architecture.",
       "keyPoints": [
-        "Seasonal-naive repeats last comparable season.",
-        "Drift extrapolates average trend.",
-        "Baseline defines whether complexity adds value."
+        "Each baseline encodes a concrete assumption about level, trend or seasonal persistence.",
+        "Naive and seasonal-naive forecasts must be generated recursively and point-in-time for every requested horizon.",
+        "A baseline is only fair when it receives the same information, origin schedule and target definition as the model.",
+        "Skill should be reported against multiple relevant baselines by horizon and series, with paired uncertainty.",
+        "Production baselines are low-dependency fallbacks and sentinels for data, model and regime failures."
       ],
       "resources": [
-        "fpp3"
+        "fpp3",
+        "forecast-accuracy-paper",
+        "statsmodels-tsa"
       ],
       "featured": true,
+      "description": "Naive forecasting baselines turn simple persistence assumptions into rigorous benchmarks and fallbacks. This chapter derives historical-mean, last-value, drift and seasonal-naive forecasts and explains their links to stable-level, random-walk, linear-drift and repeating-season data-generating processes. It covers multi-step recursion, multiple seasonal periods, transformations, irregular calendars, intermittent demand, panels, cold starts and known-future event rules. It shows how baselines define MASE denominators and relative skill, why comparisons must share forecast origins and information, and how horizon and series aggregation can reverse rankings. Worked examples calculate drift and multi-step seasonal-naive forecasts. The lab implements all four methods over rolling origins, verifies formulas and demonstrates that seasonal-naive beats last-value on a seasonal synthetic series. Production guidance deploys baselines as low-dependency fallbacks, logs paired model-versus-baseline errors, monitors persistent negative skill and distinguishes model failure from data or regime change. Strong business rules and the current production system remain mandatory comparators when they use additional legal information.",
+      "prerequisites": [
+        "time-series-split",
+        "time-series-components"
+      ],
+      "learningObjectives": [
+        "Derive and implement mean, naive, drift and seasonal-naive multi-step forecasts.",
+        "Match baseline assumptions and seasonal periods to the operational series and calendar.",
+        "Measure paired forecast skill by horizon, series and regime without aggregation artifacts.",
+        "Use baselines as production fallbacks and monitoring sentinels with explicit trigger rules."
+      ],
       "editorial": {
-        "status": "summary"
+        "status": "verified",
+        "verifiedOn": "2026-08-22"
       },
-      "status": "summary",
+      "status": "verified",
       "hasLab": true,
-      "labGoal": "Build naive and seasonal-naive forecasts before complex models.",
-      "visualCount": 1,
+      "labGoal": "Implement mean, naive, drift and seasonal-naive forecasts over shared rolling origins and verify their formulas and seasonal skill.",
+      "visualCount": 2,
       "visualSummaries": [
         {
-          "type": "curve",
-          "title": "Forecast baselines"
+          "type": "compare",
+          "title": "Persistence hypotheses"
+        },
+        {
+          "type": "flow",
+          "title": "Baseline as release control"
         }
       ],
       "followUpQuestions": [
-        "What assumptions does Naive, Seasonal-Naive & Drift Baselines make?",
-        "How would you validate or debug Naive, Seasonal-Naive & Drift Baselines in practice?"
+        "When is naive forecasting hard to beat?",
+        "What if the MASE denominator is zero?",
+        "Why keep current production as a baseline?"
       ],
-      "estimatedMinutes": 2
+      "estimatedMinutes": 10
     },
     {
       "slug": "decomposition-stl",

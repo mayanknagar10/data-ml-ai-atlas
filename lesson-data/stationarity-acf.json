@@ -8,32 +8,58 @@
     "da",
     "as"
   ],
-  "interviewAnswer": "Stationarity means the statistical behavior of a series is stable enough over time for many classical models to learn consistent relationships. I inspect trend/seasonality and autocorrelation; differencing or transformation can help when the level is non-stationary.",
+  "interviewAnswer": "Weak stationarity means constant mean and variance and autocovariance depending only on lag, not calendar time. Many forecasting models need a stable transformed process or stable residuals rather than a stationary raw business series. I plot the series and rolling regimes, remove known trend or seasonality, and difference only when persistence diagnostics and domain logic justify it. The ACF at lag k measures correlation between y_t and y_{t-k}; the PACF measures the incremental linear association after intermediate lags. For an AR(p), PACF tends to cut off after p while ACF decays; for an MA(q), ACF tends to cut off after q, but finite samples, seasonality and mixed models blur these heuristics. ADF and KPSS use opposite nulls and are sensitive to deterministic terms, breaks and sample size. I treat tests as supporting evidence, avoid overdifferencing, and validate model residuals and forecast performance on rolling origins.",
   "keyPoints": [
-    "weak stationarity",
-    "autocorrelation",
-    "ACF/PACF",
-    "differencing"
+    "Stationarity is a property of a stochastic process and representation, not a guarantee from one flat-looking plot.",
+    "Trend, seasonality, changing variance and structural breaks can create persistent sample autocorrelation.",
+    "ACF describes lag correlation; PACF isolates incremental linear lag association conditional on shorter lags.",
+    "Differencing can remove stochastic trend but can also over-difference, amplify noise and erase long-run information.",
+    "Unit-root tests depend on deterministic terms and have limited power; combine them with plots, domain knowledge and backtests."
   ],
   "resources": [
     "fpp3",
-    "statsmodels-tsa"
+    "statsmodels-tsa",
+    "openintro-stats"
   ],
   "featured": false,
-  "why": "ARIMA-family methods rely on structure in lagged values and residuals. Understanding autocorrelation also helps diagnose leakage and seasonality.",
-  "intuition": "ACF asks “how correlated is the series with itself k steps ago?” PACF tries to isolate the direct lag-k relationship after accounting for shorter lags.",
-  "deepDive": "Weak stationarity is typically about approximately constant mean/variance and covariance depending on lag rather than absolute time. ACF/PACF are diagnostics, not magical parameter selectors. Differencing can remove stochastic trends but over-differencing adds noise.",
-  "workedExample": "A monthly series with a rising level may show slow ACF decay. First differencing y_t-y_{t-1} can make the remaining dependence easier to model; a spike at lag 12 can suggest annual seasonality.",
+  "why": "Temporal models learn dependence from repeated patterns. If the mean, variance or dependence shifts, correlations estimated across the entire history mix incompatible regimes. A trending series can display large ACF at many lags even without a stable autoregressive mechanism. Blind differencing may make a smooth deterministic trend noisy, while failing to difference a random walk produces spurious regression and overconfident long-horizon behavior. Stationarity analysis provides a disciplined way to choose transformations and lag structures, but it is not a preflight test that every forecast model must pass. The operational goal is stable, useful conditional forecasts and residuals.",
+  "intuition": "A stationary process looks statistically similar wherever a fixed-length window is placed: its center, spread and lag relationships do not systematically depend on date. A random walk forgets its starting level only through accumulated shocks and wanders, so its raw level has no stable mean. First differences reveal the shocks. The ACF asks how echoes persist; the PACF asks whether a lag adds an echo beyond the nearer lags.",
+  "deepDive": "Stationarity organizes temporal dependence and transformation choices. Weak and strict forms, deterministic versus stochastic trends, variance stabilization, differencing and seasonal adjustment lead to ACF and PACF diagnostics. Formal tests provide conditional evidence but structural breaks, short histories and model selection demand rolling validation and residual checks.",
+  "workedExample": "For stationary AR(1) with phi=0.8, theoretical ACF is 0.8 at lag 1, 0.64 at lag 2 and 0.512 at lag 3. PACF has one population spike at lag 1 because later dependence is transmitted through the first lag.",
   "commonMistakes": [
-    "Equating stationarity with “flat data.”",
-    "Blindly differencing until a statistical test passes without checking business meaning."
+    {
+      "misconception": "Every forecasting model requires a stationary raw series.",
+      "correction": "Many models explicitly represent evolving levels; stationarity is often desired for innovations or transformed residual structure."
+    },
+    {
+      "misconception": "ADF p-value above 0.05 proves a unit root.",
+      "correction": "It is failure to reject under chosen lags and deterministic terms, with potentially low power."
+    },
+    {
+      "misconception": "Choose AR and MA orders from ACF and PACF cutoffs mechanically.",
+      "correction": "Finite samples and mixed or seasonal processes blur patterns; validate candidate orders and residuals on rolling origins."
+    },
+    {
+      "misconception": "Differencing can only help stationarity.",
+      "correction": "Overdifferencing adds noise, negative lag correlation and forecast variance and can erase long-run relationships."
+    }
   ],
   "followUps": [
-    "What does an ACF spike at a seasonal lag mean?",
-    "What is over-differencing?"
+    {
+      "question": "What is the difference between ACF and PACF?",
+      "answer": "ACF measures total linear correlation at a lag; PACF measures the lag's incremental association after shorter lags are controlled."
+    },
+    {
+      "question": "When is seasonal differencing useful?",
+      "answer": "When same-phase levels behave like a seasonal random walk and the differenced series plus diagnostics and backtests support the transformation."
+    },
+    {
+      "question": "Why can ADF and KPSS disagree?",
+      "answer": "They use opposite nulls and have finite-sample, lag, trend and break sensitivity; disagreement often means evidence is inconclusive."
+    }
   ],
-  "production": "Monitor residual autocorrelation after deployment; systematic temporal structure in errors often means the model is leaving forecastable signal unused.",
-  "math": "ACF(k) = Corr(y_t, y_{t-k}).  First difference: Δy_t = y_t - y_{t-1}.",
+  "production": "Version frequency, transform, differencing orders, deterministic terms, test settings and lag diagnostics with the model. Recompute them only on each training window. Test inverse reconstruction, missing dates and seasonal boundaries. Monitor rolling mean, variance, persistence, residual ACF and seasonal spikes by horizon and regime. Use portmanteau tests with fitted-degree context and combine them with forecast bias and interval coverage. Trigger reviewed retraining or model switching on sustained regime evidence and retain naive fallbacks when recursion becomes unstable.",
+  "math": "Weak stationarity requires E[Y_t]=mu, Var(Y_t)=gamma(0) and Cov(Y_t,Y_{t-k})=gamma(k). ACF rho(k)=gamma(k)/gamma(0), estimated from centered lag products. PACF at k is the coefficient on Y_{t-k} in a linear regression of Y_t on lags 1 through k. For AR(1), Y_t=c+phi Y_{t-1}+epsilon_t is stationary when |phi|<1, mean c/(1-phi), variance sigma^2/(1-phi^2) and rho(k)=phi^k. First difference is (1-B)Y_t=Y_t-Y_{t-1}; seasonal difference is (1-B^m)Y_t. Overdifferencing introduces unnecessary negative autocorrelation and increases forecast variance.",
   "visual": {
     "type": "bars",
     "title": "Autocorrelation by lag",
@@ -55,6 +81,132 @@
     "yLabel": "autocorrelation"
   },
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-22"
+  },
+  "code": "from scipy.stats import pearsonr\npearson_lag1=pearsonr(ar[1:],ar[:-1]).statistic; diff_walk=np.diff(walk); diff_lag1=pearsonr(diff_walk[1:],diff_walk[:-1]).statistic",
+  "lab": {
+    "language": "python",
+    "goal": "Simulate stationary AR(1) and a random walk, compute ACF, and verify theoretical decay plus the effect of differencing.",
+    "buildIt": "import numpy as np\nrng=np.random.default_rng(8); n=2500; phi=.75; ar=np.zeros(n); eps=rng.normal(size=n)\nfor i in range(1,n): ar[i]=phi*ar[i-1]+eps[i]\nwalk=np.cumsum(rng.normal(size=n))\ndef sample_acf(x,max_lag):\n    z=np.asarray(x)-np.mean(x); denom=np.dot(z,z); return np.array([np.dot(z[k:],z[:-k])/denom if k else 1. for k in range(max_lag+1)])\nacf_ar=sample_acf(ar,6); acf_walk=sample_acf(walk,6)",
+    "useIt": "from scipy.stats import pearsonr\npearson_lag1=pearsonr(ar[1:],ar[:-1]).statistic; diff_walk=np.diff(walk); diff_lag1=pearsonr(diff_walk[1:],diff_walk[:-1]).statistic",
+    "verifyIt": "assert abs(acf_ar[1]-pearson_lag1)<2e-3\nassert abs(acf_ar[1]-phi)<.04\nassert np.max(np.abs(acf_ar[1:5]-phi**np.arange(1,5)))<.06\nassert acf_walk[1]>.95\nassert abs(diff_lag1)<.08 and abs(sample_acf(diff_walk,1)[1])<.08\nassert np.var(walk)>20*np.var(diff_walk)",
+    "shipIt": "Persist transform and lag diagnostics per training origin, verify residual dependence and inverse reconstruction, and monitor persistence and variance shifts with safe baseline fallback."
+  },
+  "description": "Stationarity, autocorrelation and partial autocorrelation provide the core diagnostic language for linear time-series dependence. This chapter defines strict and weak stationarity, distinguishes deterministic trend from unit-root stochastic trend, and analyzes changing variance, seasonality and structural breaks. It derives the ACF and PACF, explains canonical AR and MA cutoff-versus-decay patterns, seasonal spikes, confidence bands and the limits of data-driven order selection. It develops first, seasonal and fractional differencing intuition, variance-stabilizing transforms, overdifferencing symptoms and cointegration warnings. It compares ADF and KPSS null hypotheses and shows how deterministic terms and breaks affect conclusions. Worked examples derive the AR(1) ACF and expose a trending series with spurious persistence. The lab simulates stationary AR(1) and random-walk processes, verifies sample ACF behavior against statsmodels and checks contrasting ADF evidence. Production guidance estimates diagnostics within training windows, monitors residual autocorrelation and regime shifts and chooses transformations by rolling forecast performance rather than a single test.",
+  "prerequisites": [
+    "time-series-components",
+    "expectation-variance"
+  ],
+  "learningObjectives": [
+    "Define weak stationarity and diagnose trend, variance, seasonal and break violations.",
+    "Compute and interpret ACF and PACF for AR, MA and seasonal dependence.",
+    "Choose first, seasonal or variance transforms while recognizing overdifferencing and cointegration risks.",
+    "Use unit-root and residual diagnostics as conditional evidence within rolling forecast evaluation."
+  ],
+  "deepSections": [
+    {
+      "id": "stationarity-meaning",
+      "title": "Stationarity is representation- and horizon-specific",
+      "body": "Strict stationarity requires the full joint distribution to be invariant to time shifts; weak stationarity requires stable first two moments and lag covariance. Forecasting practice often relies on the weaker form. Raw demand with growth and holidays is nonstationary, while residuals after trend and calendar modeling may be stable enough. A deterministic trend has a fixed function of time plus stationary noise; subtracting the function can reveal stability. A unit-root process accumulates shocks and requires differencing for a stable increment under the model. Structural breaks can mimic either. Examine raw and transformed plots, rolling means and variances, seasonal subseries and domain events. A stationary historical sample can still shift tomorrow, and a nonstationary series can be forecast well with a model that explicitly evolves state. Do not reject useful state-space or tree forecasts because raw levels fail a unit-root test."
+    },
+    {
+      "id": "acf-pacf",
+      "title": "ACF and PACF summarize linear dependence by lag",
+      "body": "The sample ACF correlates observations separated by k after centering. Large low-lag values can reflect persistence, trend or smoothing; spikes at m, 2m and beyond suggest seasonality. PACF removes the linear contribution of intermediate lags, so an AR(p) often shows material PACF through p then near zero, while an MA(q) often shows ACF through q then near zero. Mixed ARMA processes typically decay in both. These are population heuristics distorted by finite samples and parameter estimation. Approximate white-noise bands such as plus or minus 1.96/sqrt(T) are pointwise and do not account for inspecting many lags. Detrending and seasonal adjustment change the diagnostic. Plot residual ACF after fitting: unexplained autocorrelation means forecast intervals and model structure may be inadequate."
+    },
+    {
+      "id": "differencing-transform",
+      "title": "Transform the mechanism, not the test statistic",
+      "body": "First differences remove one integrated trend under a unit-root model; seasonal differences compare the same phase across cycles. Combining both can be necessary but removes low-frequency and seasonal level information. Inspect whether differenced series has stable variance and whether lag-one ACF becomes strongly negative, a common overdifferencing sign. A log or Box-Cox transform can stabilize proportional variance before differencing. Deterministic regression terms may be preferable when a mechanistic trend is expected. Differencing related nonstationary series independently can discard cointegrating long-run relationships; error-correction models preserve them. Missing and irregular timestamps make row differences semantically wrong—regularize the calendar and distinguish a one-day from a ten-day gap. Reconstruct level forecasts carefully by cumulative sums and propagate uncertainty."
+    },
+    {
+      "id": "formal-tests",
+      "title": "Unit-root tests answer narrow conditional hypotheses",
+      "body": "The augmented Dickey-Fuller test has a unit root as null and includes lagged differences to address residual correlation. KPSS reverses direction, using stationarity around a level or trend as null. Applying both can produce four evidence patterns, including inconclusive results. Their behavior depends on sample size, selected lags, inclusion of constant or trend and structural breaks. Failure to reject ADF is not proof of a unit root; rejection of KPSS is not a command to difference. Breaks can reduce ADF power, and near-unit-root stationary processes are difficult to distinguish from integrated ones. Pre-specify deterministic terms from plots and mechanism, inspect sensitivity and compare rolling forecasts under plausible transformations. Multiple repeated tests across many series create false discoveries."
+    },
+    {
+      "id": "forecast-diagnostics",
+      "title": "Stable residuals and forecasts matter more than ritual stationarity",
+      "body": "Estimate transformations and lag diagnostics within each training origin. Fit candidate models, then inspect standardized residual mean, variance, ACF, seasonal structure and outliers. Ljung-Box-style portmanteau tests assess groups of residual autocorrelations but depend on fitted degrees of freedom and can reject trivially in huge samples. Residual whiteness is not sufficient if forecasts are biased in important regimes or intervals are miscalibrated. Monitor post-launch residual autocorrelation, rolling bias, variance and estimated persistence. A phi estimate approaching one, new seasonal spike or variance jump can signal a regime change or data issue. Keep naive and seasonal-naive fallbacks, cap unstable recursive forecasts and retrain or switch models under versioned triggers."
+    }
+  ],
+  "workedExamples": [
+    {
+      "title": "AR(1) echo",
+      "body": "For stationary AR(1) with phi=0.8, theoretical ACF is 0.8 at lag 1, 0.64 at lag 2 and 0.512 at lag 3. PACF has one population spike at lag 1 because later dependence is transmitted through the first lag."
+    },
+    {
+      "title": "Trend creates spurious ACF",
+      "body": "Two distant points on a steadily rising series are both above or below the global mean depending on date, producing broad positive ACF even if deviations around the trend are independent. Remove or model trend before reading lag dynamics."
+    }
+  ],
+  "exercises": [
+    {
+      "prompt": "What is theoretical lag-3 ACF for AR(1) phi=0.5?",
+      "solution": "0.5 cubed, or 0.125."
+    },
+    {
+      "prompt": "Why can strong lag-one negative ACF appear after differencing?",
+      "solution": "Overdifferencing introduces a moving-average-like reversal because adjacent differences share the middle observation with opposite signs."
+    },
+    {
+      "prompt": "What does a seasonal ACF spike at lag 7 suggest in daily data?",
+      "solution": "Weekly repetition or an unmodeled weekly calendar pattern, to be checked after trend handling and with domain timing."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "compare",
+      "title": "Lag diagnostics",
+      "left": {
+        "title": "ACF",
+        "items": [
+          "Total correlation at lag",
+          "AR tails off",
+          "MA may cut off",
+          "Seasonal spikes visible"
+        ]
+      },
+      "right": {
+        "title": "PACF",
+        "items": [
+          "Incremental lag association",
+          "AR may cut off",
+          "MA tails off",
+          "Conditional linear view"
+        ]
+      },
+      "caption": "Canonical patterns guide candidate models but require finite-sample and seasonal validation.",
+      "afterSection": "acf-pacf"
+    },
+    {
+      "type": "flow",
+      "title": "Stationarity decision",
+      "items": [
+        "Audit trend, variance and breaks",
+        "Choose scale and deterministic terms",
+        "Inspect ACF and PACF",
+        "Run conditional ADF and KPSS evidence",
+        "Fit plausible transforms",
+        "Backtest and diagnose residuals"
+      ],
+      "caption": "No single test substitutes for mechanism, rolling forecasts and stable residual evidence.",
+      "afterSection": "formal-tests"
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "fpp3",
+      "contribution": "Provides stationarity, differencing, ACF, residual diagnostics and ARIMA-order guidance."
+    },
+    {
+      "resource": "statsmodels-tsa",
+      "contribution": "Verifies current ACF and unit-root testing APIs used in the lab and model workflow."
+    },
+    {
+      "resource": "openintro-stats",
+      "contribution": "Supports covariance, correlation and regression concepts underlying ACF and PACF."
+    }
+  ]
 }

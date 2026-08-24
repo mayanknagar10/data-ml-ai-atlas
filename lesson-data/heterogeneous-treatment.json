@@ -7,30 +7,185 @@
     "ds",
     "as"
   ],
-  "interviewAnswer": "Heterogeneous treatment-effect models estimate how intervention effects differ across units. The target is incremental impact, not outcome probability, so ordinary response prediction can rank the wrong people.",
+  "interviewAnswer": "Heterogeneous treatment-effect modeling estimates CATE tau(x)=E[Y(1)-Y(0)|X=x] or learns a treatment policy, not an observable individual-effect label. Identification still needs randomized assignment or conditional exchangeability, positivity, consistency and an interference assumption. S-learners use one outcome model with treatment; T-learners fit separate outcome models; X-, R- and DR-learners use imputation or orthogonal residuals to improve robustness. Causal trees and forests split for effect differences and use honesty or cross-fitting so discovery does not reuse estimation outcomes. I evaluate global ATE recovery, calibration of predicted effects in held-out groups, rank-weighted treatment effects, policy value and overlap—not ordinary RMSE against factual outcomes. I predefine actionable baseline features, separate discovery from confirmation, report uncertainty and subgroup support, and validate any targeting policy prospectively. A high predicted uplift is not a known personal effect.",
   "keyPoints": [
-    "CATE/uplift differs from propensity to respond.",
-    "Use randomized/identified treatment data.",
-    "Evaluate policy value and uplift curves carefully."
+    "CATE is a conditional average causal estimand; individual treatment effects remain unobserved.",
+    "Meta-learners differ in how they estimate outcome and propensity nuisance functions and handle imbalance.",
+    "Honesty, sample splitting and cross-fitting reduce adaptive subgroup and nuisance overfitting.",
+    "Evaluate effect ranking, calibration and policy value on held-out causal evidence rather than factual prediction loss alone.",
+    "Targeting requires positivity, actionability, capacity, fairness, uncertainty and prospective policy validation."
   ],
   "resources": [
-    "causal-mixtape"
+    "causal-forest-paper",
+    "causal-tree-paper",
+    "dml-paper"
   ],
   "featured": false,
-  "why": "Heterogeneous Treatment Effects & Uplift Modeling appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
-  "intuition": "CATE/uplift differs from propensity to respond.",
-  "deepDive": "Heterogeneous treatment-effect models estimate how intervention effects differ across units. The target is incremental impact, not outcome probability, so ordinary response prediction can rank the wrong people. Use randomized/identified treatment data. Evaluate policy value and uplift curves carefully. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate.",
-  "workedExample": "Target retention offers to users who are likely to stay because of the offer, not users who would stay anyway.",
+  "why": "An average effect can hide beneficiaries, unaffected units and harmed subgroups, motivating personalization. But heterogeneity search has far less observable supervision than ordinary ML: no row contains its true treatment contrast. Flexible models can discover dramatic subgroups from noise, especially when treatment groups are imbalanced or covariate overlap is weak. A model may predict outcomes accurately while estimating treatment differences poorly. Honest causal learning therefore combines identification, orthogonalization, separate discovery and estimation, causal evaluation metrics and policy experiments. The output should guide a bounded decision, not label people with certain counterfactual destinies.",
+  "intuition": "Two outcome models estimate the response surface under treatment and control. Their difference at x is an estimated conditional benefit. We cannot check that difference for one person, but in a held-out group of people with similar predicted benefit, randomized treatment-control outcome differences should agree on average. Evaluation is groupwise and policy-level because individual counterfactual labels are missing.",
+  "deepDive": "Heterogeneous-effect learning combines potential-outcome identification with flexible nuisance estimation and honest adaptive partitioning. Meta-learners expose different bias-variance trade-offs, while causal forests and orthogonal scores target treatment contrasts directly. Reliable deployment evaluates calibration and value, quantifies overlap and uncertainty, and confirms policies prospectively.",
+  "workedExample": "A high-risk customer may churn regardless of offer and have near-zero uplift, while a medium-risk customer is persuadable. A churn-risk ranking wastes treatment capacity compared with a validated treatment-effect ranking.",
   "commonMistakes": [
-    "Applying the method without checking its assumptions or data-generating process.",
-    "Choosing it because it is familiar rather than comparing against an appropriate baseline."
+    {
+      "misconception": "Train a regressor on observed outcome and call its prediction uplift.",
+      "correction": "Outcome risk is not a treatment contrast; the learner must model treatment-specific counterfactual response under causal identification."
+    },
+    {
+      "misconception": "CATE RMSE can be computed from each row's factual outcome.",
+      "correction": "Individual treatment effects are unobserved; use causal losses, group calibration, ranking and policy value."
+    },
+    {
+      "misconception": "A subgroup discovered by a causal tree has confirmatory inference automatically.",
+      "correction": "Adaptive search biases leaf effects unless discovery and estimation are separated or honest methods are used."
+    },
+    {
+      "misconception": "Treat everyone with positive point-estimate CATE.",
+      "correction": "Consider uncertainty, cost, harm, capacity, overlap, fairness and prospective policy evidence."
+    }
   ],
   "followUps": [
-    "What assumptions does Heterogeneous Treatment Effects & Uplift Modeling make?",
-    "How would you validate or debug Heterogeneous Treatment Effects & Uplift Modeling in practice?"
+    {
+      "question": "When is a T-learner attractive?",
+      "answer": "When both treatment groups have enough support and response surfaces differ substantially, with separate models offering useful flexibility."
+    },
+    {
+      "question": "What is honesty in a causal tree?",
+      "answer": "Separate outcome information selects the partition and estimates effects within that fixed partition, reducing adaptive subgroup bias."
+    },
+    {
+      "question": "How do you validate CATE predictions?",
+      "answer": "Use held-out causal calibration, ranked group effects, orthogonal scores and policy-value estimates rather than unavailable individual-effect labels."
+    }
   ],
-  "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
+  "production": "Version the causal estimand, assignment mechanism, pretreatment features, nuisance and effect learners, cross-fitting folds, calibration protocol, policy objective, costs and capacity. Gate on local propensity support, honest held-out calibration, rank stability, value and adverse-effect guardrails. Preserve randomized exploration or periodic policy trials. Monitor predicted-effect mix, treatment rates, calibration groups, realized value and fairness by supported cohorts. Communicate conditional averages with uncertainty, canary new policies and retain the prior targeting rule and model for rollback.",
   "editorial": {
-    "status": "summary"
-  }
+    "status": "verified",
+    "verifiedOn": "2026-08-21"
+  },
+  "math": "CATE tau(x)=E[Y(1)-Y(0)|X=x]. An S-learner estimates m(a,x) jointly and subtracts m(1,x)-m(0,x); a T-learner estimates m1 and m0 separately. The R-learner residualizes outcome m(X)=E[Y|X] and treatment e(X)=E[A|X], then fits tau by minimizing sum[(Y-mhat(X))-(A-ehat(X))tau(X)]^2, commonly cross-fitted. A value policy pi has V(pi)=E[Y(pi(X))]; in randomized data it can be estimated by inverse propensity or doubly robust scores. Calibration bins compare average predicted tau with held-out causal effect estimates, not observed unit differences.",
+  "code": "rmse=np.sqrt(np.mean((cate-truth)**2)); correlation=np.corrcoef(cate,truth)[0,1]; cuts=np.quantile(cate,[0,.25,.5,.75,1]); groups=np.clip(np.digitize(cate,cuts[1:-1]),0,3); calibration=[(cate[groups==g].mean(),truth[groups==g].mean()) for g in range(4)]",
+  "lab": {
+    "language": "python",
+    "goal": "Fit a T-learner on randomized heterogeneous effects and verify held-out CATE accuracy, ranking and calibration against known simulation truth.",
+    "buildIt": "import numpy as np\nfrom sklearn.ensemble import ExtraTreesRegressor\nfrom sklearn.model_selection import train_test_split\nrng=np.random.default_rng(88); n=14000; X=rng.normal(size=(n,3)); tau=1+1.2*X[:,0]; a=rng.binomial(1,.5,size=n); mu=2*X[:,0]+X[:,1]**2; y=mu+a*tau+rng.normal(scale=.5,size=n)\ntrain,test=train_test_split(np.arange(n),test_size=.35,random_state=4); params=dict(n_estimators=240,min_samples_leaf=40,max_features=1.0,random_state=5,n_jobs=-1); m0=ExtraTreesRegressor(**params).fit(X[train][a[train]==0],y[train][a[train]==0]); m1=ExtraTreesRegressor(**params).fit(X[train][a[train]==1],y[train][a[train]==1]); cate=m1.predict(X[test])-m0.predict(X[test]); truth=tau[test]",
+    "useIt": "rmse=np.sqrt(np.mean((cate-truth)**2)); correlation=np.corrcoef(cate,truth)[0,1]; cuts=np.quantile(cate,[0,.25,.5,.75,1]); groups=np.clip(np.digitize(cate,cuts[1:-1]),0,3); calibration=[(cate[groups==g].mean(),truth[groups==g].mean()) for g in range(4)]",
+    "verifyIt": "assert rmse<.35\nassert correlation>.95\nassert all(abs(pred-actual)<.2 for pred,actual in calibration)\nassert calibration[-1][1]>calibration[0][1]+2\nassert abs(cate.mean()-truth.mean())<.08\nassert len(cate)==len(test)",
+    "shipIt": "Persist cross-fitted effect predictions and calibration groups, gate policy on overlap and held-out value, preserve exploration, and communicate CATE as a conditional average with uncertainty."
+  },
+  "description": "Heterogeneous treatment-effect and uplift modeling estimates how average causal effects vary with pretreatment features and turns those estimates into constrained policies. This chapter defines CATE, group effects, uplift and policy value while emphasizing that individual causal labels are never observed. It compares S-, T-, X-, R- and doubly robust learners; explains outcome and propensity nuisance estimation, treatment imbalance, cross-fitting and orthogonality; and develops honest causal trees and forests for adaptive subgroup discovery and inference. It covers uplift curves, Qini-style rankings, calibration by predicted-effect groups, best linear projection, RATE, policy-value estimation and prospective validation. Worked examples contrast predictive risk with treatment benefit and expose subgroup search bias. The lab simulates randomized heterogeneous effects, fits separate forest response surfaces and verifies held-out CATE ranking and calibration against known simulation truth. Production guidance restricts features to actionable pretreatment data, monitors overlap and policy capacity, quantifies uncertainty and fairness, preserves exploration and requires randomized confirmation before high-stakes personalized treatment.",
+  "prerequisites": [
+    "potential-outcomes",
+    "random-forest"
+  ],
+  "learningObjectives": [
+    "Define CATE, uplift and policy value without treating individual effects as observed labels.",
+    "Choose and implement S-, T-, X-, R-, DR- or forest learners for the design and sample regime.",
+    "Evaluate held-out heterogeneity through causal calibration, ranking, subgroup effects and policy value.",
+    "Deploy bounded targeting policies with overlap, uncertainty, fairness and prospective validation."
+  ],
+  "deepSections": [
+    {
+      "id": "estimand-design",
+      "title": "Heterogeneity inherits every causal identification requirement",
+      "body": "Define the target population, treatment strategies, outcome horizon and baseline feature set before modeling. CATE conditions on X and can vary with effect modifiers, but including post-treatment variables changes or biases the estimand. Randomized experiments identify conditional effects where each treatment has support; observational studies additionally assume no unmeasured confounding given X and require nuisance adjustment. Sparse treatment within a region makes CATE extrapolative even if global overlap looks adequate. Distinguish predictive risk from benefit: high-risk people can have low treatment responsiveness, and low-risk people can benefit greatly. Decide whether the goal is scientific effect modification, a simple subgroup rule or a capacity-constrained policy. These targets require different summaries and tolerance for model complexity. Pre-specify important subgroups when confirmatory inference is needed."
+    },
+    {
+      "id": "meta-learners",
+      "title": "Meta-learners reorganize ordinary predictors around causal contrasts",
+      "body": "An S-learner fits one outcome model with A and X; shared structure helps when treatment effects are small but a highly regularized learner may ignore A interactions. A T-learner fits separate treated and control models; it is simple and flexible but can be noisy under imbalance and does not share information. The X-learner imputes treatment effects and can exploit imbalanced groups. R- and DR-learners residualize or augment with propensity and outcome nuisances, focusing the loss on treatment variation and gaining robustness under cross-fitting. Every learner still depends on overlap and causal assumptions. Use the same legal folds for nuisance predictions and effect fitting; hyperparameter search should target a causal or orthogonal loss rather than factual outcome accuracy alone. Compare simple linear interactions as a baseline."
+    },
+    {
+      "id": "honest-forests",
+      "title": "Honesty separates subgroup discovery from effect estimation",
+      "body": "A standard tree can search many splits and report extreme within-leaf differences created by the same noise used to choose them. Honest causal trees use one sample to select partitions and another to estimate effects inside fixed leaves, trading sample size for reduced adaptive bias and valid inference under conditions. Causal forests average many honest trees and use splits designed for treatment-effect heterogeneity rather than outcome prediction. They behave like adaptive local weighting estimators and can provide pointwise uncertainty under their theoretical assumptions. Minimum treated and control leaf sizes protect support. Feature importance from causal forests remains method-specific and can be unstable with correlated modifiers. Use held-out calibration and variable-priority diagnostics as hypothesis generation, not proof that a covariate causally modifies effect."
+    },
+    {
+      "id": "causal-evaluation",
+      "title": "Evaluate ranking and calibration without individual labels",
+      "body": "Check that the average predicted CATE matches a credible ATE. Divide held-out units into quantiles defined by predictions from models that did not use their outcomes, then estimate treatment-control effects within each group; plot observed group effects against average predictions with uncertainty. An uplift or gain curve orders units by predicted benefit and accumulates an inverse-propensity or doubly robust effect estimate; Qini conventions vary, so publish the formula and random-policy baseline. RATE summarizes rank-weighted heterogeneity. Policy value estimates outcomes if treatment follows a rule, accounting for assignment propensity and cost. Cross-validation must regenerate nuisance and effect predictions out of fold. Avoid selecting the best-looking subgroup and reporting its naive interval. Use randomization or cluster-aware inference according to the design."
+    },
+    {
+      "id": "policy-governance",
+      "title": "A treatment-effect model becomes a policy only with constraints",
+      "body": "Define treatment capacity, benefit and harm, abstention and eligibility. A rule might treat when estimated net benefit exceeds cost or select top K; uncertainty-aware rules can require a lower confidence bound. Preserve some randomized exploration or periodic trials, because a deterministic policy removes counterfactual support and makes future evaluation difficult. Monitor treatment propensity by feature region, predicted CATE distribution, calibration groups, realized value, adverse outcomes and subgroup access. Sensitive attributes may be necessary for audit while using them for differential treatment can raise legal and ethical constraints. Policy changes alter the observed data and nuisance models. Canary against an existing rule, use safety guardrails and keep rollback. Communicate conditional average evidence rather than telling an individual the model knows their personal outcome under both treatments."
+    }
+  ],
+  "workedExamples": [
+    {
+      "title": "Risk is not uplift",
+      "body": "A high-risk customer may churn regardless of offer and have near-zero uplift, while a medium-risk customer is persuadable. A churn-risk ranking wastes treatment capacity compared with a validated treatment-effect ranking."
+    },
+    {
+      "title": "Adaptive subgroup bias",
+      "body": "Searching hundreds of age and income splits in one experiment finds a leaf with a huge effect by chance. Estimating that same leaf on independent outcomes or using honest splitting reveals whether the effect persists."
+    }
+  ],
+  "exercises": [
+    {
+      "prompt": "Why can a high-risk model be a poor uplift model?",
+      "solution": "Baseline outcome risk and treatment responsiveness are different functions; high risk does not imply the treatment changes the outcome."
+    },
+    {
+      "prompt": "What does cross-fitting accomplish in an R-learner?",
+      "solution": "It produces out-of-fold nuisance predictions, reducing own-observation overfit bias in the residualized treatment-effect loss."
+    },
+    {
+      "prompt": "How should a top-K treatment policy be evaluated?",
+      "solution": "Estimate held-out policy value and harm under the assignment design, include treatment cost and capacity, and confirm prospectively when consequential."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "compare",
+      "title": "Two meta-learner strategies",
+      "left": {
+        "title": "S-learner",
+        "items": [
+          "One shared outcome model",
+          "Treatment enters as feature",
+          "Shares strength",
+          "May suppress weak interactions"
+        ]
+      },
+      "right": {
+        "title": "T-learner",
+        "items": [
+          "Separate treatment models",
+          "Flexible response differences",
+          "Simple counterfactual subtraction",
+          "Can suffer group imbalance"
+        ]
+      },
+      "caption": "R-, X- and DR-learners reorganize nuisance information to address other bias-variance regimes.",
+      "afterSection": "meta-learners"
+    },
+    {
+      "type": "flow",
+      "title": "CATE to policy evidence",
+      "items": [
+        "Identify treatment contrast",
+        "Generate honest or cross-fitted CATE",
+        "Check overlap and ATE consistency",
+        "Evaluate held-out calibration and ranking",
+        "Estimate cost-aware policy value",
+        "Confirm, monitor and preserve exploration"
+      ],
+      "caption": "Personalization is a causal policy pipeline, not a per-row supervised label prediction.",
+      "afterSection": "causal-evaluation"
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "causal-forest-paper",
+      "contribution": "Provides causal-forest consistency and inference for heterogeneous treatment effects."
+    },
+    {
+      "resource": "causal-tree-paper",
+      "contribution": "Provides honest recursive partitioning and separate discovery-estimation logic."
+    },
+    {
+      "resource": "dml-paper",
+      "contribution": "Provides orthogonal scores and cross-fitting principles used by R- and DR-style learners."
+    }
+  ]
 }
