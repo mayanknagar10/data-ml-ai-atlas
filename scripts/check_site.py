@@ -34,7 +34,7 @@ errs=[]
 for f in html_files: errs.extend(check_file(f))
 index_text=(ROOT/'index.html').read_text(encoding='utf-8')
 for script in ('chapter-loader.js','chapter-reader.js'):
-    if f'src="{script}"' not in index_text: errs.append(f'index.html: missing {script}')
+    if f'src="{script}"' not in index_text and f'src="{script}?' not in index_text: errs.append(f'index.html: missing {script}')
 styles=(ROOT/'styles.css').read_text(encoding='utf-8')
 for selector in ('.chapter-toc','.chapter-objectives','.chapter-exercises','.chapter-nav','.chapter-load-error'):
     if selector not in styles: errs.append(f'styles.css: missing {selector}')

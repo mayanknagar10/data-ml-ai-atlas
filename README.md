@@ -8,7 +8,7 @@ The goal is not to memorize a glossary. Every topic is designed for three modes:
 2. **Understanding mode** — intuition, formal reasoning, examples and misconceptions.
 3. **Engineering mode** — implementation, debugging, production implications and system-design trade-offs.
 
-## Current scope — v2.4.3 Always-on Interactive Edition
+## Current scope — v2.5.0 Learning UX Edition
 
 - **45 modules**
 - **394 / 394 verified full-chapter lessons**
@@ -17,7 +17,11 @@ The goal is not to memorize a glossary. Every topic is designed for three modes:
 - **788 research-grounded, theme-aware lesson visuals** — at least two per lesson — with visible source attribution and adapted-redraw provenance
 - Broad coverage across statistics, product analytics, causal inference, forecasting, survival analysis, optimization, probabilistic ML/uncertainty, information theory, geospatial data science, data mining/sketches, recommender/search systems, data engineering, distributed systems, ML/DL/GenAI and production
 - Role-based study paths plus a dynamic homepage curriculum that hides modules with no lessons relevant to the selected role
-- Persistent light/dark mode, a subtle live perspective-projected 3D background with Motion/reduced-motion controls, responsive mobile navigation, search, practice mode and browser-local progress
+- A redesigned learning-first home experience with **Continue learning**, role-aware curriculum focus, clearer progress feedback and reduced visual clutter
+- **Global Cmd/Ctrl+K search** across all modules and lessons with full keyboard navigation
+- Improved lesson reading UX with reading progress, module context, calmer typography, compact navigation and non-disruptive completion controls
+- Collapsible roadmap, filterable Labs/Visual Atlas/Resources collections, and more scannable role-based study paths
+- Persistent light/dark mode, an always-on perspective-projected ambient background with reduced-motion accessibility, responsive navigation, global command search, practice mode and browser-local progress
 - Privacy-first **Resume + Job Description mapper** that runs locally in the browser and links directly to prioritized Atlas lessons
 - A dedicated **Visual Atlas** route at `#/visuals`
 - GitHub Pages build + validation + deployment workflow

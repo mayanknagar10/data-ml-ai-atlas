@@ -116,8 +116,9 @@ assert book.count('class="concept-visual') >= visual_count, 'book visual renderi
 index=(ROOT/'index.html').read_text(encoding='utf-8')
 assert '#/labs' in index and '#/analyzer' in index and 'prefers-color-scheme: dark' in index, 'main site navigation/theme missing'
 assert 'Plus+Jakarta+Sans' in index and 'Source+Serif+4' in index and 'STIX+Two+Text' in index, 'publication font stack missing'
-assert 'atlasBackground' in index and re.search(r'background\.js\?v=2\.4\.\d+', index) and 'motionBtn' not in index, 'always-on ambient background wiring missing'
+assert 'atlasBackground' in index and re.search(r'background\.js\?v=2\.\d+\.\d+', index) and 'motionBtn' not in index, 'always-on ambient background wiring missing'
 assert 'MathJax' in index and 'tex-svg.js' in index, 'MathJax typesetting bootstrap missing'
+assert 'id="searchOverlay"' in index and 'id="searchBtn"' in index and 'skip-link' in index, 'global search/accessibility shell missing'
 
 assert 'assets/atlas-mark.svg' in index and 'class="brand-mark"' in index, 'Atlas favicon/brand mark wiring missing'
 for icon_path in ['assets/atlas-mark.svg','assets/atlas-mark-180.png','assets/atlas-mark-512.png','site.webmanifest']:
@@ -134,6 +135,7 @@ assert 'AtlasAnalyzer' in app, 'Resume + JD analyzer wiring missing'
 assert "lessonVisible(l,{includeRole:false})" in app, 'Module pages must not inherit the hidden global role filter'
 assert 'ROLE_IDS.has(savedRole)' in app, 'Persisted role values must be sanitized against the canonical role list'
 assert 'moduleLessonSets' in app and 'curriculumFiltering' in app and 'x.relevant.length' in app, 'Homepage curriculum must dynamically hide modules with no relevant lessons'
+assert 'openGlobalSearch' in app and 'atlasSearchResults' in app and 'updateActiveNav' in app, 'v2.5 navigation/search UX wiring missing'
 assert (ROOT/'LESSON_TEMPLATE.md').exists(), 'LESSON_TEMPLATE.md missing'
 assert (ROOT/'COVERAGE.md').exists(), 'COVERAGE.md missing'
 background=(ROOT/'background.js').read_text(encoding='utf-8')

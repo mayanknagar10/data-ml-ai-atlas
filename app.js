@@ -25,6 +25,8 @@ const state = {
   analyzerStatus: '',
   resumeFileName: '',
   jdFileName: '',
+  resourceQuery: '',
+  resourceKind: 'all',
 };
 const chapterLoader=AtlasChapterLoader.create((...args)=>fetch(...args));
 let routeVersion=0;
@@ -52,10 +54,28 @@ function progress(){return Math.round(100*state.done.size/ATLAS.lessons.length)}
 function deepCount(){return ATLAS.lessons.filter(l=>['chapter-complete','verified'].includes(l.status)).length}
 function labCount(){return ATLAS.lessons.filter(l=>l.hasLab).length}
 function visualCount(){return ATLAS.lessons.reduce((n,l)=>n+(l.visualCount||0),0)}
-function doneBtn(slug){const d=state.done.has(slug);return `<button class="check ${d?'done':''}" data-done="${slug}" title="Mark complete">${d?'✓':''}</button>`}
-function wireDone(){document.querySelectorAll('[data-done]').forEach(b=>b.onclick=e=>{e.preventDefault();e.stopPropagation();const s=b.dataset.done;state.done.has(s)?state.done.delete(s):state.done.add(s);save();route();});}
+function doneBtn(slug,compact=true){
+ const d=state.done.has(slug);
+ const label=d?'Completed':'Mark complete';
+ return `<button class="check completion-toggle ${d?'done':''} ${compact?'compact':''}" data-done="${slug}" aria-pressed="${d?'true':'false'}" title="${label}"><span aria-hidden="true">${d?'✓':'○'}</span><span class="completion-label">${label}</span></button>`;
+}
+function syncDoneButtons(slug){const d=state.done.has(slug);document.querySelectorAll(`[data-done="${slug}"]`).forEach(b=>{b.classList.toggle('done',d);b.setAttribute('aria-pressed',d?'true':'false');b.title=d?'Completed':'Mark complete';const icon=b.querySelector('span[aria-hidden]');if(icon)icon.textContent=d?'✓':'○';const label=b.querySelector('.completion-label');if(label)label.textContent=d?'Completed':'Mark complete'});}
+function wireDone(){document.querySelectorAll('[data-done]').forEach(b=>b.onclick=e=>{e.preventDefault();e.stopPropagation();const slug=b.dataset.done;state.done.has(slug)?state.done.delete(slug):state.done.add(slug);save();if(location.hash.startsWith('#/lesson/'))syncDoneButtons(slug);else route(false);});}
+function nextStudyLessons(limit=4){
+ const candidates=ATLAS.lessons.filter(l=>roleMatches(l)&&(state.priority==='all'||l.priority===state.priority));
+ const incomplete=candidates.filter(l=>!state.done.has(l.slug));
+ return (incomplete.length?incomplete:candidates).slice(0,limit);
+}
+function lessonPosition(slug){
+ const lesson=lessonFor(slug); if(!lesson)return null;
+ const xs=ATLAS.lessons.filter(l=>l.module===lesson.module);
+ const index=xs.findIndex(l=>l.slug===slug);
+ return {index,total:xs.length};
+}
 function home(){
- const featured=ATLAS.lessons.filter(l=>l.featured&&lessonVisible(l)).slice(0,12);
+ const featured=ATLAS.lessons.filter(l=>l.featured&&lessonVisible(l)).slice(0,8);
+ const continueLessons=nextStudyLessons(4);
+ const primaryNext=continueLessons[0];
  const filtering=curriculumFiltering();
  const groups=[...new Set(ATLAS.modules.map(m=>m.group||'Curriculum'))];
  const groupModels=groups.map(group=>({
@@ -64,21 +84,44 @@ function home(){
  })).filter(x=>x.modules.length);
  const visibleModuleCount=groupModels.reduce((n,g)=>n+g.modules.length,0);
  const relevantLessonCount=ATLAS.lessons.filter(l=>lessonVisible(l)).length;
- const moduleCards=groupModels.map(({group,modules})=>{const cards=modules.map(({m,all,relevant})=>{const shown=filtering?relevant:all;const done=shown.filter(l=>state.done.has(l.slug)).length;const topicLabel=filtering?`${relevant.length} relevant · ${all.length} total`:`${all.length} topics`;const doneLabel=filtering?`${done}/${shown.length} relevant done`:`${done}/${shown.length} done`;return `<article class="module-card" onclick="location.hash='#/module/${m.slug}'"><div class="module-icon">${m.icon}</div><h3>${m.title}</h3><p>${m.description}</p><div class="meta"><span class="pill">${topicLabel}</span><span class="pill">${doneLabel}</span></div><div class="progress" style="margin-top:12px"><span style="width:${shown.length?100*done/shown.length:0}%"></span></div></article>`}).join('');return `<div class="curriculum-group"><div class="kicker">${group}</div><div class="module-grid">${cards}</div></div>`}).join('');
+ const moduleCards=groupModels.map(({group,modules})=>{
+   const cards=modules.map(({m,all,relevant})=>{
+     const shown=filtering?relevant:all;
+     const done=shown.filter(l=>state.done.has(l.slug)).length;
+     const pct=shown.length?Math.round(100*done/shown.length):0;
+     const topicLabel=filtering?`${relevant.length} relevant · ${all.length} total`:`${all.length} lessons`;
+     return `<a class="module-card" href="#/module/${m.slug}">
+       <div class="module-card-top"><span class="module-icon" aria-hidden="true">${m.icon}</span><span class="module-arrow" aria-hidden="true">↗</span></div>
+       <h3>${m.title}</h3><p>${m.description}</p>
+       <div class="module-card-footer"><span>${topicLabel}</span><strong>${pct}%</strong></div>
+       <div class="progress" aria-label="${pct}% complete"><span style="width:${pct}%"></span></div>
+     </a>`;
+   }).join('');
+   return `<section class="curriculum-group"><div class="group-heading"><div><div class="kicker">${group}</div><span>${modules.length} modules</span></div></div><div class="module-grid">${cards}</div></section>`;
+ }).join('');
  const filterParts=[];
  if(state.role!=='all')filterParts.push(roleName());
  if(state.priority!=='all')filterParts.push(`${priorityLabel(state.priority)} priority`);
  if(state.query.trim())filterParts.push(`“${esc(state.query.trim())}”`);
- const filterSummary=filtering?`<div class="curriculum-filter-summary"><div><strong>Focused curriculum</strong><span>${visibleModuleCount} modules · ${relevantLessonCount} relevant lessons${filterParts.length?` · ${filterParts.join(' · ')}`:''}</span></div><button id="resetCurriculumFilters" class="ghost">Show full curriculum</button></div>`:'';
- return `<section class="hero"><div><div class="kicker">Interview-first · data-science broad · engineering-deep</div><h1>Know the stack.<br>Defend the choices.</h1><p class="lede">A broad learning and interview atlas for Data Science, Analytics, Machine Learning, Data Engineering, Applied Science and AI—from statistical inference and forecasting to distributed systems, deep learning, retrieval and production.</p><div class="hero-actions"><a class="primary-btn" href="#/analyzer">Match resume to a job</a><a class="ghost" href="#/paths">Browse study paths</a></div></div><aside class="hero-stat"><div class="big">${ATLAS.lessons.length}</div><div class="small">deep interview topics across ${ATLAS.modules.length} modules</div><div class="mini-stats"><span>${deepCount()} deep-complete</span><span>${labCount()} runnable labs</span><span>${visualCount()} original visuals</span><span>${Object.keys(ATLAS.resources).length} curated sources</span></div><hr style="border:0;border-top:1px solid var(--line);margin:18px 0"><div class="big">${progress()}%</div><div class="small">your progress, saved locally in this browser</div></aside></section>
- <section><div class="toolbar"><input id="search" class="search" placeholder="Search topics, e.g. MSE, RAG, Kafka..." value="${esc(state.query)}"><select id="priority"><option value="all">All priorities</option><option value="very-high" ${state.priority==='very-high'?'selected':''}>Very high</option><option value="high" ${state.priority==='high'?'selected':''}>High</option><option value="medium" ${state.priority==='medium'?'selected':''}>Medium</option></select><div class="roles">${ROLE_OPTIONS.map(([v,n])=>`<button class="role-btn ${state.role===v?'active':''}" data-role="${v}">${n}</button>`).join('')}</div></div></section>
- <section><div class="section-title-row curriculum-heading"><div><div class="kicker">Role-aware map</div><h2>Curriculum</h2></div></div>${filterSummary}${moduleCards||'<div class="empty"><h3>No modules match these filters.</h3><p>Reset the filters or broaden your search.</p></div>'}</section>
- <section class="section"><div class="kicker">Sprint list</div><h2>High-frequency interview topics</h2><div class="sprint">${featured.map(l=>`<div class="sprint-card"><div class="meta"><span class="pill ${l.priority}">${priorityLabel(l.priority)}</span>${doneBtn(l.slug)}</div><h3 style="margin-top:10px"><a href="#/lesson/${l.slug}">${l.title}</a></h3><p class="small">${esc(l.interviewAnswer)}</p></div>`).join('')||'<div class="empty">No topics match the current filters.</div>'}</div></section>`;
+ const filterSummary=filtering?`<div class="curriculum-filter-summary"><div><strong>Focused curriculum</strong><span>${visibleModuleCount} modules · ${relevantLessonCount} relevant lessons${filterParts.length?` · ${filterParts.join(' · ')}`:''}</span></div><button id="resetCurriculumFilters" class="ghost">Reset filters</button></div>`:'';
+ const continueCards=continueLessons.map((l,i)=>{const m=moduleFor(l.module);const pos=lessonPosition(l.slug);return `<a class="continue-card" href="#/lesson/${l.slug}"><span class="continue-index">${String(i+1).padStart(2,'0')}</span><div><small>${m.icon} ${m.title}${pos?` · ${pos.index+1}/${pos.total}`:''}</small><strong>${l.title}</strong><span>${priorityLabel(l.priority)} priority</span></div><span class="continue-arrow" aria-hidden="true">→</span></a>`}).join('');
+ return `<section class="hero hero-v2">
+   <div class="hero-copy"><div class="hero-badge"><span class="status-dot"></span>394 verified chapters · built for serious study</div><h1>Build depth.<br><span>Move with confidence.</span></h1><p class="lede">A rigorous Data, ML & AI curriculum that combines textbook-level explanations, research-grounded visuals, runnable labs and interview-focused practice.</p><div class="hero-actions">${primaryNext?`<a class="primary-btn hero-primary" href="#/lesson/${primaryNext.slug}">${state.done.size?'Continue learning':'Start learning'} <span>→</span></a>`:''}<button class="secondary-btn" data-open-search>Find a topic <kbd>⌘K</kbd></button><a class="text-btn" href="#/paths">Choose a study path</a></div></div>
+   <aside class="hero-dashboard"><div class="progress-ring" style="--progress:${Math.min(100,progress())}"><div><strong>${progress()}%</strong><span>complete</span></div></div><div class="hero-dashboard-copy"><span>Your Atlas</span><strong>${state.done.size} of ${ATLAS.lessons.length} lessons</strong><p>${state.done.size?`${ATLAS.lessons.length-state.done.size} lessons remain. Keep the streak moving.`:'Pick a role or start with the roadmap. Your progress stays in this browser.'}</p></div><div class="hero-metrics"><span><strong>${ATLAS.modules.length}</strong> modules</span><span><strong>${labCount()}</strong> labs</span><span><strong>${visualCount()}</strong> visuals</span></div></aside>
+ </section>
+ <section class="continue-section"><div class="section-title-row"><div><div class="kicker">Your next steps</div><h2>${state.done.size?'Continue learning':'Start with a strong sequence'}</h2></div><a class="section-link" href="#/roadmap">Full roadmap →</a></div><div class="continue-grid">${continueCards}</div></section>
+ <section class="explore-panel"><div class="section-title-row"><div><div class="kicker">Personalize the Atlas</div><h2>Focus the curriculum</h2><p class="section-subtitle">Choose a role to show the modules that matter most. Direct module pages always keep their full lesson list.</p></div></div><div class="explore-controls"><label class="search-field"><span aria-hidden="true">⌕</span><input id="search" class="search" placeholder="Search lessons, concepts, tools…" value="${esc(state.query)}"></label><label class="select-field"><span>Priority</span><select id="priority"><option value="all">All priorities</option><option value="very-high" ${state.priority==='very-high'?'selected':''}>Very high</option><option value="high" ${state.priority==='high'?'selected':''}>High</option><option value="medium" ${state.priority==='medium'?'selected':''}>Medium</option></select></label></div><div class="roles role-tabs" aria-label="Filter by role">${ROLE_OPTIONS.map(([v,n])=>`<button class="role-btn ${state.role===v?'active':''}" data-role="${v}" aria-pressed="${state.role===v?'true':'false'}">${n}</button>`).join('')}</div></section>
+ <section class="curriculum-shell"><div class="section-title-row curriculum-heading"><div><div class="kicker">Role-aware map</div><h2>Curriculum</h2></div><span class="curriculum-count">${visibleModuleCount} modules</span></div>${filterSummary}${moduleCards||'<div class="empty"><h3>No modules match these filters.</h3><p>Reset the filters or broaden your search.</p></div>'}</section>
+ <section class="section interview-section"><div class="section-title-row"><div><div class="kicker">Interview essentials</div><h2>High-frequency topics</h2></div><a class="section-link" href="#/quiz">Practice mode →</a></div><div class="sprint">${featured.map(l=>`<article class="sprint-card"><div class="meta"><span class="pill ${l.priority}">${priorityLabel(l.priority)}</span>${doneBtn(l.slug)}</div><h3><a href="#/lesson/${l.slug}">${l.title}</a></h3><p class="small">${esc(l.interviewAnswer)}</p></article>`).join('')||'<div class="empty">No topics match the current filters.</div>'}</div></section>`;
 }
 function modulePage(slug){
  const m=moduleFor(slug); if(!m)return notFound();
- const ls=ATLAS.lessons.filter(l=>l.module===slug&&lessonVisible(l,{includeRole:false}));
- return `<div class="breadcrumbs"><a href="#/">Home</a> / ${m.title}</div><section class="lesson-head"><div class="kicker">${m.icon} Module</div><h1>${m.title}</h1><p class="lede">${m.description}</p></section><div class="toolbar"><input id="search" class="search" placeholder="Filter this module" value="${esc(state.query)}"><select id="priority"><option value="all">All priorities</option><option value="very-high" ${state.priority==='very-high'?'selected':''}>Very high</option><option value="high" ${state.priority==='high'?'selected':''}>High</option><option value="medium" ${state.priority==='medium'?'selected':''}>Medium</option></select><div></div></div><section class="lesson-list">${ls.map(l=>`<div class="lesson-row"><div><a class="lesson-title" href="#/lesson/${l.slug}">${l.title}</a><p>${esc(l.interviewAnswer)}</p><div class="meta" style="margin-top:8px"><span class="pill ${l.priority}">${priorityLabel(l.priority)}</span><span class="pill ${l.status}">${l.status}</span></div></div>${doneBtn(l.slug)}</div>`).join('')||'<div class="empty">No lessons match your filters.</div>'}</section>`;
+ const all=ATLAS.lessons.filter(l=>l.module===slug);
+ const ls=all.filter(l=>lessonVisible(l,{includeRole:false}));
+ const done=all.filter(l=>state.done.has(l.slug)).length;
+ const pct=all.length?Math.round(100*done/all.length):0;
+ const rows=ls.map((l,i)=>`<article class="lesson-row lesson-row-v2"><a class="lesson-row-main" href="#/lesson/${l.slug}"><span class="lesson-number">${String(all.indexOf(l)+1).padStart(2,'0')}</span><div><div class="lesson-row-title"><strong>${l.title}</strong><span aria-hidden="true">→</span></div><p>${esc(l.interviewAnswer)}</p><div class="meta"><span class="pill ${l.priority}">${priorityLabel(l.priority)}</span><span class="pill ${l.status}">${l.status}</span>${l.hasLab?'<span class="pill">Python lab</span>':''}</div></div></a>${doneBtn(l.slug)}</article>`).join('');
+ return `<div class="breadcrumbs"><a href="#/">Home</a><span>/</span><span>${m.title}</span></div><section class="module-hero"><div class="module-hero-icon" aria-hidden="true">${m.icon}</div><div class="module-hero-copy"><div class="kicker">Module · ${all.length} lessons</div><h1>${m.title}</h1><p class="lede">${m.description}</p><div class="module-progress"><div><strong>${done}/${all.length}</strong><span>lessons complete</span></div><div class="progress"><span style="width:${pct}%"></span></div><b>${pct}%</b></div></div></section><section class="module-toolbar"><label class="search-field"><span aria-hidden="true">⌕</span><input id="search" class="search" placeholder="Filter this module…" value="${esc(state.query)}"></label><label class="select-field"><span>Priority</span><select id="priority"><option value="all">All priorities</option><option value="very-high" ${state.priority==='very-high'?'selected':''}>Very high</option><option value="high" ${state.priority==='high'?'selected':''}>High</option><option value="medium" ${state.priority==='medium'?'selected':''}>Medium</option></select></label><span class="result-count">${ls.length} shown</span></section><section class="lesson-list lesson-list-v2">${rows||'<div class="empty"><h3>No lessons match.</h3><p>Try another keyword or priority.</p></div>'}</section>`;
 }
 function resourcesHtml(ids){return ids.map(id=>{const r=ATLAS.resources[id]; if(!r)return'';return `<a class="resource" href="${r.url}" target="_blank" rel="noopener"><strong>${r.title}</strong><span>${r.provider}</span><span class="kind">${r.kind} · ${r.level}</span></a>`}).join('')}
 function codeBlock(title,subtitle,code,idx){return `<div class="code-step"><div class="code-toolbar"><div><strong>${title}</strong><span>${subtitle}</span></div><button class="copy-btn" data-copy="code-${idx}">Copy</button></div><pre class="code"><code id="code-${idx}">${esc(code)}</code></pre></div>`}
@@ -191,6 +234,9 @@ function readerContext(slug){
    module:m,
    previous:index>0?moduleLessons[index-1]:null,
    next:index>=0&&index<moduleLessons.length-1?moduleLessons[index+1]:null,
+   index,
+   total:moduleLessons.length,
+   moduleDone:moduleLessons.filter(l=>state.done.has(l.slug)).length,
    lessonTitle:(value)=>lessonFor(value)?.title||value,
  };
 }
@@ -218,7 +264,8 @@ async function loadLessonPage(slug,version,refresh=false){
    const chapter=await chapterLoader.load(slug,{refresh});
    if(version!==routeVersion||location.hash!==`#/lesson/${slug}`)return;
    $('#app').innerHTML=AtlasChapterReader.render(chapter,readerContext(slug),readerHelpers());
-   wireCommon();queueMathTypeset($('#app'));scrollTo(0,0);
+   localStorage.setItem('atlas-last-lesson',slug);
+   wireCommon();queueMathTypeset($('#app'));updateReadingProgress();scrollTo(0,0);
  }catch(error){
    if(version!==routeVersion)return;
    $('#app').innerHTML=chapterLoadError(summary,error);
@@ -226,11 +273,12 @@ async function loadLessonPage(slug,version,refresh=false){
  }
 }
 function roadmap(){
- return `<div class="breadcrumbs"><a href="#/">Home</a> / Roadmap</div><section class="lesson-head"><div class="kicker">Complete map</div><h1>Roadmap</h1><p class="lede">Use the priorities as a triage system. “Very high” means you should be able to answer without warming up.</p></section>${ATLAS.modules.map(m=>{const ls=ATLAS.lessons.filter(l=>l.module===m.slug);return `<section class="section"><h2>${m.icon} ${m.title}</h2><ol class="toc-list">${ls.map(l=>`<li><a href="#/lesson/${l.slug}">${l.title}</a> <span class="pill ${l.priority}">${priorityLabel(l.priority)}</span></li>`).join('')}</ol></section>`}).join('')}`;
+ const groups=[...new Set(ATLAS.modules.map(m=>m.group||'Curriculum'))];
+ const html=groups.map(group=>{const mods=ATLAS.modules.filter(m=>(m.group||'Curriculum')===group);return `<section class="roadmap-group"><div class="group-heading"><div><div class="kicker">${group}</div><span>${mods.length} modules</span></div></div><div class="roadmap-modules">${mods.map(m=>{const ls=ATLAS.lessons.filter(l=>l.module===m.slug);const done=ls.filter(l=>state.done.has(l.slug)).length;const pct=ls.length?Math.round(100*done/ls.length):0;return `<details class="roadmap-module"><summary><span class="roadmap-icon">${m.icon}</span><span class="roadmap-summary"><strong>${m.title}</strong><small>${ls.length} lessons · ${done} complete</small></span><span class="roadmap-progress"><i style="width:${pct}%"></i></span><b>${pct}%</b><span class="roadmap-chevron">⌄</span></summary><ol>${ls.map((l,i)=>`<li><span>${String(i+1).padStart(2,'0')}</span><a href="#/lesson/${l.slug}">${l.title}</a><em class="pill ${l.priority}">${priorityLabel(l.priority)}</em>${state.done.has(l.slug)?'<strong class="roadmap-done">✓</strong>':''}</li>`).join('')}</ol></details>`}).join('')}</div></section>`}).join('');
+ return `<div class="breadcrumbs"><a href="#/">Home</a><span>/</span><span>Roadmap</span></div><section class="page-hero"><div class="kicker">Complete learning map</div><h1>Roadmap</h1><p class="lede">Explore all ${ATLAS.modules.length} modules without scrolling through 394 lessons at once. Expand a module when you need its exact sequence.</p><div class="page-metrics"><span><strong>${ATLAS.lessons.length}</strong> lessons</span><span><strong>${ATLAS.modules.length}</strong> modules</span><span><strong>${progress()}%</strong> complete</span></div></section>${html}`;
 }
-
 function roleLessons(role, priority='all'){
-  return ATLAS.lessons.filter(l=>(role==='all'||l.roles.includes('all')||l.roles.includes(role))&&(priority==='all'||l.priority===priority));
+ return ATLAS.lessons.filter(l=>(role==='all'||l.roles.includes('all')||l.roles.includes(role))&&(priority==='all'||l.priority===priority));
 }
 function pathsPage(){
  const paths=[
@@ -242,43 +290,24 @@ function pathsPage(){
   ['de','Data Engineer','SQL, data modeling, ETL/ELT, CDC, Spark, Kafka/Flink, distributed systems, orchestration, quality, cloud and reliability.'],
   ['cv','Computer Vision','Deep learning, CNN/ViT, reconstruction/segmentation, image metrics, generative vision and serving.']
  ];
- const cards=paths.map(([role,name,desc])=>{
-   const very=roleLessons(role,'very-high'); const high=roleLessons(role,'high');
-   const ordered=[...very,...high].filter((x,i,a)=>a.findIndex(y=>y.slug===x.slug)===i);
-   return `<article class="path-card"><div class="kicker">${name}</div><h2>${ordered.length} topic path</h2><p>${desc}</p><div class="path-list">${ordered.map((l,i)=>`<a href="#/lesson/${l.slug}"><span>${String(i+1).padStart(2,'0')}</span><strong>${l.title}</strong><em>${priorityLabel(l.priority)}</em></a>`).join('')}</div></article>`;
- }).join('');
- return `<div class="breadcrumbs"><a href="#/">Home</a> / Study paths</div><section class="lesson-head"><div class="kicker">Role-based revision</div><h1>Study paths</h1><p class="lede">This is intentionally broader than any single resume. Use role paths to prioritize, but the full curriculum remains available when you need to move between analytics, statistics, ML, engineering and AI.</p></section><div class="path-grid section">${cards}</div>`;
+ const cards=paths.map(([role,name,desc])=>{const very=roleLessons(role,'very-high');const high=roleLessons(role,'high');const ordered=[...very,...high].filter((x,i,a)=>a.findIndex(y=>y.slug===x.slug)===i);const done=ordered.filter(l=>state.done.has(l.slug)).length;const top=ordered.slice(0,5);return `<article class="role-path-card"><div class="role-path-head"><div><div class="kicker">${name}</div><h2>${ordered.length} priority topics</h2></div><div class="path-progress-badge"><strong>${done}</strong><span>done</span></div></div><p>${desc}</p><div class="role-path-preview">${top.map((l,i)=>`<a href="#/lesson/${l.slug}"><span>${String(i+1).padStart(2,'0')}</span><strong>${l.title}</strong><em>${priorityLabel(l.priority)}</em></a>`).join('')}</div><details class="role-path-more"><summary>View all ${ordered.length} topics</summary><div class="path-list">${ordered.slice(5).map((l,i)=>`<a href="#/lesson/${l.slug}"><span>${String(i+6).padStart(2,'0')}</span><strong>${l.title}</strong><em>${priorityLabel(l.priority)}</em></a>`).join('')}</div></details><button class="secondary-btn path-focus-btn" data-role="${role}" data-go-home>Use this role on home</button></article>`}).join('');
+ return `<div class="breadcrumbs"><a href="#/">Home</a><span>/</span><span>Study paths</span></div><section class="page-hero"><div class="kicker">Role-based revision</div><h1>Study paths</h1><p class="lede">Choose the role you are targeting, then work through its highest-value topics in curriculum order. The full Atlas stays available at all times.</p></section><div class="role-path-grid">${cards}</div>`;
 }
-function quizCandidates(){
- return ATLAS.lessons.filter(l=>(state.role==='all'||l.roles.includes('all')||l.roles.includes(state.role))&&(state.priority==='all'||l.priority===state.priority));
-}
-function randomQuizSlug(){
- const xs=quizCandidates(); if(!xs.length)return null;
- let next=xs[Math.floor(Math.random()*xs.length)].slug;
- if(xs.length>1 && next===state.quizSlug) next=xs[(xs.findIndex(x=>x.slug===next)+1)%xs.length].slug;
- return next;
-}
+function quizCandidates(){return ATLAS.lessons.filter(l=>(state.role==='all'||l.roles.includes('all')||l.roles.includes(state.role))&&(state.priority==='all'||l.priority===state.priority));}
+function randomQuizSlug(){const xs=quizCandidates();if(!xs.length)return null;let next=xs[Math.floor(Math.random()*xs.length)].slug;if(xs.length>1&&next===state.quizSlug)next=xs[(xs.findIndex(x=>x.slug===next)+1)%xs.length].slug;return next;}
 function quizPage(){
- let xs=quizCandidates();
- if(!state.quizSlug || !xs.some(x=>x.slug===state.quizSlug)) state.quizSlug=randomQuizSlug();
- const l=lessonFor(state.quizSlug);
- if(!l)return `<div class="empty">No practice questions match these filters.</div>`;
- const m=moduleFor(l.module);
- return `<div class="breadcrumbs"><a href="#/">Home</a> / Practice</div><section class="lesson-head"><div class="kicker">Mock interview mode</div><h1>Practice one question at a time</h1><p class="lede">Say your answer aloud before revealing the model answer. Then use the follow-ups to push one level deeper.</p></section>
- <div class="toolbar"><select id="priority"><option value="all">All priorities</option><option value="very-high" ${state.priority==='very-high'?'selected':''}>Very high</option><option value="high" ${state.priority==='high'?'selected':''}>High</option><option value="medium" ${state.priority==='medium'?'selected':''}>Medium</option></select><div class="roles">${ROLE_OPTIONS.map(([v,n])=>`<button class="role-btn ${state.role===v?'active':''}" data-role="${v}">${n}</button>`).join('')}</div><button id="newQuiz" class="primary-btn">New question</button></div>
- <section class="quiz-card"><div class="meta"><span class="pill ${l.priority}">${priorityLabel(l.priority)}</span><span class="pill">${m.icon} ${m.title}</span></div><h2>${l.title}</h2><p class="quiz-prompt">Explain this as if the interviewer asked you directly. Aim for 30–60 seconds.</p><button id="revealQuiz" class="primary-btn">Reveal answer</button><div id="quizAnswer" class="quiz-answer" hidden><div class="answer-card"><h3>Strong interview answer</h3><p>${esc(l.interviewAnswer)}</p></div><h3>Key points</h3><ul>${l.keyPoints.map(x=>`<li>${esc(x)}</li>`).join('')}</ul><h3>Follow-ups</h3><ul>${(l.followUpQuestions||[]).map(x=>`<li>${esc(x)}</li>`).join('')}</ul><p><a href="#/lesson/${l.slug}">Open full lesson →</a></p></div></section>`;
+ let xs=quizCandidates();if(!state.quizSlug||!xs.some(x=>x.slug===state.quizSlug))state.quizSlug=randomQuizSlug();const l=lessonFor(state.quizSlug);if(!l)return `<div class="empty">No practice questions match these filters.</div>`;const m=moduleFor(l.module);
+ return `<div class="breadcrumbs"><a href="#/">Home</a><span>/</span><span>Practice</span></div><section class="page-hero compact"><div class="kicker">Mock interview mode</div><h1>Practice one question at a time</h1><p class="lede">Answer aloud before revealing the model answer. Use the follow-ups to push one level deeper.</p></section><div class="practice-toolbar"><label class="select-field"><span>Priority</span><select id="priority"><option value="all">All priorities</option><option value="very-high" ${state.priority==='very-high'?'selected':''}>Very high</option><option value="high" ${state.priority==='high'?'selected':''}>High</option><option value="medium" ${state.priority==='medium'?'selected':''}>Medium</option></select></label><div class="roles role-tabs">${ROLE_OPTIONS.map(([v,n])=>`<button class="role-btn ${state.role===v?'active':''}" data-role="${v}">${n}</button>`).join('')}</div><button id="newQuiz" class="primary-btn">New question</button></div><section class="quiz-card quiz-card-v2"><div class="quiz-top"><div class="meta"><span class="pill ${l.priority}">${priorityLabel(l.priority)}</span><span class="pill">${m.icon} ${m.title}</span></div><span>${xs.length} questions in filter</span></div><h2>${l.title}</h2><p class="quiz-prompt">Explain this as if an interviewer asked you directly. Aim for 30–60 seconds, then state one trade-off or failure mode.</p><button id="revealQuiz" class="primary-btn">Reveal strong answer</button><div id="quizAnswer" class="quiz-answer" hidden><div class="answer-card"><h3>Strong interview answer</h3><p>${esc(l.interviewAnswer)}</p></div><div class="quiz-answer-grid"><div><h3>Key points</h3><ul>${l.keyPoints.map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div><div><h3>Follow-ups</h3><ul>${(l.followUpQuestions||[]).map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div></div><p><a href="#/lesson/${l.slug}">Open full lesson →</a></p></div></section>`;
 }
-
 function labsPage(){
- const labs=ATLAS.lessons.filter(l=>l.hasLab);
- return `<div class="breadcrumbs"><a href="#/">Home</a> / Code labs</div><section class="lesson-head"><div class="kicker">Build · Use · Verify</div><h1>Runnable code labs</h1><p class="lede">The reference course gets one thing exactly right: understanding improves when you implement the mechanism before hiding it behind a framework. These labs keep that rhythm while staying interview-focused.</p></section><div class="lab-grid section">${labs.map(l=>{const m=moduleFor(l.module);return `<article class="lab-card"><div class="meta"><span class="pill ${l.priority}">${priorityLabel(l.priority)}</span><span class="pill">${m.icon} ${m.title}</span></div><h3><a href="#/lesson/${l.slug}">${l.title}</a></h3><p>${esc(l.labGoal)}</p><div class="lab-actions"><a href="#/lesson/${l.slug}">Open lesson</a><a href="labs/${l.slug}/index.html" target="_blank">Lab files ↗</a></div></article>`}).join('')}</div>`;
+ const labs=ATLAS.lessons.filter(l=>l.hasLab&&lessonVisible(l));
+ return `<div class="breadcrumbs"><a href="#/">Home</a><span>/</span><span>Code labs</span></div><section class="page-hero compact"><div class="kicker">Build · Use · Verify</div><h1>Runnable code labs</h1><p class="lede">Implementation-first exercises for every lesson. Filter by role, priority, or topic instead of browsing all 394 at once.</p></section><section class="collection-toolbar"><label class="search-field"><span>⌕</span><input id="search" class="search" placeholder="Search labs…" value="${esc(state.query)}"></label><label class="select-field"><span>Priority</span><select id="priority"><option value="all">All priorities</option><option value="very-high" ${state.priority==='very-high'?'selected':''}>Very high</option><option value="high" ${state.priority==='high'?'selected':''}>High</option><option value="medium" ${state.priority==='medium'?'selected':''}>Medium</option></select></label><span class="result-count">${labs.length} labs</span></section><div class="roles role-tabs collection-roles">${ROLE_OPTIONS.map(([v,n])=>`<button class="role-btn ${state.role===v?'active':''}" data-role="${v}">${n}</button>`).join('')}</div><div class="lab-grid section collection-grid">${labs.map(l=>{const m=moduleFor(l.module);return `<article class="lab-card lab-card-v2"><div class="lab-card-icon">⌘</div><div class="meta"><span class="pill ${l.priority}">${priorityLabel(l.priority)}</span><span class="pill">${m.icon} ${m.title}</span></div><h3><a href="#/lesson/${l.slug}">${l.title}</a></h3><p>${esc(l.labGoal)}</p><div class="lab-actions"><a href="#/lesson/${l.slug}">Lesson →</a><a href="labs/${l.slug}/index.html" target="_blank">Open lab ↗</a></div></article>`}).join('')||'<div class="empty">No labs match these filters.</div>'}</div>`;
 }
 function visualsPage(){
- const ls=ATLAS.lessons.filter(l=>l.visualCount);
- const groups=ATLAS.modules.map(m=>{const xs=ls.filter(l=>l.module===m.slug);if(!xs.length)return '';return `<section class="section"><div class="kicker">${m.icon} ${m.title}</div><div class="visual-index-grid">${xs.map(l=>{const first=(l.visualSummaries||[])[0]||{};const types=[...new Set((l.visualSummaries||[]).map(v=>v.type).filter(Boolean))].join(' · ');return `<a class="visual-index-card" href="#/lesson/${l.slug}"><span class="pill">${esc(types||'visual')}</span><strong>${l.title}</strong><small>${esc(first.title||'Concept visual')}${l.visualCount>1?` · ${l.visualCount} visuals`:''}</small></a>`}).join('')}</div></section>`}).join('');
- return `<div class="breadcrumbs"><a href="#/">Home</a> / Visual atlas</div><section class="lesson-head"><div class="kicker">Research-grounded diagrams · source-attributed SVG</div><h1>Visual atlas</h1><p class="lede">${ls.length} source-attributed teaching diagrams integrated directly into lessons and the generated book. Each figure is an Atlas redraw grounded in lesson-specific papers, official documentation, university courses, technical handbooks, or canonical textbooks.</p></section>${groups}`;
+ const ls=ATLAS.lessons.filter(l=>l.visualCount&&lessonVisible(l));
+ const groups=ATLAS.modules.map(m=>{const xs=ls.filter(l=>l.module===m.slug);if(!xs.length)return '';return `<section class="visual-group"><div class="group-heading"><div><div class="kicker">${m.icon} ${m.title}</div><span>${xs.length} lessons</span></div></div><div class="visual-index-grid">${xs.map(l=>{const first=(l.visualSummaries||[])[0]||{};const types=[...new Set((l.visualSummaries||[]).map(v=>v.type).filter(Boolean))].join(' · ');return `<a class="visual-index-card visual-card-v2" href="#/lesson/${l.slug}"><div class="visual-card-top"><span class="pill">${esc(types||'visual')}</span><b>${l.visualCount}</b></div><strong>${l.title}</strong><small>${esc(first.title||'Concept visual')}</small><span>Open lesson →</span></a>`}).join('')}</div></section>`}).join('');
+ return `<div class="breadcrumbs"><a href="#/">Home</a><span>/</span><span>Visual atlas</span></div><section class="page-hero compact"><div class="kicker">Research-grounded diagrams</div><h1>Visual atlas</h1><p class="lede">Browse source-attributed teaching figures by role and topic. Every figure is an Atlas redraw grounded in authoritative references.</p></section><section class="collection-toolbar"><label class="search-field"><span>⌕</span><input id="search" class="search" placeholder="Search visual topics…" value="${esc(state.query)}"></label><span class="result-count">${ls.length} lessons · ${ls.reduce((n,l)=>n+l.visualCount,0)} visuals</span></section><div class="roles role-tabs collection-roles">${ROLE_OPTIONS.map(([v,n])=>`<button class="role-btn ${state.role===v?'active':''}" data-role="${v}">${n}</button>`).join('')}</div>${groups||'<div class="empty">No visuals match these filters.</div>'}`;
 }
-
 function analyzerTopicCard(x,label=''){
  const jm=(x.jdMatches||[]).slice(0,4), rm=(x.resumeMatches||[]).slice(0,4);
  return `<article class="analyzer-topic"><div class="analyzer-topic-head"><div><div class="meta"><span class="pill ${x.lesson.priority}">${priorityLabel(x.lesson.priority)}</span>${label?`<span class="pill">${label}</span>`:''}<span class="pill">${esc(x.module.title)}</span></div><h3><a href="#/lesson/${x.lesson.slug}">${esc(x.lesson.title)}</a></h3></div><strong class="match-score">${x.final}</strong></div><div class="score-row"><span>JD</span><div class="score-track"><i style="width:${x.jdScore}%"></i></div><b>${x.jdScore}</b></div><div class="score-row resume"><span>Resume</span><div class="score-track"><i style="width:${x.resumeScore}%"></i></div><b>${x.resumeScore}</b></div>${jm.length?`<p class="match-terms"><strong>JD signals:</strong> ${jm.map(esc).join(' · ')}</p>`:''}${rm.length?`<p class="match-terms"><strong>Resume signals:</strong> ${rm.map(esc).join(' · ')}</p>`:''}</article>`;
@@ -304,9 +333,50 @@ function analyzerPage(){
 }
 
 function resourcePage(){
- const vals=Object.values(ATLAS.resources); return `<div class="breadcrumbs"><a href="#/">Home</a> / Resources</div><section class="lesson-head"><div class="kicker">Curated source ladder</div><h1>Best external resources</h1><p class="lede">Primary university courses and official documentation come first. Visual intuition and practical educators are used to make difficult ideas stick—not to replace primary sources.</p></section><div class="resource-grid section">${vals.map(r=>`<article class="resource-card"><div class="tier">${r.kind}</div><h3><a href="${r.url}" target="_blank" rel="noopener">${r.title}</a></h3><p><strong>${r.provider}</strong> · ${r.level}</p><p>${r.why}</p></article>`).join('')}</div>`;
+ const all=Object.values(ATLAS.resources);
+ const kinds=[...new Set(all.map(r=>r.kind))].sort();
+ const q=state.resourceQuery.trim().toLowerCase();
+ const vals=all.filter(r=>(state.resourceKind==='all'||r.kind===state.resourceKind)&&(!q||`${r.title} ${r.provider} ${r.kind} ${r.level} ${r.why}`.toLowerCase().includes(q)));
+ return `<div class="breadcrumbs"><a href="#/">Home</a><span>/</span><span>Resources</span></div><section class="page-hero compact"><div class="kicker">Curated source ladder</div><h1>Best external resources</h1><p class="lede">Primary courses, original papers, canonical books and official documentation—organized so you can go deeper without searching from scratch.</p></section><section class="collection-toolbar resource-toolbar"><label class="search-field"><span>⌕</span><input id="resourceSearch" class="search" placeholder="Search resources, providers, topics…" value="${esc(state.resourceQuery)}"></label><label class="select-field"><span>Type</span><select id="resourceKind"><option value="all">All types</option>${kinds.map(k=>`<option value="${esc(k)}" ${state.resourceKind===k?'selected':''}>${esc(k)}</option>`).join('')}</select></label><span class="result-count">${vals.length} resources</span></section><div class="resource-grid section collection-grid">${vals.map(r=>`<article class="resource-card resource-card-v2"><div class="resource-card-top"><div class="tier">${esc(r.kind)}</div><span>${esc(r.level)}</span></div><h3><a href="${r.url}" target="_blank" rel="noopener">${r.title} ↗</a></h3><p class="resource-provider">${esc(r.provider)}</p><p>${r.why}</p></article>`).join('')||'<div class="empty">No resources match these filters.</div>'}</div>`;
 }
 function notFound(){return '<div class="empty"><h2>Page not found</h2><a href="#/">Return home</a></div>'}
+let commandIndex=0;
+function atlasSearchResults(query=''){
+ const q=query.trim().toLowerCase();
+ if(!q){
+   return nextStudyLessons(6).map(l=>({type:'lesson',title:l.title,subtitle:moduleFor(l.module)?.title||'',href:`#/lesson/${l.slug}`,icon:'→'}));
+ }
+ const tokens=q.split(/\s+/).filter(Boolean);
+ const lessonMatches=ATLAS.lessons.map(l=>{
+   const m=moduleFor(l.module);const hay=`${l.title} ${m?.title||''} ${l.description||''} ${(l.keyPoints||[]).join(' ')} ${l.interviewAnswer||''}`.toLowerCase();
+   const score=tokens.reduce((n,t)=>n+(l.title.toLowerCase().includes(t)?5:0)+((m?.title||'').toLowerCase().includes(t)?2:0)+(hay.includes(t)?1:0),0);
+   return {score,type:'lesson',title:l.title,subtitle:m?.title||'',href:`#/lesson/${l.slug}`,icon:'→'};
+ }).filter(x=>x.score>0).sort((a,b)=>b.score-a.score).slice(0,8);
+ const moduleMatches=ATLAS.modules.map(m=>{const hay=`${m.title} ${m.description||''}`.toLowerCase();const score=tokens.reduce((n,t)=>n+(m.title.toLowerCase().includes(t)?6:0)+(hay.includes(t)?1:0),0);return {score,type:'module',title:m.title,subtitle:'Module',href:`#/module/${m.slug}`,icon:m.icon};}).filter(x=>x.score>0).sort((a,b)=>b.score-a.score).slice(0,4);
+ return [...moduleMatches,...lessonMatches].sort((a,b)=>b.score-a.score).slice(0,10);
+}
+function renderGlobalSearch(query=''){
+ const host=$('#globalSearchResults');if(!host)return;
+ const results=atlasSearchResults(query);commandIndex=Math.min(commandIndex,Math.max(0,results.length-1));
+ const heading=query.trim()?'Search results':'Continue learning';
+ host.innerHTML=`<div class="command-section-title">${heading}<span>${results.length}</span></div>${results.map((r,i)=>`<a class="command-item ${i===commandIndex?'active':''}" data-command-index="${i}" href="${r.href}"><span class="command-item-icon">${r.icon}</span><span><strong>${esc(r.title)}</strong><small>${esc(r.subtitle)}</small></span><kbd>↵</kbd></a>`).join('')||'<div class="command-empty">No results. Try a broader term.</div>'}`;
+ host.querySelectorAll('.command-item').forEach(el=>{el.addEventListener('mouseenter',()=>{commandIndex=Number(el.dataset.commandIndex);host.querySelectorAll('.command-item').forEach(x=>x.classList.toggle('active',Number(x.dataset.commandIndex)===commandIndex))});el.addEventListener('click',closeGlobalSearch)});
+}
+function openGlobalSearch(seed=''){
+ const overlay=$('#searchOverlay'),input=$('#globalSearchInput');if(!overlay||!input)return;
+ overlay.hidden=false;document.body.classList.add('search-open');commandIndex=0;input.value=seed;renderGlobalSearch(seed);setTimeout(()=>input.focus(),20);
+}
+function closeGlobalSearch(){const overlay=$('#searchOverlay');if(!overlay)return;overlay.hidden=true;document.body.classList.remove('search-open');}
+function updateActiveNav(){
+ const routeName=location.hash.replace(/^#\//,'').split('/')[0]||'home';
+ document.querySelectorAll('#mainNav [data-nav]').forEach(a=>{if(a.dataset.nav===routeName)a.setAttribute('aria-current','page');else a.removeAttribute('aria-current')});
+}
+function updateReadingProgress(){
+ const bar=$('#readingProgressBar');if(!bar)return;
+ const doc=document.documentElement;const max=Math.max(1,doc.scrollHeight-window.innerHeight);const pct=Math.max(0,Math.min(100,(window.scrollY/max)*100));bar.style.width=`${pct}%`;
+}
+let filterTimer=0;
+function scheduleFilterRender(selector){clearTimeout(filterTimer);filterTimer=setTimeout(()=>{route(false);setTimeout(()=>{const el=$(selector);if(el){el.focus();try{el.setSelectionRange(el.value.length,el.value.length)}catch{}}},0)},140)}
 function wireCommon(){
  wireDone();
  document.querySelectorAll('[data-copy]').forEach(b=>b.onclick=async()=>{const el=document.getElementById(b.dataset.copy);if(!el)return;try{await navigator.clipboard.writeText(el.textContent);const old=b.textContent;b.textContent='Copied';setTimeout(()=>b.textContent=old,900)}catch{}});
@@ -323,10 +393,16 @@ function wireCommon(){
  const clearAnalyzer=$('#clearAnalyzer'); if(clearAnalyzer)clearAnalyzer.onclick=()=>{state.resumeText='';state.jdText='';state.analyzerResult=null;state.analyzerStatus='';state.resumeFileName='';state.jdFileName='';route(false)};
  const copyPrepPlan=$('#copyPrepPlan'); if(copyPrepPlan)copyPrepPlan.onclick=async()=>{if(!state.analyzerResult)return;try{await navigator.clipboard.writeText(AtlasAnalyzer.planText(state.analyzerResult));const old=copyPrepPlan.textContent;copyPrepPlan.textContent='Copied';setTimeout(()=>copyPrepPlan.textContent=old,900)}catch{}};
  const resetCurriculumFilters=$('#resetCurriculumFilters'); if(resetCurriculumFilters)resetCurriculumFilters.onclick=()=>{state.role='all';state.priority='all';state.query='';save();route(false)};
- const s=$('#search'); if(s)s.oninput=e=>{state.query=e.target.value;setTimeout(()=>route(false),0)}; const p=$('#priority'); if(p)p.onchange=e=>{state.priority=e.target.value;route(false)}; document.querySelectorAll('[data-role]').forEach(b=>b.onclick=()=>{state.role=b.dataset.role;save();route(false)});
+ document.querySelectorAll('[data-open-search]').forEach(b=>b.onclick=()=>openGlobalSearch());
+ const resourceSearch=$('#resourceSearch'); if(resourceSearch)resourceSearch.oninput=e=>{state.resourceQuery=e.target.value;scheduleFilterRender('#resourceSearch')};
+ const resourceKind=$('#resourceKind'); if(resourceKind)resourceKind.onchange=e=>{state.resourceKind=e.target.value;route(false)};
+ const s=$('#search'); if(s)s.oninput=e=>{state.query=e.target.value;scheduleFilterRender('#search')}; const p=$('#priority'); if(p)p.onchange=e=>{state.priority=e.target.value;route(false)}; document.querySelectorAll('[data-role]').forEach(b=>b.onclick=()=>{state.role=b.dataset.role;save();if(b.hasAttribute('data-go-home'))location.hash='#/';else route(false)});
 }
-function route(scroll=true){const version=++routeVersion;const h=location.hash.replace(/^#\//,'').split('/');if(h[0]==='lesson'){loadLessonPage(h[1],version);return}let view;if(!h[0])view=home();else if(h[0]==='module')view=modulePage(h[1]);else if(h[0]==='roadmap')view=roadmap();else if(h[0]==='paths')view=pathsPage();else if(h[0]==='analyzer')view=analyzerPage();else if(h[0]==='quiz')view=quizPage();else if(h[0]==='labs')view=labsPage();else if(h[0]==='resources')view=resourcePage();else if(h[0]==='visuals')view=visualsPage();else view=notFound();$('#app').innerHTML=view;wireCommon();queueMathTypeset($('#app'));if(scroll)scrollTo(0,0)}
-window.addEventListener('hashchange',()=>route());
-const menuBtn=$('#menuBtn'), mainNav=$('#mainNav');if(menuBtn&&mainNav){menuBtn.onclick=()=>{const open=mainNav.classList.toggle('open');menuBtn.setAttribute('aria-expanded',String(open));menuBtn.textContent=open?'✕ Close':'☰ Menu'};mainNav.querySelectorAll('a').forEach(a=>a.addEventListener('click',()=>{mainNav.classList.remove('open');menuBtn.setAttribute('aria-expanded','false');menuBtn.textContent='☰ Menu'}));}
-const themeBtn=$('#themeBtn');function updateThemeBtn(){if(themeBtn)themeBtn.textContent=document.documentElement.dataset.theme==='dark'?'☀ Light':'☾ Dark'}updateThemeBtn();if(themeBtn)themeBtn.onclick=()=>{const n=document.documentElement.dataset.theme==='dark'?'light':'dark';document.documentElement.dataset.theme=n;localStorage.setItem('atlas-theme',n);updateThemeBtn();window.AtlasBackground?.syncTheme?.()};
+function route(scroll=true){const version=++routeVersion;const h=location.hash.replace(/^#\//,'').split('/');if(h[0]==='lesson'){loadLessonPage(h[1],version);return}let view;if(!h[0])view=home();else if(h[0]==='module')view=modulePage(h[1]);else if(h[0]==='roadmap')view=roadmap();else if(h[0]==='paths')view=pathsPage();else if(h[0]==='analyzer')view=analyzerPage();else if(h[0]==='quiz')view=quizPage();else if(h[0]==='labs')view=labsPage();else if(h[0]==='resources')view=resourcePage();else if(h[0]==='visuals')view=visualsPage();else view=notFound();$('#app').innerHTML=view;wireCommon();updateActiveNav();queueMathTypeset($('#app'));if(scroll)scrollTo(0,0);updateReadingProgress()}
+window.addEventListener('hashchange',()=>{closeGlobalSearch();route()});
+window.addEventListener('scroll',updateReadingProgress,{passive:true});
+const menuBtn=$('#menuBtn'), mainNav=$('#mainNav');if(menuBtn&&mainNav){menuBtn.onclick=()=>{const open=mainNav.classList.toggle('open');menuBtn.setAttribute('aria-expanded',String(open));menuBtn.textContent=open?'✕':'☰'};mainNav.querySelectorAll('a').forEach(a=>a.addEventListener('click',()=>{mainNav.classList.remove('open');menuBtn.setAttribute('aria-expanded','false');menuBtn.textContent='☰'}));}
+const themeBtn=$('#themeBtn');function updateThemeBtn(){if(themeBtn){const dark=document.documentElement.dataset.theme==='dark';themeBtn.textContent=dark?'☀':'☾';themeBtn.setAttribute('aria-label',dark?'Use light theme':'Use dark theme')}}updateThemeBtn();if(themeBtn)themeBtn.onclick=()=>{const n=document.documentElement.dataset.theme==='dark'?'light':'dark';document.documentElement.dataset.theme=n;localStorage.setItem('atlas-theme',n);updateThemeBtn();window.AtlasBackground?.syncTheme?.()};
+const searchBtn=$('#searchBtn'),searchOverlay=$('#searchOverlay'),globalSearchInput=$('#globalSearchInput');if(searchBtn)searchBtn.onclick=()=>openGlobalSearch();if(searchOverlay)searchOverlay.querySelectorAll('[data-search-close]').forEach(x=>x.onclick=closeGlobalSearch);if(globalSearchInput){globalSearchInput.oninput=e=>{commandIndex=0;renderGlobalSearch(e.target.value)};globalSearchInput.onkeydown=e=>{const items=[...document.querySelectorAll('.command-item')];if(e.key==='ArrowDown'){e.preventDefault();commandIndex=Math.min(items.length-1,commandIndex+1);renderGlobalSearch(e.currentTarget.value)}else if(e.key==='ArrowUp'){e.preventDefault();commandIndex=Math.max(0,commandIndex-1);renderGlobalSearch(e.currentTarget.value)}else if(e.key==='Enter'&&items[commandIndex]){e.preventDefault();items[commandIndex].click()}}}
+document.addEventListener('keydown',e=>{const target=e.target;const typing=target&&(['INPUT','TEXTAREA','SELECT'].includes(target.tagName)||target.isContentEditable);if(e.key==='Escape'&&!$('#searchOverlay')?.hidden){closeGlobalSearch();return}if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='k'){e.preventDefault();openGlobalSearch();return}if(e.key==='/'&&!typing&&!e.metaKey&&!e.ctrlKey&&!e.altKey){e.preventDefault();openGlobalSearch()}});
 route();

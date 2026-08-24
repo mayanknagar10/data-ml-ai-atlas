@@ -1,5 +1,17 @@
 # Changelog
 
+## v2.5.0 — Learning UX Edition
+
+- Reworked the landing page around a clear study loop: Continue learning, curriculum focus, progress, and interview essentials.
+- Added global Cmd/Ctrl+K command search across all modules and lessons with keyboard navigation.
+- Redesigned role filtering as an explicit curriculum focus rather than a hidden filter, while preserving complete direct module pages.
+- Added module-level progress, numbered/scannable lesson rows, clearer completion controls, and last-lesson continuation.
+- Upgraded the chapter reader with a reading-progress indicator, lesson/module context, calmer hierarchy, compact revision controls, and in-place completion toggles.
+- Replaced the fully expanded 394-lesson roadmap with grouped collapsible modules.
+- Made Labs, Visual Atlas, and Resources filterable and easier to scan; tightened role-path and practice layouts.
+- Added a global skip link, stronger keyboard focus states, accessible completion labels, and reduced-motion fallbacks.
+- Added regression tests and validation gates for the v2.5 navigation/search/reading UX.
+
 
 ## v2.4.5 — Visible Background + Atlas Brand Mark
 

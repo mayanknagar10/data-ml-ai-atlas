@@ -47,7 +47,7 @@ class RoleDynamicUiTests(unittest.TestCase):
         self.assertIn("function moduleLessonSets(module)", self.app)
         self.assertIn("filter(x=>!filtering||x.relevant.length)", self.app)
         self.assertIn("Focused curriculum", self.app)
-        self.assertIn("Show full curriculum", self.app)
+        self.assertIn("Reset filters", self.app)
 
     def test_module_pages_still_show_complete_module_content(self):
         self.assertIn("lessonVisible(l,{includeRole:false})", self.app)
@@ -55,7 +55,7 @@ class RoleDynamicUiTests(unittest.TestCase):
     def test_live_background_has_accessibility_and_performance_controls(self):
         self.assertIn('id="atlasBackground"', self.index)
         self.assertNotIn('id="motionBtn"', self.index)
-        self.assertRegex(self.index, r'src="background\.js\?v=2\.4\.\d+"')
+        self.assertRegex(self.index, r'src="background\.js\?v=2\.\d+\.\d+"')
         self.assertIn("prefers-reduced-motion", self.background)
         self.assertIn("document.hidden", self.background)
         self.assertIn("requestAnimationFrame", self.background)

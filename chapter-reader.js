@@ -144,30 +144,36 @@
       ? `<a class="chapter-next" href="#/lesson/${encodeURIComponent(context.next.slug)}"><span>Next</span><strong>${esc(context.next.title)}</strong></a>`
       : '<span></span>';
 
-    return `<div class="breadcrumbs"><a href="#/">Home</a> / <a href="#/module/${esc(module.slug)}">${esc(module.title)}</a> / ${esc(chapter.title)}</div>
-      <section class="lesson-head chapter-heading">
-        <div class="meta"><span class="pill ${esc(chapter.priority)}">${esc(chapter.priority)} priority</span><span class="pill ${esc(status)}">${esc(status)}</span><span class="pill">${estimatedMinutes(chapter)} min</span>${helpers.doneButton(chapter.slug)}</div>
+    const position = Number.isInteger(context.index) && context.index >= 0 ? `Lesson ${context.index + 1} of ${context.total || '?'}` : 'Lesson';
+    const modulePct = context.total ? Math.round(100 * (context.moduleDone || 0) / context.total) : 0;
+    const heroPoints = (chapter.keyPoints || []).slice(0, 2).join(' · ');
+    return `<div class="reading-progress" aria-hidden="true"><span id="readingProgressBar"></span></div>
+      <div class="breadcrumbs breadcrumbs-v2"><a href="#/">Home</a><span>/</span><a href="#/module/${esc(module.slug)}">${esc(module.title)}</a><span>/</span><span>${esc(chapter.title)}</span></div>
+      <section class="lesson-head chapter-heading chapter-hero">
+        <div class="chapter-eyebrow"><span>${esc(position)}</span><span>·</span><span>${estimatedMinutes(chapter)} min read</span></div>
         <h1>${esc(chapter.title)}</h1>
-        <p class="lede">${esc((chapter.keyPoints || []).join(' · '))}</p>
+        <p class="lede">${esc(heroPoints)}</p>
+        <div class="chapter-meta-row"><span class="pill ${esc(chapter.priority)}">${esc(chapter.priority)} priority</span><span class="pill ${esc(status)}">${esc(status)}</span>${helpers.doneButton(chapter.slug, false)}<a class="chapter-back-link" href="#/module/${esc(module.slug)}">Back to module</a></div>
       </section>
       ${chapter.description ? `<section class="chapter-description" id="section-description">${paragraphHtml(chapter.description)}</section>` : ''}
       ${prerequisites}${objectives}
-      <div class="answer-card"><h2>30–60 second interview answer</h2>${paragraphHtml(chapter.interviewAnswer)}</div>
+      <div class="answer-card answer-card-v2"><div class="answer-card-label">Interview-ready summary</div><h2>30–60 second answer</h2>${paragraphHtml(chapter.interviewAnswer)}</div>
       <div class="chapter-layout">
         <article class="article chapter-article">
-          ${chapter.why ? `<section id="section-why"><h2>Why this matters</h2>${paragraphHtml(chapter.why)}</section>` : ''}
-          ${chapter.intuition ? `<section id="section-intuition"><h2>Intuition</h2>${paragraphHtml(chapter.intuition)}${visualsAfter('intuition')}</section>` : ''}
+          ${chapter.why ? `<section id="section-why"><div class="section-kicker">Context</div><h2>Why this matters</h2>${paragraphHtml(chapter.why)}</section>` : ''}
+          ${chapter.intuition ? `<section id="section-intuition"><div class="section-kicker">Mental model</div><h2>Intuition</h2>${paragraphHtml(chapter.intuition)}${visualsAfter('intuition')}</section>` : ''}
           ${deepHtml}${visualsAfter('deep')}${remainingVisuals()}
-          ${chapter.math ? `<section id="section-formal-view"><h2>Math / formal view</h2><div class="math">${helpers.mathHtml ? helpers.mathHtml(chapter.math) : esc(chapter.math)}</div></section>` : ''}
+          ${chapter.math ? `<section id="section-formal-view"><div class="section-kicker">Formalism</div><h2>Math / formal view</h2><div class="math">${helpers.mathHtml ? helpers.mathHtml(chapter.math) : esc(chapter.math)}</div></section>` : ''}
           ${examplesHtml}
           ${helpers.labHtml(chapter)}
-          ${chapter.production ? `<section id="section-production"><h2>Production / system-design connection</h2>${paragraphHtml(chapter.production)}</section>` : ''}
+          ${chapter.production ? `<section id="section-production"><div class="section-kicker">Applied systems</div><h2>Production / system-design connection</h2>${paragraphHtml(chapter.production)}</section>` : ''}
           ${mistakesHtml}${followUpsHtml}${exercisesHtml}${notesHtml}
           <nav class="chapter-nav" aria-label="Lesson navigation">${previous}${next}</nav>
         </article>
         <aside class="chapter-sidebar">
+          <div class="side-card module-study-card"><div class="kicker">${esc(module.title)}</div><div class="module-study-progress"><strong>${context.moduleDone || 0}/${context.total || 0}</strong><span>lessons complete</span></div><div class="progress"><span style="width:${modulePct}%"></span></div><a href="#/module/${esc(module.slug)}">View module →</a></div>
           <nav class="side-card chapter-toc" aria-label="On this page"><div class="kicker">On this page</div><ol>${toc.map(([id, title]) => `<li><a href="#section-${esc(id)}">${esc(title)}</a></li>`).join('')}</ol></nav>
-          <div class="side-card"><div class="kicker">Quick revision</div><ul>${(chapter.keyPoints || []).map((point) => `<li>${esc(point)}</li>`).join('')}</ul></div>
+          <details class="side-card quick-revision-card" open><summary>Quick revision</summary><ul>${(chapter.keyPoints || []).map((point) => `<li>${esc(point)}</li>`).join('')}</ul></details>
         </aside>
       </div>`;
   }

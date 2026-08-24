@@ -24,8 +24,8 @@
     };
   }
 
-  function motionScale(){return reduceQuery.matches?.22:1}
-  function targetFps(){return reduceQuery.matches?18:(mobileQuery.matches?24:32)}
+  function motionScale(){return reduceQuery.matches?0:1}
+  function targetFps(){return mobileQuery.matches?24:32}
 
   function buildScene(){
     const mobile=mobileQuery.matches;
@@ -199,14 +199,14 @@
     if(now-last>=interval){draw(now);last=now;}
     raf=requestAnimationFrame(loop);
   }
-  function start(){if(!raf&&visible)raf=requestAnimationFrame(loop)}
+  function start(){if(reduceQuery.matches){stop();draw(performance.now());return}if(!raf&&visible)raf=requestAnimationFrame(loop)}
   function stop(){if(raf){cancelAnimationFrame(raf);raf=0}}
   function syncTheme(){draw(performance.now())}
   function state(){return {effective:true,reduced:reduceQuery.matches,fps:targetFps()}}
 
   window.addEventListener('resize',resize,{passive:true});
   mobileQuery.addEventListener?.('change',resize);
-  reduceQuery.addEventListener?.('change',()=>{draw(performance.now());start()});
+  reduceQuery.addEventListener?.('change',()=>{if(reduceQuery.matches){stop();draw(performance.now())}else start()});
   window.addEventListener('pointermove',(e)=>{
     pointer.tx=(e.clientX/Math.max(width,1)-.5)*2;
     pointer.ty=(e.clientY/Math.max(height,1)-.5)*2;
