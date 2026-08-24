@@ -118,9 +118,14 @@ assert '#/labs' in index and '#/analyzer' in index and 'prefers-color-scheme: da
 assert 'Plus+Jakarta+Sans' in index and 'Source+Serif+4' in index and 'STIX+Two+Text' in index, 'publication font stack missing'
 assert 'atlasBackground' in index and re.search(r'background\.js\?v=2\.4\.\d+', index) and 'motionBtn' not in index, 'always-on ambient background wiring missing'
 assert 'MathJax' in index and 'tex-svg.js' in index, 'MathJax typesetting bootstrap missing'
+
+assert 'assets/atlas-mark.svg' in index and 'class="brand-mark"' in index, 'Atlas favicon/brand mark wiring missing'
+for icon_path in ['assets/atlas-mark.svg','assets/atlas-mark-180.png','assets/atlas-mark-512.png','site.webmanifest']:
+    assert (ROOT/icon_path).exists(), f'Missing brand asset: {icon_path}'
 styles=(ROOT/'styles.css').read_text(encoding='utf-8')
 assert not any(marker in styles for marker in ('<<<<<<<','=======','>>>>>>>')), 'styles.css contains unresolved merge conflict markers'
 assert '--font-reading' in styles and '--font-math' in styles and '.viz-grounding' in styles, 'presentation CSS missing'
+assert 'atlas-aurora-drift' in styles and 'body::after' in styles and '.brand-mark' in styles, 'visible animated background/brand CSS missing'
 assert 'Figure sources' in book and 'research-grounded visuals' in book, 'book source-attributed figures missing'
 assert 'MathJax' in book and 'STIX+Two+Text' in book, 'book math typesetting missing'
 assert (ROOT/'analyzer.js').exists(), 'analyzer.js missing'
@@ -133,7 +138,7 @@ assert (ROOT/'LESSON_TEMPLATE.md').exists(), 'LESSON_TEMPLATE.md missing'
 assert (ROOT/'COVERAGE.md').exists(), 'COVERAGE.md missing'
 background=(ROOT/'background.js').read_text(encoding='utf-8')
 assert 'prefers-reduced-motion' in background and 'document.hidden' in background and 'requestAnimationFrame' in background, 'background animation must respect motion/visibility performance constraints'
-assert 'AtlasBackground' in background and 'atlas-motion' not in background and 'function effective(){return !reduceQuery.matches}' in background, 'background must animate by default without a manual toggle'
+assert 'AtlasBackground' in background and 'atlas-motion' not in background and 'function toggle()' not in background and 'resize();start();' in background, 'background must animate automatically without a manual toggle'
 assert (ROOT/'requirements-labs.txt').exists(), 'requirements-labs.txt missing'
 status_counts={status:sum(editorial_status(l)==status for l in source['lessons']) for status in ['summary','draft','chapter-complete','verified']}
 assert source.get('presentation',{}).get('version')=='2.4-research-typeset', 'presentation metadata missing or stale'

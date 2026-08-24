@@ -113,36 +113,49 @@ h1,h2,h3{letter-spacing:-.036em}
 @media(max-width:640px){.math{padding:15px 14px}.viz-ref-grid{grid-template-columns:1fr}.concept-visual.research-grounded{padding:12px 10px 10px}}
 @media print{.viz-grounding{break-inside:avoid}.viz-ref{box-shadow:none}.math{background:white!important;border-color:#bbb!important}.math-line{background:#fafafa!important}}
 
-/* v2.4.4 — role-aware curriculum + visible always-on live perspective background */
+/* v2.4.5 — clearly visible always-on depth field + Atlas brand mark */
 html{background:var(--bg)}
-body{position:relative;isolation:isolate;background:transparent;min-height:100vh}
-.atlas-background{position:fixed;inset:0;width:100%;height:100%;z-index:0;pointer-events:none;opacity:1;transition:opacity .35s ease;contain:strict}
-body::before{content:"";position:fixed;inset:0;z-index:1;pointer-events:none;background:linear-gradient(180deg,color-mix(in srgb,var(--bg) 14%,transparent),color-mix(in srgb,var(--bg) 34%,transparent) 58%,color-mix(in srgb,var(--bg) 64%,transparent));}
+body{position:relative;isolation:isolate;background:transparent;min-height:100vh;overflow-x:hidden}
+.brand{display:inline-flex;align-items:center;gap:9px}
+.brand-mark{display:block;width:30px;height:30px;border-radius:9px;box-shadow:0 6px 18px rgba(79,70,229,.22);flex:none}
+.atlas-background{position:fixed;inset:0;width:100%;height:100%;z-index:0;pointer-events:none;opacity:1;contain:strict}
+/* CSS aurora remains animated even if the canvas is slow to initialize. */
+body::after{content:"";position:fixed;inset:-18%;z-index:0;pointer-events:none;background:
+  radial-gradient(circle at 76% 18%,rgba(55,93,247,.23),transparent 34%),
+  radial-gradient(circle at 17% 73%,rgba(5,150,105,.17),transparent 32%),
+  radial-gradient(circle at 52% 48%,rgba(124,58,237,.15),transparent 30%);
+  filter:blur(28px) saturate(118%);transform:translate3d(0,0,0) scale(1.02);animation:atlas-aurora-drift 13s ease-in-out infinite alternate;will-change:transform,filter}
+[data-theme="dark"] body::after{background:
+  radial-gradient(circle at 76% 18%,rgba(92,125,255,.28),transparent 35%),
+  radial-gradient(circle at 17% 73%,rgba(34,211,180,.18),transparent 33%),
+  radial-gradient(circle at 52% 48%,rgba(167,116,255,.21),transparent 31%);filter:blur(34px) saturate(128%)}
+body::before{content:"";position:fixed;inset:0;z-index:1;pointer-events:none;background:linear-gradient(180deg,color-mix(in srgb,var(--bg) 8%,transparent),color-mix(in srgb,var(--bg) 22%,transparent) 58%,color-mix(in srgb,var(--bg) 48%,transparent))}
+[data-theme="dark"] body::before{background:linear-gradient(180deg,color-mix(in srgb,var(--bg) 6%,transparent),color-mix(in srgb,var(--bg) 18%,transparent) 58%,color-mix(in srgb,var(--bg) 42%,transparent))}
 .topbar,main,footer{position:relative;z-index:2}
-.topbar{background:color-mix(in srgb,var(--bg) 72%,transparent);box-shadow:0 1px 0 color-mix(in srgb,var(--line) 80%,transparent)}
-[data-theme="dark"] .topbar{background:color-mix(in srgb,var(--bg) 68%,transparent)}
-
-/* Keep study surfaces readable while allowing the ambient field to breathe through. */
-.hero-stat,.module-card,.sprint-card,.path-card,.quiz-card,.resource-card,.side-card,.chapter-prerequisites,.chapter-objectives,.lesson-row,.article section,.answer-card,.analyzer-input-card,.analyzer-topic,.analyzer-summary-grid article,.prep-days article{background:color-mix(in srgb,var(--card) 88%,transparent);backdrop-filter:blur(18px) saturate(112%);-webkit-backdrop-filter:blur(18px) saturate(112%)}
-[data-theme="dark"] .hero-stat,[data-theme="dark"] .module-card,[data-theme="dark"] .sprint-card,[data-theme="dark"] .path-card,[data-theme="dark"] .quiz-card,[data-theme="dark"] .resource-card,[data-theme="dark"] .side-card,[data-theme="dark"] .chapter-prerequisites,[data-theme="dark"] .chapter-objectives,[data-theme="dark"] .lesson-row,[data-theme="dark"] .article section,[data-theme="dark"] .answer-card,[data-theme="dark"] .analyzer-input-card,[data-theme="dark"] .analyzer-topic,[data-theme="dark"] .analyzer-summary-grid article,[data-theme="dark"] .prep-days article{background:color-mix(in srgb,var(--card) 91%,transparent)}
-
+.topbar{background:color-mix(in srgb,var(--bg) 68%,transparent);box-shadow:0 1px 0 color-mix(in srgb,var(--line) 76%,transparent);backdrop-filter:blur(20px) saturate(122%);-webkit-backdrop-filter:blur(20px) saturate(122%)}
+[data-theme="dark"] .topbar{background:color-mix(in srgb,var(--bg) 64%,transparent)}
+.hero h1{text-shadow:0 2px 18px color-mix(in srgb,var(--bg) 62%,transparent)}
+[data-theme="dark"] .hero h1{text-shadow:0 4px 28px rgba(0,0,0,.35)}
+/* Translucent study surfaces reveal motion without sacrificing text contrast. */
+.hero-stat,.module-card,.sprint-card,.path-card,.quiz-card,.resource-card,.side-card,.chapter-prerequisites,.chapter-objectives,.lesson-row,.article section,.answer-card,.analyzer-input-card,.analyzer-topic,.analyzer-summary-grid article,.prep-days article{background:color-mix(in srgb,var(--card) 84%,transparent);backdrop-filter:blur(20px) saturate(118%);-webkit-backdrop-filter:blur(20px) saturate(118%);border-color:color-mix(in srgb,var(--line) 82%,transparent)}
+[data-theme="dark"] .hero-stat,[data-theme="dark"] .module-card,[data-theme="dark"] .sprint-card,[data-theme="dark"] .path-card,[data-theme="dark"] .quiz-card,[data-theme="dark"] .resource-card,[data-theme="dark"] .side-card,[data-theme="dark"] .chapter-prerequisites,[data-theme="dark"] .chapter-objectives,[data-theme="dark"] .lesson-row,[data-theme="dark"] .article section,[data-theme="dark"] .answer-card,[data-theme="dark"] .analyzer-input-card,[data-theme="dark"] .analyzer-topic,[data-theme="dark"] .analyzer-summary-grid article,[data-theme="dark"] .prep-days article{background:color-mix(in srgb,var(--card) 86%,transparent);border-color:color-mix(in srgb,var(--line) 88%,transparent)}
 .curriculum-heading{align-items:end;margin-bottom:10px}
-.curriculum-filter-summary{display:flex;align-items:center;justify-content:space-between;gap:18px;margin:0 0 18px;padding:14px 16px;border:1px solid color-mix(in srgb,var(--accent) 22%,var(--line));border-radius:14px;background:color-mix(in srgb,var(--soft) 78%,transparent);backdrop-filter:blur(16px)}
+.curriculum-filter-summary{display:flex;align-items:center;justify-content:space-between;gap:18px;margin:0 0 18px;padding:14px 16px;border:1px solid color-mix(in srgb,var(--accent) 22%,var(--line));border-radius:14px;background:color-mix(in srgb,var(--soft) 72%,transparent);backdrop-filter:blur(18px)}
 .curriculum-filter-summary strong,.curriculum-filter-summary span{display:block}
 .curriculum-filter-summary strong{font-size:13px;color:var(--text)}
 .curriculum-filter-summary span{font-size:12px;color:var(--muted);margin-top:3px}
-.curriculum-filter-summary .ghost{white-space:nowrap;background:color-mix(in srgb,var(--card) 84%,transparent)}
+.curriculum-filter-summary .ghost{white-space:nowrap;background:color-mix(in srgb,var(--card) 80%,transparent)}
 .module-card{animation:atlas-module-enter .28s ease both;transform-origin:50% 70%}
 .module-grid .module-card:nth-child(2n){animation-delay:.025s}.module-grid .module-card:nth-child(3n){animation-delay:.05s}
 @keyframes atlas-module-enter{from{opacity:0;transform:translateY(8px) scale(.988)}to{opacity:1;transform:translateY(0) scale(1)}}
-
-@media(prefers-reduced-motion:reduce){
-  .atlas-background{transition:none;opacity:.66}
-  .module-card{animation:none!important}
-}
+@keyframes atlas-aurora-drift{0%{transform:translate3d(-2.5%,-1.5%,0) scale(1.02) rotate(-1deg);filter:blur(28px) saturate(112%)}50%{transform:translate3d(2%,1.5%,0) scale(1.08) rotate(1.2deg);filter:blur(34px) saturate(130%)}100%{transform:translate3d(3.5%,-.5%,0) scale(1.04) rotate(-.4deg);filter:blur(30px) saturate(120%)}}
+/* Reduced-motion users still get a very slow ambient drift rather than a completely static page. */
+@media(prefers-reduced-motion:reduce){body::after{animation-duration:38s}.module-card{animation:none!important}}
 @media(max-width:700px){
-  .atlas-background{opacity:.72}
-  body::before{background:linear-gradient(180deg,color-mix(in srgb,var(--bg) 40%,transparent),color-mix(in srgb,var(--bg) 72%,transparent))}
+  .atlas-background{opacity:.88}
+  body::after{inset:-24%;opacity:.82;animation-duration:18s}
+  body::before{background:linear-gradient(180deg,color-mix(in srgb,var(--bg) 16%,transparent),color-mix(in srgb,var(--bg) 48%,transparent))}
   .curriculum-filter-summary{align-items:flex-start;flex-direction:column}
+  .brand-mark{width:27px;height:27px;border-radius:8px}
 }
-@media print{.atlas-background,body::before{display:none!important}body{background:white!important}}
+@media print{.atlas-background,body::before,body::after{display:none!important}body{background:white!important}.brand-mark{box-shadow:none}}

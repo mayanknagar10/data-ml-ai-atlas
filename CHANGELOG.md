@@ -1,5 +1,13 @@
 # Changelog
 
+
+## v2.4.5 — Visible Background + Atlas Brand Mark
+
+- Made the light/dark ambient background clearly visible with canvas depth animation plus a CSS aurora fallback.
+- Removed any manual motion state; the background starts automatically.
+- Added a dedicated Atlas neural-network mark for favicon, navbar branding, touch icon, and manifest.
+- Added validation coverage for the animated background and brand assets.
+
 ## v2.4.2 — Role-aware curriculum and ambient 3D background
 
 - Made the homepage curriculum role-aware: selecting Data Scientist, AI / GenAI Engineer, Computer Vision, and other roles now hides modules with no relevant lessons, while direct module pages still expose the complete module content.
