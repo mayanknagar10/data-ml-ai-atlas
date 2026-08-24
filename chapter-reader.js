@@ -147,8 +147,7 @@
     const position = Number.isInteger(context.index) && context.index >= 0 ? `Lesson ${context.index + 1} of ${context.total || '?'}` : 'Lesson';
     const modulePct = context.total ? Math.round(100 * (context.moduleDone || 0) / context.total) : 0;
     const heroPoints = (chapter.keyPoints || []).slice(0, 2).join(' · ');
-    return `<div class="reading-progress" aria-hidden="true"><span id="readingProgressBar"></span></div>
-      <div class="breadcrumbs breadcrumbs-v2"><a href="#/">Home</a><span>/</span><a href="#/module/${esc(module.slug)}">${esc(module.title)}</a><span>/</span><span>${esc(chapter.title)}</span></div>
+    return `<div class="breadcrumbs breadcrumbs-v2"><a href="#/">Home</a><span>/</span><a href="#/module/${esc(module.slug)}">${esc(module.title)}</a><span>/</span><span>${esc(chapter.title)}</span></div>
       <section class="lesson-head chapter-heading chapter-hero">
         <div class="chapter-eyebrow"><span>${esc(position)}</span><span>·</span><span>${estimatedMinutes(chapter)} min read</span></div>
         <h1>${esc(chapter.title)}</h1>

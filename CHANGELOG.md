@@ -1,5 +1,12 @@
 # Changelog
 
+
+## v2.5.4 — Progress rail layout fix
+
+- Moved lesson reading progress into a document-level sticky layout rail.
+- Added solid separation around the progress line so it cannot visually intersect chapter content.
+- Synchronized core frontend cache keys to prevent mixed-runtime deployments.
+
 ## v2.5.1 — Calm Reading UX
 
 - Reworked the ambient background into a restrained cool-neutral depth field.
@@ -138,3 +145,8 @@
 - GitHub Pages build + validation + deployment workflow
 - Updated `AGENTS.md` for safe Codex collaboration
 - Updated content quality/source standards
+
+## v2.5.3 — Lesson runtime synchronization
+- Synchronized the v2.5 lesson reader with the matching application runtime.
+- Cache-busted all core JS/CSS assets together to prevent mixed-version deployments.
+- Added a regression render for `python-data-structures`.

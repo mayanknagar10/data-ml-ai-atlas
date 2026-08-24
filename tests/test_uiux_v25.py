@@ -39,7 +39,7 @@ class UiUxV25Tests(unittest.TestCase):
         self.assertIn("lessonVisible(l,{includeRole:false})", self.app)
 
     def test_reader_has_reading_progress_and_module_context(self):
-        self.assertIn('id="readingProgressBar"', self.reader)
+        self.assertIn('id="readingProgressBar"', self.index)
         self.assertIn("module-study-card", self.reader)
         self.assertIn("Lesson ${context.index + 1}", self.reader)
         self.assertIn("updateReadingProgress", self.app)

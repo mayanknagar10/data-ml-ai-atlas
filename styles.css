@@ -456,3 +456,64 @@ body[data-view="lesson"] .topbar{background:var(--progress-shell);backdrop-filte
 
 /* v2.5.2 — mobile progress rail alignment */
 @media(max-width:560px){.reading-progress{top:58px;height:9px}}
+
+
+/* v2.5.4 — progress rail is a real layout row, not an overlay. */
+:root{
+  --atlas-topbar-height:64px;
+  --reading-rail-height:18px;
+}
+.reading-progress{
+  position:sticky!important;
+  left:auto!important;
+  right:auto!important;
+  top:var(--atlas-topbar-height)!important;
+  z-index:29;
+  display:none;
+  width:100%;
+  height:var(--reading-rail-height)!important;
+  margin:0;
+  background:var(--progress-shell)!important;
+  border:0;
+  border-bottom:1px solid color-mix(in srgb,var(--progress-track) 78%,transparent);
+  box-shadow:0 5px 14px rgba(20,32,48,.055);
+  overflow:hidden;
+  pointer-events:none;
+}
+body[data-view="lesson"] .reading-progress{display:block}
+.reading-progress::after{
+  content:"";
+  position:absolute;
+  left:0;
+  right:0;
+  bottom:5px!important;
+  height:2px!important;
+  background:var(--progress-track)!important;
+}
+.reading-progress span{
+  position:absolute;
+  z-index:1;
+  left:0;
+  bottom:5px!important;
+  width:100%;
+  height:2px!important;
+  background:var(--accent)!important;
+  transform:scaleX(0);
+  transform-origin:left center;
+  transition:none!important;
+  will-change:transform;
+}
+body[data-view="lesson"] .topbar{
+  background:var(--progress-shell)!important;
+  backdrop-filter:none!important;
+  -webkit-backdrop-filter:none!important;
+}
+.chapter-article>section{
+  scroll-margin-top:calc(var(--atlas-topbar-height) + var(--reading-rail-height) + 18px)!important;
+}
+@media(max-width:700px){
+  :root{--atlas-topbar-height:58px;--reading-rail-height:16px}
+  .reading-progress{top:var(--atlas-topbar-height)!important;height:var(--reading-rail-height)!important}
+  .reading-progress::after,.reading-progress span{bottom:4px!important}
+}
+@media print{.reading-progress{display:none!important}}
