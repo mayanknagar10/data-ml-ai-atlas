@@ -1,5 +1,16 @@
-# v2.4.5 visible-background + brand hotfix
+# Atlas v2.5.1 UI/UX Hotfix
 
-Replace the matching files in the repository root with the contents of this package, preserving folders (`assets/`, `scripts/`, `tests/`, `.github/workflows/`). Then commit and push to `main`.
+Replace the matching files at the repository root with these versions. Also copy the included test and script files to their existing directories.
 
-The GitHub Pages workflow rebuilds generated book/lab artifacts automatically. After deployment, hard-refresh once. Favicons may require closing/reopening the tab because browsers cache them aggressively.
+This hotfix changes only presentation/interaction code and validation documentation. It does not change the 394 lesson bodies, labs, resources, or source curriculum.
+
+Main fixes:
+- restrained neutral background palette;
+- smoother/lighter 60 fps canvas scene;
+- no dense backdrop blur;
+- continuous book-like lesson reading surface;
+- 68ch body width;
+- fixed SPA-safe lesson TOC with active-section tracking;
+- transform-based reading progress;
+- quieter motion in the lesson reading lane;
+- updated v2.5.1 cache busting and regression tests.

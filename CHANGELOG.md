@@ -1,5 +1,17 @@
 # Changelog
 
+## v2.5.1 — Calm Reading UX
+
+- Reworked the ambient background into a restrained cool-neutral depth field.
+- Simplified the canvas scene for smoother native-cadence animation and reduced DPR cost.
+- Removed dense `backdrop-filter` usage from scrolling lesson/card surfaces.
+- Converted lessons to a continuous book-like reading surface with ~68ch line length.
+- Fixed the in-page TOC/hash-router collision and added active-section tracking.
+- Switched reading progress to compositor-friendly `transform: scaleX()`.
+- Quieted animation in the central lesson reading lane while preserving motion at the edges.
+- Added v2.5.1 UI/performance regression tests.
+
+
 ## v2.5.0 — Learning UX Edition
 
 - Reworked the landing page around a clear study loop: Continue learning, curriculum focus, progress, and interview essentials.

@@ -257,6 +257,7 @@ function chapterLoadError(summary,error){
  return `<div class="breadcrumbs"><a href="#/">Home</a> / ${esc(summary.title)}</div><section class="chapter-load-error" role="alert"><div class="kicker">Chapter unavailable</div><h1>${esc(summary.title)}</h1><p>${esc(error?.message||'The lesson file could not be loaded.')}</p><button id="retryChapter" class="primary-btn">Retry chapter</button> <a class="ghost" href="#/module/${esc(summary.module)}">Return to module</a></section>`;
 }
 async function loadLessonPage(slug,version,refresh=false){
+ document.body.dataset.view='lesson';
  const summary=lessonFor(slug);
  if(!summary){$('#app').innerHTML=notFound();return}
  $('#app').innerHTML=chapterLoading(summary);
@@ -373,12 +374,32 @@ function updateActiveNav(){
 }
 function updateReadingProgress(){
  const bar=$('#readingProgressBar');if(!bar)return;
- const doc=document.documentElement;const max=Math.max(1,doc.scrollHeight-window.innerHeight);const pct=Math.max(0,Math.min(100,(window.scrollY/max)*100));bar.style.width=`${pct}%`;
+ const doc=document.documentElement;const max=Math.max(1,doc.scrollHeight-window.innerHeight);const pct=Math.max(0,Math.min(1,window.scrollY/max));bar.style.transform=`scaleX(${pct})`;
+}
+let chapterTocObserver=null;
+function wireChapterToc(){
+ chapterTocObserver?.disconnect();
+ chapterTocObserver=null;
+ const controls=[...document.querySelectorAll('.chapter-toc [data-section-target]')];
+ if(!controls.length)return;
+ const reduced=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+ const targets=controls.map(control=>document.getElementById(control.dataset.sectionTarget)).filter(Boolean);
+ const setActive=(id)=>controls.forEach(control=>{if(control.dataset.sectionTarget===id)control.setAttribute('aria-current','true');else control.removeAttribute('aria-current')});
+ controls.forEach(control=>control.onclick=()=>{const target=document.getElementById(control.dataset.sectionTarget);if(!target)return;target.scrollIntoView({behavior:reduced?'auto':'smooth',block:'start'});setActive(control.dataset.sectionTarget)});
+ if(!targets.length)return;
+ setActive(targets[0].id);
+ if(!('IntersectionObserver' in window))return;
+ chapterTocObserver=new IntersectionObserver((entries)=>{
+   const visible=entries.filter(entry=>entry.isIntersecting).sort((a,b)=>a.boundingClientRect.top-b.boundingClientRect.top);
+   if(visible[0])setActive(visible[0].target.id);
+ },{rootMargin:'-96px 0px -64% 0px',threshold:[0,.05,.25]});
+ targets.forEach(target=>chapterTocObserver.observe(target));
 }
 let filterTimer=0;
 function scheduleFilterRender(selector){clearTimeout(filterTimer);filterTimer=setTimeout(()=>{route(false);setTimeout(()=>{const el=$(selector);if(el){el.focus();try{el.setSelectionRange(el.value.length,el.value.length)}catch{}}},0)},140)}
 function wireCommon(){
  wireDone();
+ wireChapterToc();
  document.querySelectorAll('[data-copy]').forEach(b=>b.onclick=async()=>{const el=document.getElementById(b.dataset.copy);if(!el)return;try{await navigator.clipboard.writeText(el.textContent);const old=b.textContent;b.textContent='Copied';setTimeout(()=>b.textContent=old,900)}catch{}});
  const nq=$('#newQuiz'); if(nq)nq.onclick=()=>{state.quizSlug=randomQuizSlug();route(false)};
  const rq=$('#revealQuiz'); if(rq)rq.onclick=()=>{const a=$('#quizAnswer');a.hidden=!a.hidden;rq.textContent=a.hidden?'Reveal answer':'Hide answer'};
@@ -398,7 +419,7 @@ function wireCommon(){
  const resourceKind=$('#resourceKind'); if(resourceKind)resourceKind.onchange=e=>{state.resourceKind=e.target.value;route(false)};
  const s=$('#search'); if(s)s.oninput=e=>{state.query=e.target.value;scheduleFilterRender('#search')}; const p=$('#priority'); if(p)p.onchange=e=>{state.priority=e.target.value;route(false)}; document.querySelectorAll('[data-role]').forEach(b=>b.onclick=()=>{state.role=b.dataset.role;save();if(b.hasAttribute('data-go-home'))location.hash='#/';else route(false)});
 }
-function route(scroll=true){const version=++routeVersion;const h=location.hash.replace(/^#\//,'').split('/');if(h[0]==='lesson'){loadLessonPage(h[1],version);return}let view;if(!h[0])view=home();else if(h[0]==='module')view=modulePage(h[1]);else if(h[0]==='roadmap')view=roadmap();else if(h[0]==='paths')view=pathsPage();else if(h[0]==='analyzer')view=analyzerPage();else if(h[0]==='quiz')view=quizPage();else if(h[0]==='labs')view=labsPage();else if(h[0]==='resources')view=resourcePage();else if(h[0]==='visuals')view=visualsPage();else view=notFound();$('#app').innerHTML=view;wireCommon();updateActiveNav();queueMathTypeset($('#app'));if(scroll)scrollTo(0,0);updateReadingProgress()}
+function route(scroll=true){const version=++routeVersion;const h=location.hash.replace(/^#\//,'').split('/');document.body.dataset.view=h[0]||'home';if(h[0]==='lesson'){loadLessonPage(h[1],version);return}let view;if(!h[0])view=home();else if(h[0]==='module')view=modulePage(h[1]);else if(h[0]==='roadmap')view=roadmap();else if(h[0]==='paths')view=pathsPage();else if(h[0]==='analyzer')view=analyzerPage();else if(h[0]==='quiz')view=quizPage();else if(h[0]==='labs')view=labsPage();else if(h[0]==='resources')view=resourcePage();else if(h[0]==='visuals')view=visualsPage();else view=notFound();$('#app').innerHTML=view;wireCommon();updateActiveNav();queueMathTypeset($('#app'));if(scroll)scrollTo(0,0);updateReadingProgress()}
 window.addEventListener('hashchange',()=>{closeGlobalSearch();route()});
 window.addEventListener('scroll',updateReadingProgress,{passive:true});
 const menuBtn=$('#menuBtn'), mainNav=$('#mainNav');if(menuBtn&&mainNav){menuBtn.onclick=()=>{const open=mainNav.classList.toggle('open');menuBtn.setAttribute('aria-expanded',String(open));menuBtn.textContent=open?'✕':'☰'};mainNav.querySelectorAll('a').forEach(a=>a.addEventListener('click',()=>{mainNav.classList.remove('open');menuBtn.setAttribute('aria-expanded','false');menuBtn.textContent='☰'}));}

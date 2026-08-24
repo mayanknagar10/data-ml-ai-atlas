@@ -77,7 +77,7 @@ const html = AtlasChapterReader.render(structured, context, helpers);
 assert.match(html, /A substantial &lt;script&gt;alert\(1\)&lt;\/script&gt; introduction/);
 assert.match(html, /Prerequisites/);
 assert.match(html, /Learning objectives/);
-assert.match(html, /href="#section-identity"/);
+assert.match(html, /data-section-target="section-identity"/);
 assert.match(html, /id="section-hashing"/);
 assert.match(html, /Why hashable\?/);
 assert.match(html, /Hashes must remain stable/);

@@ -1,40 +1,40 @@
-# Validation Report — v2.4.3 Always-on Motion + Deployment Repair
+# Validation Report — v2.5.1
 
-The v2.4.3 working tree restores the role-dynamic curriculum from the known-good v2.4.2 build, removes the manual motion toggle, and adds deployment guards for the merge/caching problems found on GitHub `main`. No commit or push was performed while producing this archive.
+Validated the exact v2.5.1 working tree after the calm-reading and motion-performance pass.
 
-## Curriculum and navigation integrity
+## Curriculum/content
 
+- 394/394 lessons are `verified`.
 - 45/45 modules are non-empty.
-- 394/394 lesson slugs are unique.
-- 0 orphan lessons reference an unknown module.
-- 394/394 lessons have editorial status `verified`.
-- Computer Vision contains 14/14 lessons in canonical source and generated `data.js`.
-- Role selection dynamically hides homepage modules that have no relevant lessons.
-- Direct module pages ignore the hidden global role filter and keep the full module content visible.
-- All lesson role IDs belong to the canonical UI taxonomy: `all`, `ds`, `da`, `as`, `mle`, `aie`, `de`, `cv`.
-
-## Ambient background repair
-
-- The 3D canvas background starts automatically in light and dark modes.
-- The Motion on/off navigation button is removed.
-- Legacy `atlas-motion` localStorage values are ignored.
-- `prefers-reduced-motion: reduce` remains the accessibility exception.
-- Rendering pauses when the tab is hidden.
-- Theme switching redraws the scene with the appropriate palette.
-- Core CSS/background/app files use a `?v=2.4.3` cache-busting suffix in `index.html`.
-- Validation rejects unresolved Git conflict markers in `styles.css`.
+- 394 runnable Python labs are generated.
+- 788 research-grounded visuals are present.
+- 312 curated resources are present.
+- Split-loading architecture remains intact; the initial lesson index excludes chapter bodies.
 
 ## Automated checks
 
-- `python validate.py` — PASS
-- `python -m unittest discover -s tests -v` — 62/62 PASS
-- `python scripts/check_site.py` — PASS across 396 HTML files
-- `python scripts/check_labs.py` — PASS across 1,576 generated Python files
-- `python scripts/check_all_labs_runtime.py` — 394/394 `verify_it.py` labs executed successfully
-- `node --check app.js` — PASS
-- `node --check background.js` — PASS
-- analyzer deterministic smoke tests — PASS
-- chapter loader checks — PASS
-- chapter reader checks — PASS
+- `python validate.py` — pass.
+- `python -m unittest discover -s tests -v` — 75/75 tests pass.
+- `python scripts/check_site.py` — 396 HTML pages pass local href/src checks.
+- `python scripts/check_labs.py` — 1,576 generated Python files syntax-check.
+- `node --check app.js` — pass.
+- `node --check analyzer.js` — pass.
+- `node --check background.js` — pass.
+- `node --check chapter-reader.js` — pass.
+- `node scripts/check_analyzer.js` — pass.
+- `node scripts/check_chapter_loader.js` — pass.
+- `node scripts/check_chapter_reader.js` — pass.
+- `python scripts/check_all_labs_runtime.py` — 394/394 generated `verify_it.py` labs execute successfully.
 
-No Git commit or push was performed while producing this corrected archive.
+## v2.5.1 UX regression gates
+
+- Frontend assets are cache-busted to v2.5.1.
+- Ambient background uses a restrained cool-neutral palette and no violet/teal split.
+- Continuous canvas motion uses requestAnimationFrame at native display cadence with a lighter scene.
+- Dense reading surfaces explicitly disable backdrop-filter.
+- Long-form lesson copy is capped at 68ch.
+- Lesson pages quiet the background in the central reading lane while preserving edge motion.
+- In-lesson TOC controls do not mutate the SPA hash route.
+- Active TOC section tracking uses IntersectionObserver.
+- Reading progress updates with `transform: scaleX()` rather than changing width.
+- Reduced-motion users receive a static ambient field.

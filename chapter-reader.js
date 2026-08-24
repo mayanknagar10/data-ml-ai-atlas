@@ -172,8 +172,8 @@
         </article>
         <aside class="chapter-sidebar">
           <div class="side-card module-study-card"><div class="kicker">${esc(module.title)}</div><div class="module-study-progress"><strong>${context.moduleDone || 0}/${context.total || 0}</strong><span>lessons complete</span></div><div class="progress"><span style="width:${modulePct}%"></span></div><a href="#/module/${esc(module.slug)}">View module →</a></div>
-          <nav class="side-card chapter-toc" aria-label="On this page"><div class="kicker">On this page</div><ol>${toc.map(([id, title]) => `<li><a href="#section-${esc(id)}">${esc(title)}</a></li>`).join('')}</ol></nav>
-          <details class="side-card quick-revision-card" open><summary>Quick revision</summary><ul>${(chapter.keyPoints || []).map((point) => `<li>${esc(point)}</li>`).join('')}</ul></details>
+          <nav class="side-card chapter-toc" aria-label="On this page"><div class="kicker">On this page</div><ol>${toc.map(([id, title]) => `<li><button type="button" data-section-target="section-${esc(id)}">${esc(title)}</button></li>`).join('')}</ol></nav>
+          <details class="side-card quick-revision-card"><summary>Quick revision</summary><ul>${(chapter.keyPoints || []).map((point) => `<li>${esc(point)}</li>`).join('')}</ul></details>
         </aside>
       </div>`;
   }

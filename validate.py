@@ -119,6 +119,7 @@ assert 'Plus+Jakarta+Sans' in index and 'Source+Serif+4' in index and 'STIX+Two+
 assert 'atlasBackground' in index and re.search(r'background\.js\?v=2\.\d+\.\d+', index) and 'motionBtn' not in index, 'always-on ambient background wiring missing'
 assert 'MathJax' in index and 'tex-svg.js' in index, 'MathJax typesetting bootstrap missing'
 assert 'id="searchOverlay"' in index and 'id="searchBtn"' in index and 'skip-link' in index, 'global search/accessibility shell missing'
+assert 'styles.css?v=2.5.1' in index and 'background.js?v=2.5.1' in index and 'app.js?v=2.5.1' in index, 'v2.5.1 frontend cache-busting missing'
 
 assert 'assets/atlas-mark.svg' in index and 'class="brand-mark"' in index, 'Atlas favicon/brand mark wiring missing'
 for icon_path in ['assets/atlas-mark.svg','assets/atlas-mark-180.png','assets/atlas-mark-512.png','site.webmanifest']:
@@ -126,6 +127,7 @@ for icon_path in ['assets/atlas-mark.svg','assets/atlas-mark-180.png','assets/at
 styles=(ROOT/'styles.css').read_text(encoding='utf-8')
 assert not any(marker in styles for marker in ('<<<<<<<','=======','>>>>>>>')), 'styles.css contains unresolved merge conflict markers'
 assert '--font-reading' in styles and '--font-math' in styles and '.viz-grounding' in styles, 'presentation CSS missing'
+assert '--reading-surface' in styles and 'max-width:68ch' in styles and 'backdrop-filter:none!important' in styles, 'v2.5.1 reading/performance CSS missing'
 assert 'atlas-aurora-drift' in styles and 'body::after' in styles and '.brand-mark' in styles, 'visible animated background/brand CSS missing'
 assert 'Figure sources' in book and 'research-grounded visuals' in book, 'book source-attributed figures missing'
 assert 'MathJax' in book and 'STIX+Two+Text' in book, 'book math typesetting missing'
@@ -136,6 +138,7 @@ assert "lessonVisible(l,{includeRole:false})" in app, 'Module pages must not inh
 assert 'ROLE_IDS.has(savedRole)' in app, 'Persisted role values must be sanitized against the canonical role list'
 assert 'moduleLessonSets' in app and 'curriculumFiltering' in app and 'x.relevant.length' in app, 'Homepage curriculum must dynamically hide modules with no relevant lessons'
 assert 'openGlobalSearch' in app and 'atlasSearchResults' in app and 'updateActiveNav' in app, 'v2.5 navigation/search UX wiring missing'
+assert 'wireChapterToc' in app and 'bar.style.transform=`scaleX(${pct})`' in app and "document.body.dataset.view='lesson'" in app, 'v2.5.1 reading UX wiring missing'
 assert (ROOT/'LESSON_TEMPLATE.md').exists(), 'LESSON_TEMPLATE.md missing'
 assert (ROOT/'COVERAGE.md').exists(), 'COVERAGE.md missing'
 background=(ROOT/'background.js').read_text(encoding='utf-8')
