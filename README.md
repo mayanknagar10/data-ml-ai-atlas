@@ -8,17 +8,13 @@ The goal is not to memorize a glossary. Every topic is designed for three modes:
 2. **Understanding mode** — intuition, formal reasoning, examples and misconceptions.
 3. **Engineering mode** — implementation, debugging, production implications and system-design trade-offs.
 
-## Current scope — v2.4.2 Role-aware Interactive Edition
+## Current scope — v2.4.3 Always-on Interactive Edition
 
 - **45 modules**
 - **394 / 394 verified full-chapter lessons**
 - **312 curated learning resources**
 - **394 runnable Build It → Use It → Ship It → Verify It Python labs**
-<<<<<<< HEAD
 - **788 research-grounded, theme-aware lesson visuals** — at least two per lesson — with visible source attribution and adapted-redraw provenance
-=======
-- **788 original, theme-aware lesson visuals** — at least two per lesson — spanning architecture diagrams, graphs, curves, matrices, maps, causal DAGs and system flows
->>>>>>> 682d610d4771d8dbe64c5e4ce48e254680fd0bb0
 - Broad coverage across statistics, product analytics, causal inference, forecasting, survival analysis, optimization, probabilistic ML/uncertainty, information theory, geospatial data science, data mining/sketches, recommender/search systems, data engineering, distributed systems, ML/DL/GenAI and production
 - Role-based study paths plus a dynamic homepage curriculum that hides modules with no lessons relevant to the selected role
 - Persistent light/dark mode, a subtle live perspective-projected 3D background with Motion/reduced-motion controls, responsive mobile navigation, search, practice mode and browser-local progress

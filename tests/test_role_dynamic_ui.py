@@ -54,12 +54,14 @@ class RoleDynamicUiTests(unittest.TestCase):
 
     def test_live_background_has_accessibility_and_performance_controls(self):
         self.assertIn('id="atlasBackground"', self.index)
-        self.assertIn('id="motionBtn"', self.index)
-        self.assertIn('src="background.js"', self.index)
+        self.assertNotIn('id="motionBtn"', self.index)
+        self.assertIn('src="background.js?v=2.4.3"', self.index)
         self.assertIn("prefers-reduced-motion", self.background)
         self.assertIn("document.hidden", self.background)
         self.assertIn("requestAnimationFrame", self.background)
-        self.assertIn("atlas-motion", self.background)
+        self.assertNotIn("atlas-motion", self.background)
+        self.assertIn("function effective(){return !reduceQuery.matches}", self.background)
+        self.assertNotIn("function toggle()", self.background)
 
 
 if __name__ == "__main__":

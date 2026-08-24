@@ -116,12 +116,10 @@ assert book.count('class="concept-visual') >= visual_count, 'book visual renderi
 index=(ROOT/'index.html').read_text(encoding='utf-8')
 assert '#/labs' in index and '#/analyzer' in index and 'prefers-color-scheme: dark' in index, 'main site navigation/theme missing'
 assert 'Plus+Jakarta+Sans' in index and 'Source+Serif+4' in index and 'STIX+Two+Text' in index, 'publication font stack missing'
-<<<<<<< HEAD
-assert 'atlasBackground' in index and 'motionBtn' in index and 'background.js' in index, 'ambient 3D background wiring missing'
-=======
->>>>>>> 682d610d4771d8dbe64c5e4ce48e254680fd0bb0
+assert 'atlasBackground' in index and 'background.js?v=2.4.3' in index and 'motionBtn' not in index, 'always-on ambient background wiring missing'
 assert 'MathJax' in index and 'tex-svg.js' in index, 'MathJax typesetting bootstrap missing'
 styles=(ROOT/'styles.css').read_text(encoding='utf-8')
+assert not any(marker in styles for marker in ('<<<<<<<','=======','>>>>>>>')), 'styles.css contains unresolved merge conflict markers'
 assert '--font-reading' in styles and '--font-math' in styles and '.viz-grounding' in styles, 'presentation CSS missing'
 assert 'Figure sources' in book and 'research-grounded visuals' in book, 'book source-attributed figures missing'
 assert 'MathJax' in book and 'STIX+Two+Text' in book, 'book math typesetting missing'
@@ -135,7 +133,7 @@ assert (ROOT/'LESSON_TEMPLATE.md').exists(), 'LESSON_TEMPLATE.md missing'
 assert (ROOT/'COVERAGE.md').exists(), 'COVERAGE.md missing'
 background=(ROOT/'background.js').read_text(encoding='utf-8')
 assert 'prefers-reduced-motion' in background and 'document.hidden' in background and 'requestAnimationFrame' in background, 'background animation must respect motion/visibility performance constraints'
-assert 'AtlasBackground' in background and 'atlas-motion' in background, 'background motion preference API missing'
+assert 'AtlasBackground' in background and 'atlas-motion' not in background and 'function effective(){return !reduceQuery.matches}' in background, 'background must animate by default without a manual toggle'
 assert (ROOT/'requirements-labs.txt').exists(), 'requirements-labs.txt missing'
 status_counts={status:sum(editorial_status(l)==status for l in source['lessons']) for status in ['summary','draft','chapter-complete','verified']}
 assert source.get('presentation',{}).get('version')=='2.4-research-typeset', 'presentation metadata missing or stale'

@@ -5,7 +5,6 @@
   if(!ctx)return;
 
   const reduceQuery=window.matchMedia('(prefers-reduced-motion: reduce)');
-  let manual=localStorage.getItem('atlas-motion')!=='off';
   let raf=0, visible=!document.hidden, width=0, height=0, dpr=1, last=0;
   let pointer={x:0,y:0,tx:0,ty:0};
   let scrollY=window.scrollY||0;
@@ -15,9 +14,8 @@
   let cols=22, rows=14;
   let stars=[];
 
-  function effective(){return manual&&!reduceQuery.matches}
-  function state(){return {manual,reduced:reduceQuery.matches,effective:effective()}}
-  function notify(){window.dispatchEvent(new CustomEvent('atlas-background-state',{detail:state()}))}
+  function effective(){return !reduceQuery.matches}
+  function state(){return {reduced:reduceQuery.matches,effective:effective()}}
 
   function palette(){
     const dark=document.documentElement.dataset.theme==='dark';
@@ -168,9 +166,7 @@
   function reconcile(){
     if(effective())start();else{stop();draw(performance.now(),true)}
     canvas.dataset.motion=effective()?'on':'off';
-    notify();
   }
-  function toggle(){manual=!manual;localStorage.setItem('atlas-motion',manual?'on':'off');reconcile();return state()}
   function syncTheme(){draw(performance.now(),!effective())}
 
   window.addEventListener('resize',resize,{passive:true});
@@ -185,6 +181,6 @@
   reduceQuery.addEventListener?.('change',reconcile);
   new MutationObserver((records)=>{if(records.some(r=>r.attributeName==='data-theme'))syncTheme()}).observe(document.documentElement,{attributes:true});
 
-  window.AtlasBackground={toggle,state,syncTheme};
+  window.AtlasBackground={state,syncTheme};
   resize();reconcile();
 })();
