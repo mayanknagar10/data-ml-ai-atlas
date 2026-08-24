@@ -119,7 +119,7 @@ assert 'Plus+Jakarta+Sans' in index and 'Source+Serif+4' in index and 'STIX+Two+
 assert 'atlasBackground' in index and re.search(r'background\.js\?v=2\.\d+\.\d+', index) and 'motionBtn' not in index, 'always-on ambient background wiring missing'
 assert 'MathJax' in index and 'tex-svg.js' in index, 'MathJax typesetting bootstrap missing'
 assert 'id="searchOverlay"' in index and 'id="searchBtn"' in index and 'skip-link' in index, 'global search/accessibility shell missing'
-assert 'styles.css?v=2.5.1' in index and 'background.js?v=2.5.1' in index and 'app.js?v=2.5.1' in index, 'v2.5.1 frontend cache-busting missing'
+assert 'styles.css?v=2.5.2' in index and 'background.js?v=2.5.2' in index and 'app.js?v=2.5.2' in index, 'v2.5.2 frontend cache-busting missing'
 
 assert 'assets/atlas-mark.svg' in index and 'class="brand-mark"' in index, 'Atlas favicon/brand mark wiring missing'
 for icon_path in ['assets/atlas-mark.svg','assets/atlas-mark-180.png','assets/atlas-mark-512.png','site.webmanifest']:
@@ -128,6 +128,7 @@ styles=(ROOT/'styles.css').read_text(encoding='utf-8')
 assert not any(marker in styles for marker in ('<<<<<<<','=======','>>>>>>>')), 'styles.css contains unresolved merge conflict markers'
 assert '--font-reading' in styles and '--font-math' in styles and '.viz-grounding' in styles, 'presentation CSS missing'
 assert '--reading-surface' in styles and 'max-width:68ch' in styles and 'backdrop-filter:none!important' in styles, 'v2.5.1 reading/performance CSS missing'
+assert '--progress-shell' in styles and '.reading-progress::after' in styles and 'background:var(--progress-shell)' in styles, 'v2.5.2 solid reading-progress rail missing'
 assert 'atlas-aurora-drift' in styles and 'body::after' in styles and '.brand-mark' in styles, 'visible animated background/brand CSS missing'
 assert 'Figure sources' in book and 'research-grounded visuals' in book, 'book source-attributed figures missing'
 assert 'MathJax' in book and 'STIX+Two+Text' in book, 'book math typesetting missing'

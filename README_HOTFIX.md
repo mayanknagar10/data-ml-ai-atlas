@@ -1,16 +1,14 @@
-# Atlas v2.5.1 UI/UX Hotfix
+# v2.5.2 Reading Progress Rail Hotfix
 
-Replace the matching files at the repository root with these versions. Also copy the included test and script files to their existing directories.
+Replace these files in the repository root:
 
-This hotfix changes only presentation/interaction code and validation documentation. It does not change the 394 lesson bodies, labs, resources, or source curriculum.
+- `styles.css`
+- `index.html`
+- `validate.py`
+- `tests/test_uiux_v251.py`
 
-Main fixes:
-- restrained neutral background palette;
-- smoother/lighter 60 fps canvas scene;
-- no dense backdrop blur;
-- continuous book-like lesson reading surface;
-- 68ch body width;
-- fixed SPA-safe lesson TOC with active-section tracking;
-- transform-based reading progress;
-- quieter motion in the lesson reading lane;
-- updated v2.5.1 cache busting and regression tests.
+Optional documentation:
+
+- `RELEASE_NOTES_v2.5.2.md`
+
+The lesson reading-progress indicator now sits in a solid theme-aware rail under the sticky header. The neutral track and accent progress line are pinned to the bottom of the rail, so the line no longer visually merges with lesson content or the animated background.

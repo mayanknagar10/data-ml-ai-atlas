@@ -13,11 +13,11 @@ class UiUxV251Tests(unittest.TestCase):
         cls.reader = (ROOT / "chapter-reader.js").read_text(encoding="utf-8")
         cls.background = (ROOT / "background.js").read_text(encoding="utf-8")
 
-    def test_v251_assets_are_cache_busted(self):
-        self.assertIn('styles.css?v=2.5.1', self.index)
-        self.assertIn('chapter-reader.js?v=2.5.1', self.index)
-        self.assertIn('background.js?v=2.5.1', self.index)
-        self.assertIn('app.js?v=2.5.1', self.index)
+    def test_v252_assets_are_cache_busted(self):
+        self.assertIn('styles.css?v=2.5.2', self.index)
+        self.assertIn('chapter-reader.js?v=2.5.2', self.index)
+        self.assertIn('background.js?v=2.5.2', self.index)
+        self.assertIn('app.js?v=2.5.2', self.index)
 
     def test_lesson_view_quiets_background_without_disabling_motion(self):
         self.assertIn("document.body.dataset.view='lesson'", self.app)
@@ -50,6 +50,13 @@ class UiUxV251Tests(unittest.TestCase):
         self.assertIn('bar.style.transform=`scaleX(${pct})`', self.app)
         self.assertIn('transform:scaleX(0)', self.styles)
         self.assertIn('will-change:transform', self.styles)
+
+    def test_reading_progress_has_solid_separation_rail(self):
+        self.assertIn('--progress-shell:#f6f8fb', self.styles)
+        self.assertIn('--progress-shell:#0c1117', self.styles)
+        self.assertIn('.reading-progress::after', self.styles)
+        self.assertIn('background:var(--progress-shell)', self.styles)
+        self.assertIn('body[data-view="lesson"] .topbar', self.styles)
 
     def test_reduced_motion_stops_ambient_animation(self):
         self.assertIn('@media(prefers-reduced-motion:reduce)', self.styles)
