@@ -14,10 +14,10 @@ class UiUxV251Tests(unittest.TestCase):
         cls.background = (ROOT / "background.js").read_text(encoding="utf-8")
 
     def test_v252_assets_are_cache_busted(self):
-        self.assertIn('styles.css?v=2.5.2', self.index)
-        self.assertIn('chapter-reader.js?v=2.5.2', self.index)
-        self.assertIn('background.js?v=2.5.2', self.index)
-        self.assertIn('app.js?v=2.5.2', self.index)
+        self.assertIn('styles.css?v=2.5.3', self.index)
+        self.assertIn('chapter-reader.js?v=2.5.3', self.index)
+        self.assertIn('background.js?v=2.5.3', self.index)
+        self.assertIn('app.js?v=2.5.3', self.index)
 
     def test_lesson_view_quiets_background_without_disabling_motion(self):
         self.assertIn("document.body.dataset.view='lesson'", self.app)

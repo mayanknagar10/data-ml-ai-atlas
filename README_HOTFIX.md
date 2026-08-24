@@ -1,14 +1,5 @@
-# v2.5.2 Reading Progress Rail Hotfix
+# Atlas v2.5.3 lesson-runtime hotfix
 
-Replace these files in the repository root:
+Replace the matching files in the repository root with the files in this archive, including `app.js` and `chapter-reader.js` together. Do not deploy only `index.html` or `styles.css`; this patch fixes a mixed-version frontend runtime.
 
-- `styles.css`
-- `index.html`
-- `validate.py`
-- `tests/test_uiux_v251.py`
-
-Optional documentation:
-
-- `RELEASE_NOTES_v2.5.2.md`
-
-The lesson reading-progress indicator now sits in a solid theme-aware rail under the sticky header. The neutral track and accent progress line are pinned to the bottom of the rail, so the line no longer visually merges with lesson content or the animated background.
+After pushing, confirm the generated `index.html` loads all core assets with `?v=2.5.3` and wait for GitHub Pages deployment to finish.
