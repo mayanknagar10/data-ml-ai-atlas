@@ -116,7 +116,10 @@ assert book.count('class="concept-visual') >= visual_count, 'book visual renderi
 index=(ROOT/'index.html').read_text(encoding='utf-8')
 assert '#/labs' in index and '#/analyzer' in index and 'prefers-color-scheme: dark' in index, 'main site navigation/theme missing'
 assert 'Plus+Jakarta+Sans' in index and 'Source+Serif+4' in index and 'STIX+Two+Text' in index, 'publication font stack missing'
+<<<<<<< HEAD
 assert 'atlasBackground' in index and 'motionBtn' in index and 'background.js' in index, 'ambient 3D background wiring missing'
+=======
+>>>>>>> 682d610d4771d8dbe64c5e4ce48e254680fd0bb0
 assert 'MathJax' in index and 'tex-svg.js' in index, 'MathJax typesetting bootstrap missing'
 styles=(ROOT/'styles.css').read_text(encoding='utf-8')
 assert '--font-reading' in styles and '--font-math' in styles and '.viz-grounding' in styles, 'presentation CSS missing'
