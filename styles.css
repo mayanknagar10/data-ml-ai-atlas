@@ -113,17 +113,17 @@ h1,h2,h3{letter-spacing:-.036em}
 @media(max-width:640px){.math{padding:15px 14px}.viz-ref-grid{grid-template-columns:1fr}.concept-visual.research-grounded{padding:12px 10px 10px}}
 @media print{.viz-grounding{break-inside:avoid}.viz-ref{box-shadow:none}.math{background:white!important;border-color:#bbb!important}.math-line{background:#fafafa!important}}
 
-/* v2.4.3 — role-aware curriculum + always-on live perspective background */
+/* v2.4.4 — role-aware curriculum + visible always-on live perspective background */
 html{background:var(--bg)}
 body{position:relative;isolation:isolate;background:transparent;min-height:100vh}
-.atlas-background{position:fixed;inset:0;width:100%;height:100%;z-index:0;pointer-events:none;opacity:.95;transition:opacity .35s ease;contain:strict}
-body::before{content:"";position:fixed;inset:0;z-index:1;pointer-events:none;background:linear-gradient(180deg,color-mix(in srgb,var(--bg) 24%,transparent),color-mix(in srgb,var(--bg) 50%,transparent) 58%,color-mix(in srgb,var(--bg) 78%,transparent));}
+.atlas-background{position:fixed;inset:0;width:100%;height:100%;z-index:0;pointer-events:none;opacity:1;transition:opacity .35s ease;contain:strict}
+body::before{content:"";position:fixed;inset:0;z-index:1;pointer-events:none;background:linear-gradient(180deg,color-mix(in srgb,var(--bg) 14%,transparent),color-mix(in srgb,var(--bg) 34%,transparent) 58%,color-mix(in srgb,var(--bg) 64%,transparent));}
 .topbar,main,footer{position:relative;z-index:2}
 .topbar{background:color-mix(in srgb,var(--bg) 72%,transparent);box-shadow:0 1px 0 color-mix(in srgb,var(--line) 80%,transparent)}
 [data-theme="dark"] .topbar{background:color-mix(in srgb,var(--bg) 68%,transparent)}
 
 /* Keep study surfaces readable while allowing the ambient field to breathe through. */
-.hero-stat,.module-card,.sprint-card,.path-card,.quiz-card,.resource-card,.side-card,.chapter-prerequisites,.chapter-objectives,.lesson-row,.article section,.answer-card,.analyzer-input-card,.analyzer-topic,.analyzer-summary-grid article,.prep-days article{background:color-mix(in srgb,var(--card) 94%,transparent);backdrop-filter:blur(18px) saturate(112%);-webkit-backdrop-filter:blur(18px) saturate(112%)}
+.hero-stat,.module-card,.sprint-card,.path-card,.quiz-card,.resource-card,.side-card,.chapter-prerequisites,.chapter-objectives,.lesson-row,.article section,.answer-card,.analyzer-input-card,.analyzer-topic,.analyzer-summary-grid article,.prep-days article{background:color-mix(in srgb,var(--card) 88%,transparent);backdrop-filter:blur(18px) saturate(112%);-webkit-backdrop-filter:blur(18px) saturate(112%)}
 [data-theme="dark"] .hero-stat,[data-theme="dark"] .module-card,[data-theme="dark"] .sprint-card,[data-theme="dark"] .path-card,[data-theme="dark"] .quiz-card,[data-theme="dark"] .resource-card,[data-theme="dark"] .side-card,[data-theme="dark"] .chapter-prerequisites,[data-theme="dark"] .chapter-objectives,[data-theme="dark"] .lesson-row,[data-theme="dark"] .article section,[data-theme="dark"] .answer-card,[data-theme="dark"] .analyzer-input-card,[data-theme="dark"] .analyzer-topic,[data-theme="dark"] .analyzer-summary-grid article,[data-theme="dark"] .prep-days article{background:color-mix(in srgb,var(--card) 91%,transparent)}
 
 .curriculum-heading{align-items:end;margin-bottom:10px}

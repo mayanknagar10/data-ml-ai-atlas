@@ -86,11 +86,11 @@
 
   function drawGlow(p,t){
     const g1=ctx.createRadialGradient(width*(.77+p.x*.06),height*(.22+p.y*.04),0,width*(.77+p.x*.06),height*(.22+p.y*.04),Math.max(width,height)*.48);
-    g1.addColorStop(0,`rgba(${p.glow[0]},${p.glow[1]},${p.glow[2]},${document.documentElement.dataset.theme==='dark'?.115:.07})`);
+    g1.addColorStop(0,`rgba(${p.glow[0]},${p.glow[1]},${p.glow[2]},${document.documentElement.dataset.theme==='dark'?.16:.11})`);
     g1.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=g1;ctx.fillRect(0,0,width,height);
     const x=width*(.18+Math.sin(t*.00011)*.025),y=height*(.72+Math.cos(t*.00013)*.025);
     const g2=ctx.createRadialGradient(x,y,0,x,y,Math.max(width,height)*.36);
-    g2.addColorStop(0,`rgba(${p.grid2[0]},${p.grid2[1]},${p.grid2[2]},${document.documentElement.dataset.theme==='dark'?.075:.045})`);
+    g2.addColorStop(0,`rgba(${p.grid2[0]},${p.grid2[1]},${p.grid2[2]},${document.documentElement.dataset.theme==='dark'?.11:.07})`);
     g2.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=g2;ctx.fillRect(0,0,width,height);
   }
 
@@ -112,7 +112,7 @@
       projected[i]=rotateProject(g.x,wave+145,g.z,rx,ry);
     }
 
-    const baseAlpha=document.documentElement.dataset.theme==='dark'?.105:.075;
+    const baseAlpha=document.documentElement.dataset.theme==='dark'?.155:.115;
     for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){
       const i=r*cols+c,a=projected[i];
       const depthFade=Math.max(.18,Math.min(1,a.scale*1.18));
@@ -123,7 +123,7 @@
     for(let i=0;i<grid.length;i+=mobileQuery.matches?3:2){
       const a=projected[i];
       if(a.x<-30||a.x>width+30||a.y<-30||a.y>height+30)continue;
-      const alpha=Math.max(.025,Math.min(.2,a.scale*.13));
+      const alpha=Math.max(.025,Math.min(.28,a.scale*.19));
       ctx.beginPath();ctx.arc(a.x,a.y,Math.max(.55,1.35*a.scale),0,Math.PI*2);
       ctx.fillStyle=`rgba(${p.point[0]},${p.point[1]},${p.point[2]},${alpha})`;ctx.fill();
     }
@@ -135,7 +135,7 @@
       const a=rotateProject(s.x,y,s.z,rx*.55,ry*.8+phase*.025);
       starProjected.push(a);
       if(a.x<-20||a.x>width+20||a.y<-20||a.y>height+20)continue;
-      const alpha=Math.max(.025,Math.min(.22,a.scale*.16));
+      const alpha=Math.max(.025,Math.min(.30,a.scale*.22));
       ctx.beginPath();ctx.arc(a.x,a.y,Math.max(.6,s.size*a.scale),0,Math.PI*2);
       ctx.fillStyle=`rgba(${i%5===0?p.accent.join(','):p.point.join(',')},${alpha})`;ctx.fill();
     }
@@ -143,7 +143,7 @@
     for(let i=0;i<starProjected.length-1;i+=3){
       const a=starProjected[i],b=starProjected[(i+7)%starProjected.length];
       const dx=a.x-b.x,dy=a.y-b.y,d=Math.hypot(dx,dy);
-      if(d<155)line(a,b,p.accent,(1-d/155)*(document.documentElement.dataset.theme==='dark'?.055:.035),.65);
+      if(d<155)line(a,b,p.accent,(1-d/155)*(document.documentElement.dataset.theme==='dark'?.085:.055),.65);
     }
 
     const vignette=ctx.createRadialGradient(width*.5,height*.45,Math.min(width,height)*.12,width*.5,height*.45,Math.max(width,height)*.78);
