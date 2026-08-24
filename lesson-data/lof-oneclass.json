@@ -189,7 +189,20 @@
         }
       ],
       "caption": "Conceptual geometry: LOF can accept a sparse cluster while flagging a point sparse relative to that cluster's neighbors.",
-      "afterSection": "lof-definition"
+      "afterSection": "lof-definition",
+      "grounding": [
+        {
+          "id": "lof-paper",
+          "role": "Primary technical basis"
+        },
+        {
+          "id": "one-class-svm-paper",
+          "role": "Secondary technical reference"
+        }
+      ],
+      "sourceMode": "adapted-redraw",
+      "figureClass": "research-grounded",
+      "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
     },
     {
       "type": "compare",
@@ -213,7 +226,20 @@
         ]
       },
       "caption": "The methods encode different notions of normality and expose different tuning and serving risks.",
-      "afterSection": "one-class-support"
+      "afterSection": "one-class-support",
+      "grounding": [
+        {
+          "id": "one-class-svm-paper",
+          "role": "Primary technical basis"
+        },
+        {
+          "id": "lof-paper",
+          "role": "Secondary technical reference"
+        }
+      ],
+      "sourceMode": "adapted-redraw",
+      "figureClass": "research-grounded",
+      "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
     }
   ],
   "sourceNotes": [
@@ -229,5 +255,10 @@
       "resource": "sklearn-outlier",
       "contribution": "Verifies current LOF novelty versus outlier API semantics and One-Class SVM score conventions."
     }
-  ]
+  ],
+  "presentation": {
+    "visualStandard": "research-grounded-adapted-redraw",
+    "mathStandard": "STIX-math-with-MathJax-for-delimited-equations",
+    "typographyStandard": "Plus-Jakarta-Sans-Source-Serif-4-IBM-Plex-Mono"
+  }
 }

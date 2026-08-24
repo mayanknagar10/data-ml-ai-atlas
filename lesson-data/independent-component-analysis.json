@@ -148,7 +148,20 @@
         "Validate reconstruction and source evidence"
       ],
       "caption": "Whitening removes second-order mixing; ICA uses higher-order shape to choose the remaining rotation.",
-      "afterSection": "contrast-fastica"
+      "afterSection": "contrast-fastica",
+      "grounding": [
+        {
+          "id": "stanford-cs229",
+          "role": "Primary technical basis"
+        },
+        {
+          "id": "sklearn-decomposition",
+          "role": "Secondary technical reference"
+        }
+      ],
+      "sourceMode": "adapted-redraw",
+      "figureClass": "research-grounded",
+      "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
     },
     {
       "type": "compare",
@@ -172,7 +185,20 @@
         ]
       },
       "caption": "ICA imposes stronger assumptions to identify a rotation PCA intentionally leaves unresolved.",
-      "afterSection": "whitening"
+      "afterSection": "whitening",
+      "grounding": [
+        {
+          "id": "sklearn-decomposition",
+          "role": "Primary technical basis"
+        },
+        {
+          "id": "stanford-cs229",
+          "role": "Secondary technical reference"
+        }
+      ],
+      "sourceMode": "adapted-redraw",
+      "figureClass": "research-grounded",
+      "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
     }
   ],
   "sourceNotes": [
@@ -188,5 +214,10 @@
       "resource": "stanford-cs229",
       "contribution": "Supports ICA contrast, whitening and fixed-point algorithm treatment."
     }
-  ]
+  ],
+  "presentation": {
+    "visualStandard": "research-grounded-adapted-redraw",
+    "mathStandard": "STIX-math-with-MathJax-for-delimited-equations",
+    "typographyStandard": "Plus-Jakarta-Sans-Source-Serif-4-IBM-Plex-Mono"
+  }
 }

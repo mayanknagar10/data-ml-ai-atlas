@@ -13,10 +13,13 @@ need=['why','intuition','deepDive','workedExample','commonMistakes','followUps',
 slugs=[x['slug'] for x in source['lessons']]
 assert len(slugs)==len(set(slugs)), 'Duplicate lesson slugs'
 mods={m['slug'] for m in source['modules']}
+allowed_roles={'all','ds','da','as','mle','aie','de','cv'}
 
 # Breadth guardrails: this atlas is intentionally broader than AI engineering.
 from collections import Counter
 module_counts=Counter(l['module'] for l in source['lessons'])
+for mod in mods:
+    assert module_counts[mod] > 0, f'{mod} has no lessons'
 minimum_coverage={
     'stat-inference':10,'regression-glm':8,'experimentation':8,'causal':8,
     'time-series':15,'recsys':8,'ir':7,'data-eng':7,'distributed':6,
@@ -41,6 +44,10 @@ for rid,r in source['resources'].items():
 lab_count=0
 for l in source['lessons']:
     assert l['module'] in mods, l['slug']
+    assert l.get('roles'), f"{l['slug']} missing roles"
+    assert len(l['roles'])==len(set(l['roles'])), f"{l['slug']} has duplicate roles"
+    unknown_roles=set(l['roles'])-allowed_roles
+    assert not unknown_roles, f"{l['slug']} has unknown roles: {sorted(unknown_roles)}"
     assert l['priority'] in {'very-high','high','medium'}, l['slug']
     assert l['interviewAnswer'].strip(), l['slug']
     assert l['keyPoints'], l['slug']
@@ -69,6 +76,12 @@ for l in source['lessons']:
         visual_count+=1
         assert v.get('type') in supported_visuals, (l['slug'],v.get('type'))
         assert str(v.get('title','')).strip() and str(v.get('caption','')).strip(), f"{l['slug']} visual missing title/caption"
+        grounding=v.get('grounding',[])
+        assert grounding, f"{l['slug']} visual missing authoritative grounding"
+        assert v.get('sourceMode')=='adapted-redraw', f"{l['slug']} visual missing adapted-redraw source policy"
+        assert str(v.get('adaptationNote','')).strip(), f"{l['slug']} visual missing adaptation note"
+        for g in grounding:
+            assert g.get('id') in refs, f"{l['slug']} visual references unknown source {g.get('id')}"
         typ=v['type']
         if typ in {'flow','layers','concept-map','funnel'}: assert v.get('items'), f"{l['slug']} visual missing items"
         if typ in {'curve','scatter'}: assert v.get('series'), f"{l['slug']} visual missing series"
@@ -99,15 +112,30 @@ book=(ROOT/'book.html').read_text(encoding='utf-8')
 for slug in slugs:
     assert f'id="lesson-{slug}"' in book, f'book.html missing {slug}'
 assert 'bookTheme' in book and 'data-theme="dark"' in book, 'book dark mode missing'
-assert book.count('class="concept-visual"') >= visual_count, 'book visual rendering is stale'
+assert book.count('class="concept-visual') >= visual_count, 'book visual rendering is stale'
 index=(ROOT/'index.html').read_text(encoding='utf-8')
 assert '#/labs' in index and '#/analyzer' in index and 'prefers-color-scheme: dark' in index, 'main site navigation/theme missing'
+assert 'Plus+Jakarta+Sans' in index and 'Source+Serif+4' in index and 'STIX+Two+Text' in index, 'publication font stack missing'
+assert 'atlasBackground' in index and 'motionBtn' in index and 'background.js' in index, 'ambient 3D background wiring missing'
+assert 'MathJax' in index and 'tex-svg.js' in index, 'MathJax typesetting bootstrap missing'
+styles=(ROOT/'styles.css').read_text(encoding='utf-8')
+assert '--font-reading' in styles and '--font-math' in styles and '.viz-grounding' in styles, 'presentation CSS missing'
+assert 'Figure sources' in book and 'research-grounded visuals' in book, 'book source-attributed figures missing'
+assert 'MathJax' in book and 'STIX+Two+Text' in book, 'book math typesetting missing'
 assert (ROOT/'analyzer.js').exists(), 'analyzer.js missing'
-assert 'AtlasAnalyzer' in (ROOT/'app.js').read_text(encoding='utf-8'), 'Resume + JD analyzer wiring missing'
+app=(ROOT/'app.js').read_text(encoding='utf-8')
+assert 'AtlasAnalyzer' in app, 'Resume + JD analyzer wiring missing'
+assert "lessonVisible(l,{includeRole:false})" in app, 'Module pages must not inherit the hidden global role filter'
+assert 'ROLE_IDS.has(savedRole)' in app, 'Persisted role values must be sanitized against the canonical role list'
+assert 'moduleLessonSets' in app and 'curriculumFiltering' in app and 'x.relevant.length' in app, 'Homepage curriculum must dynamically hide modules with no relevant lessons'
 assert (ROOT/'LESSON_TEMPLATE.md').exists(), 'LESSON_TEMPLATE.md missing'
 assert (ROOT/'COVERAGE.md').exists(), 'COVERAGE.md missing'
+background=(ROOT/'background.js').read_text(encoding='utf-8')
+assert 'prefers-reduced-motion' in background and 'document.hidden' in background and 'requestAnimationFrame' in background, 'background animation must respect motion/visibility performance constraints'
+assert 'AtlasBackground' in background and 'atlas-motion' in background, 'background motion preference API missing'
 assert (ROOT/'requirements-labs.txt').exists(), 'requirements-labs.txt missing'
 status_counts={status:sum(editorial_status(l)==status for l in source['lessons']) for status in ['summary','draft','chapter-complete','verified']}
+assert source.get('presentation',{}).get('version')=='2.4-research-typeset', 'presentation metadata missing or stale'
 for warning in contract_warnings:
     print(f"WARNING: {warning}")
 print(f"OK: {len(source['lessons'])} lessons {status_counts}, {len(source['modules'])} modules, {lab_count} runnable labs, {visual_count} visuals, {len(source['resources'])} curated resources")

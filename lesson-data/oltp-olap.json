@@ -156,7 +156,20 @@
         ]
       },
       "caption": "These are workload tendencies; hybrid engines can combine mechanisms, but service objectives still differ.",
-      "afterSection": "workload-shape"
+      "afterSection": "workload-shape",
+      "grounding": [
+        {
+          "id": "postgres-transactions",
+          "role": "Primary technical basis"
+        },
+        {
+          "id": "cmu-db",
+          "role": "Secondary technical reference"
+        }
+      ],
+      "sourceMode": "adapted-redraw",
+      "figureClass": "research-grounded",
+      "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
     },
     {
       "type": "flow",
@@ -170,7 +183,20 @@
         "Reconciliation + freshness"
       ],
       "caption": "The boundary is trustworthy only when every committed change is replayable, transformed consistently, and reconciled.",
-      "afterSection": "data-movement"
+      "afterSection": "data-movement",
+      "grounding": [
+        {
+          "id": "cmu-db",
+          "role": "Primary technical basis"
+        },
+        {
+          "id": "postgres-transactions",
+          "role": "Secondary technical reference"
+        }
+      ],
+      "sourceMode": "adapted-redraw",
+      "figureClass": "research-grounded",
+      "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
     }
   ],
   "lab": {
@@ -180,5 +206,10 @@
     "useIt": "import sqlite3\nrows=[{'order_id':1,'region':'EU','amount':10.0,'note':'a'},{'order_id':2,'region':'US','amount':7.0,'note':'b'},{'order_id':3,'region':'EU','amount':4.0,'note':'c'}]\ncolumns={key:[row[key] for row in rows] for key in rows[0]}\ncon=sqlite3.connect(':memory:')\ncon.execute('CREATE TABLE orders(order_id INTEGER,region TEXT,amount REAL,note TEXT)')\ncon.executemany('INSERT INTO orders VALUES(:order_id,:region,:amount,:note)',rows)\nsql_total=con.execute(\"SELECT SUM(amount) FROM orders WHERE region='EU'\").fetchone()[0]",
     "verifyIt": "row_total,row_touched=row_scan(rows,'EU')\ncolumn_total,column_touched=column_scan(columns,'EU')\nassert row_total==column_total==sql_total==14.0\nassert column_touched < row_touched\nassert sum(columns['amount'])==21.0\nassert len(rows)==len(columns['order_id'])",
     "shipIt": "Benchmark representative filters and projections on the target engine, isolate analytical resources, publish freshness and reconciliation metrics, and keep a rollback-ready versioned output."
+  },
+  "presentation": {
+    "visualStandard": "research-grounded-adapted-redraw",
+    "mathStandard": "STIX-math-with-MathJax-for-delimited-equations",
+    "typographyStandard": "Plus-Jakarta-Sans-Source-Serif-4-IBM-Plex-Mono"
   }
 }

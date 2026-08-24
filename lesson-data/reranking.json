@@ -155,7 +155,20 @@
         }
       ],
       "caption": "Conceptual funnel: each upstream stage constrains the evidence and recall available downstream.",
-      "afterSection": "candidate-and-text-budget"
+      "afterSection": "candidate-and-text-budget",
+      "grounding": [
+        {
+          "id": "bert-reranker-paper",
+          "role": "Primary technical basis"
+        },
+        {
+          "id": "ir-book",
+          "role": "Secondary technical reference"
+        }
+      ],
+      "sourceMode": "adapted-redraw",
+      "figureClass": "research-grounded",
+      "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
     },
     {
       "type": "compare",
@@ -179,7 +192,20 @@
         ]
       },
       "caption": "The common cascade uses the bi-encoder for reach and cross-encoder for precision.",
-      "afterSection": "model-and-objectives"
+      "afterSection": "model-and-objectives",
+      "grounding": [
+        {
+          "id": "ir-book",
+          "role": "Primary technical basis"
+        },
+        {
+          "id": "bert-reranker-paper",
+          "role": "Secondary technical reference"
+        }
+      ],
+      "sourceMode": "adapted-redraw",
+      "figureClass": "research-grounded",
+      "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
     }
   ],
   "sourceNotes": [
@@ -195,5 +221,10 @@
       "resource": "hf-llm",
       "contribution": "Verifies current transformer tokenization, batching and inference implementation conventions."
     }
-  ]
+  ],
+  "presentation": {
+    "visualStandard": "research-grounded-adapted-redraw",
+    "mathStandard": "STIX-math-with-MathJax-for-delimited-equations",
+    "typographyStandard": "Plus-Jakarta-Sans-Source-Serif-4-IBM-Plex-Mono"
+  }
 }

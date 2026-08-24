@@ -1,3 +1,3 @@
 # Ship it
 
-Track codebook version, utilization and bitrate as well as reconstruction metrics. Domain-specific tokenizers may outperform natural-image tokenizers when structural statistics differ.
+Package the VQ-VAE / VQGAN & Vector Quantization lab as a tested, versioned component with monitoring and rollback.

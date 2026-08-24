@@ -140,7 +140,20 @@
         "Advance count"
       ],
       "caption": "The replacement probability balances early and late positions so each final inclusion probability is k/n.",
-      "afterSection": "reservoir-sampling"
+      "afterSection": "reservoir-sampling",
+      "grounding": [
+        {
+          "id": "mmds-book",
+          "role": "Primary technical basis"
+        },
+        {
+          "id": "stanford-cs246",
+          "role": "Secondary technical reference"
+        }
+      ],
+      "sourceMode": "adapted-redraw",
+      "figureClass": "research-grounded",
+      "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
     },
     {
       "type": "matrix",
@@ -181,7 +194,20 @@
         ]
       ],
       "caption": "A key maps to one counter per row; its estimate is the minimum of those collision-contaminated counters. Values are conceptual.",
-      "afterSection": "frequency-sketches"
+      "afterSection": "frequency-sketches",
+      "grounding": [
+        {
+          "id": "stanford-cs246",
+          "role": "Primary technical basis"
+        },
+        {
+          "id": "mmds-book",
+          "role": "Secondary technical reference"
+        }
+      ],
+      "sourceMode": "adapted-redraw",
+      "figureClass": "research-grounded",
+      "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
     }
   ],
   "lab": {
@@ -191,5 +217,10 @@
     "useIt": "sample,n=reservoir(range(1000),20,seed=7)\nsketch=CountMin(200,4,[11,23,37,53])\nexact={}\nfor key in ['a']*50 + ['b']*20 + ['c']*5:\n    sketch.add(key); exact[key]=exact.get(key,0)+1\nestimates={key:sketch.estimate(key) for key in exact}",
     "verifyIt": "assert n == 1000 and len(sample) == 20 and len(set(sample)) == 20\nassert sample == reservoir(range(1000),20,seed=7)[0]\nassert all(estimates[key] >= exact[key] for key in exact)\nassert all(estimates[key]-exact[key] <= 75 for key in exact)\nhits=[0]*20\nfor seed in range(2000):\n    s,_=reservoir(range(20),1,seed)\n    hits[s[0]] += 1\nassert all(50 < count < 150 for count in hits)",
     "shipIt": "Checkpoint RNG/hash configuration and state with source offsets, define window and population, validate compatible merges, audit approximation against exact samples, monitor saturation/backpressure, and provide an exact fallback."
+  },
+  "presentation": {
+    "visualStandard": "research-grounded-adapted-redraw",
+    "mathStandard": "STIX-math-with-MathJax-for-delimited-equations",
+    "typographyStandard": "Plus-Jakarta-Sans-Source-Serif-4-IBM-Plex-Mono"
   }
 }

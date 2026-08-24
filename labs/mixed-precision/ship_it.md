@@ -1,3 +1,3 @@
 # Ship it
 
-Track accuracy and latency/memory jointly; mixed precision can change kernel choice and numerical behavior across devices.
+Package the Mixed Precision: FP32, FP16 & BF16 lab as a tested, versioned component with monitoring and rollback.

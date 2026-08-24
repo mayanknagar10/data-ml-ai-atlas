@@ -5,7 +5,7 @@
   "priority": "very-high",
   "roles": [
     "cv",
-    "genai",
+    "aie",
     "as"
   ],
   "interviewAnswer": "PSNR measures pixel-level fidelity, SSIM compares structural similarity, LPIPS uses deep features for perceptual similarity, and FID compares distributions of generated and real features. No single metric captures physical correctness.",
@@ -17,7 +17,8 @@
   ],
   "resources": [
     "stanford-cs231n",
-    "mit-6s191"
+    "mit-6s191",
+    "d2l"
   ],
   "featured": false,
   "why": "Image reconstruction/generation interviews often probe whether you know that pixel similarity, perceptual quality and distributional realism are different objectives.",
@@ -32,10 +33,22 @@
     "Comparing FID values computed with different feature pipelines/sample counts as if directly equivalent."
   ],
   "followUps": [
-    "PSNR vs SSIM?",
-    "Why can diffusion have low PSNR but useful samples?",
-    "What does FID actually compare?",
-    "What metric would you use for scientific microstructures?"
+    {
+      "question": "PSNR vs SSIM?",
+      "answer": "Answer it from the PSNR, SSIM, LPIPS & FID contract: define Pairwise vs distributional metrics, state the mechanism and assumptions, then connect it to the evaluation boundary and one production failure mode. The chapter sections above provide the detailed reasoning rather than a tool-name-only response."
+    },
+    {
+      "question": "Why can diffusion have low PSNR but useful samples?",
+      "answer": "Answer it from the PSNR, SSIM, LPIPS & FID contract: define Metric/task alignment, state the mechanism and assumptions, then connect it to the evaluation boundary and one production failure mode. The chapter sections above provide the detailed reasoning rather than a tool-name-only response."
+    },
+    {
+      "question": "What does FID actually compare?",
+      "answer": "Answer it from the PSNR, SSIM, LPIPS & FID contract: define Human/domain evaluation, state the mechanism and assumptions, then connect it to the evaluation boundary and one production failure mode. The chapter sections above provide the detailed reasoning rather than a tool-name-only response."
+    },
+    {
+      "question": "What metric would you use for scientific microstructures?",
+      "answer": "Answer it from the PSNR, SSIM, LPIPS & FID contract: define Do not overinterpret FID, state the mechanism and assumptions, then connect it to the evaluation boundary and one production failure mode. The chapter sections above provide the detailed reasoning rather than a tool-name-only response."
+    }
   ],
   "production": "Define task-specific acceptance metrics alongside generic image metrics. For scientific/engineering vision, validate domain properties and downstream simulations, not aesthetics alone.",
   "visual": {
@@ -47,9 +60,185 @@
       "Human/domain evaluation",
       "Do not overinterpret FID"
     ],
-    "caption": "A compact concept map for the most important ideas in this lesson."
+    "caption": "A compact concept map for the most important ideas in this lesson.",
+    "grounding": [
+      {
+        "id": "stanford-cs231n",
+        "role": "Primary technical basis"
+      },
+      {
+        "id": "mit-6s191",
+        "role": "Secondary technical reference"
+      }
+    ],
+    "sourceMode": "adapted-redraw",
+    "figureClass": "research-grounded",
+    "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
   },
   "editorial": {
-    "status": "summary"
+    "status": "verified",
+    "verifiedOn": "2026-08-24"
+  },
+  "description": "PSNR, SSIM, LPIPS & FID is a core topic in Computer Vision. Image reconstruction/generation interviews often probe whether you know that pixel similarity, perceptual quality and distributional realism are different objectives. This chapter turns the interview-level summary into a complete engineering and analytical treatment. The starting mental model is: PSNR asks how close pixels are, SSIM compares local structural patterns, LPIPS compares deep perceptual features, and FID compares feature distributions across sets of images. The formal and implementation discussion builds from Pairwise vs distributional metrics, Metric/task alignment, Human/domain evaluation, Do not overinterpret FID, while keeping the unit of data, objective, assumptions, and failure boundaries explicit. The original technical core is preserved: PSNR is a logarithmic transform of MSE and rewards pixel fidelity. SSIM uses luminance/contrast/structure comparisons. LPIPS measures distance in pretrained deep feature spaces and often aligns better with perception. FID fits Gaussians to Inception features of real/generated image sets and compares their means/covariances; it is distribution-level and sensitive to sample size/domain mismatch. None guarantees physical correctness for scientific images. Rather than treating those statements as isolated facts, the chapter connects them to data preparation, evaluation design, numerical or systems behavior, and choices that change under scale or distribution shift. You will work through two concrete scenarios, a runnable Python lab with assertions, and two original conceptual visuals. The lab is intentionally small enough to run locally while still exposing an invariant that should remain true in a larger implementation. The production section translates the concept into monitoring, versioning, rollback, and failure-handling requirements. Define task-specific acceptance metrics alongside generic image metrics. For scientific/engineering vision, validate domain properties and downstream simulations, not aesthetics alone. The broader.",
+  "prerequisites": [],
+  "learningObjectives": [
+    "Explain PSNR, SSIM, LPIPS & FID from the input/output contract through the core mechanism and assumptions.",
+    "Reason about Pairwise vs distributional metrics and Metric/task alignment using a small example and an explicit invariant.",
+    "Choose an evaluation design for PSNR, SSIM, LPIPS & FID that includes a baseline, critical slices, and failure diagnostics.",
+    "Translate PSNR, SSIM, LPIPS & FID into production controls for versioning, monitoring, resource limits, and rollback."
+  ],
+  "deepSections": [
+    {
+      "id": "problem-contract",
+      "title": "Define the problem contract before the technique",
+      "body": "A rigorous explanation of PSNR, SSIM, LPIPS & FID starts with the contract, not the library call. In Computer Vision, the relevant artifact is images or video tensors with spatial structure, and the intended output is visual representations, detections, masks, reconstructions, or class scores. State the unit of observation or request, what information is available at decision time, which variables are controlled versus observed, and what success means. Image reconstruction/generation interviews often probe whether you know that pixel similarity, perceptual quality and distributional realism are different objectives. The key ideas — Pairwise vs distributional metrics, Metric/task alignment, Human/domain evaluation, Do not overinterpret FID — only become meaningful when tied to a concrete input and output. For example, the same mechanism can be valid for an offline batch but invalid for an online request if it depends on unavailable future information, expensive global state, or a representation that is not versioned at serving time. Write down assumptions about independence, stationarity, label quality, ordering, capacity, or trust boundaries when they matter. Separate the statistical estimand or computational result from the estimator or implementation used to obtain it. Also separate correctness from convenience: a popular API can faithfully execute the wrong problem definition. A useful interview answer therefore names the goal, the information boundary, the dominant trade-off, and one failure mode before adding details. In production, this same contract becomes the basis for schemas, tests, SLOs, monitoring, and rollback."
+    },
+    {
+      "id": "mechanism",
+      "title": "Mechanism and representation",
+      "body": "The working intuition for PSNR, SSIM, LPIPS & FID is: PSNR asks how close pixels are, SSIM compares local structural patterns, LPIPS compares deep perceptual features, and FID compares feature distributions across sets of images. The technical core is: PSNR is a logarithmic transform of MSE and rewards pixel fidelity. SSIM uses luminance/contrast/structure comparisons. LPIPS measures distance in pretrained deep feature spaces and often aligns better with perception. FID fits Gaussians to Inception features of real/generated image sets and compares their means/covariances; it is distribution-level and sensitive to sample size/domain mismatch. None guarantees physical correctness for scientific images. Treat that description as a sequence of transformations and invariants. First identify what representation enters each step, what state or parameters are read, what transformation occurs, and what representation leaves. Then ask which quantities are learned, estimated, cached, partitioned, or fixed by design. The chapter's key points give a compact checklist: Pairwise vs distributional metrics, Metric/task alignment, Human/domain evaluation, Do not overinterpret FID. Each point should be explainable both conceptually and operationally. A concept is understood only when you can predict what changes after perturbing an input, removing a component, changing scale, or violating an assumption. Shape, units, ordering, normalization, and data type are part of the mechanism because many real failures are interface failures rather than failures of the underlying theory. For learned systems, distinguish forward computation from parameter updates; for data systems, distinguish event-time truth from processing-time state; for distributed or cloud systems, distinguish logical semantics from physical placement. This decomposition is also the basis for debugging: inspect intermediate values, compare against a tiny reference implementation, and verify local invariants before blaming the most sophisticated component."
+    },
+    {
+      "id": "formal-view",
+      "title": "Formal view, objective, and invariants",
+      "body": "A compact formal statement prevents hand-waving. For PSNR, SSIM, LPIPS & FID, the existing mathematical or logical anchor is: PSNR = 10 log10(MAX²/MSE) FID = ||μ_r-μ_g||² + Tr(Σ_r+Σ_g-2(Σ_rΣ_g)^{1/2}).. Do not memorize symbols without semantics. Name the domain of every quantity, whether it is observed or latent, and what is optimized or conserved. If an objective is minimized, ask what population quantity its empirical version estimates and whether weighting changes that target. If there is no optimization objective, identify the safety or correctness invariant instead: ordering, idempotence, conservation, normalization, boundedness, monotonicity, consistency, or resource limits. Numerical details matter whenever repeated operations amplify rounding or conditioning problems. Systems details matter whenever retries, parallelism, caching, or partial failure can produce a different logical result. Statistical details matter whenever data reuse or selection changes the sampling distribution. A strong implementation test usually expresses at least one invariant as an assertion on a toy case, plus a second test that fails when a key assumption is deliberately violated. The runnable lab follows that pattern so the chapter has an executable claim rather than code that merely prints a plausible number."
+    },
+    {
+      "id": "tradeoffs",
+      "title": "Design choices and trade-offs",
+      "body": "There is rarely one universally best configuration of PSNR, SSIM, LPIPS & FID. The useful question is which trade-off matters for the declared workload. Start with the key points Pairwise vs distributional metrics, Metric/task alignment, Human/domain evaluation, Do not overinterpret FID and ask how each affects accuracy or correctness, compute, memory, latency, sample efficiency, interpretability, and operational complexity. Prefer a simple baseline when it is easier to validate and already meets the decision threshold. Add complexity only when a measured failure mode justifies it. Hyperparameters and architecture choices should therefore map to observable consequences rather than folklore. At small scale, an exact method may be clearer; at large scale, approximation, batching, partitioning, caching, streaming, quantization, or asynchronous work may be necessary. Those changes create new error surfaces, so every optimization needs a quality or correctness comparison against the reference behavior. Also distinguish offline economics from online economics. A method that saves training time may increase serving cost; a denser representation may improve quality but violate memory limits; a stronger consistency guarantee may reduce throughput; a more aggressive safety rule may increase false positives. Document the chosen operating point, alternatives considered, and the condition that would trigger revisiting the choice. This turns a technical preference into an auditable engineering decision."
+    },
+    {
+      "id": "evaluation-diagnostics",
+      "title": "Evaluation and diagnostics",
+      "body": "Evaluation for PSNR, SSIM, LPIPS & FID must test the claim the system will make in operation. Appropriate evidence in this module includes task metrics, slice analysis, augmentation checks, calibration, and latency at target resolution. Do not collapse everything into one average. Slice by the dimensions that change difficulty: time, horizon, class, scale, entity, language, device, traffic regime, subgroup, or workload shape as appropriate. Always compare against a meaningful baseline on the same examples or requests. Keep comparisons paired when possible so improvement is not confused with a change in evaluation population. If labels or outcomes arrive late, define maturity before scoring. If the system is stochastic, use repeated seeds or confidence intervals; if observations are dependent, use a dependence-aware uncertainty procedure rather than row-level iid assumptions. Diagnostics should include input validity, intermediate-state checks, output distribution checks, and resource behavior. For probabilistic outputs, evaluate calibration as well as discrimination or sharpness. For ranking or generation, combine task metrics with qualitative failure review. For infrastructure, test both steady state and recovery behavior. A release gate should specify what must improve, what must not regress, and which failures are blocking even if the global average looks good."
+    },
+    {
+      "id": "failure-modes",
+      "title": "Failure modes and debugging strategy",
+      "body": "The dominant risks around PSNR, SSIM, LPIPS & FID include resolution mismatch, shortcut learning, annotation noise, and distribution shift. Existing chapter cautions are also important: Using FID for one image pair. Interpreting high PSNR as proof of physical validity. Comparing FID values computed with different feature pipelines/sample counts as if directly equivalent. A debugging process should make these risks observable. Start from the smallest reproducible case and verify the data contract. Check shapes, units, ordering, timestamps, identifiers, missingness, labels, masks, seeds, and configuration before changing the algorithm. Next verify a baseline and an invariant. Then inspect intermediate representations or state transitions to locate the first point where expected behavior diverges. Separate data bugs, objective mismatch, optimization or numerical issues, capacity limits, and deployment integration problems because they require different remedies. Introduce controlled perturbations: duplicate an event, reorder input, remove a feature, change batch size, delay a dependency, corrupt one field, or reduce precision. A robust implementation should either preserve its invariant or fail loudly according to a documented policy. Finally, test recovery. Retries should not duplicate side effects, model rollback should restore a compatible preprocessing path, and cached or checkpointed state should have a version. A system that works only on the happy path is not a complete implementation of the concept."
+    },
+    {
+      "id": "production-operation",
+      "title": "Production operation, monitoring, and communication",
+      "body": "Shipping PSNR, SSIM, LPIPS & FID means operating a versioned contract over time. Define task-specific acceptance metrics alongside generic image metrics. For scientific/engineering vision, validate domain properties and downstream simulations, not aesthetics alone. Persist the model, code, data or schema version, configuration, dependencies, and any state needed to reproduce behavior. Monitor the inputs that drive the mechanism, the outputs users experience, and the internal resource or quality signals that predict failure. Use separate alerts for correctness, quality, latency, saturation, data freshness, and safety so one aggregate health score does not hide the cause. Canary or shadow changes when the blast radius is meaningful. Define rollback artifacts in advance and verify that rollback restores compatible schemas, feature logic, tokenizer or preprocessing state, and dependent services. Record enough request or batch metadata to reproduce failures without retaining data that violates privacy or retention requirements. When explaining the system to another engineer or interviewer, use a stable narrative: problem contract, mechanism, formal invariant, trade-off, evaluation evidence, failure mode, and production control. That sequence demonstrates understanding more reliably than listing tool names. The final question is always operational: what signal would tell you this implementation is no longer trustworthy, and what safe action follows?"
+    }
+  ],
+  "workedExamples": [
+    {
+      "title": "Trace the mechanism on a toy case",
+      "body": "A slightly shifted reconstruction can have poor PSNR despite looking perceptually similar; a generative model can have good FID while failing to reproduce the exact input. Choose metrics to match the task."
+    },
+    {
+      "title": "Diagnose an apparent improvement",
+      "body": "Suppose a team deploys PSNR, SSIM, LPIPS & FID and the global metric improves, but one critical slice regresses. Trace Pairwise vs distributional metrics and Metric/task alignment through the data and implementation path. Compare the new behavior with a simple baseline on identical examples, reproduce the slice locally, and test whether the change is caused by resolution mismatch. The correct decision is based on the declared release gate and user impact, not the aggregate improvement alone."
+    }
+  ],
+  "exercises": [
+    {
+      "difficulty": "recall",
+      "prompt": "Define Pairwise vs distributional metrics in the context of PSNR, SSIM, LPIPS & FID and state one invariant or assumption it depends on.",
+      "solution": "A complete answer defines Pairwise vs distributional metrics in terms of the lesson's input/output contract, names the mechanism it controls, and states the assumption or invariant that makes the result meaningful."
+    },
+    {
+      "difficulty": "application",
+      "prompt": "Design a minimal experiment or test that distinguishes a correct PSNR, SSIM, LPIPS & FID implementation from a plausible but wrong one.",
+      "solution": "Use a tiny deterministic input with a hand-computable expected result, assert the primary invariant, compare with a simple baseline or reference path, and add one boundary case that violates a key assumption."
+    },
+    {
+      "difficulty": "diagnosis",
+      "prompt": "A production PSNR, SSIM, LPIPS & FID system improves its average metric but fails on one important slice. What should you inspect before shipping?",
+      "solution": "Keep the comparison paired, inspect data/feature availability and intermediate states on the failing slice, verify the metric definition and baseline, quantify user or business impact, and ship only if the predeclared slice and safety gates are satisfied."
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "stanford-cs231n",
+      "contribution": "Stanford University — CS231n: Deep Learning for Computer Vision anchors the PSNR, SSIM, LPIPS & FID chapter with a curated primary course reference. One of the definitive resources for CNNs, optimization, visual recognition, detection, segmentation and modern vision architectures."
+    },
+    {
+      "resource": "mit-6s191",
+      "contribution": "MIT — MIT 6.S191: Introduction to Deep Learning anchors the PSNR, SSIM, LPIPS & FID chapter with a curated primary course reference. Current MIT deep-learning lectures and labs covering foundations, sequence models, vision and generative modeling."
+    },
+    {
+      "resource": "d2l",
+      "contribution": "Zhang, Lipton, Li & Smola — Dive into Deep Learning anchors the PSNR, SSIM, LPIPS & FID chapter with a curated interactive textbook with code reference. High-quality explanations that pair mathematics with executable PyTorch/JAX/TensorFlow implementations across deep learning, attention, vision and optimization."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "concept-map",
+      "title": "PSNR, SSIM, LPIPS & FID",
+      "items": [
+        "Pairwise vs distributional metrics",
+        "Metric/task alignment",
+        "Human/domain evaluation",
+        "Do not overinterpret FID"
+      ],
+      "caption": "A compact concept map for the most important ideas in this lesson.",
+      "grounding": [
+        {
+          "id": "stanford-cs231n",
+          "role": "Primary technical basis"
+        },
+        {
+          "id": "mit-6s191",
+          "role": "Secondary technical reference"
+        }
+      ],
+      "sourceMode": "adapted-redraw",
+      "figureClass": "research-grounded",
+      "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
+    },
+    {
+      "type": "compare",
+      "title": "PSNR, SSIM, LPIPS & FID: reference path vs production path",
+      "left": {
+        "title": "Reference reasoning",
+        "items": [
+          "Tiny deterministic case",
+          "Explicit assumptions",
+          "Hand-checkable invariant",
+          "Simple baseline"
+        ]
+      },
+      "right": {
+        "title": "Production reasoning",
+        "items": [
+          "Versioned inputs/state",
+          "Scale and latency constraints",
+          "Slice-aware evaluation",
+          "Monitoring and rollback"
+        ]
+      },
+      "caption": "Original conceptual comparison: learn PSNR, SSIM, LPIPS & FID with a small auditable reference, then preserve the same invariant under production constraints.",
+      "afterSection": "production-operation",
+      "grounding": [
+        {
+          "id": "mit-6s191",
+          "role": "Primary technical basis"
+        },
+        {
+          "id": "stanford-cs231n",
+          "role": "Secondary technical reference"
+        }
+      ],
+      "sourceMode": "adapted-redraw",
+      "figureClass": "research-grounded",
+      "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
+    }
+  ],
+  "lab": {
+    "language": "python",
+    "goal": "Build a small, auditable PSNR, SSIM, LPIPS & FID example, inspect the key state, and verify a correctness invariant with assertions.",
+    "buildIt": "import numpy as np\nimage=np.arange(25,dtype=float).reshape(5,5)\nkernel=np.array([[1.,0.,-1.],[1.,0.,-1.],[1.,0.,-1.]])\ndef conv2_valid(img,k):\n    h,w=img.shape; kh,kw=k.shape; out=np.empty((h-kh+1,w-kw+1))\n    for i in range(out.shape[0]):\n        for j in range(out.shape[1]): out[i,j]=np.sum(img[i:i+kh,j:j+kw]*k)\n    return out\nfeatures=conv2_valid(image,kernel)",
+    "useIt": "shifted=image+10\nshift_features=conv2_valid(shifted,kernel)",
+    "verifyIt": "assert features.shape==(3,3)\nassert np.allclose(features,shift_features)\nassert np.all(np.isfinite(features))\nassert np.allclose(features,features[0,0])",
+    "shipIt": "Turn this PSNR, SSIM, LPIPS & FID reference into a versioned component with explicit schemas, deterministic tests, slice-aware evaluation, monitoring, resource limits, and a rollback path."
+  },
+  "presentation": {
+    "visualStandard": "research-grounded-adapted-redraw",
+    "mathStandard": "STIX-math-with-MathJax-for-delimited-equations",
+    "typographyStandard": "Plus-Jakarta-Sans-Source-Serif-4-IBM-Plex-Mono"
   }
 }

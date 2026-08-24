@@ -72,7 +72,20 @@
     ],
     "caption": "The LLM orchestrates and explains while deterministic tools remain the numerical source of truth.",
     "accent": 2,
-    "orientation": "horizontal"
+    "orientation": "horizontal",
+    "grounding": [
+      {
+        "id": "hf-agents",
+        "role": "Primary technical basis"
+      },
+      {
+        "id": "openai-cookbook",
+        "role": "Secondary technical reference"
+      }
+    ],
+    "sourceMode": "adapted-redraw",
+    "figureClass": "research-grounded",
+    "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
   },
   "editorial": {
     "status": "verified",
@@ -159,7 +172,20 @@
         "Audited effect, citation and response"
       ],
       "caption": "The model operates inside policy boundaries; it does not define them.",
-      "afterSection": "tools-policy"
+      "afterSection": "tools-policy",
+      "grounding": [
+        {
+          "id": "hf-agents",
+          "role": "Primary technical basis"
+        },
+        {
+          "id": "openai-cookbook",
+          "role": "Secondary technical reference"
+        }
+      ],
+      "sourceMode": "adapted-redraw",
+      "figureClass": "research-grounded",
+      "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
     },
     {
       "type": "flow",
@@ -173,7 +199,20 @@
         "Latency, cost and final task outcome"
       ],
       "caption": "A final answer score cannot localize compound-system failures.",
-      "afterSection": "threat-evaluation"
+      "afterSection": "threat-evaluation",
+      "grounding": [
+        {
+          "id": "openai-cookbook",
+          "role": "Primary technical basis"
+        },
+        {
+          "id": "hf-agents",
+          "role": "Secondary technical reference"
+        }
+      ],
+      "sourceMode": "adapted-redraw",
+      "figureClass": "research-grounded",
+      "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
     }
   ],
   "sourceNotes": [
@@ -193,5 +232,10 @@
       "resource": "stanford-cs329s",
       "contribution": "Adds production ML lifecycle, monitoring, reliability, data and deployment principles."
     }
-  ]
+  ],
+  "presentation": {
+    "visualStandard": "research-grounded-adapted-redraw",
+    "mathStandard": "STIX-math-with-MathJax-for-delimited-equations",
+    "typographyStandard": "Plus-Jakarta-Sans-Source-Serif-4-IBM-Plex-Mono"
+  }
 }

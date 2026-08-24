@@ -1,3 +1,3 @@
 # Ship it
 
-ARIMA is cheap to retrain and explain, making it a useful fallback/baseline even when a production stack later adopts boosted trees or neural forecasting.
+Package the ARIMA / SARIMA lab as a tested, versioned component with monitoring and rollback.

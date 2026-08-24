@@ -153,7 +153,20 @@
         ]
       },
       "caption": "The required removal rule selects the abstract data type.",
-      "afterSection": "abstract-types"
+      "afterSection": "abstract-types",
+      "grounding": [
+        {
+          "id": "mit-algorithms",
+          "role": "Primary technical basis"
+        },
+        {
+          "id": "python-heapq",
+          "role": "Secondary technical reference"
+        }
+      ],
+      "sourceMode": "adapted-redraw",
+      "figureClass": "research-grounded",
+      "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
     },
     {
       "type": "network",
@@ -229,7 +242,20 @@
         ]
       ],
       "caption": "Every parent is no greater than its children; nodes across branches need not be sorted.",
-      "afterSection": "binary-heaps"
+      "afterSection": "binary-heaps",
+      "grounding": [
+        {
+          "id": "python-heapq",
+          "role": "Primary technical basis"
+        },
+        {
+          "id": "mit-algorithms",
+          "role": "Secondary technical reference"
+        }
+      ],
+      "sourceMode": "adapted-redraw",
+      "figureClass": "research-grounded",
+      "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
     }
   ],
   "lab": {
@@ -239,5 +265,10 @@
     "useIt": "import heapq\nvalues = [7, 1, 9, 3, 8, 2]\nk = 3\ntop = []\nfor value in values:\n    if len(top) < k: heapq.heappush(top, value)\n    elif value > top[0]: heapq.heapreplace(top, value)\nresult = sorted(top, reverse=True)",
     "verifyIt": "def valid(a):\n    return all((2*i+1 >= len(a) or a[i] <= a[2*i+1]) and (2*i+2 >= len(a) or a[i] <= a[2*i+2]) for i in range(len(a)))\nh = MinHeap()\nfor value in [5, 1, 4, 1, 3]:\n    h.push(value); assert valid(h.data)\nout = []\nwhile h.data:\n    out.append(h.pop()); assert valid(h.data)\nassert out == [1, 1, 3, 4, 5]\nassert result == [9, 8, 7]",
     "shipIt": "Add stable tie-breakers, identity/version handling, capacity and overload policies, queue metrics, concurrency primitives, and crash/recovery tests appropriate to the chosen durability boundary."
+  },
+  "presentation": {
+    "visualStandard": "research-grounded-adapted-redraw",
+    "mathStandard": "STIX-math-with-MathJax-for-delimited-equations",
+    "typographyStandard": "Plus-Jakarta-Sans-Source-Serif-4-IBM-Plex-Mono"
   }
 }

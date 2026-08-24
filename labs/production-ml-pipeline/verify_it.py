@@ -15,3 +15,4 @@ print(promote(a))
 try: promote(ModelArtifact('bad','v3',.4,'x'))
 except ValueError: pass
 else: raise AssertionError('quality gate should fail')
+assert promote(a)['production_version']=='v17'

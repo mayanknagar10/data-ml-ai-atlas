@@ -120,7 +120,20 @@
     ],
     "caption": "Always beat a simple naive/seasonal-naive baseline before adding model complexity.",
     "xLabel": "time",
-    "yLabel": "value"
+    "yLabel": "value",
+    "grounding": [
+      {
+        "id": "forecast-accuracy-paper",
+        "role": "Primary technical basis"
+      },
+      {
+        "id": "statsmodels-tsa",
+        "role": "Secondary technical reference"
+      }
+    ],
+    "sourceMode": "adapted-redraw",
+    "figureClass": "research-grounded",
+    "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
   },
   "editorial": {
     "status": "verified",
@@ -213,7 +226,20 @@
         ]
       },
       "caption": "Baseline diversity separates level, trend and seasonal sources of forecast skill.",
-      "afterSection": "baseline-assumptions"
+      "afterSection": "baseline-assumptions",
+      "grounding": [
+        {
+          "id": "forecast-accuracy-paper",
+          "role": "Primary technical basis"
+        },
+        {
+          "id": "statsmodels-tsa",
+          "role": "Secondary technical reference"
+        }
+      ],
+      "sourceMode": "adapted-redraw",
+      "figureClass": "research-grounded",
+      "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
     },
     {
       "type": "flow",
@@ -227,7 +253,20 @@
         "Monitor negative skill after maturity"
       ],
       "caption": "The same baseline definitions support development, serving resilience and post-launch diagnosis.",
-      "afterSection": "fallback-monitoring"
+      "afterSection": "fallback-monitoring",
+      "grounding": [
+        {
+          "id": "statsmodels-tsa",
+          "role": "Primary technical basis"
+        },
+        {
+          "id": "forecast-accuracy-paper",
+          "role": "Secondary technical reference"
+        }
+      ],
+      "sourceMode": "adapted-redraw",
+      "figureClass": "research-grounded",
+      "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
     }
   ],
   "sourceNotes": [
@@ -243,5 +282,10 @@
       "resource": "statsmodels-tsa",
       "contribution": "Supports the surrounding forecast-model API and benchmark integration context."
     }
-  ]
+  ],
+  "presentation": {
+    "visualStandard": "research-grounded-adapted-redraw",
+    "mathStandard": "STIX-math-with-MathJax-for-delimited-equations",
+    "typographyStandard": "Plus-Jakarta-Sans-Source-Serif-4-IBM-Plex-Mono"
+  }
 }

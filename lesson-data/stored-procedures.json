@@ -155,7 +155,20 @@
         ]
       },
       "caption": "A routine can be one reliable task without becoming the entire workflow system.",
-      "afterSection": "pipeline-operations"
+      "afterSection": "pipeline-operations",
+      "grounding": [
+        {
+          "id": "postgres-routines",
+          "role": "Primary technical basis"
+        },
+        {
+          "id": "postgres-transactions",
+          "role": "Secondary technical reference"
+        }
+      ],
+      "sourceMode": "adapted-redraw",
+      "figureClass": "research-grounded",
+      "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
     },
     {
       "type": "flow",
@@ -168,7 +181,20 @@
         "Record version and success"
       ],
       "caption": "Retry safety comes from a stable partition/run contract and an atomic publish boundary.",
-      "afterSection": "transactions-errors"
+      "afterSection": "transactions-errors",
+      "grounding": [
+        {
+          "id": "postgres-transactions",
+          "role": "Primary technical basis"
+        },
+        {
+          "id": "postgres-routines",
+          "role": "Secondary technical reference"
+        }
+      ],
+      "sourceMode": "adapted-redraw",
+      "figureClass": "research-grounded",
+      "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
     }
   ],
   "lab": {
@@ -178,5 +204,10 @@
     "useIt": "import sqlite3\ncon=sqlite3.connect(':memory:')\ncon.executescript('CREATE TABLE event(day TEXT,customer TEXT,amount REAL); CREATE TABLE daily(day TEXT,customer TEXT,total REAL,PRIMARY KEY(day,customer)); CREATE TABLE run(run_id TEXT PRIMARY KEY,day TEXT,status TEXT); INSERT INTO event VALUES (\"2026-01-01\",\"a\",2),(\"2026-01-01\",\"a\",3),(\"2026-01-01\",\"b\",4);')\nfirst=load_day(con,'2026-01-01','run-1'); second=load_day(con,'2026-01-01','run-1')",
     "verifyIt": "assert first==second=='success'\nassert con.execute('SELECT customer,total FROM daily ORDER BY customer').fetchall()==[('a',5.0),('b',4.0)]\nassert con.execute('SELECT COUNT(*) FROM run WHERE run_id=\"run-1\"').fetchone()[0]==1\nassert con.execute('SELECT SUM(total) FROM daily').fetchone()[0]==con.execute('SELECT SUM(amount) FROM event').fetchone()[0]",
     "shipIt": "Add explicit privilege tests, concurrency guard, source snapshot/version, affected-row metrics, cancellation, plan monitoring, orchestrator-owned retries, and expand-contract routine deployment."
+  },
+  "presentation": {
+    "visualStandard": "research-grounded-adapted-redraw",
+    "mathStandard": "STIX-math-with-MathJax-for-delimited-equations",
+    "typographyStandard": "Plus-Jakarta-Sans-Source-Serif-4-IBM-Plex-Mono"
   }
 }

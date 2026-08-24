@@ -149,7 +149,20 @@
         "End-to-end and deployment checks"
       ],
       "caption": "Use many fast local checks and fewer expensive environment-dependent checks, chosen by risk.",
-      "afterSection": "test-pyramid"
+      "afterSection": "test-pyramid",
+      "grounding": [
+        {
+          "id": "pytest-docs",
+          "role": "Primary technical basis"
+        },
+        {
+          "id": "python-unittest",
+          "role": "Secondary technical reference"
+        }
+      ],
+      "sourceMode": "adapted-redraw",
+      "figureClass": "research-grounded",
+      "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
     },
     {
       "type": "flow",
@@ -162,7 +175,20 @@
         "Monitoring and rollback"
       ],
       "caption": "Pre-release tests and production monitoring cover different sources of uncertainty.",
-      "afterSection": "maintainable-production-tests"
+      "afterSection": "maintainable-production-tests",
+      "grounding": [
+        {
+          "id": "python-unittest",
+          "role": "Primary technical basis"
+        },
+        {
+          "id": "pytest-docs",
+          "role": "Secondary technical reference"
+        }
+      ],
+      "sourceMode": "adapted-redraw",
+      "figureClass": "research-grounded",
+      "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
     }
   ],
   "lab": {
@@ -172,5 +198,10 @@
     "useIt": "import numpy as np\nX = np.array([[1., 5.], [3., 5.], [5., 5.]])\ntransformer = Standardizer().fit(X)\nZ = transformer.transform(X)\nvalidation = transformer.transform([[7., 5.]])",
     "verifyIt": "assert Z.shape == X.shape\nassert np.isfinite(Z).all()\nassert np.allclose(Z[:, 0].mean(), 0.0)\nassert np.allclose(Z[:, 0].std(), 1.0)\nassert np.allclose(Z[:, 1], 0.0)\nbefore = transformer.mean_.copy()\ntransformer.transform([[9., 5.]])\nassert np.array_equal(before, transformer.mean_)\ntry:\n    transformer.transform([[1., 2., 3.]])\nexcept ValueError:\n    pass\nelse:\n    raise AssertionError('feature mismatch must fail')",
     "shipIt": "Run fast checks per change, version golden datasets and artifacts, separate environment suites, record seeds and tolerances, and combine pre-release regression with canary monitoring and rollback."
+  },
+  "presentation": {
+    "visualStandard": "research-grounded-adapted-redraw",
+    "mathStandard": "STIX-math-with-MathJax-for-delimited-equations",
+    "typographyStandard": "Plus-Jakarta-Sans-Source-Serif-4-IBM-Plex-Mono"
   }
 }

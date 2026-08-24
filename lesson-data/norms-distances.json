@@ -152,7 +152,20 @@
         ]
       },
       "caption": "Each choice encodes invariances and costs; no geometry is universally neutral.",
-      "afterSection": "axioms-lp"
+      "afterSection": "axioms-lp",
+      "grounding": [
+        {
+          "id": "mit-linear-algebra",
+          "role": "Primary technical basis"
+        },
+        {
+          "id": "numpy-linalg",
+          "role": "Secondary technical reference"
+        }
+      ],
+      "sourceMode": "adapted-redraw",
+      "figureClass": "research-grounded",
+      "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
     },
     {
       "type": "flow",
@@ -167,7 +180,20 @@
         "Monitor drift + recall"
       ],
       "caption": "The metric cannot be separated from preprocessing, index capabilities and evaluation.",
-      "afterSection": "production-geometry"
+      "afterSection": "production-geometry",
+      "grounding": [
+        {
+          "id": "numpy-linalg",
+          "role": "Primary technical basis"
+        },
+        {
+          "id": "mit-linear-algebra",
+          "role": "Secondary technical reference"
+        }
+      ],
+      "sourceMode": "adapted-redraw",
+      "figureClass": "research-grounded",
+      "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
     }
   ],
   "lab": {
@@ -177,5 +203,10 @@
     "useIt": "import numpy as np\nx=np.array([1.,2.,-1.]); y=np.array([3.,0.,2.]); z=np.array([0.,1.,1.])\nmanual={'l1':lp(x,y,1),'l2':lp(x,y,2),'linf':lp(x,y,math.inf),'cosine':cosine(x,y)}\nlibrary={'l1':np.linalg.norm(x-y,1),'l2':np.linalg.norm(x-y,2),'linf':np.linalg.norm(x-y,np.inf),'cosine':float(x@y/(np.linalg.norm(x)*np.linalg.norm(y)))}",
     "verifyIt": "assert all(math.isclose(manual[k],library[k]) for k in manual)\nassert math.isclose(lp(x,y,2),lp(y,x,2))\nassert lp(x,z,2)<=lp(x,y,2)+lp(y,z,2)+1e-12\nxn=x/np.linalg.norm(x); yn=y/np.linalg.norm(y)\nassert math.isclose(np.linalg.norm(xn-yn)**2,2-2*cosine(xn,yn),rel_tol=1e-12)\ntry: cosine([0.,0.],[1.,0.])\nexcept ValueError: pass\nelse: raise AssertionError('zero cosine must be defined explicitly')",
     "shipIt": "Version preprocessing, normalization, metric and index together; validate zero/missing vectors, benchmark ANN recall against exact search, monitor norm/neighbor drift and retain a compatible rollback index."
+  },
+  "presentation": {
+    "visualStandard": "research-grounded-adapted-redraw",
+    "mathStandard": "STIX-math-with-MathJax-for-delimited-equations",
+    "typographyStandard": "Plus-Jakarta-Sans-Source-Serif-4-IBM-Plex-Mono"
   }
 }

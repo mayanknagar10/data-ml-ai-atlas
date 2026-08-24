@@ -1,3 +1,3 @@
 # Ship it
 
-Use immutable artifact identifiers and deployment manifests so every prediction can be traced to an exact model/preprocessing version.
+Package the Model Registry & Versioning lab as a tested, versioned component with monitoring and rollback.

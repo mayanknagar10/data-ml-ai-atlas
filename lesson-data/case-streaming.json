@@ -71,7 +71,20 @@
     ],
     "caption": "The case demonstrates event streaming, stateful processing, caching and an end-user visualization layer.",
     "accent": 2,
-    "orientation": "horizontal"
+    "orientation": "horizontal",
+    "grounding": [
+      {
+        "id": "flink",
+        "role": "Primary technical basis"
+      },
+      {
+        "id": "confluent-kafka",
+        "role": "Secondary technical reference"
+      }
+    ],
+    "sourceMode": "adapted-redraw",
+    "figureClass": "research-grounded",
+    "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
   },
   "editorial": {
     "status": "verified",
@@ -158,7 +171,20 @@
         "Reconciliation, replay and correction"
       ],
       "caption": "End-to-end correctness spans source, state, time policy and external effects.",
-      "afterSection": "state-guarantees"
+      "afterSection": "state-guarantees",
+      "grounding": [
+        {
+          "id": "flink",
+          "role": "Primary technical basis"
+        },
+        {
+          "id": "confluent-kafka",
+          "role": "Secondary technical reference"
+        }
+      ],
+      "sourceMode": "adapted-redraw",
+      "figureClass": "research-grounded",
+      "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
     },
     {
       "type": "layers",
@@ -172,7 +198,20 @@
         "Batch reconciliation and replay audit"
       ],
       "caption": "Low processing latency alone does not prove semantic correctness.",
-      "afterSection": "operations-replay"
+      "afterSection": "operations-replay",
+      "grounding": [
+        {
+          "id": "confluent-kafka",
+          "role": "Primary technical basis"
+        },
+        {
+          "id": "flink",
+          "role": "Secondary technical reference"
+        }
+      ],
+      "sourceMode": "adapted-redraw",
+      "figureClass": "research-grounded",
+      "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
     }
   ],
   "sourceNotes": [
@@ -188,5 +227,10 @@
       "resource": "stanford-cs329s",
       "contribution": "Adds production system testing, monitoring, data contracts and failure-management perspective."
     }
-  ]
+  ],
+  "presentation": {
+    "visualStandard": "research-grounded-adapted-redraw",
+    "mathStandard": "STIX-math-with-MathJax-for-delimited-equations",
+    "typographyStandard": "Plus-Jakarta-Sans-Source-Serif-4-IBM-Plex-Mono"
+  }
 }

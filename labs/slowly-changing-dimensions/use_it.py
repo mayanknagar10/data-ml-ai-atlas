@@ -8,7 +8,8 @@ def insert_version(rows,key,start,value):
     end=covering['end'] if covering else next((r['start'] for r in same if r['start']>start),INF)
     if covering: covering['end']=start
     rows.append({'key':key,'start':start,'end':end,'value':value})
-    return sorted(rows,key=lambda r:(r['key'],r['start']))
+    rows.sort(key=lambda r:(r['key'],r['start']))
+    return rows
 
 def lookup(rows,key,when):
     matches=[r for r in rows if r['key']==key and r['start']<=when<r['end']]

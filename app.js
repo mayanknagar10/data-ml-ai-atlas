@@ -1,6 +1,18 @@
 const $ = (s) => document.querySelector(s);
+const ROLE_OPTIONS = [
+  ['all','All'],
+  ['ds','Data Scientist'],
+  ['da','Data / Product Analyst'],
+  ['as','Applied Scientist'],
+  ['mle','ML Engineer'],
+  ['aie','AI / GenAI Engineer'],
+  ['de','Data Engineer'],
+  ['cv','Computer Vision'],
+];
+const ROLE_IDS = new Set(ROLE_OPTIONS.map(([value])=>value));
+const savedRole = localStorage.getItem('atlas-role') || 'all';
 const state = {
-  role: localStorage.getItem('atlas-role') || 'all',
+  role: ROLE_IDS.has(savedRole) ? savedRole : 'all',
   priority: 'all',
   query: '',
   done: new Set(JSON.parse(localStorage.getItem('atlas-done') || '[]')),
@@ -21,13 +33,21 @@ function save(){localStorage.setItem('atlas-done',JSON.stringify([...state.done]
 function priorityLabel(p){return {'very-high':'Very high','high':'High','medium':'Medium'}[p]||p}
 function moduleFor(slug){return ATLAS.modules.find(m=>m.slug===slug)}
 function lessonFor(slug){return ATLAS.lessons.find(l=>l.slug===slug)}
-function lessonVisible(l){
-  const q=state.query.toLowerCase();
-  const roleOk=state.role==='all'||l.roles.includes('all')||l.roles.includes(state.role);
+function roleMatches(l,role=state.role){return role==='all'||l.roles.includes('all')||l.roles.includes(role)}
+function lessonVisible(l,{includeRole=true}={}){
+  const q=state.query.trim().toLowerCase();
+  const roleOk=!includeRole||roleMatches(l);
   const pOk=state.priority==='all'||l.priority===state.priority;
   const qOk=!q||(`${l.title} ${l.description||''} ${l.interviewAnswer} ${l.keyPoints.join(' ')}`).toLowerCase().includes(q);
   return roleOk&&pOk&&qOk;
 }
+function curriculumFiltering(){return state.role!=='all'||state.priority!=='all'||Boolean(state.query.trim())}
+function moduleLessonSets(module){
+  const all=ATLAS.lessons.filter(l=>l.module===module.slug);
+  const relevant=all.filter(l=>lessonVisible(l));
+  return {all,relevant};
+}
+function roleName(role=state.role){return ROLE_OPTIONS.find(([value])=>value===role)?.[1]||'All'}
 function progress(){return Math.round(100*state.done.size/ATLAS.lessons.length)}
 function deepCount(){return ATLAS.lessons.filter(l=>['chapter-complete','verified'].includes(l.status)).length}
 function labCount(){return ATLAS.lessons.filter(l=>l.hasLab).length}
@@ -36,20 +56,79 @@ function doneBtn(slug){const d=state.done.has(slug);return `<button class="check
 function wireDone(){document.querySelectorAll('[data-done]').forEach(b=>b.onclick=e=>{e.preventDefault();e.stopPropagation();const s=b.dataset.done;state.done.has(s)?state.done.delete(s):state.done.add(s);save();route();});}
 function home(){
  const featured=ATLAS.lessons.filter(l=>l.featured&&lessonVisible(l)).slice(0,12);
+ const filtering=curriculumFiltering();
  const groups=[...new Set(ATLAS.modules.map(m=>m.group||'Curriculum'))];
- const moduleCards=groups.map(g=>{const cards=ATLAS.modules.filter(m=>(m.group||'Curriculum')===g).map(m=>{const ls=ATLAS.lessons.filter(l=>l.module===m.slug);const d=ls.filter(l=>state.done.has(l.slug)).length;return `<article class="module-card" onclick="location.hash='#/module/${m.slug}'"><div class="module-icon">${m.icon}</div><h3>${m.title}</h3><p>${m.description}</p><div class="meta"><span class="pill">${ls.length} topics</span><span class="pill">${d}/${ls.length} done</span></div><div class="progress" style="margin-top:12px"><span style="width:${ls.length?100*d/ls.length:0}%"></span></div></article>`}).join('');return `<div class="curriculum-group"><div class="kicker">${g}</div><div class="module-grid">${cards}</div></div>`}).join('');
+ const groupModels=groups.map(group=>({
+   group,
+   modules:ATLAS.modules.filter(m=>(m.group||'Curriculum')===group).map(m=>({m,...moduleLessonSets(m)})).filter(x=>!filtering||x.relevant.length),
+ })).filter(x=>x.modules.length);
+ const visibleModuleCount=groupModels.reduce((n,g)=>n+g.modules.length,0);
+ const relevantLessonCount=ATLAS.lessons.filter(l=>lessonVisible(l)).length;
+ const moduleCards=groupModels.map(({group,modules})=>{const cards=modules.map(({m,all,relevant})=>{const shown=filtering?relevant:all;const done=shown.filter(l=>state.done.has(l.slug)).length;const topicLabel=filtering?`${relevant.length} relevant · ${all.length} total`:`${all.length} topics`;const doneLabel=filtering?`${done}/${shown.length} relevant done`:`${done}/${shown.length} done`;return `<article class="module-card" onclick="location.hash='#/module/${m.slug}'"><div class="module-icon">${m.icon}</div><h3>${m.title}</h3><p>${m.description}</p><div class="meta"><span class="pill">${topicLabel}</span><span class="pill">${doneLabel}</span></div><div class="progress" style="margin-top:12px"><span style="width:${shown.length?100*done/shown.length:0}%"></span></div></article>`}).join('');return `<div class="curriculum-group"><div class="kicker">${group}</div><div class="module-grid">${cards}</div></div>`}).join('');
+ const filterParts=[];
+ if(state.role!=='all')filterParts.push(roleName());
+ if(state.priority!=='all')filterParts.push(`${priorityLabel(state.priority)} priority`);
+ if(state.query.trim())filterParts.push(`“${esc(state.query.trim())}”`);
+ const filterSummary=filtering?`<div class="curriculum-filter-summary"><div><strong>Focused curriculum</strong><span>${visibleModuleCount} modules · ${relevantLessonCount} relevant lessons${filterParts.length?` · ${filterParts.join(' · ')}`:''}</span></div><button id="resetCurriculumFilters" class="ghost">Show full curriculum</button></div>`:'';
  return `<section class="hero"><div><div class="kicker">Interview-first · data-science broad · engineering-deep</div><h1>Know the stack.<br>Defend the choices.</h1><p class="lede">A broad learning and interview atlas for Data Science, Analytics, Machine Learning, Data Engineering, Applied Science and AI—from statistical inference and forecasting to distributed systems, deep learning, retrieval and production.</p><div class="hero-actions"><a class="primary-btn" href="#/analyzer">Match resume to a job</a><a class="ghost" href="#/paths">Browse study paths</a></div></div><aside class="hero-stat"><div class="big">${ATLAS.lessons.length}</div><div class="small">deep interview topics across ${ATLAS.modules.length} modules</div><div class="mini-stats"><span>${deepCount()} deep-complete</span><span>${labCount()} runnable labs</span><span>${visualCount()} original visuals</span><span>${Object.keys(ATLAS.resources).length} curated sources</span></div><hr style="border:0;border-top:1px solid var(--line);margin:18px 0"><div class="big">${progress()}%</div><div class="small">your progress, saved locally in this browser</div></aside></section>
- <section><div class="toolbar"><input id="search" class="search" placeholder="Search topics, e.g. MSE, RAG, Kafka..." value="${esc(state.query)}"><select id="priority"><option value="all">All priorities</option><option value="very-high" ${state.priority==='very-high'?'selected':''}>Very high</option><option value="high" ${state.priority==='high'?'selected':''}>High</option><option value="medium" ${state.priority==='medium'?'selected':''}>Medium</option></select><div class="roles">${[['all','All'],['ds','Data Scientist'],['da','Data / Product Analyst'],['as','Applied Scientist'],['mle','ML Engineer'],['aie','AI Engineer'],['de','Data Engineer'],['cv','Computer Vision']].map(([v,n])=>`<button class="role-btn ${state.role===v?'active':''}" data-role="${v}">${n}</button>`).join('')}</div></div></section>
- <section><h2>Curriculum</h2>${moduleCards}</section>
+ <section><div class="toolbar"><input id="search" class="search" placeholder="Search topics, e.g. MSE, RAG, Kafka..." value="${esc(state.query)}"><select id="priority"><option value="all">All priorities</option><option value="very-high" ${state.priority==='very-high'?'selected':''}>Very high</option><option value="high" ${state.priority==='high'?'selected':''}>High</option><option value="medium" ${state.priority==='medium'?'selected':''}>Medium</option></select><div class="roles">${ROLE_OPTIONS.map(([v,n])=>`<button class="role-btn ${state.role===v?'active':''}" data-role="${v}">${n}</button>`).join('')}</div></div></section>
+ <section><div class="section-title-row curriculum-heading"><div><div class="kicker">Role-aware map</div><h2>Curriculum</h2></div></div>${filterSummary}${moduleCards||'<div class="empty"><h3>No modules match these filters.</h3><p>Reset the filters or broaden your search.</p></div>'}</section>
  <section class="section"><div class="kicker">Sprint list</div><h2>High-frequency interview topics</h2><div class="sprint">${featured.map(l=>`<div class="sprint-card"><div class="meta"><span class="pill ${l.priority}">${priorityLabel(l.priority)}</span>${doneBtn(l.slug)}</div><h3 style="margin-top:10px"><a href="#/lesson/${l.slug}">${l.title}</a></h3><p class="small">${esc(l.interviewAnswer)}</p></div>`).join('')||'<div class="empty">No topics match the current filters.</div>'}</div></section>`;
 }
 function modulePage(slug){
  const m=moduleFor(slug); if(!m)return notFound();
- const ls=ATLAS.lessons.filter(l=>l.module===slug&&lessonVisible(l));
+ const ls=ATLAS.lessons.filter(l=>l.module===slug&&lessonVisible(l,{includeRole:false}));
  return `<div class="breadcrumbs"><a href="#/">Home</a> / ${m.title}</div><section class="lesson-head"><div class="kicker">${m.icon} Module</div><h1>${m.title}</h1><p class="lede">${m.description}</p></section><div class="toolbar"><input id="search" class="search" placeholder="Filter this module" value="${esc(state.query)}"><select id="priority"><option value="all">All priorities</option><option value="very-high" ${state.priority==='very-high'?'selected':''}>Very high</option><option value="high" ${state.priority==='high'?'selected':''}>High</option><option value="medium" ${state.priority==='medium'?'selected':''}>Medium</option></select><div></div></div><section class="lesson-list">${ls.map(l=>`<div class="lesson-row"><div><a class="lesson-title" href="#/lesson/${l.slug}">${l.title}</a><p>${esc(l.interviewAnswer)}</p><div class="meta" style="margin-top:8px"><span class="pill ${l.priority}">${priorityLabel(l.priority)}</span><span class="pill ${l.status}">${l.status}</span></div></div>${doneBtn(l.slug)}</div>`).join('')||'<div class="empty">No lessons match your filters.</div>'}</section>`;
 }
 function resourcesHtml(ids){return ids.map(id=>{const r=ATLAS.resources[id]; if(!r)return'';return `<a class="resource" href="${r.url}" target="_blank" rel="noopener"><strong>${r.title}</strong><span>${r.provider}</span><span class="kind">${r.kind} · ${r.level}</span></a>`}).join('')}
 function codeBlock(title,subtitle,code,idx){return `<div class="code-step"><div class="code-toolbar"><div><strong>${title}</strong><span>${subtitle}</span></div><button class="copy-btn" data-copy="code-${idx}">Copy</button></div><pre class="code"><code id="code-${idx}">${esc(code)}</code></pre></div>`}
+
+function queueMathTypeset(root=document,attempt=0){
+  if(window.MathJax?.typesetPromise){
+    try{window.MathJax.typesetClear?.(root && root.nodeType===1 ? [root] : undefined);}catch(_e){}
+    return window.MathJax.typesetPromise(root && root.nodeType===1 ? [root] : undefined).catch(()=>{});
+  }
+  if(attempt<12) setTimeout(()=>queueMathTypeset(root,attempt+1),180);
+  return Promise.resolve();
+}
+function mathTypographyFragment(value=''){
+  let s=esc(value);
+  const greek={alpha:'α',beta:'β',gamma:'γ',delta:'δ',epsilon:'ε',eta:'η',theta:'θ',lambda:'λ',mu:'μ',pi:'π',rho:'ρ',sigma:'σ',tau:'τ',phi:'φ',psi:'ψ',omega:'ω'};
+  s=s.replace(/&lt;=/g,'≤').replace(/&gt;=/g,'≥').replace(/!=/g,'≠').replace(/-&gt;/g,'→');
+  s=s.replace(/\bR\^\(([^)]+)\)/g,(_m,e)=>`ℝ<sup>${e.replace(/x/g,'×')}</sup>`);
+  s=s.replace(/\bR\^([A-Za-z0-9+-]+)/g,(_m,e)=>`ℝ<sup>${e}</sup>`);
+  s=s.replace(/\b(beta|theta|alpha|gamma|delta|epsilon|eta|lambda|mu|pi|rho|sigma|tau|phi|psi|omega)_hat\b/g,(_m,g)=>`${greek[g]}̂`);
+  s=s.replace(/\b(alpha|beta|gamma|delta|epsilon|eta|theta|lambda|mu|pi|rho|sigma|tau|phi|psi|omega)\b/g,(_m,g)=>greek[g]);
+  s=s.replace(/Σ/g,'∑').replace(/Π/g,'∏').replace(/sqrt\s*\(/g,'√(');
+  s=s.replace(/\^T\b/g,'<sup>⊤</sup>');
+  s=s.replace(/\^\(-1\)/g,'<sup>−1</sup>').replace(/\^-1\b/g,'<sup>−1</sup>');
+  s=s.replace(/\^\(?([0-9A-Za-z+-]+)\)?/g,'<sup>$1</sup>');
+  s=s.replace(/_\{?([A-Za-z0-9*+-]+)\}?/g,'<sub>$1</sub>');
+  s=s.replace(/\|\|([^|]+)\|\|/g,'‖$1‖');
+  return s;
+}
+function mathRichText(value=''){
+  return String(value).split(/(`[^`]+`)/g).map((part)=>{
+    if(part.startsWith('`')&&part.endsWith('`')) return esc(part);
+    return mathTypographyFragment(part);
+  }).join('');
+}
+function mathHtml(value=''){
+  return String(value||'').split(/\n\s*\n/).filter(Boolean).map((block)=>{
+    const lines=block.split(/\n+/).filter(Boolean);
+    if(lines.length>1) return `<div class="math-stack">${lines.map(line=>`<div class="math-line">${mathRichText(line)}</div>`).join('')}</div>`;
+    return `<p class="math-paragraph">${mathRichText(lines[0]||'')}</p>`;
+  }).join('');
+}
+function visualGroundingHtml(v){
+  const refs=(v.grounding||[]).map((g)=>{
+    const r=(g.id&&ATLAS.resources[g.id])?ATLAS.resources[g.id]:null;
+    if(!r)return '';
+    return `<a class="viz-ref" href="${r.url}" target="_blank" rel="noopener"><strong>${esc(r.title)}</strong><span>${esc(r.provider)} · ${esc(r.kind)}</span></a>`;
+  }).filter(Boolean);
+  if(!refs.length&&!v.adaptationNote)return '';
+  return `<div class="viz-grounding"><div class="viz-grounding-kicker">Figure sources</div>${refs.length?`<div class="viz-ref-grid">${refs.join('')}</div>`:''}${v.adaptationNote?`<p class="viz-adaptation">${esc(v.adaptationNote)}</p>`:''}</div>`;
+}
 function labHtml(l){if(!l.lab)return l.code?`<section><h2>Quick code / pseudocode</h2><pre class="code"><code>${esc(l.code)}</code></pre></section>`:'';const x=l.lab;const ship=x.shipIt||l.production||'Turn the learning artifact into a tested module with explicit inputs, outputs and failure handling.';return `<section class="code-lab-web"><div class="lab-title-row"><div><div class="kicker">Runnable code lab</div><h2>Build it → Use it → Ship it → Verify it</h2><p>${esc(x.goal||'')}</p></div><a class="lab-file-link" href="labs/${l.slug}/index.html" target="_blank">Open lab files ↗</a></div>${codeBlock('1 · Build it','first principles',x.buildIt,`${l.slug}-build`)}${codeBlock('2 · Use it','library / practical API',x.useIt,`${l.slug}-use`)}<div class="ship-card"><div class="kicker">3 · Ship it</div><p>${esc(ship)}</p></div>${codeBlock('4 · Verify it','sanity checks / assertions',x.verifyIt,`${l.slug}-verify`)}</section>`}
 function svgWrap(text,x,y,max=18,anchor='middle',cls='viz-text'){
  const words=String(text).split(/\s+/); let lines=[''];
@@ -96,12 +175,12 @@ function visualHtml(l,vArg=null,visualIndex=0){
  } else if(v.type==='map'){
    const vals=v.regions||[.25,.55,.82,.40,.67,.30]; const polys=['100,100 300,75 330,190 120,210','340,70 555,90 545,205 330,190','570,95 830,80 875,190 545,205','130,225 335,205 350,350 105,335','350,220 550,215 565,350 350,350','580,215 875,205 840,345 565,350']; polys.forEach((p,i)=>body+=`<polygon points="${p}" fill="${colors[i%4]}" opacity="${.12+.55*(vals[i]||.3)}" stroke="var(--viz-border)" stroke-width="2"/>`);body+=svgWrap('Illustrative regions',500,385,30,'middle','viz-axis-label');
  } else return '';
- return `<figure class="concept-visual"><div class="viz-heading"><span>Visual model</span><strong>${title}</strong></div><svg viewBox="0 0 1000 430" role="img" aria-label="${title}"><defs>${arrow}</defs>${body}</svg><figcaption>${caption} <span>Conceptual illustration — not measured data unless stated.</span></figcaption></figure>`;
+ return `<figure class="concept-visual ${esc(v.figureClass||'')}"><div class="viz-heading"><span>${(v.grounding||[]).length?'Research-grounded figure':'Visual model'}</span><strong>${title}</strong></div><svg viewBox="0 0 1000 430" role="img" aria-label="${title}"><defs>${arrow}</defs>${body}</svg>${visualGroundingHtml(v)}<figcaption>${caption} <span>${(v.grounding||[]).length?'Adapted teaching redraw with source attribution.':'Conceptual illustration — not measured data unless stated.'}</span></figcaption></figure>`;
 }
 
 function lessonPage(slug){
  const l=lessonFor(slug); if(!l)return notFound(); const m=moduleFor(l.module);
- const detailSections = l.why ? `<section><h2>Why this matters</h2><p>${esc(l.why)}</p></section><section><h2>Intuition</h2><p>${esc(l.intuition)}</p></section>${visualHtml(l)}<section><h2>Deep explanation</h2><p>${esc(l.deepDive)}</p></section>${l.math?`<section><h2>Math / formal view</h2><div class="math">${esc(l.math)}</div></section>`:''}${l.workedExample?`<section><h2>Worked example</h2><p>${esc(l.workedExample)}</p></section>`:''}${labHtml(l)}${l.production?`<section><h2>Ship it: production / system-design connection</h2><p>${esc(l.production)}</p></section>`:''}${l.commonMistakes?`<section class="warning"><h2>Common wrong answers</h2><ul>${l.commonMistakes.map(x=>`<li>${esc(x)}</li>`).join('')}</ul></section>`:''}${l.followUps?`<section><h2>Likely follow-ups</h2><ul>${l.followUps.map(x=>`<li>${esc(x)}</li>`).join('')}</ul></section>`:''}` : `<section><h2>What to know</h2><ul>${l.keyPoints.map(x=>`<li>${esc(x)}</li>`).join('')}</ul></section>`;
+ const detailSections = l.why ? `<section><h2>Why this matters</h2><p>${esc(l.why)}</p></section><section><h2>Intuition</h2><p>${esc(l.intuition)}</p></section>${visualHtml(l)}<section><h2>Deep explanation</h2><p>${esc(l.deepDive)}</p></section>${l.math?`<section><h2>Math / formal view</h2><div class="math">${mathHtml(l.math)}</div></section>`:''}${l.workedExample?`<section><h2>Worked example</h2><p>${esc(l.workedExample)}</p></section>`:''}${labHtml(l)}${l.production?`<section><h2>Ship it: production / system-design connection</h2><p>${esc(l.production)}</p></section>`:''}${l.commonMistakes?`<section class="warning"><h2>Common wrong answers</h2><ul>${l.commonMistakes.map(x=>`<li>${esc(x)}</li>`).join('')}</ul></section>`:''}${l.followUps?`<section><h2>Likely follow-ups</h2><ul>${l.followUps.map(x=>`<li>${esc(x)}</li>`).join('')}</ul></section>`:''}` : `<section><h2>What to know</h2><ul>${l.keyPoints.map(x=>`<li>${esc(x)}</li>`).join('')}</ul></section>`;
  return `<div class="breadcrumbs"><a href="#/">Home</a> / <a href="#/module/${m.slug}">${m.title}</a> / ${l.title}</div><section class="lesson-head"><div class="meta"><span class="pill ${l.priority}">${priorityLabel(l.priority)} priority</span><span class="pill ${l.status}">${l.status}</span>${doneBtn(l.slug)}</div><h1>${l.title}</h1><p class="lede">${esc(l.keyPoints.join(' · '))}</p></section><div class="answer-card"><h3>🎤 30–60 second interview answer</h3><p>${esc(l.interviewAnswer)}</p></div><div class="content-grid"><article class="article">${detailSections}</article><aside class="sidebar"><div class="side-card"><div class="kicker">Quick revision</div><ul>${l.keyPoints.map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div><div class="side-card"><div class="kicker">Best resources</div>${resourcesHtml(l.resources)}</div></aside></div>`;
 }
 function readerContext(slug){
@@ -121,6 +200,7 @@ function readerHelpers(){
    visualHtml,
    labHtml,
    resourcesHtml,
+   mathHtml,
    doneButton:doneBtn,
  };
 }
@@ -138,7 +218,7 @@ async function loadLessonPage(slug,version,refresh=false){
    const chapter=await chapterLoader.load(slug,{refresh});
    if(version!==routeVersion||location.hash!==`#/lesson/${slug}`)return;
    $('#app').innerHTML=AtlasChapterReader.render(chapter,readerContext(slug),readerHelpers());
-   wireCommon();scrollTo(0,0);
+   wireCommon();queueMathTypeset($('#app'));scrollTo(0,0);
  }catch(error){
    if(version!==routeVersion)return;
    $('#app').innerHTML=chapterLoadError(summary,error);
@@ -185,7 +265,7 @@ function quizPage(){
  if(!l)return `<div class="empty">No practice questions match these filters.</div>`;
  const m=moduleFor(l.module);
  return `<div class="breadcrumbs"><a href="#/">Home</a> / Practice</div><section class="lesson-head"><div class="kicker">Mock interview mode</div><h1>Practice one question at a time</h1><p class="lede">Say your answer aloud before revealing the model answer. Then use the follow-ups to push one level deeper.</p></section>
- <div class="toolbar"><select id="priority"><option value="all">All priorities</option><option value="very-high" ${state.priority==='very-high'?'selected':''}>Very high</option><option value="high" ${state.priority==='high'?'selected':''}>High</option><option value="medium" ${state.priority==='medium'?'selected':''}>Medium</option></select><div class="roles">${[['all','All'],['ds','Data Scientist'],['da','Data / Product Analyst'],['as','Applied Scientist'],['mle','ML Engineer'],['aie','AI Engineer'],['de','Data Engineer'],['cv','Computer Vision']].map(([v,n])=>`<button class="role-btn ${state.role===v?'active':''}" data-role="${v}">${n}</button>`).join('')}</div><button id="newQuiz" class="primary-btn">New question</button></div>
+ <div class="toolbar"><select id="priority"><option value="all">All priorities</option><option value="very-high" ${state.priority==='very-high'?'selected':''}>Very high</option><option value="high" ${state.priority==='high'?'selected':''}>High</option><option value="medium" ${state.priority==='medium'?'selected':''}>Medium</option></select><div class="roles">${ROLE_OPTIONS.map(([v,n])=>`<button class="role-btn ${state.role===v?'active':''}" data-role="${v}">${n}</button>`).join('')}</div><button id="newQuiz" class="primary-btn">New question</button></div>
  <section class="quiz-card"><div class="meta"><span class="pill ${l.priority}">${priorityLabel(l.priority)}</span><span class="pill">${m.icon} ${m.title}</span></div><h2>${l.title}</h2><p class="quiz-prompt">Explain this as if the interviewer asked you directly. Aim for 30–60 seconds.</p><button id="revealQuiz" class="primary-btn">Reveal answer</button><div id="quizAnswer" class="quiz-answer" hidden><div class="answer-card"><h3>Strong interview answer</h3><p>${esc(l.interviewAnswer)}</p></div><h3>Key points</h3><ul>${l.keyPoints.map(x=>`<li>${esc(x)}</li>`).join('')}</ul><h3>Follow-ups</h3><ul>${(l.followUpQuestions||[]).map(x=>`<li>${esc(x)}</li>`).join('')}</ul><p><a href="#/lesson/${l.slug}">Open full lesson →</a></p></div></section>`;
 }
 
@@ -196,7 +276,7 @@ function labsPage(){
 function visualsPage(){
  const ls=ATLAS.lessons.filter(l=>l.visualCount);
  const groups=ATLAS.modules.map(m=>{const xs=ls.filter(l=>l.module===m.slug);if(!xs.length)return '';return `<section class="section"><div class="kicker">${m.icon} ${m.title}</div><div class="visual-index-grid">${xs.map(l=>{const first=(l.visualSummaries||[])[0]||{};const types=[...new Set((l.visualSummaries||[]).map(v=>v.type).filter(Boolean))].join(' · ');return `<a class="visual-index-card" href="#/lesson/${l.slug}"><span class="pill">${esc(types||'visual')}</span><strong>${l.title}</strong><small>${esc(first.title||'Concept visual')}${l.visualCount>1?` · ${l.visualCount} visuals`:''}</small></a>`}).join('')}</div></section>`}).join('');
- return `<div class="breadcrumbs"><a href="#/">Home</a> / Visual atlas</div><section class="lesson-head"><div class="kicker">Original diagrams · theme-aware SVG</div><h1>Visual atlas</h1><p class="lede">${ls.length} original conceptual diagrams integrated directly into lessons and the generated book. They are designed to clarify structure, trade-offs and system flow rather than decorate the page.</p></section>${groups}`;
+ return `<div class="breadcrumbs"><a href="#/">Home</a> / Visual atlas</div><section class="lesson-head"><div class="kicker">Research-grounded diagrams · source-attributed SVG</div><h1>Visual atlas</h1><p class="lede">${ls.length} source-attributed teaching diagrams integrated directly into lessons and the generated book. Each figure is an Atlas redraw grounded in lesson-specific papers, official documentation, university courses, technical handbooks, or canonical textbooks.</p></section>${groups}`;
 }
 
 function analyzerTopicCard(x,label=''){
@@ -220,7 +300,7 @@ function analyzerPage(){
  <div class="privacy-card"><strong>Privacy:</strong> analysis runs in your browser. PDF text extraction uses PDF.js loaded from cdnjs; the selected document itself is processed locally and is not uploaded to an Atlas backend. If you prefer, paste plain text instead. Inputs are not saved to localStorage and disappear when the page is reloaded.</div>
  <section class="analyzer-input-grid section"><article class="analyzer-input-card"><div class="section-title-row"><div><div class="kicker">1 · Evidence</div><h2>Resume</h2></div><label class="file-button">Upload PDF/TXT<input id="resumeFile" type="file" accept=".pdf,.txt,.md,text/plain,application/pdf"></label></div><p class="small">${state.resumeFileName?`Loaded: ${esc(state.resumeFileName)}`:'Upload a PDF/TXT or paste extracted text.'}</p><textarea id="resumeText" class="analyzer-textarea" placeholder="Paste resume text here…">${esc(state.resumeText)}</textarea></article>
  <article class="analyzer-input-card"><div class="section-title-row"><div><div class="kicker">2 · Target</div><h2>Job description</h2></div><label class="file-button">Upload PDF/TXT<input id="jdFile" type="file" accept=".pdf,.txt,.md,text/plain,application/pdf"></label></div><p class="small">Paste the full description if possible, including requirements, responsibilities and preferred qualifications.</p><textarea id="jdText" class="analyzer-textarea" placeholder="Paste job description here…">${esc(state.jdText)}</textarea></article></section>
- <section class="analyzer-controls"><label><span>Role weighting</span><select id="analyzerRole"><option value="auto" ${state.analyzerRole==='auto'?'selected':''}>Auto-detect from JD</option>${[['ds','Data Scientist'],['da','Data / Product Analyst'],['as','Applied Scientist'],['mle','ML Engineer'],['aie','AI / GenAI Engineer'],['de','Data Engineer'],['cv','Computer Vision']].map(([v,n])=>`<option value="${v}" ${state.analyzerRole===v?'selected':''}>${n}</option>`).join('')}</select></label><label><span>Days available</span><input id="analyzerDays" type="number" min="1" max="14" value="${state.analyzerDays}"></label><div class="analyzer-actions"><button id="runAnalyzer" class="primary-btn">Analyze & build prep path</button><button id="clearAnalyzer" class="ghost">Clear</button></div></section>${status}${analyzerResultsHtml(state.analyzerResult)}`;
+ <section class="analyzer-controls"><label><span>Role weighting</span><select id="analyzerRole"><option value="auto" ${state.analyzerRole==='auto'?'selected':''}>Auto-detect from JD</option>${ROLE_OPTIONS.filter(([v])=>v!=='all').map(([v,n])=>`<option value="${v}" ${state.analyzerRole===v?'selected':''}>${n}</option>`).join('')}</select></label><label><span>Days available</span><input id="analyzerDays" type="number" min="1" max="14" value="${state.analyzerDays}"></label><div class="analyzer-actions"><button id="runAnalyzer" class="primary-btn">Analyze & build prep path</button><button id="clearAnalyzer" class="ghost">Clear</button></div></section>${status}${analyzerResultsHtml(state.analyzerResult)}`;
 }
 
 function resourcePage(){
@@ -242,10 +322,12 @@ function wireCommon(){
  const runAnalyzer=$('#runAnalyzer'); if(runAnalyzer)runAnalyzer.onclick=()=>{if(state.resumeText.trim().length<80||state.jdText.trim().length<80){state.analyzerStatus='Add more resume and job-description text before analyzing (at least a short paragraph for each).';state.analyzerResult=null;route(false);return}state.analyzerResult=AtlasAnalyzer.analyze(ATLAS,state.resumeText,state.jdText,{days:state.analyzerDays,role:state.analyzerRole});state.analyzerStatus='Analysis complete. Scores are deterministic relevance signals, not skill ratings.';route(false)};
  const clearAnalyzer=$('#clearAnalyzer'); if(clearAnalyzer)clearAnalyzer.onclick=()=>{state.resumeText='';state.jdText='';state.analyzerResult=null;state.analyzerStatus='';state.resumeFileName='';state.jdFileName='';route(false)};
  const copyPrepPlan=$('#copyPrepPlan'); if(copyPrepPlan)copyPrepPlan.onclick=async()=>{if(!state.analyzerResult)return;try{await navigator.clipboard.writeText(AtlasAnalyzer.planText(state.analyzerResult));const old=copyPrepPlan.textContent;copyPrepPlan.textContent='Copied';setTimeout(()=>copyPrepPlan.textContent=old,900)}catch{}};
+ const resetCurriculumFilters=$('#resetCurriculumFilters'); if(resetCurriculumFilters)resetCurriculumFilters.onclick=()=>{state.role='all';state.priority='all';state.query='';save();route(false)};
  const s=$('#search'); if(s)s.oninput=e=>{state.query=e.target.value;setTimeout(()=>route(false),0)}; const p=$('#priority'); if(p)p.onchange=e=>{state.priority=e.target.value;route(false)}; document.querySelectorAll('[data-role]').forEach(b=>b.onclick=()=>{state.role=b.dataset.role;save();route(false)});
 }
-function route(scroll=true){const version=++routeVersion;const h=location.hash.replace(/^#\//,'').split('/');if(h[0]==='lesson'){loadLessonPage(h[1],version);return}let view;if(!h[0])view=home();else if(h[0]==='module')view=modulePage(h[1]);else if(h[0]==='roadmap')view=roadmap();else if(h[0]==='paths')view=pathsPage();else if(h[0]==='analyzer')view=analyzerPage();else if(h[0]==='quiz')view=quizPage();else if(h[0]==='labs')view=labsPage();else if(h[0]==='resources')view=resourcePage();else if(h[0]==='visuals')view=visualsPage();else view=notFound();$('#app').innerHTML=view;wireCommon();if(scroll)scrollTo(0,0)}
+function route(scroll=true){const version=++routeVersion;const h=location.hash.replace(/^#\//,'').split('/');if(h[0]==='lesson'){loadLessonPage(h[1],version);return}let view;if(!h[0])view=home();else if(h[0]==='module')view=modulePage(h[1]);else if(h[0]==='roadmap')view=roadmap();else if(h[0]==='paths')view=pathsPage();else if(h[0]==='analyzer')view=analyzerPage();else if(h[0]==='quiz')view=quizPage();else if(h[0]==='labs')view=labsPage();else if(h[0]==='resources')view=resourcePage();else if(h[0]==='visuals')view=visualsPage();else view=notFound();$('#app').innerHTML=view;wireCommon();queueMathTypeset($('#app'));if(scroll)scrollTo(0,0)}
 window.addEventListener('hashchange',()=>route());
 const menuBtn=$('#menuBtn'), mainNav=$('#mainNav');if(menuBtn&&mainNav){menuBtn.onclick=()=>{const open=mainNav.classList.toggle('open');menuBtn.setAttribute('aria-expanded',String(open));menuBtn.textContent=open?'✕ Close':'☰ Menu'};mainNav.querySelectorAll('a').forEach(a=>a.addEventListener('click',()=>{mainNav.classList.remove('open');menuBtn.setAttribute('aria-expanded','false');menuBtn.textContent='☰ Menu'}));}
-const themeBtn=$('#themeBtn');function updateThemeBtn(){if(themeBtn)themeBtn.textContent=document.documentElement.dataset.theme==='dark'?'☀ Light':'☾ Dark'}updateThemeBtn();if(themeBtn)themeBtn.onclick=()=>{const n=document.documentElement.dataset.theme==='dark'?'light':'dark';document.documentElement.dataset.theme=n;localStorage.setItem('atlas-theme',n);updateThemeBtn()};
+const themeBtn=$('#themeBtn');function updateThemeBtn(){if(themeBtn)themeBtn.textContent=document.documentElement.dataset.theme==='dark'?'☀ Light':'☾ Dark'}updateThemeBtn();if(themeBtn)themeBtn.onclick=()=>{const n=document.documentElement.dataset.theme==='dark'?'light':'dark';document.documentElement.dataset.theme=n;localStorage.setItem('atlas-theme',n);updateThemeBtn();window.AtlasBackground?.syncTheme?.()};
+const motionBtn=$('#motionBtn');function updateMotionBtn(){if(!motionBtn)return;const state=window.AtlasBackground?.state?.()||{manual:true,reduced:false,effective:true};motionBtn.dataset.state=state.effective?'on':'off';motionBtn.textContent=state.reduced?'◌ Motion reduced':state.effective?'◉ Motion on':'◌ Motion off';motionBtn.title=state.reduced?'System reduced-motion preference is active':'Toggle ambient 3D background motion'}updateMotionBtn();if(motionBtn)motionBtn.onclick=()=>{window.AtlasBackground?.toggle?.();updateMotionBtn()};window.addEventListener('atlas-background-state',updateMotionBtn);
 route();

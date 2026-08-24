@@ -138,7 +138,20 @@
         "Top-K exact-distance results among explored nodes"
       ],
       "caption": "Greedy upper-layer descent supplies a strong entry point; bounded base exploration supplies robustness.",
-      "afterSection": "hierarchy-and-search"
+      "afterSection": "hierarchy-and-search",
+      "grounding": [
+        {
+          "id": "hnsw-paper",
+          "role": "Primary technical basis"
+        },
+        {
+          "id": "faiss-index-guide",
+          "role": "Secondary technical reference"
+        }
+      ],
+      "sourceMode": "adapted-redraw",
+      "figureClass": "research-grounded",
+      "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
     },
     {
       "type": "network",
@@ -214,7 +227,20 @@
         ]
       ],
       "caption": "Conceptual graph: diverse links give bounded search alternate routes around local minima.",
-      "afterSection": "construction"
+      "afterSection": "construction",
+      "grounding": [
+        {
+          "id": "faiss-index-guide",
+          "role": "Primary technical basis"
+        },
+        {
+          "id": "hnsw-paper",
+          "role": "Secondary technical reference"
+        }
+      ],
+      "sourceMode": "adapted-redraw",
+      "figureClass": "research-grounded",
+      "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
     }
   ],
   "sourceNotes": [
@@ -226,5 +252,10 @@
       "resource": "faiss-index-guide",
       "contribution": "Verifies current HNSW parameter, memory, exact-baseline and operational index-selection guidance."
     }
-  ]
+  ],
+  "presentation": {
+    "visualStandard": "research-grounded-adapted-redraw",
+    "mathStandard": "STIX-math-with-MathJax-for-delimited-equations",
+    "typographyStandard": "Plus-Jakarta-Sans-Source-Serif-4-IBM-Plex-Mono"
+  }
 }

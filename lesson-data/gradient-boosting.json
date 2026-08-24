@@ -81,7 +81,20 @@
     ],
     "caption": "Boosting builds a strong model sequentially by correcting errors made by the current ensemble.",
     "accent": 1,
-    "orientation": "horizontal"
+    "orientation": "horizontal",
+    "grounding": [
+      {
+        "id": "gradient-boosting-paper",
+        "role": "Primary technical basis"
+      },
+      {
+        "id": "xgboost-paper",
+        "role": "Secondary technical reference"
+      }
+    ],
+    "sourceMode": "adapted-redraw",
+    "figureClass": "research-grounded",
+    "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
   },
   "editorial": {
     "status": "verified",
@@ -162,7 +175,20 @@
         "Stop using validation evidence"
       ],
       "caption": "Each stage adds a constrained function that follows the current loss gradient.",
-      "afterSection": "functional-gradient"
+      "afterSection": "functional-gradient",
+      "grounding": [
+        {
+          "id": "gradient-boosting-paper",
+          "role": "Primary technical basis"
+        },
+        {
+          "id": "xgboost-paper",
+          "role": "Secondary technical reference"
+        }
+      ],
+      "sourceMode": "adapted-redraw",
+      "figureClass": "research-grounded",
+      "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
     },
     {
       "type": "compare",
@@ -186,7 +212,20 @@
         ]
       },
       "caption": "Both build additive trees; the second-order approximation also uses local curvature.",
-      "afterSection": "second-order-systems"
+      "afterSection": "second-order-systems",
+      "grounding": [
+        {
+          "id": "xgboost-paper",
+          "role": "Primary technical basis"
+        },
+        {
+          "id": "gradient-boosting-paper",
+          "role": "Secondary technical reference"
+        }
+      ],
+      "sourceMode": "adapted-redraw",
+      "figureClass": "research-grounded",
+      "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
     }
   ],
   "sourceNotes": [
@@ -202,5 +241,10 @@
       "resource": "sklearn-ensembles",
       "contribution": "Verifies current implementation concepts, losses and practical estimator behavior."
     }
-  ]
+  ],
+  "presentation": {
+    "visualStandard": "research-grounded-adapted-redraw",
+    "mathStandard": "STIX-math-with-MathJax-for-delimited-equations",
+    "typographyStandard": "Plus-Jakarta-Sans-Source-Serif-4-IBM-Plex-Mono"
+  }
 }

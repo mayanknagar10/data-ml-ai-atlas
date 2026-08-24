@@ -74,7 +74,20 @@
     ],
     "caption": "A robust reconstruction system separates enhancement from fusion and validates the result with both image and domain-specific checks.",
     "accent": 3,
-    "orientation": "horizontal"
+    "orientation": "horizontal",
+    "grounding": [
+      {
+        "id": "ssim-paper",
+        "role": "Primary technical basis"
+      },
+      {
+        "id": "paper-cyclegan",
+        "role": "Secondary technical reference"
+      }
+    ],
+    "sourceMode": "adapted-redraw",
+    "figureClass": "research-grounded",
+    "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
   },
   "editorial": {
     "status": "verified",
@@ -160,7 +173,20 @@
         "Downstream scientific validation and audit"
       ],
       "caption": "Plausible detail becomes usable evidence only after physics and task validation.",
-      "afterSection": "evaluation-truth"
+      "afterSection": "evaluation-truth",
+      "grounding": [
+        {
+          "id": "ssim-paper",
+          "role": "Primary technical basis"
+        },
+        {
+          "id": "paper-cyclegan",
+          "role": "Secondary technical reference"
+        }
+      ],
+      "sourceMode": "adapted-redraw",
+      "figureClass": "research-grounded",
+      "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
     },
     {
       "type": "compare",
@@ -184,7 +210,20 @@
         ]
       },
       "caption": "A realistic image can still be physically or factually wrong.",
-      "afterSection": "problem-forward"
+      "afterSection": "problem-forward",
+      "grounding": [
+        {
+          "id": "paper-cyclegan",
+          "role": "Primary technical basis"
+        },
+        {
+          "id": "ssim-paper",
+          "role": "Secondary technical reference"
+        }
+      ],
+      "sourceMode": "adapted-redraw",
+      "figureClass": "research-grounded",
+      "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
     }
   ],
   "sourceNotes": [
@@ -204,5 +243,10 @@
       "resource": "stanford-cs329s",
       "contribution": "Supports production ML failure, distribution shift, testing and lifecycle design."
     }
-  ]
+  ],
+  "presentation": {
+    "visualStandard": "research-grounded-adapted-redraw",
+    "mathStandard": "STIX-math-with-MathJax-for-delimited-equations",
+    "typographyStandard": "Plus-Jakarta-Sans-Source-Serif-4-IBM-Plex-Mono"
+  }
 }

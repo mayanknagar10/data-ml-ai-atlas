@@ -145,7 +145,20 @@
         "Repeat until empty or bounded"
       ],
       "caption": "Recursive SQL iteratively expands a frontier; termination and cycle handling are part of correctness.",
-      "afterSection": "recursive-ctes"
+      "afterSection": "recursive-ctes",
+      "grounding": [
+        {
+          "id": "postgres-with",
+          "role": "Primary technical basis"
+        },
+        {
+          "id": "postgres-select",
+          "role": "Secondary technical reference"
+        }
+      ],
+      "sourceMode": "adapted-redraw",
+      "figureClass": "research-grounded",
+      "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
     },
     {
       "type": "compare",
@@ -169,7 +182,20 @@
         ]
       },
       "caption": "Neither physical choice is universally superior; inspect the target engine's plan.",
-      "afterSection": "nonrecursive-ctes"
+      "afterSection": "nonrecursive-ctes",
+      "grounding": [
+        {
+          "id": "postgres-select",
+          "role": "Primary technical basis"
+        },
+        {
+          "id": "postgres-with",
+          "role": "Secondary technical reference"
+        }
+      ],
+      "sourceMode": "adapted-redraw",
+      "figureClass": "research-grounded",
+      "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
     }
   ],
   "lab": {
@@ -179,5 +205,10 @@
     "useIt": "import sqlite3\ncon=sqlite3.connect(':memory:')\ncon.executescript('CREATE TABLE edge(parent TEXT, child TEXT); INSERT INTO edge VALUES (\"a\",\"b\"),(\"a\",\"c\"),(\"b\",\"d\");')\nrows=con.execute('WITH RECURSIVE tree(node,depth,path) AS (SELECT \"a\",0,\"/a/\" UNION ALL SELECT e.child,t.depth+1,t.path||e.child||\"/\" FROM tree t JOIN edge e ON e.parent=t.node WHERE t.depth<10 AND instr(t.path,\"/\"||e.child||\"/\")=0) SELECT node,depth FROM tree ORDER BY depth,node').fetchall()",
     "verifyIt": "assert rows == [('a',0),('b',1),('c',1),('d',2)]\nassert expand({'a':['b','c'],'b':['d']},['a'],10)==rows\ntry: expand({'a':['b'],'b':['a']},['a'],10)\nexcept ValueError: pass\nelse: raise AssertionError('cycle must fail')\nassert len({node for node,_ in rows})==len(rows)",
     "shipIt": "Add stage-grain tests, recursion row/depth/time limits, cycle diagnostics, plan and temp-I/O monitoring, and engine-version checks for materialization behavior."
+  },
+  "presentation": {
+    "visualStandard": "research-grounded-adapted-redraw",
+    "mathStandard": "STIX-math-with-MathJax-for-delimited-equations",
+    "typographyStandard": "Plus-Jakarta-Sans-Source-Serif-4-IBM-Plex-Mono"
   }
 }

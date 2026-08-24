@@ -133,7 +133,20 @@
     ],
     "caption": "t-SNE and UMAP are useful for exploring local structure, but distances and apparent cluster separation can be misleading.",
     "xLabel": "embedding axis 1",
-    "yLabel": "embedding axis 2"
+    "yLabel": "embedding axis 2",
+    "grounding": [
+      {
+        "id": "tsne-paper",
+        "role": "Primary technical basis"
+      },
+      {
+        "id": "umap-paper",
+        "role": "Secondary technical reference"
+      }
+    ],
+    "sourceMode": "adapted-redraw",
+    "figureClass": "research-grounded",
+    "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
   },
   "editorial": {
     "status": "verified",
@@ -235,7 +248,20 @@
         ]
       },
       "caption": "Both prioritize neighborhoods and require sensitivity analysis before structural claims.",
-      "afterSection": "umap-graph"
+      "afterSection": "umap-graph",
+      "grounding": [
+        {
+          "id": "tsne-paper",
+          "role": "Primary technical basis"
+        },
+        {
+          "id": "umap-paper",
+          "role": "Secondary technical reference"
+        }
+      ],
+      "sourceMode": "adapted-redraw",
+      "figureClass": "research-grounded",
+      "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
     },
     {
       "type": "flow",
@@ -249,7 +275,20 @@
         "Use labels only in a confirmatory stage"
       ],
       "caption": "A map becomes evidence only after quantitative and procedural checks.",
-      "afterSection": "validation-sensitivity"
+      "afterSection": "validation-sensitivity",
+      "grounding": [
+        {
+          "id": "umap-paper",
+          "role": "Primary technical basis"
+        },
+        {
+          "id": "tsne-paper",
+          "role": "Secondary technical reference"
+        }
+      ],
+      "sourceMode": "adapted-redraw",
+      "figureClass": "research-grounded",
+      "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
     }
   ],
   "sourceNotes": [
@@ -265,5 +304,10 @@
       "resource": "distill-tsne",
       "contribution": "Supports practical parameter-sensitivity and interpretation cautions through controlled visual experiments."
     }
-  ]
+  ],
+  "presentation": {
+    "visualStandard": "research-grounded-adapted-redraw",
+    "mathStandard": "STIX-math-with-MathJax-for-delimited-equations",
+    "typographyStandard": "Plus-Jakarta-Sans-Source-Serif-4-IBM-Plex-Mono"
+  }
 }

@@ -144,7 +144,20 @@
     ],
     "caption": "DBSCAN identifies dense connected regions and labels isolated points as noise without requiring k in advance.",
     "xLabel": "feature 1",
-    "yLabel": "feature 2"
+    "yLabel": "feature 2",
+    "grounding": [
+      {
+        "id": "dbscan-paper",
+        "role": "Primary technical basis"
+      },
+      {
+        "id": "sklearn-clustering",
+        "role": "Secondary technical reference"
+      }
+    ],
+    "sourceMode": "adapted-redraw",
+    "figureClass": "research-grounded",
+    "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
   },
   "editorial": {
     "status": "verified",
@@ -227,7 +240,20 @@
         "Leave unreached points as noise"
       ],
       "caption": "Clusters are connected components under core-mediated density reachability.",
-      "afterSection": "density-definitions"
+      "afterSection": "density-definitions",
+      "grounding": [
+        {
+          "id": "dbscan-paper",
+          "role": "Primary technical basis"
+        },
+        {
+          "id": "sklearn-clustering",
+          "role": "Secondary technical reference"
+        }
+      ],
+      "sourceMode": "adapted-redraw",
+      "figureClass": "research-grounded",
+      "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
     },
     {
       "type": "compare",
@@ -251,7 +277,20 @@
         ]
       },
       "caption": "DBSCAN support roles should not be promoted into domain conclusions without validation.",
-      "afterSection": "validation-meaning"
+      "afterSection": "validation-meaning",
+      "grounding": [
+        {
+          "id": "sklearn-clustering",
+          "role": "Primary technical basis"
+        },
+        {
+          "id": "dbscan-paper",
+          "role": "Secondary technical reference"
+        }
+      ],
+      "sourceMode": "adapted-redraw",
+      "figureClass": "research-grounded",
+      "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
     }
   ],
   "sourceNotes": [
@@ -267,5 +306,10 @@
       "resource": "sklearn-neighbors",
       "contribution": "Supports radius-neighbor search and dimensionality trade-offs."
     }
-  ]
+  ],
+  "presentation": {
+    "visualStandard": "research-grounded-adapted-redraw",
+    "mathStandard": "STIX-math-with-MathJax-for-delimited-equations",
+    "typographyStandard": "Plus-Jakarta-Sans-Source-Serif-4-IBM-Plex-Mono"
+  }
 }

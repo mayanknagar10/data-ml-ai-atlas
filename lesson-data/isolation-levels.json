@@ -179,7 +179,20 @@
       ],
       "directed": true,
       "caption": "Transactions share a predicate read but write different rows, so snapshot visibility alone may not create a direct write conflict.",
-      "afterSection": "histories-anomalies"
+      "afterSection": "histories-anomalies",
+      "grounding": [
+        {
+          "id": "postgres-transactions",
+          "role": "Primary technical basis"
+        },
+        {
+          "id": "cmu-db",
+          "role": "Secondary technical reference"
+        }
+      ],
+      "sourceMode": "adapted-redraw",
+      "figureClass": "research-grounded",
+      "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
     },
     {
       "type": "flow",
@@ -192,7 +205,20 @@
         "On serialization/deadlock: rollback, backoff, retry whole action"
       ],
       "caption": "A retry must recompute decisions from a fresh snapshot and preserve idempotency.",
-      "afterSection": "preserving-invariants"
+      "afterSection": "preserving-invariants",
+      "grounding": [
+        {
+          "id": "cmu-db",
+          "role": "Primary technical basis"
+        },
+        {
+          "id": "postgres-transactions",
+          "role": "Secondary technical reference"
+        }
+      ],
+      "sourceMode": "adapted-redraw",
+      "figureClass": "research-grounded",
+      "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
     }
   ],
   "lab": {
@@ -202,5 +228,10 @@
     "useIt": "from threading import Lock,Thread\nstate={'a':True,'b':True}; guard=Lock()\ndef safe_off(doctor):\n    with guard:\n        if sum(state.values()) < 2: return False\n        state[doctor]=False; return True\nresults=[]\nthreads=[Thread(target=lambda d=d: results.append(safe_off(d))) for d in state]\nfor t in threads:t.start()\nfor t in threads:t.join()",
     "verifyIt": "snapshot={'a':True,'b':True}\nwrites=[snapshot_decision(snapshot,'a'),snapshot_decision(snapshot,'b')]\nunsafe=apply_writes(dict(snapshot),[w for w in writes if w])\nassert sum(unsafe.values())==0\nassert sum(state.values())==1\nassert sorted(results)==[False,True]\nassert all(value in (True,False) for value in state.values())",
     "shipIt": "Implement the invariant with target-database constraints/locking or Serializable transactions, whole-transaction idempotent retries, consistent lock order, timeouts, and monitoring of abort/lock rates."
+  },
+  "presentation": {
+    "visualStandard": "research-grounded-adapted-redraw",
+    "mathStandard": "STIX-math-with-MathJax-for-delimited-equations",
+    "typographyStandard": "Plus-Jakarta-Sans-Source-Serif-4-IBM-Plex-Mono"
   }
 }

@@ -136,7 +136,20 @@
         "Stop with gap certificate"
       ],
       "caption": "Each node either improves a feasible decision or rules out an entire region using a bound.",
-      "afterSection": "branch-cut"
+      "afterSection": "branch-cut",
+      "grounding": [
+        {
+          "id": "boyd-convex",
+          "role": "Primary technical basis"
+        },
+        {
+          "id": "scipy-milp",
+          "role": "Secondary technical reference"
+        }
+      ],
+      "sourceMode": "adapted-redraw",
+      "figureClass": "research-grounded",
+      "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
     },
     {
       "type": "compare",
@@ -160,7 +173,20 @@
         ]
       },
       "caption": "Relaxation and incumbent answer different questions and must both appear in reporting.",
-      "afterSection": "relaxation-gap"
+      "afterSection": "relaxation-gap",
+      "grounding": [
+        {
+          "id": "scipy-milp",
+          "role": "Primary technical basis"
+        },
+        {
+          "id": "boyd-convex",
+          "role": "Secondary technical reference"
+        }
+      ],
+      "sourceMode": "adapted-redraw",
+      "figureClass": "research-grounded",
+      "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
     }
   ],
   "lab": {
@@ -188,5 +214,10 @@
       "resource": "boyd-convex",
       "contribution": "Provides LP relaxation and dual-bound foundations used to understand branch-and-bound certificates."
     }
-  ]
+  ],
+  "presentation": {
+    "visualStandard": "research-grounded-adapted-redraw",
+    "mathStandard": "STIX-math-with-MathJax-for-delimited-equations",
+    "typographyStandard": "Plus-Jakarta-Sans-Source-Serif-4-IBM-Plex-Mono"
+  }
 }

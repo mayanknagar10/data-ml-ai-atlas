@@ -78,7 +78,20 @@
       0.1
     ],
     "caption": "The ACF summarizes correlation between a series and lagged versions of itself; slow decay can signal persistent structure.",
-    "yLabel": "autocorrelation"
+    "yLabel": "autocorrelation",
+    "grounding": [
+      {
+        "id": "statsmodels-tsa",
+        "role": "Primary technical basis"
+      },
+      {
+        "id": "fpp3",
+        "role": "Secondary technical reference"
+      }
+    ],
+    "sourceMode": "adapted-redraw",
+    "figureClass": "research-grounded",
+    "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
   },
   "editorial": {
     "status": "verified",
@@ -87,16 +100,15 @@
   "code": "from scipy.stats import pearsonr\npearson_lag1=pearsonr(ar[1:],ar[:-1]).statistic; diff_walk=np.diff(walk); diff_lag1=pearsonr(diff_walk[1:],diff_walk[:-1]).statistic",
   "lab": {
     "language": "python",
-    "goal": "Simulate stationary AR(1) and a random walk, compute ACF, and verify theoretical decay plus the effect of differencing.",
-    "buildIt": "import numpy as np\nrng=np.random.default_rng(8); n=2500; phi=.75; ar=np.zeros(n); eps=rng.normal(size=n)\nfor i in range(1,n): ar[i]=phi*ar[i-1]+eps[i]\nwalk=np.cumsum(rng.normal(size=n))\ndef sample_acf(x,max_lag):\n    z=np.asarray(x)-np.mean(x); denom=np.dot(z,z); return np.array([np.dot(z[k:],z[:-k])/denom if k else 1. for k in range(max_lag+1)])\nacf_ar=sample_acf(ar,6); acf_walk=sample_acf(walk,6)",
-    "useIt": "from scipy.stats import pearsonr\npearson_lag1=pearsonr(ar[1:],ar[:-1]).statistic; diff_walk=np.diff(walk); diff_lag1=pearsonr(diff_walk[1:],diff_walk[:-1]).statistic",
-    "verifyIt": "assert abs(acf_ar[1]-pearson_lag1)<2e-3\nassert abs(acf_ar[1]-phi)<.04\nassert np.max(np.abs(acf_ar[1:5]-phi**np.arange(1,5)))<.06\nassert acf_walk[1]>.95\nassert abs(diff_lag1)<.08 and abs(sample_acf(diff_walk,1)[1])<.08\nassert np.var(walk)>20*np.var(diff_walk)",
-    "shipIt": "Persist transform and lag diagnostics per training origin, verify residual dependence and inverse reconstruction, and monitor persistence and variance shifts with safe baseline fallback."
+    "goal": "Simulate stationary AR(1) and a random walk, compute ACF from first principles, and verify theoretical decay plus the effect of differencing.",
+    "buildIt": "import numpy as np\nrng=np.random.default_rng(8); n=2500; phi=.75\nar=np.zeros(n); eps=rng.normal(size=n)\nfor i in range(1,n): ar[i]=phi*ar[i-1]+eps[i]\nwalk=np.cumsum(rng.normal(size=n))\ndef sample_acf(x,max_lag):\n    z=np.asarray(x,float)-np.mean(x); denom=np.dot(z,z)\n    return np.array([1.0 if k==0 else np.dot(z[k:],z[:-k])/denom for k in range(max_lag+1)])\nacf_ar=sample_acf(ar,6); acf_walk=sample_acf(walk,6)",
+    "useIt": "diff_walk=np.diff(walk)\nacf_diff=sample_acf(diff_walk,3)\nlag1_corr=float(np.corrcoef(ar[1:],ar[:-1])[0,1])",
+    "verifyIt": "assert abs(acf_ar[1]-lag1_corr)<2e-3\nassert abs(acf_ar[1]-phi)<.04\nassert np.max(np.abs(acf_ar[1:5]-phi**np.arange(1,5)))<.06\nassert acf_walk[1]>.95\nassert abs(acf_diff[1])<.08\nassert np.var(walk)>20*np.var(diff_walk)",
+    "shipIt": "Persist transform and lag diagnostics per forecast origin, validate inverse transformations, monitor persistence and variance shifts, and retain a simple baseline fallback when dependence structure changes."
   },
   "description": "Stationarity, autocorrelation and partial autocorrelation provide the core diagnostic language for linear time-series dependence. This chapter defines strict and weak stationarity, distinguishes deterministic trend from unit-root stochastic trend, and analyzes changing variance, seasonality and structural breaks. It derives the ACF and PACF, explains canonical AR and MA cutoff-versus-decay patterns, seasonal spikes, confidence bands and the limits of data-driven order selection. It develops first, seasonal and fractional differencing intuition, variance-stabilizing transforms, overdifferencing symptoms and cointegration warnings. It compares ADF and KPSS null hypotheses and shows how deterministic terms and breaks affect conclusions. Worked examples derive the AR(1) ACF and expose a trending series with spurious persistence. The lab simulates stationary AR(1) and random-walk processes, verifies sample ACF behavior against statsmodels and checks contrasting ADF evidence. Production guidance estimates diagnostics within training windows, monitors residual autocorrelation and regime shifts and chooses transformations by rolling forecast performance rather than a single test.",
   "prerequisites": [
-    "time-series-components",
-    "expectation-variance"
+    "time-series-components"
   ],
   "learningObjectives": [
     "Define weak stationarity and diagnose trend, variance, seasonal and break violations.",
@@ -178,7 +190,20 @@
         ]
       },
       "caption": "Canonical patterns guide candidate models but require finite-sample and seasonal validation.",
-      "afterSection": "acf-pacf"
+      "afterSection": "acf-pacf",
+      "grounding": [
+        {
+          "id": "statsmodels-tsa",
+          "role": "Primary technical basis"
+        },
+        {
+          "id": "fpp3",
+          "role": "Secondary technical reference"
+        }
+      ],
+      "sourceMode": "adapted-redraw",
+      "figureClass": "research-grounded",
+      "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
     },
     {
       "type": "flow",
@@ -192,7 +217,20 @@
         "Backtest and diagnose residuals"
       ],
       "caption": "No single test substitutes for mechanism, rolling forecasts and stable residual evidence.",
-      "afterSection": "formal-tests"
+      "afterSection": "formal-tests",
+      "grounding": [
+        {
+          "id": "fpp3",
+          "role": "Primary technical basis"
+        },
+        {
+          "id": "statsmodels-tsa",
+          "role": "Secondary technical reference"
+        }
+      ],
+      "sourceMode": "adapted-redraw",
+      "figureClass": "research-grounded",
+      "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
     }
   ],
   "sourceNotes": [
@@ -208,5 +246,10 @@
       "resource": "openintro-stats",
       "contribution": "Supports covariance, correlation and regression concepts underlying ACF and PACF."
     }
-  ]
+  ],
+  "presentation": {
+    "visualStandard": "research-grounded-adapted-redraw",
+    "mathStandard": "STIX-math-with-MathJax-for-delimited-equations",
+    "typographyStandard": "Plus-Jakarta-Sans-Source-Serif-4-IBM-Plex-Mono"
+  }
 }

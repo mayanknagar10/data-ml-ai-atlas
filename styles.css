@@ -66,3 +66,87 @@ html[data-theme="dark"] .concept-visual{--viz-1:#8fb4ff;--viz-2:#63d3ae;--viz-3:
 @media(max-width:900px){.chapter-layout{grid-template-columns:1fr}.chapter-sidebar{position:static;order:-1}.chapter-toc ol{columns:2}.chapter-description{font-size:17px}}
 @media(max-width:560px){.chapter-toc ol{columns:1}.chapter-nav{grid-template-columns:1fr}.chapter-next{text-align:left}.chapter-prerequisites,.chapter-objectives{padding:16px}.chapter-load-error h1{font-size:36px}.chapter-load-error .ghost{margin:10px 0 0}}
 @media print{.chapter-toc,.chapter-nav,.chapter-loading,.chapter-load-error{display:none!important}.chapter-layout{display:block}.chapter-article>section,.worked-example,.chapter-exercises article{break-inside:avoid}.chapter-exercises details[open] summary{display:none}}
+
+/* v2.4 — publication-grade study typography, sourced figures, and mathematical typesetting */
+:root{
+  --font-ui:"Plus Jakarta Sans",Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  --font-reading:"Source Serif 4","STIX Two Text",Georgia,"Times New Roman",serif;
+  --font-mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --font-math:"STIX Two Text","Cambria Math","Times New Roman",serif;
+}
+body,button,input,select,textarea{font-family:var(--font-ui)}
+.brand,h1,h2,h3,h4,.kicker,.chapter-no,.lesson-no,.eyebrow,.topbar,.meta,.pill{font-family:var(--font-ui)}
+.lede,.chapter-description,.article p,.article li,.chapter-article p,.chapter-article li,.answer-card p,.worked-example p,.chapter-qa p,.source-notes p,.chapter-exercises article,.lesson-row p{font-family:var(--font-reading)}
+.code,.analyzer-textarea,pre code,.path-list span{font-family:var(--font-mono)}
+body{letter-spacing:-.004em}
+h1,h2,h3{letter-spacing:-.036em}
+.chapter-description,.chapter-article p,.chapter-article li,.article p,.article li{font-size:1.03rem;line-height:1.82}
+.answer-card{background:linear-gradient(180deg,color-mix(in srgb,var(--soft) 76%,var(--card)),var(--card));box-shadow:0 12px 34px rgba(15,23,42,.045)}
+.article section,.side-card,.module-card,.resource-card,.quiz-card,.path-card,.hero-stat,.lesson-row,.chapter-prerequisites,.chapter-objectives,.chapter-qa article,.chapter-exercises article{box-shadow:0 14px 38px rgba(15,23,42,.045)}
+[data-theme="dark"] .article section,[data-theme="dark"] .answer-card,[data-theme="dark"] .side-card,[data-theme="dark"] .module-card,[data-theme="dark"] .resource-card,[data-theme="dark"] .quiz-card,[data-theme="dark"] .path-card,[data-theme="dark"] .hero-stat,[data-theme="dark"] .lesson-row,[data-theme="dark"] .chapter-prerequisites,[data-theme="dark"] .chapter-objectives,[data-theme="dark"] .chapter-qa article,[data-theme="dark"] .chapter-exercises article{box-shadow:none}
+
+/* Formal-view blocks use a textbook math face instead of monospace code styling. */
+.math{font-family:var(--font-math);font-size:1.03rem;line-height:1.9;background:linear-gradient(180deg,color-mix(in srgb,var(--card) 90%,var(--soft)),color-mix(in srgb,var(--card) 98%,white));padding:19px 21px;border:1px solid color-mix(in srgb,var(--accent) 12%,var(--line));border-radius:16px;white-space:normal;letter-spacing:0}
+.math-paragraph{font-family:var(--font-math)!important;margin:0!important;max-width:78ch!important}
+.math-paragraph+.math-paragraph{margin-top:13px!important}
+.math-stack{display:grid;gap:10px}
+.math-line{font-family:var(--font-math);padding:10px 12px;border-radius:12px;background:color-mix(in srgb,var(--soft) 58%,transparent);border:1px solid color-mix(in srgb,var(--line) 88%,transparent)}
+.math sup,.math sub{font-size:.72em;line-height:0}.math sup{vertical-align:.55em}.math sub{vertical-align:-.25em}
+.math mjx-container{font-size:108%!important;margin:.15em .08em!important;overflow-x:auto;overflow-y:hidden;max-width:100%}
+.chapter-article mjx-container{max-width:100%;overflow-x:auto;overflow-y:hidden}
+[data-theme="dark"] .math{background:linear-gradient(180deg,#141a22,#0f141a);border-color:#2c3846}
+[data-theme="dark"] .math-line{background:#121a23;border-color:#2a3541}
+
+/* Every lesson figure carries visible technical provenance. */
+.concept-visual.research-grounded{border-color:color-mix(in srgb,var(--accent) 18%,var(--line));background:linear-gradient(180deg,color-mix(in srgb,var(--card) 88%,var(--soft)),var(--card));padding:18px 18px 14px;border-radius:20px}
+.concept-visual .viz-heading strong{font-family:var(--font-ui);font-size:15px;font-weight:800}
+.viz-grounding{margin-top:11px;border-top:1px solid var(--line);padding:12px 4px 0}
+.viz-grounding-kicker{font-family:var(--font-ui);font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin-bottom:8px}
+.viz-ref-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:8px}
+.viz-ref{display:flex;flex-direction:column;gap:3px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:color-mix(in srgb,var(--card) 94%,var(--soft));text-decoration:none}
+.viz-ref:hover{border-color:var(--accent);text-decoration:none}
+.viz-ref strong{font-family:var(--font-ui);font-size:12px;color:var(--text);line-height:1.35}
+.viz-ref span{font-family:var(--font-ui);font-size:10.5px;color:var(--muted);line-height:1.35}
+.viz-adaptation{font-family:var(--font-reading)!important;margin:9px 0 0!important;font-size:12px!important;line-height:1.55!important;color:var(--muted);font-style:italic}
+[data-theme="dark"] .concept-visual.research-grounded{background:linear-gradient(180deg,#141a21,#10151b);border-color:#334154}
+[data-theme="dark"] .viz-ref{background:#141c25;border-color:#2b3541}
+@media(max-width:640px){.math{padding:15px 14px}.viz-ref-grid{grid-template-columns:1fr}.concept-visual.research-grounded{padding:12px 10px 10px}}
+@media print{.viz-grounding{break-inside:avoid}.viz-ref{box-shadow:none}.math{background:white!important;border-color:#bbb!important}.math-line{background:#fafafa!important}}
+
+/* v2.4.2 — role-aware curriculum + live perspective background */
+html{background:var(--bg)}
+body{position:relative;isolation:isolate;background:transparent;min-height:100vh}
+.atlas-background{position:fixed;inset:0;width:100%;height:100%;z-index:0;pointer-events:none;opacity:.95;transition:opacity .35s ease;contain:strict}
+.atlas-background[data-motion="off"]{opacity:.72}
+body::before{content:"";position:fixed;inset:0;z-index:1;pointer-events:none;background:linear-gradient(180deg,color-mix(in srgb,var(--bg) 24%,transparent),color-mix(in srgb,var(--bg) 50%,transparent) 58%,color-mix(in srgb,var(--bg) 78%,transparent));}
+.topbar,main,footer{position:relative;z-index:2}
+.topbar{background:color-mix(in srgb,var(--bg) 72%,transparent);box-shadow:0 1px 0 color-mix(in srgb,var(--line) 80%,transparent)}
+[data-theme="dark"] .topbar{background:color-mix(in srgb,var(--bg) 68%,transparent)}
+.motion-btn{min-width:108px;text-align:center}
+.motion-btn[data-state="off"]{color:var(--muted);background:color-mix(in srgb,var(--card) 72%,transparent)}
+
+/* Keep study surfaces readable while allowing the ambient field to breathe through. */
+.hero-stat,.module-card,.sprint-card,.path-card,.quiz-card,.resource-card,.side-card,.chapter-prerequisites,.chapter-objectives,.lesson-row,.article section,.answer-card,.analyzer-input-card,.analyzer-topic,.analyzer-summary-grid article,.prep-days article{background:color-mix(in srgb,var(--card) 94%,transparent);backdrop-filter:blur(18px) saturate(112%);-webkit-backdrop-filter:blur(18px) saturate(112%)}
+[data-theme="dark"] .hero-stat,[data-theme="dark"] .module-card,[data-theme="dark"] .sprint-card,[data-theme="dark"] .path-card,[data-theme="dark"] .quiz-card,[data-theme="dark"] .resource-card,[data-theme="dark"] .side-card,[data-theme="dark"] .chapter-prerequisites,[data-theme="dark"] .chapter-objectives,[data-theme="dark"] .lesson-row,[data-theme="dark"] .article section,[data-theme="dark"] .answer-card,[data-theme="dark"] .analyzer-input-card,[data-theme="dark"] .analyzer-topic,[data-theme="dark"] .analyzer-summary-grid article,[data-theme="dark"] .prep-days article{background:color-mix(in srgb,var(--card) 91%,transparent)}
+
+.curriculum-heading{align-items:end;margin-bottom:10px}
+.curriculum-filter-summary{display:flex;align-items:center;justify-content:space-between;gap:18px;margin:0 0 18px;padding:14px 16px;border:1px solid color-mix(in srgb,var(--accent) 22%,var(--line));border-radius:14px;background:color-mix(in srgb,var(--soft) 78%,transparent);backdrop-filter:blur(16px)}
+.curriculum-filter-summary strong,.curriculum-filter-summary span{display:block}
+.curriculum-filter-summary strong{font-size:13px;color:var(--text)}
+.curriculum-filter-summary span{font-size:12px;color:var(--muted);margin-top:3px}
+.curriculum-filter-summary .ghost{white-space:nowrap;background:color-mix(in srgb,var(--card) 84%,transparent)}
+.module-card{animation:atlas-module-enter .28s ease both;transform-origin:50% 70%}
+.module-grid .module-card:nth-child(2n){animation-delay:.025s}.module-grid .module-card:nth-child(3n){animation-delay:.05s}
+@keyframes atlas-module-enter{from{opacity:0;transform:translateY(8px) scale(.988)}to{opacity:1;transform:translateY(0) scale(1)}}
+
+@media(prefers-reduced-motion:reduce){
+  .atlas-background{transition:none;opacity:.66}
+  .module-card{animation:none!important}
+}
+@media(max-width:700px){
+  .atlas-background{opacity:.72}
+  body::before{background:linear-gradient(180deg,color-mix(in srgb,var(--bg) 40%,transparent),color-mix(in srgb,var(--bg) 72%,transparent))}
+  .curriculum-filter-summary{align-items:flex-start;flex-direction:column}
+  .motion-btn{min-width:auto}
+}
+@media print{.atlas-background,body::before,.motion-btn{display:none!important}body{background:white!important}}

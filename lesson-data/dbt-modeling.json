@@ -145,7 +145,20 @@
         "Consumers"
       ],
       "caption": "Each graph layer has a distinct responsibility; `ref()` records the edges and resolves environment-specific relations.",
-      "afterSection": "graph-structure"
+      "afterSection": "graph-structure",
+      "grounding": [
+        {
+          "id": "dbt-docs",
+          "role": "Primary technical basis"
+        },
+        {
+          "id": "dbt-best-practices",
+          "role": "Secondary technical reference"
+        }
+      ],
+      "sourceMode": "adapted-redraw",
+      "figureClass": "research-grounded",
+      "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
     },
     {
       "type": "compare",
@@ -169,7 +182,20 @@
         ]
       },
       "caption": "No single green check proves the model, data, semantics and operation are all correct.",
-      "afterSection": "testing-contracts"
+      "afterSection": "testing-contracts",
+      "grounding": [
+        {
+          "id": "dbt-best-practices",
+          "role": "Primary technical basis"
+        },
+        {
+          "id": "dbt-docs",
+          "role": "Secondary technical reference"
+        }
+      ],
+      "sourceMode": "adapted-redraw",
+      "figureClass": "research-grounded",
+      "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
     }
   ],
   "lab": {
@@ -179,5 +205,10 @@
     "useIt": "import sqlite3\ngraph={'stg_orders':[],'stg_items':[],'int_lines':['stg_orders','stg_items'],'fct_lines':['int_lines']}\ncon=sqlite3.connect(':memory:')\nfor node in topo(graph):\n    con.execute('CREATE TABLE '+relation('pr42',node)+'(built INTEGER)')\n    con.execute('INSERT INTO '+relation('pr42',node)+' VALUES(1)')",
     "verifyIt": "assert topo(graph)==['stg_items','stg_orders','int_lines','fct_lines']\nassert all(con.execute('SELECT built FROM '+relation('pr42',node)).fetchone()==(1,) for node in graph)\nassert relation('prod','fct_lines')!='pr42__fct_lines'\ntry: topo({'a':['b'],'b':['a']})\nexcept ValueError: pass\nelse: raise AssertionError('cycle must fail')",
     "shipIt": "Use dbt's compiled graph and artifacts in real projects; build affected nodes in isolated CI targets, store run evidence, promote tested versions atomically, and retain the prior production relations for rollback."
+  },
+  "presentation": {
+    "visualStandard": "research-grounded-adapted-redraw",
+    "mathStandard": "STIX-math-with-MathJax-for-delimited-equations",
+    "typographyStandard": "Plus-Jakarta-Sans-Source-Serif-4-IBM-Plex-Mono"
   }
 }

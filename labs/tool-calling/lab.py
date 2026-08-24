@@ -15,3 +15,4 @@ print(validate(call))
 try: validate({'name':'weather','args':{}})
 except ValueError: pass
 else: raise AssertionError('schema check failed')
+assert validate(call)

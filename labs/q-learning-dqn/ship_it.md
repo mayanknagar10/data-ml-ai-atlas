@@ -1,3 +1,3 @@
 # Ship it
 
-Track replay-data freshness, action coverage and safety constraints; offline or logged-policy mismatch can dominate model architecture.
+Package the Q-learning & Deep Q-Networks lab as a tested, versioned component with monitoring and rollback.

@@ -142,7 +142,20 @@
         "Check Aᵀr=0"
       ],
       "caption": "The fitted vector lies in the model subspace and the leftover is perpendicular to every feature direction.",
-      "afterSection": "projection-geometry"
+      "afterSection": "projection-geometry",
+      "grounding": [
+        {
+          "id": "mit-linear-algebra",
+          "role": "Primary technical basis"
+        },
+        {
+          "id": "boyd-convex",
+          "role": "Secondary technical reference"
+        }
+      ],
+      "sourceMode": "adapted-redraw",
+      "figureClass": "research-grounded",
+      "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
     },
     {
       "type": "compare",
@@ -166,7 +179,20 @@
         ]
       },
       "caption": "Mathematical equivalence in exact arithmetic does not imply equal numerical stability.",
-      "afterSection": "solvers-rank"
+      "afterSection": "solvers-rank",
+      "grounding": [
+        {
+          "id": "boyd-convex",
+          "role": "Primary technical basis"
+        },
+        {
+          "id": "mit-linear-algebra",
+          "role": "Secondary technical reference"
+        }
+      ],
+      "sourceMode": "adapted-redraw",
+      "figureClass": "research-grounded",
+      "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
     }
   ],
   "lab": {
@@ -176,5 +202,10 @@
     "useIt": "import numpy as np\nxs=np.array([0.,1.,2.]); y=np.array([1.,2.,2.])\nbeta=np.array(least_squares_line(xs,y))\nA=np.column_stack([np.ones_like(xs),xs])\nlibrary,residuals,rank,singular=np.linalg.lstsq(A,y,rcond=None)\nfitted=A@beta; residual=y-fitted",
     "verifyIt": "assert np.allclose(beta,[7/6,1/2])\nassert np.allclose(beta,library)\nassert rank==2 and singular[-1]>0\nassert np.allclose(A.T@residual,[0.,0.],atol=1e-12)\nassert np.allclose(fitted+residual,y)\nfor delta in ([.01,0.],[0.,.01],[-.01,.02]):\n    assert np.linalg.norm(A@(beta+delta)-y)>=np.linalg.norm(residual)-1e-12",
     "shipIt": "Use target-library QR/SVD least squares with rank/condition telemetry, leakage-safe preprocessing and evaluation, versioned features/artifacts, drift monitoring and a prior reproducible model for rollback."
+  },
+  "presentation": {
+    "visualStandard": "research-grounded-adapted-redraw",
+    "mathStandard": "STIX-math-with-MathJax-for-delimited-equations",
+    "typographyStandard": "Plus-Jakarta-Sans-Source-Serif-4-IBM-Plex-Mono"
   }
 }

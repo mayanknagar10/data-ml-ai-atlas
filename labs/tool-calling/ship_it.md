@@ -1,3 +1,3 @@
 # Ship it
 
-Log tool choice, arguments, result, latency and errors. Add retries/timeouts, permission checks, idempotency keys and human confirmation where consequences matter.
+Package the Tool / Function Calling lab as a tested, versioned component with monitoring and rollback.

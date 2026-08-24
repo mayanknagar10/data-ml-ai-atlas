@@ -15,9 +15,12 @@ posterior=bayes(.01,.90,.05)
 low_base=bayes(.001,.90,.05)
 
 # ---- Verify it ----
-assert counts=={'tp':90.0,'fp':495.0,'fn':10.0,'tn':9405.0,'ppv':90/585}
+import math
+expected={'tp':90.0,'fp':495.0,'fn':10.0,'tn':9405.0}
+assert all(math.isclose(counts[k],v,rel_tol=0,abs_tol=1e-9) for k,v in expected.items())
+assert math.isclose(counts['ppv'],90/585,rel_tol=0,abs_tol=1e-15)
 assert abs(counts['ppv']-posterior)<1e-15
-assert sum(counts[k] for k in ('tp','fp','fn','tn'))==10000
+assert math.isclose(sum(counts[k] for k in ('tp','fp','fn','tn')),10000,abs_tol=1e-9)
 assert 0<=posterior<=1 and low_base<posterior
 assert bayes(.01,1.0,0.0)==1.0
 try: diagnostic(1.1,.9,.9)

@@ -36,7 +36,7 @@ class ChapterContractTests(unittest.TestCase):
         self.assertEqual(record["slug"], "python-data-structures")
         self.assertIn("description", record)
         self.assertEqual(record["status"], "verified")
-        self.assertEqual(record["visualCount"], 1)
+        self.assertEqual(record["visualCount"], 2)
         self.assertEqual(record["visualSummaries"][0]["type"], "compare")
         self.assertEqual(
             record["followUpQuestions"][0],

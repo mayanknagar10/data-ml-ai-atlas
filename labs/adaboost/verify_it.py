@@ -18,7 +18,7 @@ scratch_pred=np.where(score(X)>=0,1,-1)
 # ---- Use it ----
 from sklearn.ensemble import AdaBoostClassifier
 from sklearn.tree import DecisionTreeClassifier
-model=AdaBoostClassifier(estimator=DecisionTreeClassifier(max_depth=1,random_state=0),n_estimators=8,learning_rate=1.0,algorithm='SAMME',random_state=0).fit(X[:,None],(y==1).astype(int))
+model=AdaBoostClassifier(estimator=DecisionTreeClassifier(max_depth=1,random_state=0),n_estimators=8,learning_rate=1.0,random_state=0).fit(X[:,None],(y==1).astype(int))
 sk_pred=np.where(model.predict(X[:,None])==1,1,-1)
 
 # ---- Verify it ----

@@ -1,3 +1,3 @@
 # Ship it
 
-Production RAG needs document versioning, ACL-aware retrieval, caching, observability, evaluation sets, latency/cost budgets and safe handling of untrusted retrieved text.
+Package the RAG: Retrieval-Augmented Generation lab as a tested, versioned component with monitoring and rollback.

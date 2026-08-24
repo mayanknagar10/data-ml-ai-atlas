@@ -145,7 +145,20 @@
         "Compare estimates with actuals"
       ],
       "caption": "Track cardinality and work as rows flow upward, locating the first important estimation error.",
-      "afterSection": "plan-anatomy"
+      "afterSection": "plan-anatomy",
+      "grounding": [
+        {
+          "id": "postgres-explain",
+          "role": "Primary technical basis"
+        },
+        {
+          "id": "postgres-indexes",
+          "role": "Secondary technical reference"
+        }
+      ],
+      "sourceMode": "adapted-redraw",
+      "figureClass": "research-grounded",
+      "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
     },
     {
       "type": "compare",
@@ -169,7 +182,20 @@
         ]
       },
       "caption": "Use execution evidence carefully and never assume ANALYZE is read-only.",
-      "afterSection": "optimization-process"
+      "afterSection": "optimization-process",
+      "grounding": [
+        {
+          "id": "postgres-indexes",
+          "role": "Primary technical basis"
+        },
+        {
+          "id": "postgres-explain",
+          "role": "Secondary technical reference"
+        }
+      ],
+      "sourceMode": "adapted-redraw",
+      "figureClass": "research-grounded",
+      "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
     }
   ],
   "lab": {
@@ -179,5 +205,10 @@
     "useIt": "import sqlite3\ncon=sqlite3.connect(':memory:')\ncon.execute('CREATE TABLE event(tenant INTEGER,ts INTEGER,value TEXT)')\ncon.executemany('INSERT INTO event VALUES (?,?,?)',((i%10,i,str(i)) for i in range(1000)))\ncon.execute('CREATE INDEX event_tenant_ts ON event(tenant,ts)')\nselective='SELECT value FROM event WHERE tenant=? AND ts>=?'\nindexed_plan=plan_text(con,selective,(3,900))\nrows=con.execute(selective,(3,900)).fetchall()",
     "verifyIt": "assert all(int(value[0])>=903 for value in rows)\nassert 'event_tenant_ts' in indexed_plan\nscan_plan=plan_text(con,'SELECT COUNT(*) FROM event WHERE value LIKE ?',('%9%',))\nassert 'SCAN' in scan_plan.upper()\nexpected=con.execute('SELECT value FROM event').fetchall()\nactual=con.execute('SELECT value FROM event WHERE tenant>=0').fetchall()\nassert sorted(expected)==sorted(actual)",
     "shipIt": "Repeat with the production engine's EXPLAIN ANALYZE, representative parameters and concurrency; record rows, loops, buffers, spill, write impact, and rollback thresholds."
+  },
+  "presentation": {
+    "visualStandard": "research-grounded-adapted-redraw",
+    "mathStandard": "STIX-math-with-MathJax-for-delimited-equations",
+    "typographyStandard": "Plus-Jakarta-Sans-Source-Serif-4-IBM-Plex-Mono"
   }
 }

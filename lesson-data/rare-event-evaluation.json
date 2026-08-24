@@ -177,7 +177,20 @@
         }
       ],
       "caption": "Conceptual PR curve: the baseline equals prevalence, and each threshold maps to a different queue size and yield.",
-      "afterSection": "ranking-and-prevalence"
+      "afterSection": "ranking-and-prevalence",
+      "grounding": [
+        {
+          "id": "pr-imbalanced-paper",
+          "role": "Primary technical basis"
+        },
+        {
+          "id": "sklearn-average-precision",
+          "role": "Secondary technical reference"
+        }
+      ],
+      "sourceMode": "adapted-redraw",
+      "figureClass": "research-grounded",
+      "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
     },
     {
       "type": "flow",
@@ -191,7 +204,20 @@
         "Incident value and uncertainty"
       ],
       "caption": "Rare-event evaluation must include the operational policy and selectively observed label process.",
-      "afterSection": "labels-audits-and-uncertainty"
+      "afterSection": "labels-audits-and-uncertainty",
+      "grounding": [
+        {
+          "id": "sklearn-average-precision",
+          "role": "Primary technical basis"
+        },
+        {
+          "id": "pr-imbalanced-paper",
+          "role": "Secondary technical reference"
+        }
+      ],
+      "sourceMode": "adapted-redraw",
+      "figureClass": "research-grounded",
+      "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
     }
   ],
   "sourceNotes": [
@@ -207,5 +233,10 @@
       "resource": "sklearn-calibration",
       "contribution": "Grounds the separate probability-calibration workflow and need for independent calibration predictions."
     }
-  ]
+  ],
+  "presentation": {
+    "visualStandard": "research-grounded-adapted-redraw",
+    "mathStandard": "STIX-math-with-MathJax-for-delimited-equations",
+    "typographyStandard": "Plus-Jakarta-Sans-Source-Serif-4-IBM-Plex-Mono"
+  }
 }

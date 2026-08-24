@@ -136,7 +136,20 @@
         "Update evidence + stop check"
       ],
       "caption": "Every evaluation changes the posterior and therefore the value of the next experiment.",
-      "afterSection": "problem-setup"
+      "afterSection": "problem-setup",
+      "grounding": [
+        {
+          "id": "botorch-docs",
+          "role": "Primary technical basis"
+        },
+        {
+          "id": "sklearn",
+          "role": "Secondary technical reference"
+        }
+      ],
+      "sourceMode": "adapted-redraw",
+      "figureClass": "research-grounded",
+      "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
     },
     {
       "type": "curve",
@@ -233,7 +246,20 @@
       "xLabel": "design coordinate",
       "yLabel": "objective belief",
       "caption": "Conceptual curves: uncertainty narrows near evidence and can make an unexplored region valuable despite a lower current mean.",
-      "afterSection": "surrogate"
+      "afterSection": "surrogate",
+      "grounding": [
+        {
+          "id": "sklearn",
+          "role": "Primary technical basis"
+        },
+        {
+          "id": "botorch-docs",
+          "role": "Secondary technical reference"
+        }
+      ],
+      "sourceMode": "adapted-redraw",
+      "figureClass": "research-grounded",
+      "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
     }
   ],
   "lab": {
@@ -261,5 +287,10 @@
       "resource": "probml-book",
       "contribution": "Provides probabilistic modeling and Gaussian-process background needed to understand surrogate uncertainty assumptions."
     }
-  ]
+  ],
+  "presentation": {
+    "visualStandard": "research-grounded-adapted-redraw",
+    "mathStandard": "STIX-math-with-MathJax-for-delimited-equations",
+    "typographyStandard": "Plus-Jakarta-Sans-Source-Serif-4-IBM-Plex-Mono"
+  }
 }

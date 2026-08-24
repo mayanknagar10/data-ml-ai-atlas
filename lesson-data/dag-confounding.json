@@ -110,7 +110,20 @@
       ]
     ],
     "caption": "A confounder creates a backdoor path that often needs adjustment. Conditioning on a collider can create bias.",
-    "directed": true
+    "directed": true,
+    "grounding": [
+      {
+        "id": "pearl-diagrams",
+        "role": "Primary technical basis"
+      },
+      {
+        "id": "what-if-causal",
+        "role": "Secondary technical reference"
+      }
+    ],
+    "sourceMode": "adapted-redraw",
+    "figureClass": "research-grounded",
+    "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
   },
   "editorial": {
     "status": "verified",
@@ -230,7 +243,20 @@
         ]
       ],
       "caption": "C opens a backdoor path into A; conditioning on C blocks that noncausal component while preserving A→Y.",
-      "afterSection": "roles-adjustment"
+      "afterSection": "roles-adjustment",
+      "grounding": [
+        {
+          "id": "pearl-diagrams",
+          "role": "Primary technical basis"
+        },
+        {
+          "id": "what-if-causal",
+          "role": "Secondary technical reference"
+        }
+      ],
+      "sourceMode": "adapted-redraw",
+      "figureClass": "research-grounded",
+      "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
     },
     {
       "type": "network",
@@ -269,7 +295,20 @@
         ]
       ],
       "caption": "The path is closed until K or its descendant is conditioned on; selection then associates its independent causes.",
-      "afterSection": "backdoor-selection"
+      "afterSection": "backdoor-selection",
+      "grounding": [
+        {
+          "id": "what-if-causal",
+          "role": "Primary technical basis"
+        },
+        {
+          "id": "pearl-diagrams",
+          "role": "Secondary technical reference"
+        }
+      ],
+      "sourceMode": "adapted-redraw",
+      "figureClass": "research-grounded",
+      "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
     }
   ],
   "sourceNotes": [
@@ -285,5 +324,10 @@
       "resource": "openintro-stats",
       "contribution": "Supports conditional association and regression concepts used in the simulations."
     }
-  ]
+  ],
+  "presentation": {
+    "visualStandard": "research-grounded-adapted-redraw",
+    "mathStandard": "STIX-math-with-MathJax-for-delimited-equations",
+    "typographyStandard": "Plus-Jakarta-Sans-Source-Serif-4-IBM-Plex-Mono"
+  }
 }

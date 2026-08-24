@@ -3,9 +3,15 @@
   "title": "Lists, Tuples, Sets & Dictionaries",
   "module": "python",
   "priority": "very-high",
-  "roles": ["all"],
+  "roles": [
+    "ds",
+    "mle",
+    "aie"
+  ],
   "description": "Python's built-in containers are not interchangeable spellings for a collection. A list represents an ordered, mutable sequence; a tuple represents an ordered sequence whose membership cannot be changed; a set represents unique hashable values; and a dictionary represents a mapping from unique hashable keys to values. Those semantic promises determine what operations are natural, what mistakes the type system can prevent, and how a program behaves as data grows. This chapter develops a working model that connects Python-level behavior to the underlying array and hash-table mechanisms without turning implementation details into language guarantees. You will learn to choose a container from the invariants of the problem, reason about identity and aliasing, explain the equality-and-hashing contract, estimate important operation costs, and recognize when a specialized structure such as `deque`, `Counter`, or `defaultdict` expresses the job more accurately. The goal is not to memorize a complexity table. It is to make container choices that remain correct, readable, and predictable in data pipelines, model-serving code, and interviews.",
-  "prerequisites": ["big-o"],
+  "prerequisites": [
+    "big-o"
+  ],
   "learningObjectives": [
     "Choose a Python container by ordering, uniqueness, mutability, lookup, and update requirements.",
     "Explain how equality, identity, hashing, and aliasing affect container correctness.",
@@ -111,7 +117,10 @@
       "solution": "The set has no retention or eviction boundary. Exact deduplication over an unbounded stream requires unbounded state; define a time/idempotency window, durable compacted state, partitioning, or an approximate structure with an explicit error trade-off."
     }
   ],
-  "resources": ["python-docs", "mit-algorithms"],
+  "resources": [
+    "python-docs",
+    "mit-algorithms"
+  ],
   "sourceNotes": [
     {
       "resource": "python-docs",
@@ -128,17 +137,49 @@
       "title": "Sequence and hash-container promises",
       "left": {
         "title": "List / tuple",
-        "items": ["Ordered sequence", "Duplicates retained", "Position-based access", "List mutable; tuple fixed"]
+        "items": [
+          "Ordered sequence",
+          "Duplicates retained",
+          "Position-based access",
+          "List mutable; tuple fixed"
+        ]
       },
       "right": {
         "title": "Set / dictionary",
-        "items": ["Hash-based lookup", "Unique keys", "No positional API", "Extra memory for index"]
+        "items": [
+          "Hash-based lookup",
+          "Unique keys",
+          "No positional API",
+          "Extra memory for index"
+        ]
       },
       "caption": "Choose a container by the invariant it promises before comparing expected operation cost. This is a conceptual comparison."
+    },
+    {
+      "type": "flow",
+      "title": "Choose from the required invariant",
+      "items": [
+        "Need order?",
+        "Need duplicates?",
+        "Need keyed lookup?",
+        "Need mutation?",
+        "Select container"
+      ],
+      "caption": "Container choice starts with the information the program must preserve, then checks operation and lifecycle costs.",
+      "afterSection": "selection-framework"
     }
   ],
   "editorial": {
     "status": "verified",
     "verifiedOn": "2026-08-21"
+  },
+  "featured": false,
+  "lab": {
+    "language": "python",
+    "goal": "Compare list, deque, set, and dictionary semantics with assertions for ordering, uniqueness, hashing, and queue behavior.",
+    "buildIt": "from collections import deque\nseq=[\"a\",\"b\",\"a\"]\nunique=set(seq)\nindex={value:i for i,value in enumerate(seq)}\nqueue=deque(seq)\nleft=queue.popleft(); queue.append(\"c\")",
+    "useIt": "counts={}\nfor value in seq: counts[value]=counts.get(value,0)+1\nordered_unique=list(dict.fromkeys(seq))",
+    "verifyIt": "assert seq==[\"a\",\"b\",\"a\"]\nassert unique=={\"a\",\"b\"}\nassert index=={\"a\":2,\"b\":1}\nassert left==\"a\" and list(queue)==[\"b\",\"a\",\"c\"]\nassert counts=={\"a\":2,\"b\":1}\nassert ordered_unique==[\"a\",\"b\"]\ntry:\n    hash([])\n    raise AssertionError(\"list should be unhashable\")\nexcept TypeError:\n    pass",
+    "shipIt": "Document container ownership and mutation, bound long-lived sets/dictionaries, validate key normalization and serialization, and profile representative operations before replacing clear built-ins with specialized structures."
   }
 }

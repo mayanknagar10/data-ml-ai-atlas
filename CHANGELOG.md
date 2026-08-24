@@ -1,5 +1,20 @@
 # Changelog
 
+## v2.4.2 — Role-aware curriculum and ambient 3D background
+
+- Made the homepage curriculum role-aware: selecting Data Scientist, AI / GenAI Engineer, Computer Vision, and other roles now hides modules with no relevant lessons, while direct module pages still expose the complete module content.
+- Module cards show relevant-vs-total lesson counts under active filters and include a one-click “Show full curriculum” reset. Search and priority filters now participate in the same dynamic module map.
+- Added a custom dependency-free perspective-projected neural lattice background with subtle pointer/scroll parallax for light and dark themes.
+- Added an explicit Motion control, persistent user preference, `prefers-reduced-motion` support, Page Visibility pausing, adaptive mobile density, and capped device-pixel ratio for performance.
+- Added regression tests and validation gates for dynamic module visibility and ambient-background accessibility/performance wiring.
+
+## v2.4.1 — Module visibility and role taxonomy fix
+
+- Fixed module pages inheriting a persisted global role filter that could make valid lesson content appear missing. Module pages now always start from the complete module lesson set and only apply the visible search/priority controls.
+- Normalized 11 legacy `genai` lesson-role tags to the canonical `aie` (AI / GenAI Engineer) role used by the UI and analyzer.
+- Added persisted-role sanitization so unknown/stale localStorage values fall back to `all`.
+- Added navigation-integrity validation for module coverage, role IDs, CV lesson count, and module-page filter behavior.
+
 ## v2.3 — Local Resume + JD preparation mapper
 
 - Added a privacy-first `#/analyzer` workflow for uploading/pasting a resume and job description.

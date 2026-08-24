@@ -139,7 +139,20 @@
         "Short path -> high anomaly score"
       ],
       "caption": "Each fixed random tree isolates a query through reusable partitions; the forest averages path length.",
-      "afterSection": "tree-construction-and-paths"
+      "afterSection": "tree-construction-and-paths",
+      "grounding": [
+        {
+          "id": "isolation-forest-paper",
+          "role": "Primary technical basis"
+        },
+        {
+          "id": "sklearn-outlier",
+          "role": "Secondary technical reference"
+        }
+      ],
+      "sourceMode": "adapted-redraw",
+      "figureClass": "research-grounded",
+      "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
     },
     {
       "type": "curve",
@@ -176,7 +189,20 @@
         }
       ],
       "caption": "Conceptual curve for fixed psi: shorter normalized paths map to scores nearer one.",
-      "afterSection": "score-subsampling-and-threshold"
+      "afterSection": "score-subsampling-and-threshold",
+      "grounding": [
+        {
+          "id": "sklearn-outlier",
+          "role": "Primary technical basis"
+        },
+        {
+          "id": "isolation-forest-paper",
+          "role": "Secondary technical reference"
+        }
+      ],
+      "sourceMode": "adapted-redraw",
+      "figureClass": "research-grounded",
+      "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
     }
   ],
   "sourceNotes": [
@@ -192,5 +218,10 @@
       "resource": "anomaly-survey",
       "contribution": "Places isolation within broader anomaly assumptions and evaluation limitations."
     }
-  ]
+  ],
+  "presentation": {
+    "visualStandard": "research-grounded-adapted-redraw",
+    "mathStandard": "STIX-math-with-MathJax-for-delimited-equations",
+    "typographyStandard": "Plus-Jakarta-Sans-Source-Serif-4-IBM-Plex-Mono"
+  }
 }

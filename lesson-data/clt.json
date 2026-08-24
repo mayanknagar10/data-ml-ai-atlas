@@ -155,7 +155,20 @@
         ]
       },
       "caption": "LLN collapses error; CLT zooms in on its distribution.",
-      "afterSection": "clt-standard-error"
+      "afterSection": "clt-standard-error",
+      "grounding": [
+        {
+          "id": "harvard-stat110",
+          "role": "Primary technical basis"
+        },
+        {
+          "id": "stanford-stats60",
+          "role": "Secondary technical reference"
+        }
+      ],
+      "sourceMode": "adapted-redraw",
+      "figureClass": "research-grounded",
+      "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
     },
     {
       "type": "flow",
@@ -169,7 +182,20 @@
         "Monitor dependence drift"
       ],
       "caption": "A large row count does not create independent information when records share users, devices or time shocks.",
-      "afterSection": "dependence-heavy-tail"
+      "afterSection": "dependence-heavy-tail",
+      "grounding": [
+        {
+          "id": "stanford-stats60",
+          "role": "Primary technical basis"
+        },
+        {
+          "id": "harvard-stat110",
+          "role": "Secondary technical reference"
+        }
+      ],
+      "sourceMode": "adapted-redraw",
+      "figureClass": "research-grounded",
+      "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
     }
   ],
   "lab": {
@@ -179,5 +205,10 @@
     "useIt": "import numpy as np\nrng=np.random.default_rng(20260821); reps=20000\nmeans_25=rng.exponential(1.0,size=(reps,25)).mean(axis=1)\nmeans_100=rng.exponential(1.0,size=(reps,100)).mean(axis=1)\n# independent coverage experiment\nsamples=rng.exponential(1.0,size=(5000,100))\ncovered=np.mean([lo<=1.0<=hi for lo,hi in (interval(row) for row in samples)])",
     "verifyIt": "assert abs(means_25.mean()-1)<.01 and abs(means_100.mean()-1)<.01\nratio=means_25.std(ddof=1)/means_100.std(ddof=1)\nassert abs(ratio-2)<.08\nstandardized=np.sqrt(100)*(means_100-1.0)\nassert abs(standardized.mean())<.03 and abs(standardized.std(ddof=1)-1)<.03\nassert .935<covered<.96\n# Raw exponential data stay skewed even when means are closer to Normal.\nraw=rng.exponential(1.0,size=100000)\nassert np.quantile(raw,.9)>2.2",
     "shipIt": "Simulate the actual clustered/time sampling design, use design-aware SE/bootstrap, version units/windows/stopping, monitor effective size/dependence/tails and retain a prior uncertainty pipeline for rollback."
+  },
+  "presentation": {
+    "visualStandard": "research-grounded-adapted-redraw",
+    "mathStandard": "STIX-math-with-MathJax-for-delimited-equations",
+    "typographyStandard": "Plus-Jakarta-Sans-Source-Serif-4-IBM-Plex-Mono"
   }
 }

@@ -8,16 +8,16 @@ The goal is not to memorize a glossary. Every topic is designed for three modes:
 2. **Understanding mode** — intuition, formal reasoning, examples and misconceptions.
 3. **Engineering mode** — implementation, debugging, production implications and system-design trade-offs.
 
-## Current scope — v2.3 Resume + JD Analyzer Edition
+## Current scope — v2.4.2 Role-aware Interactive Edition
 
 - **45 modules**
-- **394 deep-complete lessons**
-- **120 curated learning resources**
-- **58 runnable Build It → Use It → Ship It → Verify It code labs**
-- **222 original, theme-aware lesson visuals** spanning architecture diagrams, graphs, curves, matrices, maps, causal DAGs and system flows
+- **394 / 394 verified full-chapter lessons**
+- **312 curated learning resources**
+- **394 runnable Build It → Use It → Ship It → Verify It Python labs**
+- **788 research-grounded, theme-aware lesson visuals** — at least two per lesson — with visible source attribution and adapted-redraw provenance
 - Broad coverage across statistics, product analytics, causal inference, forecasting, survival analysis, optimization, probabilistic ML/uncertainty, information theory, geospatial data science, data mining/sketches, recommender/search systems, data engineering, distributed systems, ML/DL/GenAI and production
-- Role-based study paths for Data Scientist, Data/Product Analyst, Applied Scientist, ML Engineer, AI Engineer, Data Engineer and Computer Vision
-- Persistent light/dark mode, responsive mobile navigation, search, practice mode and browser-local progress
+- Role-based study paths plus a dynamic homepage curriculum that hides modules with no lessons relevant to the selected role
+- Persistent light/dark mode, a subtle live perspective-projected 3D background with Motion/reduced-motion controls, responsive mobile navigation, search, practice mode and browser-local progress
 - Privacy-first **Resume + Job Description mapper** that runs locally in the browser and links directly to prioritized Atlas lessons
 - A dedicated **Visual Atlas** route at `#/visuals`
 - GitHub Pages build + validation + deployment workflow
@@ -79,7 +79,7 @@ Each lesson includes:
 - production/system-design implications
 - curated references
 
-High-frequency algorithmic and engineering topics can additionally include a runnable code lab with Build It / Use It / Ship It / Verify It stages. References prioritize original papers, university courses, official documentation, and high-quality educators. See `CONTENT_STANDARD.md`. Visual explanations are generated from the same lesson source and follow `VISUAL_GUIDE.md`.
+Every verified lesson includes a runnable Python lab with Build It / Use It / Ship It / Verify It stages and at least two original conceptual visuals. Verified lessons also require 1,500+ explanatory words and at least two distinct annotated sources. References prioritize original papers, university courses, official documentation, and high-quality educators. See `CONTENT_STANDARD.md`. Visual explanations are generated from the same lesson source and follow `VISUAL_GUIDE.md`.
 
 ## Quality and visual documentation
 
@@ -108,6 +108,7 @@ After editing `source/atlas.json`, run:
 python scripts/build.py
 python validate.py
 python scripts/check_labs.py
+python scripts/check_all_labs_runtime.py
 python scripts/check_site.py
 node --check app.js
 node --check analyzer.js
