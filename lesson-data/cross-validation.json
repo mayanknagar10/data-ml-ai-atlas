@@ -71,7 +71,20 @@
     ],
     "caption": "Each fold becomes validation once while the others train; time-series and grouped data require specialized splitting.",
     "accent": 2,
-    "orientation": "horizontal"
+    "orientation": "horizontal",
+    "grounding": [
+      {
+        "id": "nested-cv-selection-paper",
+        "role": "Primary technical basis"
+      },
+      {
+        "id": "sklearn-cross-validation",
+        "role": "Secondary technical reference"
+      }
+    ],
+    "sourceMode": "adapted-redraw",
+    "figureClass": "research-grounded",
+    "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
   },
   "editorial": {
     "status": "verified",
@@ -160,7 +173,20 @@
         "Store out-of-fold evidence"
       ],
       "caption": "Every learned state stays on the training side of the boundary.",
-      "afterSection": "fold-pipeline"
+      "afterSection": "fold-pipeline",
+      "grounding": [
+        {
+          "id": "nested-cv-selection-paper",
+          "role": "Primary technical basis"
+        },
+        {
+          "id": "sklearn-cross-validation",
+          "role": "Secondary technical reference"
+        }
+      ],
+      "sourceMode": "adapted-redraw",
+      "figureClass": "research-grounded",
+      "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
     },
     {
       "type": "compare",
@@ -182,7 +208,20 @@
         ]
       },
       "caption": "A harder structured split is correct when production contains structured novelty.",
-      "afterSection": "estimand-splitter"
+      "afterSection": "estimand-splitter",
+      "grounding": [
+        {
+          "id": "sklearn-cross-validation",
+          "role": "Primary technical basis"
+        },
+        {
+          "id": "nested-cv-selection-paper",
+          "role": "Secondary technical reference"
+        }
+      ],
+      "sourceMode": "adapted-redraw",
+      "figureClass": "research-grounded",
+      "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
     }
   ],
   "sourceNotes": [
@@ -198,5 +237,10 @@
       "resource": "nested-cv-selection-paper",
       "contribution": "Supports the distinction between selection and unbiased assessment under repeated search."
     }
-  ]
+  ],
+  "presentation": {
+    "visualStandard": "research-grounded-adapted-redraw",
+    "mathStandard": "STIX-math-with-MathJax-for-delimited-equations",
+    "typographyStandard": "Plus-Jakarta-Sans-Source-Serif-4-IBM-Plex-Mono"
+  }
 }

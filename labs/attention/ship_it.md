@@ -1,3 +1,3 @@
 # Ship it
 
-Long contexts create memory/latency pressure; serving systems use KV caches, efficient attention kernels and sometimes alternative architectures.
+Package the Self-Attention: Q, K, V lab as a tested, versioned component with monitoring and rollback.

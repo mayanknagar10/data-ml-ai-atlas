@@ -1,6 +1,6 @@
 # Data, ML & AI Atlas — Coverage Map
 
-**45 modules · 394 lessons · 232 runnable labs · 312 curated resources**
+**45 modules · 394 lessons · 394 runnable labs · 312 curated resources**
 
 This file exists to prevent the curriculum from drifting toward one resume, one job description, or one fashionable subfield.
 

@@ -164,7 +164,20 @@
         ]
       ],
       "caption": "A shape `(d,)` feature vector aligns with the trailing feature axis of an `(n, d)` matrix.",
-      "afterSection": "broadcasting-rules"
+      "afterSection": "broadcasting-rules",
+      "grounding": [
+        {
+          "id": "numpy",
+          "role": "Primary technical basis"
+        },
+        {
+          "id": "numpy-broadcasting",
+          "role": "Secondary technical reference"
+        }
+      ],
+      "sourceMode": "adapted-redraw",
+      "figureClass": "research-grounded",
+      "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
     },
     {
       "type": "compare",
@@ -188,7 +201,20 @@
         ]
       },
       "caption": "Indexing category determines common ownership behavior; verify sharing when correctness depends on it.",
-      "afterSection": "views-copies-indexing"
+      "afterSection": "views-copies-indexing",
+      "grounding": [
+        {
+          "id": "numpy-broadcasting",
+          "role": "Primary technical basis"
+        },
+        {
+          "id": "numpy",
+          "role": "Secondary technical reference"
+        }
+      ],
+      "sourceMode": "adapted-redraw",
+      "figureClass": "research-grounded",
+      "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
     }
   ],
   "lab": {
@@ -198,5 +224,10 @@
     "useIt": "import numpy as np\nX = np.array([[1., 10.], [3., 10.], [5., 10.]])\nmean = X.mean(axis=0, keepdims=True)\nscale = X.std(axis=0, keepdims=True)\nsafe_scale = np.where(scale == 0, 1.0, scale)\nZ = (X - mean) / safe_scale",
     "verifyIt": "assert broadcast_shape((3, 1, 5), (4, 5)) == (3, 4, 5)\nassert Z.shape == X.shape\nassert np.isfinite(Z).all()\nassert np.allclose(Z[:, 0].mean(), 0.0)\nassert np.allclose(Z[:, 0].std(), 1.0)\nassert np.allclose(Z[:, 1], 0.0)\nview = X[:, :1]\ncopy = X[:, [0]]\nassert np.shares_memory(X, view)\nassert not np.shares_memory(X, copy)",
     "shipIt": "Package fitted statistics with feature names and dtypes, validate serving shapes, record invalid-value rates, estimate peak memory, and regression-test tolerances across supported NumPy versions."
+  },
+  "presentation": {
+    "visualStandard": "research-grounded-adapted-redraw",
+    "mathStandard": "STIX-math-with-MathJax-for-delimited-equations",
+    "typographyStandard": "Plus-Jakarta-Sans-Source-Serif-4-IBM-Plex-Mono"
   }
 }

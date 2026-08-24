@@ -1,3 +1,3 @@
 # Ship it
 
-Refresh graph edges/features incrementally, bound neighbor sampling for latency, monitor cold-start quality and separate candidate generation from final ranking/business constraints.
+Package the GraphSAGE lab as a tested, versioned component with monitoring and rollback.

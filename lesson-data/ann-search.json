@@ -163,7 +163,20 @@
         }
       ],
       "caption": "Conceptual frontier: greater exploration usually improves exact-neighbor recall with diminishing gains and higher latency.",
-      "afterSection": "benchmarking"
+      "afterSection": "benchmarking",
+      "grounding": [
+        {
+          "id": "hnsw-paper",
+          "role": "Primary technical basis"
+        },
+        {
+          "id": "faiss-index-guide",
+          "role": "Secondary technical reference"
+        }
+      ],
+      "sourceMode": "adapted-redraw",
+      "figureClass": "research-grounded",
+      "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
     },
     {
       "type": "compare",
@@ -187,7 +200,20 @@
         ]
       },
       "caption": "Both are measured against the same exact metric oracle and deployment workload.",
-      "afterSection": "index-families"
+      "afterSection": "index-families",
+      "grounding": [
+        {
+          "id": "faiss-index-guide",
+          "role": "Primary technical basis"
+        },
+        {
+          "id": "hnsw-paper",
+          "role": "Secondary technical reference"
+        }
+      ],
+      "sourceMode": "adapted-redraw",
+      "figureClass": "research-grounded",
+      "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
     }
   ],
   "sourceNotes": [
@@ -203,5 +229,10 @@
       "resource": "hnsw-paper",
       "contribution": "Provides the primary graph-based ANN motivation and controllable search-quality approach."
     }
-  ]
+  ],
+  "presentation": {
+    "visualStandard": "research-grounded-adapted-redraw",
+    "mathStandard": "STIX-math-with-MathJax-for-delimited-equations",
+    "typographyStandard": "Plus-Jakarta-Sans-Source-Serif-4-IBM-Plex-Mono"
+  }
 }

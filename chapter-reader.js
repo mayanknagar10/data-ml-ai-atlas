@@ -158,7 +158,7 @@
           ${chapter.why ? `<section id="section-why"><h2>Why this matters</h2>${paragraphHtml(chapter.why)}</section>` : ''}
           ${chapter.intuition ? `<section id="section-intuition"><h2>Intuition</h2>${paragraphHtml(chapter.intuition)}${visualsAfter('intuition')}</section>` : ''}
           ${deepHtml}${visualsAfter('deep')}${remainingVisuals()}
-          ${chapter.math ? `<section id="section-formal-view"><h2>Math / formal view</h2><div class="math">${esc(chapter.math)}</div></section>` : ''}
+          ${chapter.math ? `<section id="section-formal-view"><h2>Math / formal view</h2><div class="math">${helpers.mathHtml ? helpers.mathHtml(chapter.math) : esc(chapter.math)}</div></section>` : ''}
           ${examplesHtml}
           ${helpers.labHtml(chapter)}
           ${chapter.production ? `<section id="section-production"><h2>Production / system-design connection</h2>${paragraphHtml(chapter.production)}</section>` : ''}

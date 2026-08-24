@@ -65,7 +65,20 @@
       "Inner split · model / hyperparameter selection",
       "Final outer score"
     ],
-    "caption": "The inner loop selects the model; the outer loop estimates generalization without reusing the same validation data."
+    "caption": "The inner loop selects the model; the outer loop estimates generalization without reusing the same validation data.",
+    "grounding": [
+      {
+        "id": "nested-cv-selection-paper",
+        "role": "Primary technical basis"
+      },
+      {
+        "id": "sklearn-cross-validation",
+        "role": "Secondary technical reference"
+      }
+    ],
+    "sourceMode": "adapted-redraw",
+    "figureClass": "research-grounded",
+    "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
   },
   "editorial": {
     "status": "verified",
@@ -156,7 +169,20 @@
         "Score outer holdout once"
       ],
       "caption": "Repeat the entire selection process independently for every outer fold.",
-      "afterSection": "two-level-contract"
+      "afterSection": "two-level-contract",
+      "grounding": [
+        {
+          "id": "nested-cv-selection-paper",
+          "role": "Primary technical basis"
+        },
+        {
+          "id": "sklearn-cross-validation",
+          "role": "Secondary technical reference"
+        }
+      ],
+      "sourceMode": "adapted-redraw",
+      "figureClass": "research-grounded",
+      "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
     },
     {
       "type": "compare",
@@ -180,7 +206,20 @@
         ]
       },
       "caption": "Confusing these roles recreates selection bias inside a more complicated loop.",
-      "afterSection": "results-uncertainty"
+      "afterSection": "results-uncertainty",
+      "grounding": [
+        {
+          "id": "sklearn-cross-validation",
+          "role": "Primary technical basis"
+        },
+        {
+          "id": "nested-cv-selection-paper",
+          "role": "Secondary technical reference"
+        }
+      ],
+      "sourceMode": "adapted-redraw",
+      "figureClass": "research-grounded",
+      "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
     }
   ],
   "sourceNotes": [
@@ -196,5 +235,10 @@
       "resource": "sklearn-grid-search",
       "contribution": "Supports the inner search and refit semantics used in nested procedures."
     }
-  ]
+  ],
+  "presentation": {
+    "visualStandard": "research-grounded-adapted-redraw",
+    "mathStandard": "STIX-math-with-MathJax-for-delimited-equations",
+    "typographyStandard": "Plus-Jakarta-Sans-Source-Serif-4-IBM-Plex-Mono"
+  }
 }

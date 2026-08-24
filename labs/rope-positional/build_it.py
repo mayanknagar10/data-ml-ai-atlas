@@ -1,0 +1,7 @@
+import numpy as np
+Q=np.array([[1.,0.],[0.,1.]])
+K=np.array([[1.,0.],[.5,.5],[0.,1.]])
+V=np.array([[2.,0.],[1.,1.],[0.,2.]])
+logits=Q@K.T/np.sqrt(Q.shape[1])
+weights=np.exp(logits-logits.max(1,keepdims=True)); weights/=weights.sum(1,keepdims=True)
+out=weights@V

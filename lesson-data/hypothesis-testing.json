@@ -135,7 +135,20 @@
       ],
       "caption": "Calibration begins before results are visible and ends with a decision richer than a threshold.",
       "orientation": "horizontal",
-      "afterSection": "test-components"
+      "afterSection": "test-components",
+      "grounding": [
+        {
+          "id": "nist-stat-handbook",
+          "role": "Primary technical basis"
+        },
+        {
+          "id": "stanford-stats200",
+          "role": "Secondary technical reference"
+        }
+      ],
+      "sourceMode": "adapted-redraw",
+      "figureClass": "research-grounded",
+      "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
     },
     {
       "type": "curve",
@@ -183,7 +196,20 @@
       "caption": "Conceptual: the p-value is the reference-model tail at least as extreme as the observed statistic.",
       "xLabel": "test statistic",
       "yLabel": "null density",
-      "afterSection": "pvalue-errors"
+      "afterSection": "pvalue-errors",
+      "grounding": [
+        {
+          "id": "stanford-stats200",
+          "role": "Primary technical basis"
+        },
+        {
+          "id": "nist-stat-handbook",
+          "role": "Secondary technical reference"
+        }
+      ],
+      "sourceMode": "adapted-redraw",
+      "figureClass": "research-grounded",
+      "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
     }
   ],
   "sourceNotes": [
@@ -199,5 +225,10 @@
       "resource": "scipy-stats",
       "contribution": "Documents current exact, permutation, and Monte Carlo testing interfaces used in the lab."
     }
-  ]
+  ],
+  "presentation": {
+    "visualStandard": "research-grounded-adapted-redraw",
+    "mathStandard": "STIX-math-with-MathJax-for-delimited-equations",
+    "typographyStandard": "Plus-Jakarta-Sans-Source-Serif-4-IBM-Plex-Mono"
+  }
 }

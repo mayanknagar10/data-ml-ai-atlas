@@ -143,7 +143,20 @@
         "Outer wrapper exits"
       ],
       "caption": "Transformation is bottom-up, while runtime calls enter the outermost returned wrapper first.",
-      "afterSection": "decorator-mechanics"
+      "afterSection": "decorator-mechanics",
+      "grounding": [
+        {
+          "id": "python-functools",
+          "role": "Primary technical basis"
+        },
+        {
+          "id": "python-contextlib",
+          "role": "Secondary technical reference"
+        }
+      ],
+      "sourceMode": "adapted-redraw",
+      "figureClass": "research-grounded",
+      "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
     },
     {
       "type": "flow",
@@ -156,7 +169,20 @@
         "Release"
       ],
       "caption": "Exit runs for normal completion and body exceptions after a successful enter; suppression is an explicit decision.",
-      "afterSection": "context-protocol"
+      "afterSection": "context-protocol",
+      "grounding": [
+        {
+          "id": "python-contextlib",
+          "role": "Primary technical basis"
+        },
+        {
+          "id": "python-functools",
+          "role": "Secondary technical reference"
+        }
+      ],
+      "sourceMode": "adapted-redraw",
+      "figureClass": "research-grounded",
+      "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
     }
   ],
   "lab": {
@@ -166,5 +192,10 @@
     "useIt": "from contextlib import contextmanager\n\n@contextmanager\ndef temporary(mapping, key, value):\n    missing = object()\n    old = mapping.get(key, missing)\n    mapping[key] = value\n    try:\n        yield\n    finally:\n        if old is missing:\n            mapping.pop(key, None)\n        else:\n            mapping[key] = old",
     "verifyIt": "events = []\n@timed(events)\ndef add(a, b=0):\n    'add values'\n    return a + b\nassert add(2, b=3) == 5\nassert add.__name__ == 'add' and add.__doc__ == 'add values'\nstate = {'mode': 'safe'}\ntry:\n    with temporary(state, 'mode', 'fast'):\n        assert state['mode'] == 'fast'\n        raise RuntimeError('boom')\nexcept RuntimeError:\n    pass\nassert state == {'mode': 'safe'}\nassert events and events[0][0] == 'add'",
     "shipIt": "Add structured metrics, redaction, attempt versus request identifiers, bounded policy state, cancellation propagation, and failure-path integration tests before applying wrappers broadly."
+  },
+  "presentation": {
+    "visualStandard": "research-grounded-adapted-redraw",
+    "mathStandard": "STIX-math-with-MathJax-for-delimited-equations",
+    "typographyStandard": "Plus-Jakarta-Sans-Source-Serif-4-IBM-Plex-Mono"
   }
 }

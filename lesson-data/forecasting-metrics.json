@@ -71,7 +71,20 @@
       "MASE",
       "naive baseline"
     ],
-    "caption": "A compact concept map for the most important ideas in this lesson."
+    "caption": "A compact concept map for the most important ideas in this lesson.",
+    "grounding": [
+      {
+        "id": "forecast-accuracy-paper",
+        "role": "Primary technical basis"
+      },
+      {
+        "id": "proper-scoring-rules",
+        "role": "Secondary technical reference"
+      }
+    ],
+    "sourceMode": "adapted-redraw",
+    "figureClass": "research-grounded",
+    "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
   },
   "editorial": {
     "status": "verified",
@@ -83,7 +96,7 @@
     "goal": "Implement a multi-metric forecast scorecard, verify standard losses, and expose percentage-error and scaling behavior.",
     "buildIt": "import numpy as np\ny_train=np.array([10.,12.,11.,13.,12.,14.,13.,15.,14.,16.,15.,17.])\ny=np.array([0.1,10.,12.,20.,25.]); pred=np.array([0.3,9.,15.,18.,24.])\ne=y-pred; mae=float(np.mean(np.abs(e))); rmse=float(np.sqrt(np.mean(e**2))); bias=float(np.mean(e)); mape=float(np.mean(np.abs(e/y))); wape=float(np.sum(np.abs(e))/np.sum(np.abs(y)))\nscale=np.mean(np.abs(y_train[1:]-y_train[:-1])); mase=mae/scale\ndef pinball(actual,forecast,q):\n    err=actual-forecast; return float(np.mean(np.maximum(q*err,(q-1)*err)))\nq90=pinball(y,pred+2,.9)",
     "useIt": "from sklearn.metrics import mean_absolute_error, mean_squared_error, mean_pinball_loss\nofficial_mae=float(mean_absolute_error(y,pred)); official_rmse=float(np.sqrt(mean_squared_error(y,pred))); official_q90=float(mean_pinball_loss(y,pred+2,alpha=.9))",
-    "verifyIt": "assert np.isclose(mae,official_mae) and np.isclose(rmse,official_rmse)\nassert np.isclose(q90,official_q90)\nassert np.isclose(wape,np.sum(np.abs(e))/np.sum(np.abs(y)))\nassert mape>mae and abs(e[0])<abs(e[2]) and abs(e[0]/y[0])>abs(e[2]/y[2])\nassert scale>0 and np.isclose(mase,mae/scale)\nassert bias<mae and all(v>=0 for v in (mae,rmse,mase,wape,q90))",
+    "verifyIt": "assert np.isclose(mae,official_mae) and np.isclose(rmse,official_rmse)\nassert np.isclose(q90,official_q90)\nassert np.isclose(wape,np.sum(np.abs(e))/np.sum(np.abs(y)))\nassert abs(e[0])<abs(e[2]) and abs(e[0]/y[0])>abs(e[2]/y[2])\nassert mape>.4  # the near-zero actual makes percentage error dominate this example\nassert scale>0 and np.isclose(mase,mae/scale)\nassert abs(bias)<mae and all(v>=0 for v in (mae,rmse,mase,wape,q90))",
     "shipIt": "Generate immutable forecast-level metric ledgers, compute training-only scales and paired baselines, publish horizon and cohort scorecards, and alert on bias, negative skill and calibration failures."
   },
   "description": "Forecasting metrics translate forecast errors into model-selection and operating decisions. This chapter connects MAE and RMSE to median and mean targets, explains signed bias and error distributions, and distinguishes per-observation averages from aggregate ratios. It derives MASE and RMSSE using training-only naive or seasonal-naive denominators and analyzes MAPE, sMAPE and WAPE failures around zeros, negatives, intermittency and changing scale. It covers horizon, origin, series, regime and business weighting; macro versus micro aggregation; baseline skill; paired model comparisons; temporal dependence and block-aware uncertainty. It separates point, quantile, interval and distributional evaluation, introducing pinball loss, empirical coverage, sharpness, interval score, log score and CRPS without treating calibration alone as sufficient. Worked examples show ranking reversal and percentage-error instability. The lab implements a forecast scorecard, verifies core values against scikit-learn, and demonstrates why MAPE explodes near zero while MASE remains interpretable. Production guidance versions metric definitions, denominators and cohorts, delays scoring until labels mature, and monitors bias, negative skill and interval miscalibration by operational slice.",
@@ -172,7 +185,20 @@
         ]
       },
       "caption": "Metric choice changes both the preferred forecast and which failures dominate evaluation.",
-      "afterSection": "estimand-loss"
+      "afterSection": "estimand-loss",
+      "grounding": [
+        {
+          "id": "forecast-accuracy-paper",
+          "role": "Primary technical basis"
+        },
+        {
+          "id": "proper-scoring-rules",
+          "role": "Secondary technical reference"
+        }
+      ],
+      "sourceMode": "adapted-redraw",
+      "figureClass": "research-grounded",
+      "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
     },
     {
       "type": "flow",
@@ -186,7 +212,20 @@
         "Gate and monitor releases"
       ],
       "caption": "Aggregation comes after event-level diagnostics and an explicit weighting policy.",
-      "afterSection": "aggregation-slices"
+      "afterSection": "aggregation-slices",
+      "grounding": [
+        {
+          "id": "proper-scoring-rules",
+          "role": "Primary technical basis"
+        },
+        {
+          "id": "forecast-accuracy-paper",
+          "role": "Secondary technical reference"
+        }
+      ],
+      "sourceMode": "adapted-redraw",
+      "figureClass": "research-grounded",
+      "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
     }
   ],
   "sourceNotes": [
@@ -206,5 +245,10 @@
       "resource": "sklearn-model-evaluation",
       "contribution": "Verifies the reference MAE, MSE and pinball-loss implementations used in the runnable lab."
     }
-  ]
+  ],
+  "presentation": {
+    "visualStandard": "research-grounded-adapted-redraw",
+    "mathStandard": "STIX-math-with-MathJax-for-delimited-equations",
+    "typographyStandard": "Plus-Jakarta-Sans-Source-Serif-4-IBM-Plex-Mono"
+  }
 }

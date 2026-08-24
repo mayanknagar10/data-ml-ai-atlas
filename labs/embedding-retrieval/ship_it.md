@@ -1,3 +1,3 @@
 # Ship it
 
-Monitor recall/precision on a labeled query set, index freshness, embedding version, latency and filter correctness. Keep source IDs/metadata so answers can cite provenance.
+Package the Embedding Search & Vector Databases lab as a tested, versioned component with monitoring and rollback.

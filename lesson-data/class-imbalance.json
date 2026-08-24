@@ -72,7 +72,20 @@
       0.03
     ],
     "caption": "A model that predicts only the majority class can look accurate while completely failing on the rare class.",
-    "yLabel": "class share"
+    "yLabel": "class share",
+    "grounding": [
+      {
+        "id": "sklearn-class-weights",
+        "role": "Primary technical basis"
+      },
+      {
+        "id": "sklearn-model-evaluation",
+        "role": "Secondary technical reference"
+      }
+    ],
+    "sourceMode": "adapted-redraw",
+    "figureClass": "research-grounded",
+    "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
   },
   "editorial": {
     "status": "verified",
@@ -161,7 +174,20 @@
         "Calibrate and select policy separately"
       ],
       "caption": "Training emphasis, probability quality and action policy are distinct stages.",
-      "afterSection": "training-interventions"
+      "afterSection": "training-interventions",
+      "grounding": [
+        {
+          "id": "sklearn-class-weights",
+          "role": "Primary technical basis"
+        },
+        {
+          "id": "sklearn-model-evaluation",
+          "role": "Secondary technical reference"
+        }
+      ],
+      "sourceMode": "adapted-redraw",
+      "figureClass": "research-grounded",
+      "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
     },
     {
       "type": "compare",
@@ -185,7 +211,20 @@
         ]
       },
       "caption": "Balancing the optimizer must not silently balance the world used for evaluation.",
-      "afterSection": "evaluation-prevalence"
+      "afterSection": "evaluation-prevalence",
+      "grounding": [
+        {
+          "id": "sklearn-model-evaluation",
+          "role": "Primary technical basis"
+        },
+        {
+          "id": "sklearn-class-weights",
+          "role": "Secondary technical reference"
+        }
+      ],
+      "sourceMode": "adapted-redraw",
+      "figureClass": "research-grounded",
+      "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
     }
   ],
   "sourceNotes": [
@@ -201,5 +240,10 @@
       "resource": "sklearn-cross-validation",
       "contribution": "Supports fold-local pipelines and structured split requirements for valid resampling evaluation."
     }
-  ]
+  ],
+  "presentation": {
+    "visualStandard": "research-grounded-adapted-redraw",
+    "mathStandard": "STIX-math-with-MathJax-for-delimited-equations",
+    "typographyStandard": "Plus-Jakarta-Sans-Source-Serif-4-IBM-Plex-Mono"
+  }
 }

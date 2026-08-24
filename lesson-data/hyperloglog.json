@@ -142,7 +142,20 @@
         "Estimate with corrections"
       ],
       "caption": "One hash supplies both stochastic partitioning and rare-event evidence.",
-      "afterSection": "rare-events"
+      "afterSection": "rare-events",
+      "grounding": [
+        {
+          "id": "hyperloglog-paper",
+          "role": "Primary technical basis"
+        },
+        {
+          "id": "stanford-cs246",
+          "role": "Secondary technical reference"
+        }
+      ],
+      "sourceMode": "adapted-redraw",
+      "figureClass": "research-grounded",
+      "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
     },
     {
       "type": "curve",
@@ -175,7 +188,20 @@
         }
       ],
       "caption": "Conceptual normalized curve: error falls with the square root of the number of registers.",
-      "afterSection": "precision-queries"
+      "afterSection": "precision-queries",
+      "grounding": [
+        {
+          "id": "stanford-cs246",
+          "role": "Primary technical basis"
+        },
+        {
+          "id": "hyperloglog-paper",
+          "role": "Secondary technical reference"
+        }
+      ],
+      "sourceMode": "adapted-redraw",
+      "figureClass": "research-grounded",
+      "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
     }
   ],
   "sourceNotes": [
@@ -187,5 +213,10 @@
       "resource": "stanford-cs246",
       "contribution": "Supports the streaming distinct-count context, hashing intuition and comparison with other sketches."
     }
-  ]
+  ],
+  "presentation": {
+    "visualStandard": "research-grounded-adapted-redraw",
+    "mathStandard": "STIX-math-with-MathJax-for-delimited-equations",
+    "typographyStandard": "Plus-Jakarta-Sans-Source-Serif-4-IBM-Plex-Mono"
+  }
 }

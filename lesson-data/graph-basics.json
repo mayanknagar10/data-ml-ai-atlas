@@ -32,10 +32,22 @@
     "Randomly splitting temporal interaction graphs without leakage analysis."
   ],
   "followUps": [
-    "Homogeneous vs heterogeneous graph?",
-    "Directed vs undirected?",
-    "What is node degree?",
-    "How do you split graph data?"
+    {
+      "question": "Homogeneous vs heterogeneous graph?",
+      "answer": "Answer it from the Graph ML Fundamentals contract: define Nodes/edges, state the mechanism and assumptions, then connect it to the evaluation boundary and one production failure mode. The chapter sections above provide the detailed reasoning rather than a tool-name-only response."
+    },
+    {
+      "question": "Directed vs undirected?",
+      "answer": "Answer it from the Graph ML Fundamentals contract: define Directed vs undirected, state the mechanism and assumptions, then connect it to the evaluation boundary and one production failure mode. The chapter sections above provide the detailed reasoning rather than a tool-name-only response."
+    },
+    {
+      "question": "What is node degree?",
+      "answer": "Answer it from the Graph ML Fundamentals contract: define Heterogeneous graphs, state the mechanism and assumptions, then connect it to the evaluation boundary and one production failure mode. The chapter sections above provide the detailed reasoning rather than a tool-name-only response."
+    },
+    {
+      "question": "How do you split graph data?",
+      "answer": "Answer it from the Graph ML Fundamentals contract: define Tasks, state the mechanism and assumptions, then connect it to the evaluation boundary and one production failure mode. The chapter sections above provide the detailed reasoning rather than a tool-name-only response."
+    }
   ],
   "production": "Graph freshness, edge timestamps and entity resolution matter as much as the GNN. Build reproducible snapshot logic for training and online updates.",
   "visual": {
@@ -100,9 +112,238 @@
       ]
     ],
     "caption": "Graphs represent entities as nodes and relationships as edges; node/edge features add attributes.",
-    "directed": false
+    "directed": false,
+    "grounding": [
+      {
+        "id": "stanford-cs229",
+        "role": "Primary technical basis"
+      },
+      {
+        "id": "stanford-cs224w",
+        "role": "Secondary technical reference"
+      }
+    ],
+    "sourceMode": "adapted-redraw",
+    "figureClass": "research-grounded",
+    "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
   },
   "editorial": {
-    "status": "summary"
+    "status": "verified",
+    "verifiedOn": "2026-08-24"
+  },
+  "description": "Graph ML Fundamentals is a core topic in Graph ML. Graph ML starts with representing entities and relationships explicitly; interviews expect you to know nodes, edges, direction, heterogeneity and graph-specific leakage. This chapter turns the interview-level summary into a complete engineering and analytical treatment. The starting mental model is: A graph stores objects as nodes and relationships as edges. Features live on nodes/edges, while topology itself provides information that ordinary tabular models may miss. The formal and implementation discussion builds from Nodes/edges, Directed vs undirected, Heterogeneous graphs, Tasks, while keeping the unit of data, objective, assumptions, and failure boundaries explicit. The original technical core is preserved: Graphs may be directed/undirected, weighted, homogeneous or heterogeneous with multiple node/edge types. Degree, neighborhoods, paths and connected components describe structure. Adjacency matrices/lists encode connectivity. In ML, splits require care: edges/nodes from the future can leak information, and message passing can indirectly expose validation/test structure depending on the setup. Rather than treating those statements as isolated facts, the chapter connects them to data preparation, evaluation design, numerical or systems behavior, and choices that change under scale or distribution shift. You will work through two concrete scenarios, a runnable Python lab with assertions, and two original conceptual visuals. The lab is intentionally small enough to run locally while still exposing an invariant that should remain true in a larger implementation. The production section translates the concept into monitoring, versioning, rollback, and failure-handling requirements. Graph freshness, edge timestamps and entity resolution matter as much as the GNN. Build reproducible snapshot logic for training and online updates. The broader module context is graph representations, message passing, gnns and link prediction. The goal is.",
+  "prerequisites": [],
+  "learningObjectives": [
+    "Explain Graph ML Fundamentals from the input/output contract through the core mechanism and assumptions.",
+    "Reason about Nodes/edges and Directed vs undirected using a small example and an explicit invariant.",
+    "Choose an evaluation design for Graph ML Fundamentals that includes a baseline, critical slices, and failure diagnostics.",
+    "Translate Graph ML Fundamentals into production controls for versioning, monitoring, resource limits, and rollback."
+  ],
+  "deepSections": [
+    {
+      "id": "problem-contract",
+      "title": "Define the problem contract before the technique",
+      "body": "A rigorous explanation of Graph ML Fundamentals starts with the contract, not the library call. In Graph ML, the relevant artifact is nodes, edges, attributes, and graph structure, and the intended output is node, edge, graph, or link predictions. State the unit of observation or request, what information is available at decision time, which variables are controlled versus observed, and what success means. Graph ML starts with representing entities and relationships explicitly; interviews expect you to know nodes, edges, direction, heterogeneity and graph-specific leakage. The key ideas — Nodes/edges, Directed vs undirected, Heterogeneous graphs, Tasks — only become meaningful when tied to a concrete input and output. For example, the same mechanism can be valid for an offline batch but invalid for an online request if it depends on unavailable future information, expensive global state, or a representation that is not versioned at serving time. Write down assumptions about independence, stationarity, label quality, ordering, capacity, or trust boundaries when they matter. Separate the statistical estimand or computational result from the estimator or implementation used to obtain it. Also separate correctness from convenience: a popular API can faithfully execute the wrong problem definition. A useful interview answer therefore names the goal, the information boundary, the dominant trade-off, and one failure mode before adding details. In production, this same contract becomes the basis for schemas, tests, SLOs, monitoring, and rollback."
+    },
+    {
+      "id": "mechanism",
+      "title": "Mechanism and representation",
+      "body": "The working intuition for Graph ML Fundamentals is: A graph stores objects as nodes and relationships as edges. Features live on nodes/edges, while topology itself provides information that ordinary tabular models may miss. The technical core is: Graphs may be directed/undirected, weighted, homogeneous or heterogeneous with multiple node/edge types. Degree, neighborhoods, paths and connected components describe structure. Adjacency matrices/lists encode connectivity. In ML, splits require care: edges/nodes from the future can leak information, and message passing can indirectly expose validation/test structure depending on the setup. Treat that description as a sequence of transformations and invariants. First identify what representation enters each step, what state or parameters are read, what transformation occurs, and what representation leaves. Then ask which quantities are learned, estimated, cached, partitioned, or fixed by design. The chapter's key points give a compact checklist: Nodes/edges, Directed vs undirected, Heterogeneous graphs, Tasks. Each point should be explainable both conceptually and operationally. A concept is understood only when you can predict what changes after perturbing an input, removing a component, changing scale, or violating an assumption. Shape, units, ordering, normalization, and data type are part of the mechanism because many real failures are interface failures rather than failures of the underlying theory. For learned systems, distinguish forward computation from parameter updates; for data systems, distinguish event-time truth from processing-time state; for distributed or cloud systems, distinguish logical semantics from physical placement. This decomposition is also the basis for debugging: inspect intermediate values, compare against a tiny reference implementation, and verify local invariants before blaming the most sophisticated component."
+    },
+    {
+      "id": "formal-view",
+      "title": "Formal view, objective, and invariants",
+      "body": "A compact formal statement prevents hand-waving. For Graph ML Fundamentals, the existing mathematical or logical anchor is: Adjacency A_ij=1 (or weight) when an edge connects i→j. Degree d_i=Σ_j A_ij for a simple directed-out degree.. Do not memorize symbols without semantics. Name the domain of every quantity, whether it is observed or latent, and what is optimized or conserved. If an objective is minimized, ask what population quantity its empirical version estimates and whether weighting changes that target. If there is no optimization objective, identify the safety or correctness invariant instead: ordering, idempotence, conservation, normalization, boundedness, monotonicity, consistency, or resource limits. Numerical details matter whenever repeated operations amplify rounding or conditioning problems. Systems details matter whenever retries, parallelism, caching, or partial failure can produce a different logical result. Statistical details matter whenever data reuse or selection changes the sampling distribution. A strong implementation test usually expresses at least one invariant as an assertion on a toy case, plus a second test that fails when a key assumption is deliberately violated. The runnable lab follows that pattern so the chapter has an executable claim rather than code that merely prints a plausible number."
+    },
+    {
+      "id": "tradeoffs",
+      "title": "Design choices and trade-offs",
+      "body": "There is rarely one universally best configuration of Graph ML Fundamentals. The useful question is which trade-off matters for the declared workload. Start with the key points Nodes/edges, Directed vs undirected, Heterogeneous graphs, Tasks and ask how each affects accuracy or correctness, compute, memory, latency, sample efficiency, interpretability, and operational complexity. Prefer a simple baseline when it is easier to validate and already meets the decision threshold. Add complexity only when a measured failure mode justifies it. Hyperparameters and architecture choices should therefore map to observable consequences rather than folklore. At small scale, an exact method may be clearer; at large scale, approximation, batching, partitioning, caching, streaming, quantization, or asynchronous work may be necessary. Those changes create new error surfaces, so every optimization needs a quality or correctness comparison against the reference behavior. Also distinguish offline economics from online economics. A method that saves training time may increase serving cost; a denser representation may improve quality but violate memory limits; a stronger consistency guarantee may reduce throughput; a more aggressive safety rule may increase false positives. Document the chosen operating point, alternatives considered, and the condition that would trigger revisiting the choice. This turns a technical preference into an auditable engineering decision."
+    },
+    {
+      "id": "evaluation-diagnostics",
+      "title": "Evaluation and diagnostics",
+      "body": "Evaluation for Graph ML Fundamentals must test the claim the system will make in operation. Appropriate evidence in this module includes structure-aware splits, task metrics, calibration, and neighborhood diagnostics. Do not collapse everything into one average. Slice by the dimensions that change difficulty: time, horizon, class, scale, entity, language, device, traffic regime, subgroup, or workload shape as appropriate. Always compare against a meaningful baseline on the same examples or requests. Keep comparisons paired when possible so improvement is not confused with a change in evaluation population. If labels or outcomes arrive late, define maturity before scoring. If the system is stochastic, use repeated seeds or confidence intervals; if observations are dependent, use a dependence-aware uncertainty procedure rather than row-level iid assumptions. Diagnostics should include input validity, intermediate-state checks, output distribution checks, and resource behavior. For probabilistic outputs, evaluate calibration as well as discrimination or sharpness. For ranking or generation, combine task metrics with qualitative failure review. For infrastructure, test both steady state and recovery behavior. A release gate should specify what must improve, what must not regress, and which failures are blocking even if the global average looks good."
+    },
+    {
+      "id": "failure-modes",
+      "title": "Failure modes and debugging strategy",
+      "body": "The dominant risks around Graph ML Fundamentals include oversmoothing, leakage across edges, sampling bias, and dynamic topology. Existing chapter cautions are also important: Treating graph rows as independent samples. Ignoring edge direction/type. Randomly splitting temporal interaction graphs without leakage analysis. A debugging process should make these risks observable. Start from the smallest reproducible case and verify the data contract. Check shapes, units, ordering, timestamps, identifiers, missingness, labels, masks, seeds, and configuration before changing the algorithm. Next verify a baseline and an invariant. Then inspect intermediate representations or state transitions to locate the first point where expected behavior diverges. Separate data bugs, objective mismatch, optimization or numerical issues, capacity limits, and deployment integration problems because they require different remedies. Introduce controlled perturbations: duplicate an event, reorder input, remove a feature, change batch size, delay a dependency, corrupt one field, or reduce precision. A robust implementation should either preserve its invariant or fail loudly according to a documented policy. Finally, test recovery. Retries should not duplicate side effects, model rollback should restore a compatible preprocessing path, and cached or checkpointed state should have a version. A system that works only on the happy path is not a complete implementation of the concept."
+    },
+    {
+      "id": "production-operation",
+      "title": "Production operation, monitoring, and communication",
+      "body": "Shipping Graph ML Fundamentals means operating a versioned contract over time. Graph freshness, edge timestamps and entity resolution matter as much as the GNN. Build reproducible snapshot logic for training and online updates. Persist the model, code, data or schema version, configuration, dependencies, and any state needed to reproduce behavior. Monitor the inputs that drive the mechanism, the outputs users experience, and the internal resource or quality signals that predict failure. Use separate alerts for correctness, quality, latency, saturation, data freshness, and safety so one aggregate health score does not hide the cause. Canary or shadow changes when the blast radius is meaningful. Define rollback artifacts in advance and verify that rollback restores compatible schemas, feature logic, tokenizer or preprocessing state, and dependent services. Record enough request or batch metadata to reproduce failures without retaining data that violates privacy or retention requirements. When explaining the system to another engineer or interviewer, use a stable narrative: problem contract, mechanism, formal invariant, trade-off, evaluation evidence, failure mode, and production control. That sequence demonstrates understanding more reliably than listing tool names. The final question is always operational: what signal would tell you this implementation is no longer trustworthy, and what safe action follows?"
+    }
+  ],
+  "workedExamples": [
+    {
+      "title": "Trace the mechanism on a toy case",
+      "body": "A developer–PR graph has two node types and “authored”/“reviewed” edges. The same PR text alone misses historical reviewer relationships that graph structure captures."
+    },
+    {
+      "title": "Diagnose an apparent improvement",
+      "body": "Suppose a team deploys Graph ML Fundamentals and the global metric improves, but one critical slice regresses. Trace Nodes/edges and Directed vs undirected through the data and implementation path. Compare the new behavior with a simple baseline on identical examples, reproduce the slice locally, and test whether the change is caused by oversmoothing. The correct decision is based on the declared release gate and user impact, not the aggregate improvement alone."
+    }
+  ],
+  "exercises": [
+    {
+      "difficulty": "recall",
+      "prompt": "Define Nodes/edges in the context of Graph ML Fundamentals and state one invariant or assumption it depends on.",
+      "solution": "A complete answer defines Nodes/edges in terms of the lesson's input/output contract, names the mechanism it controls, and states the assumption or invariant that makes the result meaningful."
+    },
+    {
+      "difficulty": "application",
+      "prompt": "Design a minimal experiment or test that distinguishes a correct Graph ML Fundamentals implementation from a plausible but wrong one.",
+      "solution": "Use a tiny deterministic input with a hand-computable expected result, assert the primary invariant, compare with a simple baseline or reference path, and add one boundary case that violates a key assumption."
+    },
+    {
+      "difficulty": "diagnosis",
+      "prompt": "A production Graph ML Fundamentals system improves its average metric but fails on one important slice. What should you inspect before shipping?",
+      "solution": "Keep the comparison paired, inspect data/feature availability and intermediate states on the failing slice, verify the metric definition and baseline, quantify user or business impact, and ship only if the predeclared slice and safety gates are satisfied."
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "stanford-cs229",
+      "contribution": "Stanford University — CS229: Machine Learning anchors the Graph ML Fundamentals chapter with a curated primary course reference. Canonical mathematical ML course covering supervised learning, unsupervised learning, learning theory and practical model reasoning."
+    },
+    {
+      "resource": "stanford-cs329s",
+      "contribution": "Stanford University — Chip Huyen — CS329S: Machine Learning Systems Design anchors the Graph ML Fundamentals chapter with a curated primary systems course reference. Systematic framework for building deployable, reliable and scalable ML systems, including data, deployment, monitoring and trade-offs."
+    },
+    {
+      "resource": "stanford-cs224w",
+      "contribution": "Stanford University — Jure Leskovec et al. — CS224W — Machine Learning with Graphs anchors the Graph ML Fundamentals chapter with a curated university course reference. Top-tier course for graph representation learning, GNNs, heterogeneous graphs, link prediction and knowledge graphs."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "network",
+      "title": "Graph representation",
+      "nodes": [
+        {
+          "id": "a",
+          "label": "A",
+          "x": 0.2,
+          "y": 0.25
+        },
+        {
+          "id": "b",
+          "label": "B",
+          "x": 0.52,
+          "y": 0.18
+        },
+        {
+          "id": "c",
+          "label": "C",
+          "x": 0.78,
+          "y": 0.43
+        },
+        {
+          "id": "d",
+          "label": "D",
+          "x": 0.56,
+          "y": 0.76
+        },
+        {
+          "id": "e",
+          "label": "E",
+          "x": 0.2,
+          "y": 0.68
+        }
+      ],
+      "edges": [
+        [
+          "a",
+          "b"
+        ],
+        [
+          "b",
+          "c"
+        ],
+        [
+          "c",
+          "d"
+        ],
+        [
+          "d",
+          "e"
+        ],
+        [
+          "e",
+          "a"
+        ],
+        [
+          "b",
+          "d"
+        ]
+      ],
+      "caption": "Graphs represent entities as nodes and relationships as edges; node/edge features add attributes.",
+      "directed": false,
+      "grounding": [
+        {
+          "id": "stanford-cs229",
+          "role": "Primary technical basis"
+        },
+        {
+          "id": "stanford-cs224w",
+          "role": "Secondary technical reference"
+        }
+      ],
+      "sourceMode": "adapted-redraw",
+      "figureClass": "research-grounded",
+      "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
+    },
+    {
+      "type": "compare",
+      "title": "Graph ML Fundamentals: reference path vs production path",
+      "left": {
+        "title": "Reference reasoning",
+        "items": [
+          "Tiny deterministic case",
+          "Explicit assumptions",
+          "Hand-checkable invariant",
+          "Simple baseline"
+        ]
+      },
+      "right": {
+        "title": "Production reasoning",
+        "items": [
+          "Versioned inputs/state",
+          "Scale and latency constraints",
+          "Slice-aware evaluation",
+          "Monitoring and rollback"
+        ]
+      },
+      "caption": "Original conceptual comparison: learn Graph ML Fundamentals with a small auditable reference, then preserve the same invariant under production constraints.",
+      "afterSection": "production-operation",
+      "grounding": [
+        {
+          "id": "stanford-cs224w",
+          "role": "Primary technical basis"
+        },
+        {
+          "id": "stanford-cs229",
+          "role": "Secondary technical reference"
+        }
+      ],
+      "sourceMode": "adapted-redraw",
+      "figureClass": "research-grounded",
+      "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
+    }
+  ],
+  "lab": {
+    "language": "python",
+    "goal": "Build a small, auditable Graph ML Fundamentals example, inspect the key state, and verify a correctness invariant with assertions.",
+    "buildIt": "import numpy as np\nadj=np.array([[0,1,1,0],[1,0,1,0],[1,1,0,1],[0,0,1,0]],float)\nx=np.array([[1.,0.],[0.,1.],[1.,1.],[2.,0.]])\ndeg=adj.sum(1,keepdims=True)\nneighbor_mean=(adj@x)/np.maximum(deg,1)",
+    "useIt": "self_plus=x+neighbor_mean\nnode2_context=self_plus[2]",
+    "verifyIt": "assert np.allclose(deg.ravel(),[2,2,3,1])\nassert np.allclose(neighbor_mean[3],x[2])\nassert np.all(np.isfinite(self_plus))\nassert node2_context.shape==(2,)",
+    "shipIt": "Turn this Graph ML Fundamentals reference into a versioned component with explicit schemas, deterministic tests, slice-aware evaluation, monitoring, resource limits, and a rollback path."
+  },
+  "presentation": {
+    "visualStandard": "research-grounded-adapted-redraw",
+    "mathStandard": "STIX-math-with-MathJax-for-delimited-equations",
+    "typographyStandard": "Plus-Jakarta-Sans-Source-Serif-4-IBM-Plex-Mono"
   }
 }

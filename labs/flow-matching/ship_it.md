@@ -1,3 +1,3 @@
 # Ship it
 
-Inference speed depends on number of function evaluations and solver choice; deployment still needs benchmarking rather than assuming flow matching is always faster.
+Package the Flow Matching lab as a tested, versioned component with monitoring and rollback.

@@ -29,13 +29,13 @@ Every `chapter-complete` or `verified` lesson must contain:
 15. `visuals` when a diagram materially improves understanding
 16. `editorial` — one of `summary`, `draft`, `chapter-complete`, or `verified`
 
-Chapter prose normally targets 1,500–3,000 explanatory words. Validation rejects a complete chapter below 1,200 words and warns between 1,200 and 1,499. Code, metadata and resource titles do not inflate this count. A `verified` chapter also requires a `verifiedOn` date and at least two annotated sources. Add math and code only when they improve understanding; they are not mandatory filler.
+Chapter prose normally targets 1,500–3,000 explanatory words. `chapter-complete` retains the 1,200-word structural floor, but the release-grade `verified` state requires **at least 1,500 explanatory words**, **at least two distinct annotated sources**, **at least two original visual models**, and a **complete runnable Python lab** with Build It / Use It / Ship It / Verify It stages. Code, metadata and resource titles do not inflate the explanatory count. A `verified` chapter also requires a `verifiedOn` date. Add math when it improves understanding; it is not mandatory filler.
 
 Legacy singular fields remain readable during migration, but they do not satisfy the full-chapter contract. Editorial status is assigned deliberately; the build never promotes it from word count.
 
 ## Runnable code-lab standard
 
-For high-frequency algorithmic or engineering concepts where implementation reveals important mechanics, prefer a `lab` object with this rhythm:
+For every release-grade `verified` lesson, require a `lab` object with this rhythm:
 
 > **Problem / concept → Build It → Use It → Verify It → Ship It**
 
@@ -121,7 +121,7 @@ For code-suitable concepts, prefer a runnable lab over a decorative snippet. The
 
 Generated lab files must be standalone. A learner should not need to mentally copy variables from another file. Keep dependencies proportional to the concept and avoid long framework boilerplate.
 
-Not every lesson needs code. Behavioral strategy, architecture trade-offs and system-design topics are often better served by diagrams, schemas or decision frameworks.
+Every verified lesson now includes a compact executable lab; for behavioral, architecture, governance, and system-design topics the lab should test a decision rule, invariant, capacity model, validation contract, or failure policy rather than forcing irrelevant framework code.
 
 ## Visual explanation standard
 
@@ -143,7 +143,7 @@ Rules:
 - Add a concise `title` and `caption` to every visual.
 - Conceptual plots must be labeled as conceptual rather than presented as measured data.
 - Use the same theme-aware SVG in the web lesson and generated book.
-- Every **very-high-priority** lesson should have a visual model unless the topic is inherently non-visual.
-- Prefer one strong explanatory figure to several decorative figures.
+- Every **verified** lesson requires at least two original visual models.
+- Prefer two strong explanatory figures to decorative figures; additional visuals are optional.
 - Visuals must remain readable in dark mode, mobile layouts and print/PDF output.
 - External visual explainers such as Distill, Google MLCC, D2L or the Illustrated Transformer belong in the resource ladder; they complement rather than replace the Atlas's own explanation.

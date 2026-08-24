@@ -150,7 +150,20 @@
         ]
       },
       "caption": "Whether conditioning helps depends on graph structure, not a universal adjustment rule.",
-      "afterSection": "conditional-graphs"
+      "afterSection": "conditional-graphs",
+      "grounding": [
+        {
+          "id": "harvard-stat110",
+          "role": "Primary technical basis"
+        },
+        {
+          "id": "harvard-causal-diagrams",
+          "role": "Secondary technical reference"
+        }
+      ],
+      "sourceMode": "adapted-redraw",
+      "figureClass": "research-grounded",
+      "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
     },
     {
       "type": "flow",
@@ -165,7 +178,20 @@
         "Fallback if decision changes"
       ],
       "caption": "Empirical non-rejection is one piece of evidence, not proof of structural independence.",
-      "afterSection": "modeling-testing"
+      "afterSection": "modeling-testing",
+      "grounding": [
+        {
+          "id": "harvard-causal-diagrams",
+          "role": "Primary technical basis"
+        },
+        {
+          "id": "harvard-stat110",
+          "role": "Secondary technical reference"
+        }
+      ],
+      "sourceMode": "adapted-redraw",
+      "figureClass": "research-grounded",
+      "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
     }
   ],
   "lab": {
@@ -175,5 +201,10 @@
     "useIt": "# Conditional tables indexed alarm/no-alarm for two sensors\nhot=[[.81,.09],[.09,.01]]; cold=[[.01,.09],[.09,.81]]\nmarginal=mixture([hot,cold],[.5,.5])\nimport numpy as np\nrng=np.random.default_rng(7); n=500000\nx=rng.integers(0,2,n); y=rng.integers(0,2,n); selected=(x|y).astype(bool)\nselected_corr=np.corrcoef(x[selected],y[selected])[0,1]",
     "verifyIt": "assert independent(hot) and independent(cold)\nassert not independent(marginal)\nassert abs(sum(map(sum,marginal))-1)<1e-12\nassert abs(selected_corr+0.5)<.02\nassert abs(np.corrcoef(x,y)[0,1])<.01\n# Pairwise independence does not imply triple mutual independence: parity z=x xor y\nassert all(abs(np.corrcoef(a,b)[0,1])<.01 for a,b in ((x,y),(x,x^y),(y,x^y)))\nassert np.all((x^y)==np.bitwise_xor(x,y))",
     "shipIt": "Use unit-aware splits and explicit selection/graph metadata, monitor dependence/calibration drift, audit collider/leakage paths, protect joint sensitive data and keep a richer-model or prior-factorization rollback option."
+  },
+  "presentation": {
+    "visualStandard": "research-grounded-adapted-redraw",
+    "mathStandard": "STIX-math-with-MathJax-for-delimited-equations",
+    "typographyStandard": "Plus-Jakarta-Sans-Source-Serif-4-IBM-Plex-Mono"
   }
 }

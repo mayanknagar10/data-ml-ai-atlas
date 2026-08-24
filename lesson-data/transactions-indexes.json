@@ -144,7 +144,20 @@
         "Publish external effects safely"
       ],
       "caption": "A business action must not expose a partially applied database state.",
-      "afterSection": "transaction-boundaries"
+      "afterSection": "transaction-boundaries",
+      "grounding": [
+        {
+          "id": "postgres-indexes",
+          "role": "Primary technical basis"
+        },
+        {
+          "id": "postgres-transactions",
+          "role": "Secondary technical reference"
+        }
+      ],
+      "sourceMode": "adapted-redraw",
+      "figureClass": "research-grounded",
+      "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
     },
     {
       "type": "compare",
@@ -168,7 +181,20 @@
         ]
       },
       "caption": "An index is a maintained structure, so read acceleration always has lifecycle cost.",
-      "afterSection": "workload-index-design"
+      "afterSection": "workload-index-design",
+      "grounding": [
+        {
+          "id": "postgres-transactions",
+          "role": "Primary technical basis"
+        },
+        {
+          "id": "postgres-indexes",
+          "role": "Secondary technical reference"
+        }
+      ],
+      "sourceMode": "adapted-redraw",
+      "figureClass": "research-grounded",
+      "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
     }
   ],
   "lab": {
@@ -178,5 +204,10 @@
     "useIt": "import sqlite3\ncon=sqlite3.connect(':memory:')\ncon.executescript('CREATE TABLE account(id INTEGER PRIMARY KEY,balance INTEGER CHECK(balance>=0)); CREATE TABLE transfer(id TEXT PRIMARY KEY); CREATE TABLE history(account_id INTEGER,occurred_at INTEGER,amount INTEGER); CREATE INDEX history_account_time ON history(account_id,occurred_at DESC); INSERT INTO account VALUES (1,100),(2,0);')\ntransfer(con,'t1',1,2,30)\nplan=con.execute('EXPLAIN QUERY PLAN SELECT amount FROM history WHERE account_id=? AND occurred_at>=? ORDER BY occurred_at DESC',(1,0)).fetchall()",
     "verifyIt": "assert con.execute('SELECT SUM(balance) FROM account').fetchone()[0]==100\nassert con.execute('SELECT balance FROM account ORDER BY id').fetchall()==[(70,),(30,)]\ntry: transfer(con,'t2',1,99,10)\nexcept ValueError: pass\nelse: raise AssertionError('missing target must fail')\nassert con.execute('SELECT balance FROM account ORDER BY id').fetchall()==[(70,),(30,)]\nassert any('history_account_time' in str(row) for row in plan)",
     "shipIt": "Add bounded retries, consistent lock order, idempotency/outbox integration, transaction-age monitoring, representative EXPLAIN ANALYZE checks, and reversible online index rollout."
+  },
+  "presentation": {
+    "visualStandard": "research-grounded-adapted-redraw",
+    "mathStandard": "STIX-math-with-MathJax-for-delimited-equations",
+    "typographyStandard": "Plus-Jakarta-Sans-Source-Serif-4-IBM-Plex-Mono"
   }
 }

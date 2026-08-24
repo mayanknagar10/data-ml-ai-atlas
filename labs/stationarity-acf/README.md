@@ -1,6 +1,6 @@
 # Stationarity, ACF & PACF — Code Lab
 
-Simulate stationary AR(1) and a random walk, compute ACF, and verify theoretical decay plus the effect of differencing.
+Simulate stationary AR(1) and a random walk, compute ACF from first principles, and verify theoretical decay plus the effect of differencing.
 
 ## 1. Build it
 

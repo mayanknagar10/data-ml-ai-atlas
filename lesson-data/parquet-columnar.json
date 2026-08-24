@@ -142,7 +142,20 @@
         "Pages: encoded and compressed values"
       ],
       "caption": "Different layers support planning, parallel scans, projection, statistics, encoding and compression.",
-      "afterSection": "physical-hierarchy"
+      "afterSection": "physical-hierarchy",
+      "grounding": [
+        {
+          "id": "parquet-concepts",
+          "role": "Primary technical basis"
+        },
+        {
+          "id": "parquet-motivation",
+          "role": "Secondary technical reference"
+        }
+      ],
+      "sourceMode": "adapted-redraw",
+      "figureClass": "research-grounded",
+      "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
     },
     {
       "type": "flow",
@@ -156,7 +169,20 @@
         "Operators aggregate rows"
       ],
       "caption": "Each pruning mechanism has distinct evidence; profile bytes and groups instead of inferring from elapsed time.",
-      "afterSection": "pruning-pushdown"
+      "afterSection": "pruning-pushdown",
+      "grounding": [
+        {
+          "id": "parquet-motivation",
+          "role": "Primary technical basis"
+        },
+        {
+          "id": "parquet-concepts",
+          "role": "Secondary technical reference"
+        }
+      ],
+      "sourceMode": "adapted-redraw",
+      "figureClass": "research-grounded",
+      "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
     }
   ],
   "lab": {
@@ -166,5 +192,10 @@
     "useIt": "rows=[{'ts':i,'region':['EU','EU','US'][i%3],'amount':float(i)} for i in range(12)]\nrows.sort(key=lambda r:r['ts'])\ndictionary,codes=dictionary_encode([r['region'] for r in rows])\nrow_groups=groups(rows,4)\nresult,selected=scan(row_groups,5,6)\ntry:\n    import pyarrow as pa, pyarrow.parquet as pq, tempfile\nexcept ImportError:\n    pa=pq=None\nif pa is not None:\n    path=tempfile.NamedTemporaryFile(suffix='.parquet',delete=False).name\n    pq.write_table(pa.Table.from_pylist(rows),path,row_group_size=4)\n    arrow_rows=pq.read_table(path,columns=['ts','amount'],filters=[('ts','>=',5),('ts','<=',6)]).to_pylist()",
     "verifyIt": "assert dictionary==['EU','US']\nassert [dictionary[code] for code in codes]==[r['region'] for r in rows]\nassert [r['ts'] for r in result]==[5,6]\nassert selected==1 and selected < len(row_groups)\nif pa is not None:\n    assert arrow_rows==[{'ts':5,'amount':5.0},{'ts':6,'amount':6.0}]",
     "shipIt": "Profile target-engine files, row groups, projected columns and bytes; compact under atomic snapshots, validate schemas/control totals across readers, monitor tiny files and pruning, and retain a trusted snapshot for rollback."
+  },
+  "presentation": {
+    "visualStandard": "research-grounded-adapted-redraw",
+    "mathStandard": "STIX-math-with-MathJax-for-delimited-equations",
+    "typographyStandard": "Plus-Jakarta-Sans-Source-Serif-4-IBM-Plex-Mono"
   }
 }

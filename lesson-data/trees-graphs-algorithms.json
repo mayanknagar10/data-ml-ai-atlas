@@ -202,7 +202,20 @@
         ]
       ],
       "caption": "FIFO exploration discovers vertices in nondecreasing number of edges from the source.",
-      "afterSection": "breadth-first-search"
+      "afterSection": "breadth-first-search",
+      "grounding": [
+        {
+          "id": "mit-algorithms",
+          "role": "Primary technical basis"
+        },
+        {
+          "id": "princeton-algorithms",
+          "role": "Secondary technical reference"
+        }
+      ],
+      "sourceMode": "adapted-redraw",
+      "figureClass": "research-grounded",
+      "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
     },
     {
       "type": "flow",
@@ -215,7 +228,20 @@
         "Return order or cycle diagnosis"
       ],
       "caption": "A partial order is not success when a directed cycle prevents all tasks from being emitted.",
-      "afterSection": "depth-first-search"
+      "afterSection": "depth-first-search",
+      "grounding": [
+        {
+          "id": "princeton-algorithms",
+          "role": "Primary technical basis"
+        },
+        {
+          "id": "mit-algorithms",
+          "role": "Secondary technical reference"
+        }
+      ],
+      "sourceMode": "adapted-redraw",
+      "figureClass": "research-grounded",
+      "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
     }
   ],
   "lab": {
@@ -225,5 +251,10 @@
     "useIt": "import graphlib\ndependencies = {'train': {'features'}, 'deploy': {'train'}, 'features': {'extract'}, 'extract': set()}\norder = list(graphlib.TopologicalSorter(dependencies).static_order())",
     "verifyIt": "graph = {'s':['a','b'], 'a':['c'], 'b':['c'], 'c':[]}\npath = bfs_path(graph, 's', 'c')\nassert path in (['s','a','c'], ['s','b','c'])\nassert bfs_path(graph, 'c', 's') is None\npos = {node:i for i,node in enumerate(order)}\nfor node, needs in dependencies.items():\n    assert all(pos[need] < pos[node] for need in needs)\ntry:\n    list(graphlib.TopologicalSorter({'a': {'b'}, 'b': {'a'}}).static_order())\nexcept graphlib.CycleError:\n    pass\nelse:\n    raise AssertionError('cycle must fail')",
     "shipIt": "Add identity and schema validation, deterministic ordering, depth/vertex/edge/time budgets, cycle-path diagnostics, snapshot/version semantics, access control, and traversal metrics."
+  },
+  "presentation": {
+    "visualStandard": "research-grounded-adapted-redraw",
+    "mathStandard": "STIX-math-with-MathJax-for-delimited-equations",
+    "typographyStandard": "Plus-Jakarta-Sans-Source-Serif-4-IBM-Plex-Mono"
   }
 }

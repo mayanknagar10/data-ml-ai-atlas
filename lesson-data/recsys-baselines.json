@@ -14,7 +14,9 @@
     "Temporal splits better reflect recommendation deployment."
   ],
   "resources": [
-    "stanford-cs246"
+    "stanford-cs246",
+    "stanford-cs329s",
+    "stanford-cs224w"
   ],
   "featured": true,
   "why": "Recommender Baselines & Problem Formulation appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes.",
@@ -26,8 +28,18 @@
     "Choosing it because it is familiar rather than comparing against an appropriate baseline."
   ],
   "followUps": [
-    "What assumptions does Recommender Baselines & Problem Formulation make?",
-    "How would you validate or debug Recommender Baselines & Problem Formulation in practice?"
+    {
+      "question": "What assumptions does Recommender Baselines & Problem Formulation make?",
+      "answer": "Answer it from the Recommender Baselines & Problem Formulation contract: define Implicit and explicit feedback differ., state the mechanism and assumptions, then connect it to the evaluation boundary and one production failure mode. The chapter sections above provide the detailed reasoning rather than a tool-name-only response."
+    },
+    {
+      "question": "How would you validate or debug Recommender Baselines & Problem Formulation in practice?",
+      "answer": "Answer it from the Recommender Baselines & Problem Formulation contract: define Negative samples are usually unobserved, not true dislikes., state the mechanism and assumptions, then connect it to the evaluation boundary and one production failure mode. The chapter sections above provide the detailed reasoning rather than a tool-name-only response."
+    },
+    {
+      "question": "How would you validate Temporal splits better reflect recommendation deployment. in a Recommender Baselines & Problem Formulation implementation?",
+      "answer": "Construct a minimal case with a known expected result, assert the relevant invariant for Temporal splits better reflect recommendation deployment., compare against a baseline or reference implementation, then test a boundary case and monitor the same signal in production."
+    }
   ],
   "production": "In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist.",
   "visual": {
@@ -38,9 +50,184 @@
       "Negative samples are usually unobserved, not true dislikes.",
       "Temporal splits better reflect recommendation deployment."
     ],
-    "caption": "A compact concept map for the most important ideas in this lesson."
+    "caption": "A compact concept map for the most important ideas in this lesson.",
+    "grounding": [
+      {
+        "id": "stanford-cs246",
+        "role": "Primary technical basis"
+      },
+      {
+        "id": "stanford-cs224w",
+        "role": "Secondary technical reference"
+      }
+    ],
+    "sourceMode": "adapted-redraw",
+    "figureClass": "research-grounded",
+    "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
   },
   "editorial": {
-    "status": "summary"
+    "status": "verified",
+    "verifiedOn": "2026-08-24"
+  },
+  "description": "Recommender Baselines & Problem Formulation is a core topic in Recommender Systems & Ranking. Recommender Baselines & Problem Formulation appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes. This chapter turns the interview-level summary into a complete engineering and analytical treatment. The starting mental model is: Implicit and explicit feedback differ. The formal and implementation discussion builds from Implicit and explicit feedback differ., Negative samples are usually unobserved, not true dislikes., Temporal splits better reflect recommendation deployment., while keeping the unit of data, objective, assumptions, and failure boundaries explicit. The original technical core is preserved: Start with popularity, recency and simple content/history baselines. Define whether the task is rating prediction, top-N ranking, next-item prediction or candidate generation because metrics and data construction differ. Negative samples are usually unobserved, not true dislikes. Temporal splits better reflect recommendation deployment. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate. Rather than treating those statements as isolated facts, the chapter connects them to data preparation, evaluation design, numerical or systems behavior, and choices that change under scale or distribution shift. You will work through two concrete scenarios, a runnable Python lab with assertions, and two original conceptual visuals. The lab is intentionally small enough to run locally while still exposing an invariant that should remain true in a larger implementation. The production section translates the concept into monitoring, versioning, rollback, and failure-handling requirements. In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added.",
+  "prerequisites": [],
+  "learningObjectives": [
+    "Explain Recommender Baselines & Problem Formulation from the input/output contract through the core mechanism and assumptions.",
+    "Reason about Implicit and explicit feedback differ. and Negative samples are usually unobserved, not true dislikes. using a small example and an explicit invariant.",
+    "Choose an evaluation design for Recommender Baselines & Problem Formulation that includes a baseline, critical slices, and failure diagnostics.",
+    "Translate Recommender Baselines & Problem Formulation into production controls for versioning, monitoring, resource limits, and rollback."
+  ],
+  "deepSections": [
+    {
+      "id": "problem-contract",
+      "title": "Define the problem contract before the technique",
+      "body": "A rigorous explanation of Recommender Baselines & Problem Formulation starts with the contract, not the library call. In Recommender Systems & Ranking, the relevant artifact is users, items, context, and interaction history, and the intended output is candidate scores, rankings, or recommendations. State the unit of observation or request, what information is available at decision time, which variables are controlled versus observed, and what success means. Recommender Baselines & Problem Formulation appears frequently in data-science work because it connects mathematical assumptions to practical decisions, diagnostics and failure modes. The key ideas — Implicit and explicit feedback differ., Negative samples are usually unobserved, not true dislikes., Temporal splits better reflect recommendation deployment. — only become meaningful when tied to a concrete input and output. For example, the same mechanism can be valid for an offline batch but invalid for an online request if it depends on unavailable future information, expensive global state, or a representation that is not versioned at serving time. Write down assumptions about independence, stationarity, label quality, ordering, capacity, or trust boundaries when they matter. Separate the statistical estimand or computational result from the estimator or implementation used to obtain it. Also separate correctness from convenience: a popular API can faithfully execute the wrong problem definition. A useful interview answer therefore names the goal, the information boundary, the dominant trade-off, and one failure mode before adding details. In production, this same contract becomes the basis for schemas, tests, SLOs, monitoring, and rollback."
+    },
+    {
+      "id": "mechanism",
+      "title": "Mechanism and representation",
+      "body": "The working intuition for Recommender Baselines & Problem Formulation is: Implicit and explicit feedback differ. The technical core is: Start with popularity, recency and simple content/history baselines. Define whether the task is rating prediction, top-N ranking, next-item prediction or candidate generation because metrics and data construction differ. Negative samples are usually unobserved, not true dislikes. Temporal splits better reflect recommendation deployment. A strong practitioner separates the modeling assumption from the estimation procedure, checks diagnostics rather than trusting a single score, and explains what would make the method inappropriate. Treat that description as a sequence of transformations and invariants. First identify what representation enters each step, what state or parameters are read, what transformation occurs, and what representation leaves. Then ask which quantities are learned, estimated, cached, partitioned, or fixed by design. The chapter's key points give a compact checklist: Implicit and explicit feedback differ., Negative samples are usually unobserved, not true dislikes., Temporal splits better reflect recommendation deployment.. Each point should be explainable both conceptually and operationally. A concept is understood only when you can predict what changes after perturbing an input, removing a component, changing scale, or violating an assumption. Shape, units, ordering, normalization, and data type are part of the mechanism because many real failures are interface failures rather than failures of the underlying theory. For learned systems, distinguish forward computation from parameter updates; for data systems, distinguish event-time truth from processing-time state; for distributed or cloud systems, distinguish logical semantics from physical placement. This decomposition is also the basis for debugging: inspect intermediate values, compare against a tiny reference implementation, and verify local invariants before blaming the most sophisticated component."
+    },
+    {
+      "id": "formal-view",
+      "title": "Formal view, objective, and invariants",
+      "body": "A compact formal statement prevents hand-waving. For Recommender Baselines & Problem Formulation, the existing mathematical or logical anchor is: define the transformation as a function from valid inputs and state to outputs, then state the invariant that must hold for every valid execution. Do not memorize symbols without semantics. Name the domain of every quantity, whether it is observed or latent, and what is optimized or conserved. If an objective is minimized, ask what population quantity its empirical version estimates and whether weighting changes that target. If there is no optimization objective, identify the safety or correctness invariant instead: ordering, idempotence, conservation, normalization, boundedness, monotonicity, consistency, or resource limits. Numerical details matter whenever repeated operations amplify rounding or conditioning problems. Systems details matter whenever retries, parallelism, caching, or partial failure can produce a different logical result. Statistical details matter whenever data reuse or selection changes the sampling distribution. A strong implementation test usually expresses at least one invariant as an assertion on a toy case, plus a second test that fails when a key assumption is deliberately violated. The runnable lab follows that pattern so the chapter has an executable claim rather than code that merely prints a plausible number."
+    },
+    {
+      "id": "tradeoffs",
+      "title": "Design choices and trade-offs",
+      "body": "There is rarely one universally best configuration of Recommender Baselines & Problem Formulation. The useful question is which trade-off matters for the declared workload. Start with the key points Implicit and explicit feedback differ., Negative samples are usually unobserved, not true dislikes., Temporal splits better reflect recommendation deployment. and ask how each affects accuracy or correctness, compute, memory, latency, sample efficiency, interpretability, and operational complexity. Prefer a simple baseline when it is easier to validate and already meets the decision threshold. Add complexity only when a measured failure mode justifies it. Hyperparameters and architecture choices should therefore map to observable consequences rather than folklore. At small scale, an exact method may be clearer; at large scale, approximation, batching, partitioning, caching, streaming, quantization, or asynchronous work may be necessary. Those changes create new error surfaces, so every optimization needs a quality or correctness comparison against the reference behavior. Also distinguish offline economics from online economics. A method that saves training time may increase serving cost; a denser representation may improve quality but violate memory limits; a stronger consistency guarantee may reduce throughput; a more aggressive safety rule may increase false positives. Document the chosen operating point, alternatives considered, and the condition that would trigger revisiting the choice. This turns a technical preference into an auditable engineering decision."
+    },
+    {
+      "id": "evaluation-diagnostics",
+      "title": "Evaluation and diagnostics",
+      "body": "Evaluation for Recommender Baselines & Problem Formulation must test the claim the system will make in operation. Appropriate evidence in this module includes ranking metrics, counterfactual-aware experiments, coverage, diversity, and latency. Do not collapse everything into one average. Slice by the dimensions that change difficulty: time, horizon, class, scale, entity, language, device, traffic regime, subgroup, or workload shape as appropriate. Always compare against a meaningful baseline on the same examples or requests. Keep comparisons paired when possible so improvement is not confused with a change in evaluation population. If labels or outcomes arrive late, define maturity before scoring. If the system is stochastic, use repeated seeds or confidence intervals; if observations are dependent, use a dependence-aware uncertainty procedure rather than row-level iid assumptions. Diagnostics should include input validity, intermediate-state checks, output distribution checks, and resource behavior. For probabilistic outputs, evaluate calibration as well as discrimination or sharpness. For ranking or generation, combine task metrics with qualitative failure review. For infrastructure, test both steady state and recovery behavior. A release gate should specify what must improve, what must not regress, and which failures are blocking even if the global average looks good."
+    },
+    {
+      "id": "failure-modes",
+      "title": "Failure modes and debugging strategy",
+      "body": "The dominant risks around Recommender Baselines & Problem Formulation include exposure bias, popularity feedback, cold starts, and stale features. Existing chapter cautions are also important: Applying the method without checking its assumptions or data-generating process. Choosing it because it is familiar rather than comparing against an appropriate baseline. A debugging process should make these risks observable. Start from the smallest reproducible case and verify the data contract. Check shapes, units, ordering, timestamps, identifiers, missingness, labels, masks, seeds, and configuration before changing the algorithm. Next verify a baseline and an invariant. Then inspect intermediate representations or state transitions to locate the first point where expected behavior diverges. Separate data bugs, objective mismatch, optimization or numerical issues, capacity limits, and deployment integration problems because they require different remedies. Introduce controlled perturbations: duplicate an event, reorder input, remove a feature, change batch size, delay a dependency, corrupt one field, or reduce precision. A robust implementation should either preserve its invariant or fail loudly according to a documented policy. Finally, test recovery. Retries should not duplicate side effects, model rollback should restore a compatible preprocessing path, and cached or checkpointed state should have a version. A system that works only on the happy path is not a complete implementation of the concept."
+    },
+    {
+      "id": "production-operation",
+      "title": "Production operation, monitoring, and communication",
+      "body": "Shipping Recommender Baselines & Problem Formulation means operating a versioned contract over time. In production, validate assumptions on real data, monitor the quantities that can drift, and keep a simple baseline so added complexity has a measurable reason to exist. Persist the model, code, data or schema version, configuration, dependencies, and any state needed to reproduce behavior. Monitor the inputs that drive the mechanism, the outputs users experience, and the internal resource or quality signals that predict failure. Use separate alerts for correctness, quality, latency, saturation, data freshness, and safety so one aggregate health score does not hide the cause. Canary or shadow changes when the blast radius is meaningful. Define rollback artifacts in advance and verify that rollback restores compatible schemas, feature logic, tokenizer or preprocessing state, and dependent services. Record enough request or batch metadata to reproduce failures without retaining data that violates privacy or retention requirements. When explaining the system to another engineer or interviewer, use a stable narrative: problem contract, mechanism, formal invariant, trade-off, evaluation evidence, failure mode, and production control. That sequence demonstrates understanding more reliably than listing tool names. The final question is always operational: what signal would tell you this implementation is no longer trustworthy, and what safe action follows?"
+    }
+  ],
+  "workedExamples": [
+    {
+      "title": "Trace the mechanism on a toy case",
+      "body": "Compare a personalized model with most-popular-by-category and recently-popular baselines."
+    },
+    {
+      "title": "Diagnose an apparent improvement",
+      "body": "Suppose a team deploys Recommender Baselines & Problem Formulation and the global metric improves, but one critical slice regresses. Trace Implicit and explicit feedback differ. and Negative samples are usually unobserved, not true dislikes. through the data and implementation path. Compare the new behavior with a simple baseline on identical examples, reproduce the slice locally, and test whether the change is caused by exposure bias. The correct decision is based on the declared release gate and user impact, not the aggregate improvement alone."
+    }
+  ],
+  "exercises": [
+    {
+      "difficulty": "recall",
+      "prompt": "Define Implicit and explicit feedback differ. in the context of Recommender Baselines & Problem Formulation and state one invariant or assumption it depends on.",
+      "solution": "A complete answer defines Implicit and explicit feedback differ. in terms of the lesson's input/output contract, names the mechanism it controls, and states the assumption or invariant that makes the result meaningful."
+    },
+    {
+      "difficulty": "application",
+      "prompt": "Design a minimal experiment or test that distinguishes a correct Recommender Baselines & Problem Formulation implementation from a plausible but wrong one.",
+      "solution": "Use a tiny deterministic input with a hand-computable expected result, assert the primary invariant, compare with a simple baseline or reference path, and add one boundary case that violates a key assumption."
+    },
+    {
+      "difficulty": "diagnosis",
+      "prompt": "A production Recommender Baselines & Problem Formulation system improves its average metric but fails on one important slice. What should you inspect before shipping?",
+      "solution": "Keep the comparison paired, inspect data/feature availability and intermediate states on the failing slice, verify the metric definition and baseline, quantify user or business impact, and ship only if the predeclared slice and safety gates are satisfied."
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "stanford-cs246",
+      "contribution": "Stanford University — CS246: Mining Massive Data Sets anchors the Recommender Baselines & Problem Formulation chapter with a curated primary university course reference. Large-scale data mining: recommender systems, clustering, LSH, graph mining, data streams and scalable learning."
+    },
+    {
+      "resource": "stanford-cs329s",
+      "contribution": "Stanford University — Chip Huyen — CS329S: Machine Learning Systems Design anchors the Recommender Baselines & Problem Formulation chapter with a curated primary systems course reference. Systematic framework for building deployable, reliable and scalable ML systems, including data, deployment, monitoring and trade-offs."
+    },
+    {
+      "resource": "stanford-cs224w",
+      "contribution": "Stanford University — Jure Leskovec et al. — CS224W — Machine Learning with Graphs anchors the Recommender Baselines & Problem Formulation chapter with a curated university course reference. Top-tier course for graph representation learning, GNNs, heterogeneous graphs, link prediction and knowledge graphs."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "concept-map",
+      "title": "Recommender Baselines & Problem Formulation",
+      "items": [
+        "Implicit and explicit feedback differ.",
+        "Negative samples are usually unobserved, not true dislikes.",
+        "Temporal splits better reflect recommendation deployment."
+      ],
+      "caption": "A compact concept map for the most important ideas in this lesson.",
+      "grounding": [
+        {
+          "id": "stanford-cs246",
+          "role": "Primary technical basis"
+        },
+        {
+          "id": "stanford-cs224w",
+          "role": "Secondary technical reference"
+        }
+      ],
+      "sourceMode": "adapted-redraw",
+      "figureClass": "research-grounded",
+      "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
+    },
+    {
+      "type": "compare",
+      "title": "Recommender Baselines & Problem Formulation: reference path vs production path",
+      "left": {
+        "title": "Reference reasoning",
+        "items": [
+          "Tiny deterministic case",
+          "Explicit assumptions",
+          "Hand-checkable invariant",
+          "Simple baseline"
+        ]
+      },
+      "right": {
+        "title": "Production reasoning",
+        "items": [
+          "Versioned inputs/state",
+          "Scale and latency constraints",
+          "Slice-aware evaluation",
+          "Monitoring and rollback"
+        ]
+      },
+      "caption": "Original conceptual comparison: learn Recommender Baselines & Problem Formulation with a small auditable reference, then preserve the same invariant under production constraints.",
+      "afterSection": "production-operation",
+      "grounding": [
+        {
+          "id": "stanford-cs224w",
+          "role": "Primary technical basis"
+        },
+        {
+          "id": "stanford-cs246",
+          "role": "Secondary technical reference"
+        }
+      ],
+      "sourceMode": "adapted-redraw",
+      "figureClass": "research-grounded",
+      "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
+    }
+  ],
+  "lab": {
+    "language": "python",
+    "goal": "Build a small, auditable Recommender Baselines & Problem Formulation example, inspect the key state, and verify a correctness invariant with assertions.",
+    "buildIt": "import numpy as np\nuser=np.array([1.0,0.4,-0.2])\nitems=np.array([[.9,.3,-.1],[.1,.8,.5],[.7,.2,-.4],[-.2,.1,.9]])\nscores=items@user\nrank=np.argsort(-scores)\ntop2=rank[:2]",
+    "useIt": "def recall_at_k(relevant,ranking,k):\n    return len(set(relevant)&set(ranking[:k]))/max(1,len(set(relevant)))\nrecall=recall_at_k({0,2},rank,2)",
+    "verifyIt": "assert scores.shape==(4,)\nassert scores[top2[0]]>=scores[top2[1]]\nassert set(top2)=={0,2}\nassert recall==1.0",
+    "shipIt": "Turn this Recommender Baselines & Problem Formulation reference into a versioned component with explicit schemas, deterministic tests, slice-aware evaluation, monitoring, resource limits, and a rollback path."
+  },
+  "presentation": {
+    "visualStandard": "research-grounded-adapted-redraw",
+    "mathStandard": "STIX-math-with-MathJax-for-delimited-equations",
+    "typographyStandard": "Plus-Jakarta-Sans-Source-Serif-4-IBM-Plex-Mono"
   }
 }

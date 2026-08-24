@@ -153,7 +153,20 @@
           "Extra memory for index"
         ]
       },
-      "caption": "Choose a container by the invariant it promises before comparing expected operation cost. This is a conceptual comparison."
+      "caption": "Choose a container by the invariant it promises before comparing expected operation cost. This is a conceptual comparison.",
+      "grounding": [
+        {
+          "id": "mit-algorithms",
+          "role": "Primary technical basis"
+        },
+        {
+          "id": "python-docs",
+          "role": "Secondary technical reference"
+        }
+      ],
+      "sourceMode": "adapted-redraw",
+      "figureClass": "research-grounded",
+      "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
     },
     {
       "type": "flow",
@@ -166,12 +179,38 @@
         "Select container"
       ],
       "caption": "Container choice starts with the information the program must preserve, then checks operation and lifecycle costs.",
-      "afterSection": "selection-framework"
+      "afterSection": "selection-framework",
+      "grounding": [
+        {
+          "id": "python-docs",
+          "role": "Primary technical basis"
+        },
+        {
+          "id": "mit-algorithms",
+          "role": "Secondary technical reference"
+        }
+      ],
+      "sourceMode": "adapted-redraw",
+      "figureClass": "research-grounded",
+      "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
     }
   ],
   "editorial": {
     "status": "verified",
     "verifiedOn": "2026-08-21"
   },
-  "featured": false
+  "featured": false,
+  "lab": {
+    "language": "python",
+    "goal": "Compare list, deque, set, and dictionary semantics with assertions for ordering, uniqueness, hashing, and queue behavior.",
+    "buildIt": "from collections import deque\nseq=[\"a\",\"b\",\"a\"]\nunique=set(seq)\nindex={value:i for i,value in enumerate(seq)}\nqueue=deque(seq)\nleft=queue.popleft(); queue.append(\"c\")",
+    "useIt": "counts={}\nfor value in seq: counts[value]=counts.get(value,0)+1\nordered_unique=list(dict.fromkeys(seq))",
+    "verifyIt": "assert seq==[\"a\",\"b\",\"a\"]\nassert unique=={\"a\",\"b\"}\nassert index=={\"a\":2,\"b\":1}\nassert left==\"a\" and list(queue)==[\"b\",\"a\",\"c\"]\nassert counts=={\"a\":2,\"b\":1}\nassert ordered_unique==[\"a\",\"b\"]\ntry:\n    hash([])\n    raise AssertionError(\"list should be unhashable\")\nexcept TypeError:\n    pass",
+    "shipIt": "Document container ownership and mutation, bound long-lived sets/dictionaries, validate key normalization and serialization, and profile representative operations before replacing clear built-ins with specialized structures."
+  },
+  "presentation": {
+    "visualStandard": "research-grounded-adapted-redraw",
+    "mathStandard": "STIX-math-with-MathJax-for-delimited-equations",
+    "typographyStandard": "Plus-Jakarta-Sans-Source-Serif-4-IBM-Plex-Mono"
+  }
 }

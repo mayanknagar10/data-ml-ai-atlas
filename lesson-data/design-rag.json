@@ -32,10 +32,22 @@
     "Evaluating only final prose quality and not retrieval recall."
   ],
   "followUps": [
-    "How do you choose chunk size?",
-    "Dense vs hybrid retrieval?",
-    "How do you enforce document permissions?",
-    "How do you evaluate hallucinations?"
+    {
+      "question": "How do you choose chunk size?",
+      "answer": "Answer it from the Design an Internal RAG Assistant contract: define ACL-aware retrieval, state the mechanism and assumptions, then connect it to the evaluation boundary and one production failure mode. The chapter sections above provide the detailed reasoning rather than a tool-name-only response."
+    },
+    {
+      "question": "Dense vs hybrid retrieval?",
+      "answer": "Answer it from the Design an Internal RAG Assistant contract: define Freshness, state the mechanism and assumptions, then connect it to the evaluation boundary and one production failure mode. The chapter sections above provide the detailed reasoning rather than a tool-name-only response."
+    },
+    {
+      "question": "How do you enforce document permissions?",
+      "answer": "Answer it from the Design an Internal RAG Assistant contract: define Reranking, state the mechanism and assumptions, then connect it to the evaluation boundary and one production failure mode. The chapter sections above provide the detailed reasoning rather than a tool-name-only response."
+    },
+    {
+      "question": "How do you evaluate hallucinations?",
+      "answer": "Answer it from the Design an Internal RAG Assistant contract: define Evaluation, state the mechanism and assumptions, then connect it to the evaluation boundary and one production failure mode. The chapter sections above provide the detailed reasoning rather than a tool-name-only response."
+    }
   ],
   "production": "Version ingestion/chunking/embedding configs, support incremental refresh/deletion, cache carefully, trace every retrieval/generation step, and define fallback behavior when retrieval confidence is low.",
   "visual": {
@@ -52,9 +64,190 @@
     ],
     "caption": "A production RAG system needs ingestion, retrieval quality, security and evaluation—not just an LLM call.",
     "accent": 3,
-    "orientation": "horizontal"
+    "orientation": "horizontal",
+    "grounding": [
+      {
+        "id": "paper-rag",
+        "role": "Primary technical basis"
+      },
+      {
+        "id": "openai-cookbook",
+        "role": "Secondary technical reference"
+      }
+    ],
+    "sourceMode": "adapted-redraw",
+    "figureClass": "research-grounded",
+    "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
   },
   "editorial": {
-    "status": "summary"
+    "status": "verified",
+    "verifiedOn": "2026-08-24"
+  },
+  "description": "Design an Internal RAG Assistant is a core topic in Data / ML / AI System Design. RAG system design combines document ingestion, retrieval, LLM behavior, evaluation, security and production architecture—ideal for AI engineering interviews. This chapter turns the interview-level summary into a complete engineering and analytical treatment. The starting mental model is: Keep the source of truth outside the model. Retrieve only relevant evidence at query time, then ask the LLM to answer from that evidence with provenance. The formal and implementation discussion builds from ACL-aware retrieval, Freshness, Reranking, Evaluation, while keeping the unit of data, objective, assumptions, and failure boundaries explicit. The original technical core is preserved: Clarify users, data sensitivity, freshness, query latency and citation requirements. Offline path: connectors → parsing → chunking → metadata → embeddings → vector/lexical indexes. Online path: auth → query transformation → retrieval/filtering → optional reranking → context assembly → generation → citations. Evaluate retrieval separately from generation. Add access-control filtering before context reaches the model. Rather than treating those statements as isolated facts, the chapter connects them to data preparation, evaluation design, numerical or systems behavior, and choices that change under scale or distribution shift. You will work through two concrete scenarios, a runnable Python lab with assertions, and two original conceptual visuals. The lab is intentionally small enough to run locally while still exposing an invariant that should remain true in a larger implementation. The production section translates the concept into monitoring, versioning, rollback, and failure-handling requirements. Version ingestion/chunking/embedding configs, support incremental refresh/deletion, cache carefully, trace every retrieval/generation step, and define fallback behavior when retrieval confidence is low. The broader module context is end-to-end system.",
+  "prerequisites": [],
+  "learningObjectives": [
+    "Explain Design an Internal RAG Assistant from the input/output contract through the core mechanism and assumptions.",
+    "Reason about ACL-aware retrieval and Freshness using a small example and an explicit invariant.",
+    "Choose an evaluation design for Design an Internal RAG Assistant that includes a baseline, critical slices, and failure diagnostics.",
+    "Translate Design an Internal RAG Assistant into production controls for versioning, monitoring, resource limits, and rollback."
+  ],
+  "deepSections": [
+    {
+      "id": "problem-contract",
+      "title": "Define the problem contract before the technique",
+      "body": "A rigorous explanation of Design an Internal RAG Assistant starts with the contract, not the library call. In Data / ML / AI System Design, the relevant artifact is requirements, data flows, services, storage, models, and operational constraints, and the intended output is an end-to-end architecture satisfying functional and non-functional requirements. State the unit of observation or request, what information is available at decision time, which variables are controlled versus observed, and what success means. RAG system design combines document ingestion, retrieval, LLM behavior, evaluation, security and production architecture—ideal for AI engineering interviews. The key ideas — ACL-aware retrieval, Freshness, Reranking, Evaluation — only become meaningful when tied to a concrete input and output. For example, the same mechanism can be valid for an offline batch but invalid for an online request if it depends on unavailable future information, expensive global state, or a representation that is not versioned at serving time. Write down assumptions about independence, stationarity, label quality, ordering, capacity, or trust boundaries when they matter. Separate the statistical estimand or computational result from the estimator or implementation used to obtain it. Also separate correctness from convenience: a popular API can faithfully execute the wrong problem definition. A useful interview answer therefore names the goal, the information boundary, the dominant trade-off, and one failure mode before adding details. In production, this same contract becomes the basis for schemas, tests, SLOs, monitoring, and rollback."
+    },
+    {
+      "id": "mechanism",
+      "title": "Mechanism and representation",
+      "body": "The working intuition for Design an Internal RAG Assistant is: Keep the source of truth outside the model. Retrieve only relevant evidence at query time, then ask the LLM to answer from that evidence with provenance. The technical core is: Clarify users, data sensitivity, freshness, query latency and citation requirements. Offline path: connectors → parsing → chunking → metadata → embeddings → vector/lexical indexes. Online path: auth → query transformation → retrieval/filtering → optional reranking → context assembly → generation → citations. Evaluate retrieval separately from generation. Add access-control filtering before context reaches the model. Treat that description as a sequence of transformations and invariants. First identify what representation enters each step, what state or parameters are read, what transformation occurs, and what representation leaves. Then ask which quantities are learned, estimated, cached, partitioned, or fixed by design. The chapter's key points give a compact checklist: ACL-aware retrieval, Freshness, Reranking, Evaluation. Each point should be explainable both conceptually and operationally. A concept is understood only when you can predict what changes after perturbing an input, removing a component, changing scale, or violating an assumption. Shape, units, ordering, normalization, and data type are part of the mechanism because many real failures are interface failures rather than failures of the underlying theory. For learned systems, distinguish forward computation from parameter updates; for data systems, distinguish event-time truth from processing-time state; for distributed or cloud systems, distinguish logical semantics from physical placement. This decomposition is also the basis for debugging: inspect intermediate values, compare against a tiny reference implementation, and verify local invariants before blaming the most sophisticated component."
+    },
+    {
+      "id": "formal-view",
+      "title": "Formal view, objective, and invariants",
+      "body": "A compact formal statement prevents hand-waving. For Design an Internal RAG Assistant, the existing mathematical or logical anchor is: define the transformation as a function from valid inputs and state to outputs, then state the invariant that must hold for every valid execution. Do not memorize symbols without semantics. Name the domain of every quantity, whether it is observed or latent, and what is optimized or conserved. If an objective is minimized, ask what population quantity its empirical version estimates and whether weighting changes that target. If there is no optimization objective, identify the safety or correctness invariant instead: ordering, idempotence, conservation, normalization, boundedness, monotonicity, consistency, or resource limits. Numerical details matter whenever repeated operations amplify rounding or conditioning problems. Systems details matter whenever retries, parallelism, caching, or partial failure can produce a different logical result. Statistical details matter whenever data reuse or selection changes the sampling distribution. A strong implementation test usually expresses at least one invariant as an assertion on a toy case, plus a second test that fails when a key assumption is deliberately violated. The runnable lab follows that pattern so the chapter has an executable claim rather than code that merely prints a plausible number."
+    },
+    {
+      "id": "tradeoffs",
+      "title": "Design choices and trade-offs",
+      "body": "There is rarely one universally best configuration of Design an Internal RAG Assistant. The useful question is which trade-off matters for the declared workload. Start with the key points ACL-aware retrieval, Freshness, Reranking, Evaluation and ask how each affects accuracy or correctness, compute, memory, latency, sample efficiency, interpretability, and operational complexity. Prefer a simple baseline when it is easier to validate and already meets the decision threshold. Add complexity only when a measured failure mode justifies it. Hyperparameters and architecture choices should therefore map to observable consequences rather than folklore. At small scale, an exact method may be clearer; at large scale, approximation, batching, partitioning, caching, streaming, quantization, or asynchronous work may be necessary. Those changes create new error surfaces, so every optimization needs a quality or correctness comparison against the reference behavior. Also distinguish offline economics from online economics. A method that saves training time may increase serving cost; a denser representation may improve quality but violate memory limits; a stronger consistency guarantee may reduce throughput; a more aggressive safety rule may increase false positives. Document the chosen operating point, alternatives considered, and the condition that would trigger revisiting the choice. This turns a technical preference into an auditable engineering decision."
+    },
+    {
+      "id": "evaluation-diagnostics",
+      "title": "Evaluation and diagnostics",
+      "body": "Evaluation for Design an Internal RAG Assistant must test the claim the system will make in operation. Appropriate evidence in this module includes load tests, data/model quality, SLOs, failure drills, capacity models, and operational scorecards. Do not collapse everything into one average. Slice by the dimensions that change difficulty: time, horizon, class, scale, entity, language, device, traffic regime, subgroup, or workload shape as appropriate. Always compare against a meaningful baseline on the same examples or requests. Keep comparisons paired when possible so improvement is not confused with a change in evaluation population. If labels or outcomes arrive late, define maturity before scoring. If the system is stochastic, use repeated seeds or confidence intervals; if observations are dependent, use a dependence-aware uncertainty procedure rather than row-level iid assumptions. Diagnostics should include input validity, intermediate-state checks, output distribution checks, and resource behavior. For probabilistic outputs, evaluate calibration as well as discrimination or sharpness. For ranking or generation, combine task metrics with qualitative failure review. For infrastructure, test both steady state and recovery behavior. A release gate should specify what must improve, what must not regress, and which failures are blocking even if the global average looks good."
+    },
+    {
+      "id": "failure-modes",
+      "title": "Failure modes and debugging strategy",
+      "body": "The dominant risks around Design an Internal RAG Assistant include unclear SLOs, bottlenecks, stale data, feedback loops, weak failure isolation, and cost blowups. Existing chapter cautions are also important: Retrieving documents a user is not authorized to see. Assuming bigger context always improves answers. Evaluating only final prose quality and not retrieval recall. A debugging process should make these risks observable. Start from the smallest reproducible case and verify the data contract. Check shapes, units, ordering, timestamps, identifiers, missingness, labels, masks, seeds, and configuration before changing the algorithm. Next verify a baseline and an invariant. Then inspect intermediate representations or state transitions to locate the first point where expected behavior diverges. Separate data bugs, objective mismatch, optimization or numerical issues, capacity limits, and deployment integration problems because they require different remedies. Introduce controlled perturbations: duplicate an event, reorder input, remove a feature, change batch size, delay a dependency, corrupt one field, or reduce precision. A robust implementation should either preserve its invariant or fail loudly according to a documented policy. Finally, test recovery. Retries should not duplicate side effects, model rollback should restore a compatible preprocessing path, and cached or checkpointed state should have a version. A system that works only on the happy path is not a complete implementation of the concept."
+    },
+    {
+      "id": "production-operation",
+      "title": "Production operation, monitoring, and communication",
+      "body": "Shipping Design an Internal RAG Assistant means operating a versioned contract over time. Version ingestion/chunking/embedding configs, support incremental refresh/deletion, cache carefully, trace every retrieval/generation step, and define fallback behavior when retrieval confidence is low. Persist the model, code, data or schema version, configuration, dependencies, and any state needed to reproduce behavior. Monitor the inputs that drive the mechanism, the outputs users experience, and the internal resource or quality signals that predict failure. Use separate alerts for correctness, quality, latency, saturation, data freshness, and safety so one aggregate health score does not hide the cause. Canary or shadow changes when the blast radius is meaningful. Define rollback artifacts in advance and verify that rollback restores compatible schemas, feature logic, tokenizer or preprocessing state, and dependent services. Record enough request or batch metadata to reproduce failures without retaining data that violates privacy or retention requirements. When explaining the system to another engineer or interviewer, use a stable narrative: problem contract, mechanism, formal invariant, trade-off, evaluation evidence, failure mode, and production control. That sequence demonstrates understanding more reliably than listing tool names. The final question is always operational: what signal would tell you this implementation is no longer trustworthy, and what safe action follows?"
+    }
+  ],
+  "workedExamples": [
+    {
+      "title": "Trace the mechanism on a toy case",
+      "body": "Internal engineering assistant: ingest approved PDFs/wiki pages, preserve document permissions in metadata, hybrid retrieve top-30, rerank to top-5, generate an answer with source citations, and refuse when evidence is insufficient."
+    },
+    {
+      "title": "Diagnose an apparent improvement",
+      "body": "Suppose a team deploys Design an Internal RAG Assistant and the global metric improves, but one critical slice regresses. Trace ACL-aware retrieval and Freshness through the data and implementation path. Compare the new behavior with a simple baseline on identical examples, reproduce the slice locally, and test whether the change is caused by unclear SLOs. The correct decision is based on the declared release gate and user impact, not the aggregate improvement alone."
+    }
+  ],
+  "exercises": [
+    {
+      "difficulty": "recall",
+      "prompt": "Define ACL-aware retrieval in the context of Design an Internal RAG Assistant and state one invariant or assumption it depends on.",
+      "solution": "A complete answer defines ACL-aware retrieval in terms of the lesson's input/output contract, names the mechanism it controls, and states the assumption or invariant that makes the result meaningful."
+    },
+    {
+      "difficulty": "application",
+      "prompt": "Design a minimal experiment or test that distinguishes a correct Design an Internal RAG Assistant implementation from a plausible but wrong one.",
+      "solution": "Use a tiny deterministic input with a hand-computable expected result, assert the primary invariant, compare with a simple baseline or reference path, and add one boundary case that violates a key assumption."
+    },
+    {
+      "difficulty": "diagnosis",
+      "prompt": "A production Design an Internal RAG Assistant system improves its average metric but fails on one important slice. What should you inspect before shipping?",
+      "solution": "Keep the comparison paired, inspect data/feature availability and intermediate states on the failing slice, verify the metric definition and baseline, quantify user or business impact, and ship only if the predeclared slice and safety gates are satisfied."
+    }
+  ],
+  "sourceNotes": [
+    {
+      "resource": "openai-cookbook",
+      "contribution": "OpenAI — OpenAI Cookbook anchors the Design an Internal RAG Assistant chapter with a curated official implementation reference reference. Practical examples for embeddings, retrieval, evaluation, structured outputs, tool use and LLM application engineering."
+    },
+    {
+      "resource": "langchain-academy",
+      "contribution": "LangChain — LangChain Academy anchors the Design an Internal RAG Assistant chapter with a curated official practical course reference. Current hands-on learning for LangGraph, agents, state, memory and production-oriented agent workflows."
+    },
+    {
+      "resource": "stanford-cs329s",
+      "contribution": "Stanford University — Chip Huyen — CS329S: Machine Learning Systems Design anchors the Design an Internal RAG Assistant chapter with a curated primary systems course reference. Systematic framework for building deployable, reliable and scalable ML systems, including data, deployment, monitoring and trade-offs."
+    }
+  ],
+  "visuals": [
+    {
+      "type": "flow",
+      "title": "Production RAG",
+      "items": [
+        "Documents",
+        "Parse/chunk/embed",
+        "Index",
+        "Retrieve",
+        "Rerank",
+        "Prompt LLM",
+        "Citations + monitoring"
+      ],
+      "caption": "A production RAG system needs ingestion, retrieval quality, security and evaluation—not just an LLM call.",
+      "accent": 3,
+      "orientation": "horizontal",
+      "grounding": [
+        {
+          "id": "paper-rag",
+          "role": "Primary technical basis"
+        },
+        {
+          "id": "openai-cookbook",
+          "role": "Secondary technical reference"
+        }
+      ],
+      "sourceMode": "adapted-redraw",
+      "figureClass": "research-grounded",
+      "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
+    },
+    {
+      "type": "compare",
+      "title": "Design an Internal RAG Assistant: reference path vs production path",
+      "left": {
+        "title": "Reference reasoning",
+        "items": [
+          "Tiny deterministic case",
+          "Explicit assumptions",
+          "Hand-checkable invariant",
+          "Simple baseline"
+        ]
+      },
+      "right": {
+        "title": "Production reasoning",
+        "items": [
+          "Versioned inputs/state",
+          "Scale and latency constraints",
+          "Slice-aware evaluation",
+          "Monitoring and rollback"
+        ]
+      },
+      "caption": "Original conceptual comparison: learn Design an Internal RAG Assistant with a small auditable reference, then preserve the same invariant under production constraints.",
+      "afterSection": "production-operation",
+      "grounding": [
+        {
+          "id": "openai-cookbook",
+          "role": "Primary technical basis"
+        },
+        {
+          "id": "paper-rag",
+          "role": "Secondary technical reference"
+        }
+      ],
+      "sourceMode": "adapted-redraw",
+      "figureClass": "research-grounded",
+      "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
+    }
+  ],
+  "lab": {
+    "language": "python",
+    "goal": "Build a small, auditable Design an Internal RAG Assistant example, inspect the key state, and verify a correctness invariant with assertions.",
+    "buildIt": "arrival_rps=120; service_rps_per_worker=35; workers=4\ncapacity=service_rps_per_worker*workers\nheadroom=(capacity-arrival_rps)/capacity\ncomponents={\"ingest\":.999,\"store\":.9995,\"serve\":.998}\nend_to_end=1.0\nfor a in components.values(): end_to_end*=a",
+    "useIt": "slo={\"capacity_ok\":capacity>=arrival_rps,\"headroom\":headroom,\"availability\":end_to_end}",
+    "verifyIt": "assert slo[\"capacity_ok\"]\nassert 0<headroom<1\nassert end_to_end<min(components.values())\nassert end_to_end>0.99",
+    "shipIt": "Turn this Design an Internal RAG Assistant reference into a versioned component with explicit schemas, deterministic tests, slice-aware evaluation, monitoring, resource limits, and a rollback path."
+  },
+  "presentation": {
+    "visualStandard": "research-grounded-adapted-redraw",
+    "mathStandard": "STIX-math-with-MathJax-for-delimited-equations",
+    "typographyStandard": "Plus-Jakarta-Sans-Source-Serif-4-IBM-Plex-Mono"
   }
 }

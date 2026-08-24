@@ -140,7 +140,20 @@
         "Broadcast output bias"
       ],
       "caption": "The shared axis is summed; the surviving axes define the result and its semantic meaning.",
-      "afterSection": "products-transformations"
+      "afterSection": "products-transformations",
+      "grounding": [
+        {
+          "id": "mit-linear-algebra",
+          "role": "Primary technical basis"
+        },
+        {
+          "id": "numpy-linalg",
+          "role": "Secondary technical reference"
+        }
+      ],
+      "sourceMode": "adapted-redraw",
+      "figureClass": "research-grounded",
+      "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
     },
     {
       "type": "compare",
@@ -160,7 +173,20 @@
         ]
       },
       "caption": "Similar notation can hide different shape and geometric contracts.",
-      "afterSection": "objects-shapes"
+      "afterSection": "objects-shapes",
+      "grounding": [
+        {
+          "id": "numpy-linalg",
+          "role": "Primary technical basis"
+        },
+        {
+          "id": "mit-linear-algebra",
+          "role": "Secondary technical reference"
+        }
+      ],
+      "sourceMode": "adapted-redraw",
+      "figureClass": "research-grounded",
+      "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
     }
   ],
   "lab": {
@@ -170,5 +196,10 @@
     "useIt": "import numpy as np\nA=[[1.,2.,3.],[4.,5.,6.]]\nB=[[2.,0.],[1.,1.],[0.,3.]]\nmanual=matmul(A,B)\nnp_result=np.asarray(A)@np.asarray(B)\nI=np.eye(2)\nC=np.array([[1.,2.],[0.,1.]])",
     "verifyIt": "assert manual==[[4.0,11.0],[13.0,23.0]]\nassert np.allclose(manual,np_result)\nassert np_result.shape==(2,2)\nassert np_result[1,0]==sum(A[1][k]*B[k][0] for k in range(3))\nassert np.allclose(I@np_result,np_result)\nassert np.allclose((np_result@C)@I,np_result@(C@I))\ntry: matmul([[1,2]],[[1,2]])\nexcept ValueError: pass\nelse: raise AssertionError('invalid contraction must fail')",
     "shipIt": "Use named axis contracts, trusted BLAS/LAPACK routines, dtype and finiteness checks, thread/batch limits, versioned feature order and numerical regression before deploying matrix-heavy paths."
+  },
+  "presentation": {
+    "visualStandard": "research-grounded-adapted-redraw",
+    "mathStandard": "STIX-math-with-MathJax-for-delimited-equations",
+    "typographyStandard": "Plus-Jakarta-Sans-Source-Serif-4-IBM-Plex-Mono"
   }
 }

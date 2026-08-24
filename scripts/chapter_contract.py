@@ -226,8 +226,24 @@ def chapter_errors(
     if status == "verified":
         if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", lesson.get("editorial", {}).get("verifiedOn", "")):
             errors.append(f"{slug}: verified chapter requires editorial.verifiedOn in YYYY-MM-DD form")
-        if len(lesson.get("sourceNotes", [])) < 2:
+        if explanatory_word_count(lesson) < 1500:
+            errors.append(f"{slug}: verified chapter is below the 1500-word target")
+        notes = lesson.get("sourceNotes", [])
+        if len(notes) < 2:
             errors.append(f"{slug}: verified chapter requires at least 2 source notes")
+        if len({note.get("resource") for note in notes if note.get("resource")}) < 2:
+            errors.append(f"{slug}: verified chapter requires at least 2 distinct source resources")
+        if len(lesson_visuals(lesson)) < 2:
+            errors.append(f"{slug}: verified chapter requires at least 2 original visual models")
+        lab = lesson.get("lab")
+        if not lab:
+            errors.append(f"{slug}: verified chapter requires a runnable Python lab")
+        else:
+            if lab.get("language") != "python":
+                errors.append(f"{slug}: verified chapter lab must use Python")
+            for key in ("goal", "buildIt", "useIt", "shipIt", "verifyIt"):
+                if not str(lab.get(key, "")).strip():
+                    errors.append(f"{slug}: verified chapter lab missing {key}")
 
     deep_ids = {
         section.get("id") for section in lesson.get("deepSections", []) if section.get("id")

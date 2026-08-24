@@ -144,7 +144,20 @@
         "Zero-gain axes form null space"
       ],
       "caption": "Right directions, nonnegative gains and left directions can describe any rectangular linear map.",
-      "afterSection": "svd-geometry"
+      "afterSection": "svd-geometry",
+      "grounding": [
+        {
+          "id": "mit-linear-algebra",
+          "role": "Primary technical basis"
+        },
+        {
+          "id": "numpy-linalg",
+          "role": "Secondary technical reference"
+        }
+      ],
+      "sourceMode": "adapted-redraw",
+      "figureClass": "research-grounded",
+      "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
     },
     {
       "type": "compare",
@@ -168,7 +181,20 @@
         ]
       },
       "caption": "The decompositions answer related but distinct geometric questions.",
-      "afterSection": "eigen-geometry"
+      "afterSection": "eigen-geometry",
+      "grounding": [
+        {
+          "id": "numpy-linalg",
+          "role": "Primary technical basis"
+        },
+        {
+          "id": "mit-linear-algebra",
+          "role": "Secondary technical reference"
+        }
+      ],
+      "sourceMode": "adapted-redraw",
+      "figureClass": "research-grounded",
+      "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
     }
   ],
   "lab": {
@@ -178,5 +204,10 @@
     "useIt": "import numpy as np\nA=np.array([[3.,0.],[0.,1.]])\nvalue,vector=power_iteration(A.tolist(),[1.,1.])\nU,s,Vt=np.linalg.svd(A,full_matrices=False)\nrank1=s[0]*np.outer(U[:,0],Vt[0])\nreconstruction=(U*s)@Vt",
     "verifyIt": "assert abs(value-3.0)<1e-10\nassert abs(abs(vector[0])-1.0)<1e-8\nassert np.allclose(reconstruction,A)\nassert np.allclose(U.T@U,np.eye(2)) and np.allclose(Vt@Vt.T,np.eye(2))\nassert np.allclose(s,[3.,1.])\nassert np.isclose(np.linalg.norm(A-rank1,2),s[1])\nassert np.isclose(np.linalg.norm(A-rank1,'fro')**2,sum(s[1:]**2))",
     "shipIt": "Use stable library/randomized decompositions, training-only preprocessing, convergence and reconstruction checks, versioned basis metadata, downstream slice evaluation, drift monitoring and compatible rollback artifacts."
+  },
+  "presentation": {
+    "visualStandard": "research-grounded-adapted-redraw",
+    "mathStandard": "STIX-math-with-MathJax-for-delimited-equations",
+    "typographyStandard": "Plus-Jakarta-Sans-Source-Serif-4-IBM-Plex-Mono"
   }
 }

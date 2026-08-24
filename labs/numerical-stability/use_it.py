@@ -8,15 +8,23 @@ def logsumexp(values):
     return m+math.log(sum(math.exp(x-m) for x in values))
 
 def softmax(values):
-    lse=logsumexp(values)
-    if not math.isfinite(lse): raise ValueError('softmax requires a finite normalizer')
-    return [math.exp(x-lse) for x in values]
+    if not values: return []
+    m=max(values)
+    if not math.isfinite(m): raise ValueError('softmax requires a finite normalizer')
+    weights=[math.exp(x-m) for x in values]
+    total=sum(weights)
+    return [w/total for w in weights]
 
 def kahan_sum(values):
     total=0.0; correction=0.0
     for value in values:
         adjusted=value-correction; new=total+adjusted
         correction=(new-total)-adjusted; total=new
+    return total
+
+def naive_sum(values):
+    total=0.0
+    for value in values: total+=value
     return total
 
 # ---- Use it ----

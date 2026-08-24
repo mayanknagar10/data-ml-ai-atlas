@@ -14,3 +14,4 @@ except PermissionError as e: print('blocked:',e)
 try: authorize({'name':'lookup_order','args':{'user_id':'bob'}},'alice')
 except PermissionError: pass
 else: raise AssertionError('ACL check failed')
+assert authorize({'name':'lookup_order','args':{'user_id':'alice'}},'alice')

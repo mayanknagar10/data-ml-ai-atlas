@@ -156,7 +156,20 @@
         ]
       },
       "caption": "A stable algorithm cannot make an ill-conditioned problem informative, but an unstable one can waste accuracy from a well-conditioned problem.",
-      "afterSection": "conditioning-stability"
+      "afterSection": "conditioning-stability",
+      "grounding": [
+        {
+          "id": "goldberg-floating",
+          "role": "Primary technical basis"
+        },
+        {
+          "id": "scipy-logsumexp",
+          "role": "Secondary technical reference"
+        }
+      ],
+      "sourceMode": "adapted-redraw",
+      "figureClass": "research-grounded",
+      "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
     },
     {
       "type": "flow",
@@ -171,15 +184,33 @@
         "Verify finite + sum≈1"
       ],
       "caption": "Shift invariance prevents overflow while explicit checks handle invalid or fully masked inputs.",
-      "afterSection": "stable-transformations"
+      "afterSection": "stable-transformations",
+      "grounding": [
+        {
+          "id": "scipy-logsumexp",
+          "role": "Primary technical basis"
+        },
+        {
+          "id": "goldberg-floating",
+          "role": "Secondary technical reference"
+        }
+      ],
+      "sourceMode": "adapted-redraw",
+      "figureClass": "research-grounded",
+      "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
     }
   ],
   "lab": {
     "goal": "Implement stable log-sum-exp, softmax and compensated summation, then verify extreme-value invariants and high-precision agreement.",
     "language": "python",
-    "buildIt": "import math\n\ndef logsumexp(values):\n    if not values: return -math.inf\n    m=max(values)\n    if m==math.inf: return math.inf\n    if m==-math.inf: return -math.inf\n    return m+math.log(sum(math.exp(x-m) for x in values))\n\ndef softmax(values):\n    lse=logsumexp(values)\n    if not math.isfinite(lse): raise ValueError('softmax requires a finite normalizer')\n    return [math.exp(x-lse) for x in values]\n\ndef kahan_sum(values):\n    total=0.0; correction=0.0\n    for value in values:\n        adjusted=value-correction; new=total+adjusted\n        correction=(new-total)-adjusted; total=new\n    return total",
+    "buildIt": "import math\n\ndef logsumexp(values):\n    if not values: return -math.inf\n    m=max(values)\n    if m==math.inf: return math.inf\n    if m==-math.inf: return -math.inf\n    return m+math.log(sum(math.exp(x-m) for x in values))\n\ndef softmax(values):\n    if not values: return []\n    m=max(values)\n    if not math.isfinite(m): raise ValueError('softmax requires a finite normalizer')\n    weights=[math.exp(x-m) for x in values]\n    total=sum(weights)\n    return [w/total for w in weights]\n\ndef kahan_sum(values):\n    total=0.0; correction=0.0\n    for value in values:\n        adjusted=value-correction; new=total+adjusted\n        correction=(new-total)-adjusted; total=new\n    return total\n\ndef naive_sum(values):\n    total=0.0\n    for value in values: total+=value\n    return total",
     "useIt": "from decimal import Decimal,getcontext\nvalues=[1000.0,999.0,998.0]\nprobs=softmax(values); lse=logsumexp(values)\ngetcontext().prec=50\nreference=float(Decimal(1000)+(Decimal(1)+Decimal(-1).exp()+Decimal(-2).exp()).ln())\nsequence=[1e16,1.0,-1e16]",
-    "verifyIt": "assert all(math.isfinite(p) and p>=0 for p in probs)\nassert math.isclose(sum(probs),1.0,rel_tol=1e-14,abs_tol=1e-14)\nassert math.isclose(lse,reference,rel_tol=1e-14)\nshifted=softmax([x-12345 for x in values])\nassert all(math.isclose(a,b,rel_tol=1e-12) for a,b in zip(probs,shifted))\nassert sum(sequence)==0.0\nassert kahan_sum([1e16,-1e16,1.0])==1.0\nassert logsumexp([-math.inf,-math.inf])==-math.inf\ntry: softmax([-math.inf,-math.inf])\nexcept ValueError: pass\nelse: raise AssertionError('undefined normalizer must fail explicitly')",
+    "verifyIt": "assert all(math.isfinite(p) and p>=0 for p in probs)\nassert math.isclose(sum(probs),1.0,rel_tol=1e-12,abs_tol=1e-12)\nassert math.isclose(lse,reference,rel_tol=1e-14)\nshifted=softmax([x-12345 for x in values])\nassert all(math.isclose(a,b,rel_tol=1e-12) for a,b in zip(probs,shifted))\nassert naive_sum(sequence)==0.0\nassert math.fsum(sequence)==1.0\nassert kahan_sum([1e16,-1e16,1.0])==1.0\nassert logsumexp([-math.inf,-math.inf])==-math.inf\ntry: softmax([-math.inf,-math.inf])\nexcept ValueError: pass\nelse: raise AssertionError('undefined normalizer must fail explicitly')",
     "shipIt": "Use tested SciPy/framework primitives and stable solvers, maintain extreme-scale regression suites per dtype/hardware, monitor nonfinite/condition/residual signals, bound adversarial inputs and retain a stable numerical fallback for rollback."
+  },
+  "presentation": {
+    "visualStandard": "research-grounded-adapted-redraw",
+    "mathStandard": "STIX-math-with-MathJax-for-delimited-equations",
+    "typographyStandard": "Plus-Jakarta-Sans-Source-Serif-4-IBM-Plex-Mono"
   }
 }

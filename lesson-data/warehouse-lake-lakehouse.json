@@ -144,7 +144,20 @@
         "Open columnar files on durable object storage"
       ],
       "caption": "The file layer supplies efficient representation; higher layers supply identity, commits, governance, optimization and user-facing meaning.",
-      "afterSection": "capability-model"
+      "afterSection": "capability-model",
+      "grounding": [
+        {
+          "id": "lakehouse-paper",
+          "role": "Primary technical basis"
+        },
+        {
+          "id": "iceberg-docs",
+          "role": "Secondary technical reference"
+        }
+      ],
+      "sourceMode": "adapted-redraw",
+      "figureClass": "research-grounded",
+      "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
     },
     {
       "type": "flow",
@@ -159,7 +172,20 @@
         "Expire old files after retention"
       ],
       "caption": "Files written before the pointer swap are not yet table state; cleanup must not race with writers or retained snapshots.",
-      "afterSection": "table-layer"
+      "afterSection": "table-layer",
+      "grounding": [
+        {
+          "id": "iceberg-docs",
+          "role": "Primary technical basis"
+        },
+        {
+          "id": "lakehouse-paper",
+          "role": "Secondary technical reference"
+        }
+      ],
+      "sourceMode": "adapted-redraw",
+      "figureClass": "research-grounded",
+      "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
     }
   ],
   "lab": {
@@ -169,5 +195,10 @@
     "useIt": "table=Table()\ntable.stage('part-1',[{'id':1},{'id':2}])\ns1=table.commit_append(0,['part-1'])\ntable.stage('part-2',[{'id':3}])\nlisted_before_commit=sorted(table.files)\ns2=table.commit_append(s1,['part-2'])\nmanifest=json.dumps({'snapshot':s2,'files':table.snapshots[s2]},sort_keys=True)",
     "verifyIt": "assert listed_before_commit==['part-1','part-2']\nassert [r['id'] for r in table.read(s1)]==[1,2]\nassert [r['id'] for r in table.read(s2)]==[1,2,3]\nassert json.loads(manifest)['files']==['part-1','part-2']\ntry: table.commit_append(s1,['part-2'])\nexcept RuntimeError: pass\nelse: raise AssertionError('stale commit must conflict')\ntable.rollback(s1)\nassert [r['id'] for r in table.read()]==[1,2]",
     "shipIt": "Use a real table format and catalog with atomic compare-and-swap, snapshot-aware compaction/cleanup, versioned input/output evidence, cross-engine tests, metadata recovery and audited rollback."
+  },
+  "presentation": {
+    "visualStandard": "research-grounded-adapted-redraw",
+    "mathStandard": "STIX-math-with-MathJax-for-delimited-equations",
+    "typographyStandard": "Plus-Jakarta-Sans-Source-Serif-4-IBM-Plex-Mono"
   }
 }

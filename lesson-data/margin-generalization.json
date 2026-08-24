@@ -141,7 +141,20 @@
         "Slack for violations"
       ],
       "caption": "Functional constraints fix scale so minimizing norm maximizes geometric separation.",
-      "afterSection": "margin-geometry"
+      "afterSection": "margin-geometry",
+      "grounding": [
+        {
+          "id": "svm-paper",
+          "role": "Primary technical basis"
+        },
+        {
+          "id": "stanford-cs229",
+          "role": "Secondary technical reference"
+        }
+      ],
+      "sourceMode": "adapted-redraw",
+      "figureClass": "research-grounded",
+      "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
     },
     {
       "type": "curve",
@@ -182,7 +195,20 @@
         }
       ],
       "caption": "Conceptual normalized curve: loss decreases linearly until the unit margin, then remains zero.",
-      "afterSection": "soft-margin-dual"
+      "afterSection": "soft-margin-dual",
+      "grounding": [
+        {
+          "id": "stanford-cs229",
+          "role": "Primary technical basis"
+        },
+        {
+          "id": "svm-paper",
+          "role": "Secondary technical reference"
+        }
+      ],
+      "sourceMode": "adapted-redraw",
+      "figureClass": "research-grounded",
+      "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
     }
   ],
   "sourceNotes": [
@@ -194,5 +220,10 @@
       "resource": "stanford-cs229",
       "contribution": "Provides geometric-margin, primal-dual, kernel and learning-theory derivations."
     }
-  ]
+  ],
+  "presentation": {
+    "visualStandard": "research-grounded-adapted-redraw",
+    "mathStandard": "STIX-math-with-MathJax-for-delimited-equations",
+    "typographyStandard": "Plus-Jakarta-Sans-Source-Serif-4-IBM-Plex-Mono"
+  }
 }

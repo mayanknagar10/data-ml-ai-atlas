@@ -50,6 +50,53 @@ function modulePage(slug){
 }
 function resourcesHtml(ids){return ids.map(id=>{const r=ATLAS.resources[id]; if(!r)return'';return `<a class="resource" href="${r.url}" target="_blank" rel="noopener"><strong>${r.title}</strong><span>${r.provider}</span><span class="kind">${r.kind} · ${r.level}</span></a>`}).join('')}
 function codeBlock(title,subtitle,code,idx){return `<div class="code-step"><div class="code-toolbar"><div><strong>${title}</strong><span>${subtitle}</span></div><button class="copy-btn" data-copy="code-${idx}">Copy</button></div><pre class="code"><code id="code-${idx}">${esc(code)}</code></pre></div>`}
+
+function queueMathTypeset(root=document,attempt=0){
+  if(window.MathJax?.typesetPromise){
+    try{window.MathJax.typesetClear?.(root && root.nodeType===1 ? [root] : undefined);}catch(_e){}
+    return window.MathJax.typesetPromise(root && root.nodeType===1 ? [root] : undefined).catch(()=>{});
+  }
+  if(attempt<12) setTimeout(()=>queueMathTypeset(root,attempt+1),180);
+  return Promise.resolve();
+}
+function mathTypographyFragment(value=''){
+  let s=esc(value);
+  const greek={alpha:'α',beta:'β',gamma:'γ',delta:'δ',epsilon:'ε',eta:'η',theta:'θ',lambda:'λ',mu:'μ',pi:'π',rho:'ρ',sigma:'σ',tau:'τ',phi:'φ',psi:'ψ',omega:'ω'};
+  s=s.replace(/&lt;=/g,'≤').replace(/&gt;=/g,'≥').replace(/!=/g,'≠').replace(/-&gt;/g,'→');
+  s=s.replace(/\bR\^\(([^)]+)\)/g,(_m,e)=>`ℝ<sup>${e.replace(/x/g,'×')}</sup>`);
+  s=s.replace(/\bR\^([A-Za-z0-9+-]+)/g,(_m,e)=>`ℝ<sup>${e}</sup>`);
+  s=s.replace(/\b(beta|theta|alpha|gamma|delta|epsilon|eta|lambda|mu|pi|rho|sigma|tau|phi|psi|omega)_hat\b/g,(_m,g)=>`${greek[g]}̂`);
+  s=s.replace(/\b(alpha|beta|gamma|delta|epsilon|eta|theta|lambda|mu|pi|rho|sigma|tau|phi|psi|omega)\b/g,(_m,g)=>greek[g]);
+  s=s.replace(/Σ/g,'∑').replace(/Π/g,'∏').replace(/sqrt\s*\(/g,'√(');
+  s=s.replace(/\^T\b/g,'<sup>⊤</sup>');
+  s=s.replace(/\^\(-1\)/g,'<sup>−1</sup>').replace(/\^-1\b/g,'<sup>−1</sup>');
+  s=s.replace(/\^\(?([0-9A-Za-z+-]+)\)?/g,'<sup>$1</sup>');
+  s=s.replace(/_\{?([A-Za-z0-9*+-]+)\}?/g,'<sub>$1</sub>');
+  s=s.replace(/\|\|([^|]+)\|\|/g,'‖$1‖');
+  return s;
+}
+function mathRichText(value=''){
+  return String(value).split(/(`[^`]+`)/g).map((part)=>{
+    if(part.startsWith('`')&&part.endsWith('`')) return esc(part);
+    return mathTypographyFragment(part);
+  }).join('');
+}
+function mathHtml(value=''){
+  return String(value||'').split(/\n\s*\n/).filter(Boolean).map((block)=>{
+    const lines=block.split(/\n+/).filter(Boolean);
+    if(lines.length>1) return `<div class="math-stack">${lines.map(line=>`<div class="math-line">${mathRichText(line)}</div>`).join('')}</div>`;
+    return `<p class="math-paragraph">${mathRichText(lines[0]||'')}</p>`;
+  }).join('');
+}
+function visualGroundingHtml(v){
+  const refs=(v.grounding||[]).map((g)=>{
+    const r=(g.id&&ATLAS.resources[g.id])?ATLAS.resources[g.id]:null;
+    if(!r)return '';
+    return `<a class="viz-ref" href="${r.url}" target="_blank" rel="noopener"><strong>${esc(r.title)}</strong><span>${esc(r.provider)} · ${esc(r.kind)}</span></a>`;
+  }).filter(Boolean);
+  if(!refs.length&&!v.adaptationNote)return '';
+  return `<div class="viz-grounding"><div class="viz-grounding-kicker">Figure sources</div>${refs.length?`<div class="viz-ref-grid">${refs.join('')}</div>`:''}${v.adaptationNote?`<p class="viz-adaptation">${esc(v.adaptationNote)}</p>`:''}</div>`;
+}
 function labHtml(l){if(!l.lab)return l.code?`<section><h2>Quick code / pseudocode</h2><pre class="code"><code>${esc(l.code)}</code></pre></section>`:'';const x=l.lab;const ship=x.shipIt||l.production||'Turn the learning artifact into a tested module with explicit inputs, outputs and failure handling.';return `<section class="code-lab-web"><div class="lab-title-row"><div><div class="kicker">Runnable code lab</div><h2>Build it → Use it → Ship it → Verify it</h2><p>${esc(x.goal||'')}</p></div><a class="lab-file-link" href="labs/${l.slug}/index.html" target="_blank">Open lab files ↗</a></div>${codeBlock('1 · Build it','first principles',x.buildIt,`${l.slug}-build`)}${codeBlock('2 · Use it','library / practical API',x.useIt,`${l.slug}-use`)}<div class="ship-card"><div class="kicker">3 · Ship it</div><p>${esc(ship)}</p></div>${codeBlock('4 · Verify it','sanity checks / assertions',x.verifyIt,`${l.slug}-verify`)}</section>`}
 function svgWrap(text,x,y,max=18,anchor='middle',cls='viz-text'){
  const words=String(text).split(/\s+/); let lines=[''];
@@ -96,12 +143,12 @@ function visualHtml(l,vArg=null,visualIndex=0){
  } else if(v.type==='map'){
    const vals=v.regions||[.25,.55,.82,.40,.67,.30]; const polys=['100,100 300,75 330,190 120,210','340,70 555,90 545,205 330,190','570,95 830,80 875,190 545,205','130,225 335,205 350,350 105,335','350,220 550,215 565,350 350,350','580,215 875,205 840,345 565,350']; polys.forEach((p,i)=>body+=`<polygon points="${p}" fill="${colors[i%4]}" opacity="${.12+.55*(vals[i]||.3)}" stroke="var(--viz-border)" stroke-width="2"/>`);body+=svgWrap('Illustrative regions',500,385,30,'middle','viz-axis-label');
  } else return '';
- return `<figure class="concept-visual"><div class="viz-heading"><span>Visual model</span><strong>${title}</strong></div><svg viewBox="0 0 1000 430" role="img" aria-label="${title}"><defs>${arrow}</defs>${body}</svg><figcaption>${caption} <span>Conceptual illustration — not measured data unless stated.</span></figcaption></figure>`;
+ return `<figure class="concept-visual ${esc(v.figureClass||'')}"><div class="viz-heading"><span>${(v.grounding||[]).length?'Research-grounded figure':'Visual model'}</span><strong>${title}</strong></div><svg viewBox="0 0 1000 430" role="img" aria-label="${title}"><defs>${arrow}</defs>${body}</svg>${visualGroundingHtml(v)}<figcaption>${caption} <span>${(v.grounding||[]).length?'Adapted teaching redraw with source attribution.':'Conceptual illustration — not measured data unless stated.'}</span></figcaption></figure>`;
 }
 
 function lessonPage(slug){
  const l=lessonFor(slug); if(!l)return notFound(); const m=moduleFor(l.module);
- const detailSections = l.why ? `<section><h2>Why this matters</h2><p>${esc(l.why)}</p></section><section><h2>Intuition</h2><p>${esc(l.intuition)}</p></section>${visualHtml(l)}<section><h2>Deep explanation</h2><p>${esc(l.deepDive)}</p></section>${l.math?`<section><h2>Math / formal view</h2><div class="math">${esc(l.math)}</div></section>`:''}${l.workedExample?`<section><h2>Worked example</h2><p>${esc(l.workedExample)}</p></section>`:''}${labHtml(l)}${l.production?`<section><h2>Ship it: production / system-design connection</h2><p>${esc(l.production)}</p></section>`:''}${l.commonMistakes?`<section class="warning"><h2>Common wrong answers</h2><ul>${l.commonMistakes.map(x=>`<li>${esc(x)}</li>`).join('')}</ul></section>`:''}${l.followUps?`<section><h2>Likely follow-ups</h2><ul>${l.followUps.map(x=>`<li>${esc(x)}</li>`).join('')}</ul></section>`:''}` : `<section><h2>What to know</h2><ul>${l.keyPoints.map(x=>`<li>${esc(x)}</li>`).join('')}</ul></section>`;
+ const detailSections = l.why ? `<section><h2>Why this matters</h2><p>${esc(l.why)}</p></section><section><h2>Intuition</h2><p>${esc(l.intuition)}</p></section>${visualHtml(l)}<section><h2>Deep explanation</h2><p>${esc(l.deepDive)}</p></section>${l.math?`<section><h2>Math / formal view</h2><div class="math">${mathHtml(l.math)}</div></section>`:''}${l.workedExample?`<section><h2>Worked example</h2><p>${esc(l.workedExample)}</p></section>`:''}${labHtml(l)}${l.production?`<section><h2>Ship it: production / system-design connection</h2><p>${esc(l.production)}</p></section>`:''}${l.commonMistakes?`<section class="warning"><h2>Common wrong answers</h2><ul>${l.commonMistakes.map(x=>`<li>${esc(x)}</li>`).join('')}</ul></section>`:''}${l.followUps?`<section><h2>Likely follow-ups</h2><ul>${l.followUps.map(x=>`<li>${esc(x)}</li>`).join('')}</ul></section>`:''}` : `<section><h2>What to know</h2><ul>${l.keyPoints.map(x=>`<li>${esc(x)}</li>`).join('')}</ul></section>`;
  return `<div class="breadcrumbs"><a href="#/">Home</a> / <a href="#/module/${m.slug}">${m.title}</a> / ${l.title}</div><section class="lesson-head"><div class="meta"><span class="pill ${l.priority}">${priorityLabel(l.priority)} priority</span><span class="pill ${l.status}">${l.status}</span>${doneBtn(l.slug)}</div><h1>${l.title}</h1><p class="lede">${esc(l.keyPoints.join(' · '))}</p></section><div class="answer-card"><h3>🎤 30–60 second interview answer</h3><p>${esc(l.interviewAnswer)}</p></div><div class="content-grid"><article class="article">${detailSections}</article><aside class="sidebar"><div class="side-card"><div class="kicker">Quick revision</div><ul>${l.keyPoints.map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div><div class="side-card"><div class="kicker">Best resources</div>${resourcesHtml(l.resources)}</div></aside></div>`;
 }
 function readerContext(slug){
@@ -121,6 +168,7 @@ function readerHelpers(){
    visualHtml,
    labHtml,
    resourcesHtml,
+   mathHtml,
    doneButton:doneBtn,
  };
 }
@@ -138,7 +186,7 @@ async function loadLessonPage(slug,version,refresh=false){
    const chapter=await chapterLoader.load(slug,{refresh});
    if(version!==routeVersion||location.hash!==`#/lesson/${slug}`)return;
    $('#app').innerHTML=AtlasChapterReader.render(chapter,readerContext(slug),readerHelpers());
-   wireCommon();scrollTo(0,0);
+   wireCommon();queueMathTypeset($('#app'));scrollTo(0,0);
  }catch(error){
    if(version!==routeVersion)return;
    $('#app').innerHTML=chapterLoadError(summary,error);
@@ -196,7 +244,7 @@ function labsPage(){
 function visualsPage(){
  const ls=ATLAS.lessons.filter(l=>l.visualCount);
  const groups=ATLAS.modules.map(m=>{const xs=ls.filter(l=>l.module===m.slug);if(!xs.length)return '';return `<section class="section"><div class="kicker">${m.icon} ${m.title}</div><div class="visual-index-grid">${xs.map(l=>{const first=(l.visualSummaries||[])[0]||{};const types=[...new Set((l.visualSummaries||[]).map(v=>v.type).filter(Boolean))].join(' · ');return `<a class="visual-index-card" href="#/lesson/${l.slug}"><span class="pill">${esc(types||'visual')}</span><strong>${l.title}</strong><small>${esc(first.title||'Concept visual')}${l.visualCount>1?` · ${l.visualCount} visuals`:''}</small></a>`}).join('')}</div></section>`}).join('');
- return `<div class="breadcrumbs"><a href="#/">Home</a> / Visual atlas</div><section class="lesson-head"><div class="kicker">Original diagrams · theme-aware SVG</div><h1>Visual atlas</h1><p class="lede">${ls.length} original conceptual diagrams integrated directly into lessons and the generated book. They are designed to clarify structure, trade-offs and system flow rather than decorate the page.</p></section>${groups}`;
+ return `<div class="breadcrumbs"><a href="#/">Home</a> / Visual atlas</div><section class="lesson-head"><div class="kicker">Research-grounded diagrams · source-attributed SVG</div><h1>Visual atlas</h1><p class="lede">${ls.length} source-attributed teaching diagrams integrated directly into lessons and the generated book. Each figure is an Atlas redraw grounded in lesson-specific papers, official documentation, university courses, technical handbooks, or canonical textbooks.</p></section>${groups}`;
 }
 
 function analyzerTopicCard(x,label=''){
@@ -244,7 +292,7 @@ function wireCommon(){
  const copyPrepPlan=$('#copyPrepPlan'); if(copyPrepPlan)copyPrepPlan.onclick=async()=>{if(!state.analyzerResult)return;try{await navigator.clipboard.writeText(AtlasAnalyzer.planText(state.analyzerResult));const old=copyPrepPlan.textContent;copyPrepPlan.textContent='Copied';setTimeout(()=>copyPrepPlan.textContent=old,900)}catch{}};
  const s=$('#search'); if(s)s.oninput=e=>{state.query=e.target.value;setTimeout(()=>route(false),0)}; const p=$('#priority'); if(p)p.onchange=e=>{state.priority=e.target.value;route(false)}; document.querySelectorAll('[data-role]').forEach(b=>b.onclick=()=>{state.role=b.dataset.role;save();route(false)});
 }
-function route(scroll=true){const version=++routeVersion;const h=location.hash.replace(/^#\//,'').split('/');if(h[0]==='lesson'){loadLessonPage(h[1],version);return}let view;if(!h[0])view=home();else if(h[0]==='module')view=modulePage(h[1]);else if(h[0]==='roadmap')view=roadmap();else if(h[0]==='paths')view=pathsPage();else if(h[0]==='analyzer')view=analyzerPage();else if(h[0]==='quiz')view=quizPage();else if(h[0]==='labs')view=labsPage();else if(h[0]==='resources')view=resourcePage();else if(h[0]==='visuals')view=visualsPage();else view=notFound();$('#app').innerHTML=view;wireCommon();if(scroll)scrollTo(0,0)}
+function route(scroll=true){const version=++routeVersion;const h=location.hash.replace(/^#\//,'').split('/');if(h[0]==='lesson'){loadLessonPage(h[1],version);return}let view;if(!h[0])view=home();else if(h[0]==='module')view=modulePage(h[1]);else if(h[0]==='roadmap')view=roadmap();else if(h[0]==='paths')view=pathsPage();else if(h[0]==='analyzer')view=analyzerPage();else if(h[0]==='quiz')view=quizPage();else if(h[0]==='labs')view=labsPage();else if(h[0]==='resources')view=resourcePage();else if(h[0]==='visuals')view=visualsPage();else view=notFound();$('#app').innerHTML=view;wireCommon();queueMathTypeset($('#app'));if(scroll)scrollTo(0,0)}
 window.addEventListener('hashchange',()=>route());
 const menuBtn=$('#menuBtn'), mainNav=$('#mainNav');if(menuBtn&&mainNav){menuBtn.onclick=()=>{const open=mainNav.classList.toggle('open');menuBtn.setAttribute('aria-expanded',String(open));menuBtn.textContent=open?'✕ Close':'☰ Menu'};mainNav.querySelectorAll('a').forEach(a=>a.addEventListener('click',()=>{mainNav.classList.remove('open');menuBtn.setAttribute('aria-expanded','false');menuBtn.textContent='☰ Menu'}));}
 const themeBtn=$('#themeBtn');function updateThemeBtn(){if(themeBtn)themeBtn.textContent=document.documentElement.dataset.theme==='dark'?'☀ Light':'☾ Dark'}updateThemeBtn();if(themeBtn)themeBtn.onclick=()=>{const n=document.documentElement.dataset.theme==='dark'?'light':'dark';document.documentElement.dataset.theme=n;localStorage.setItem('atlas-theme',n);updateThemeBtn()};

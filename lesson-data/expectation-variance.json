@@ -152,7 +152,20 @@
         ]
       },
       "caption": "Dependence is invisible to the mean of a sum but central to its uncertainty.",
-      "afterSection": "variance-covariance"
+      "afterSection": "variance-covariance",
+      "grounding": [
+        {
+          "id": "harvard-stat110",
+          "role": "Primary technical basis"
+        },
+        {
+          "id": "stanford-stats60",
+          "role": "Secondary technical reference"
+        }
+      ],
+      "sourceMode": "adapted-redraw",
+      "figureClass": "research-grounded",
+      "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
     },
     {
       "type": "flow",
@@ -165,7 +178,20 @@
         "Add within + between"
       ],
       "caption": "Overall spread comes from both local noise and changing conditional means.",
-      "afterSection": "conditional-moments"
+      "afterSection": "conditional-moments",
+      "grounding": [
+        {
+          "id": "stanford-stats60",
+          "role": "Primary technical basis"
+        },
+        {
+          "id": "harvard-stat110",
+          "role": "Secondary technical reference"
+        }
+      ],
+      "sourceMode": "adapted-redraw",
+      "figureClass": "research-grounded",
+      "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
     }
   ],
   "lab": {
@@ -175,5 +201,10 @@
     "useIt": "import numpy as np\nvalues=[1.,2.,4.]; probs=[.2,.3,.5]; exact=weighted_moments(values,probs)\ndata=np.array([1e9+1,1e9+2,1e9+4,1e9+8],dtype=float)\ncombined=merge(summary(data[:2]),summary(data[2:]))\nx=np.array([1.,2.,3.]); y=np.array([2.,4.,8.])",
     "verifyIt": "assert np.allclose(exact,[2.8,1.56])\nassert combined[0]==len(data) and np.isclose(combined[1],data.mean())\nassert np.isclose(combined[2]/combined[0],data.var())\ncov=np.cov(x,y,ddof=0)[0,1]\nassert np.isclose(np.var(x+y),np.var(x)+np.var(y)+2*cov)\ngroups={0:[0.,2.],1:[8.,10.]}; all_values=np.array(groups[0]+groups[1])\nwithin=np.mean([np.var(v) for v in groups.values()]); between=np.var([np.mean(v) for v in groups.values()])\nassert np.isclose(all_values.var(),within+between)",
     "shipIt": "Use stable mergeable summaries with explicit weights/ddof/window, compare streaming against batch fixtures, monitor tails and covariance conditioning, secure aggregates and retain replayable source plus checkpoints for rollback."
+  },
+  "presentation": {
+    "visualStandard": "research-grounded-adapted-redraw",
+    "mathStandard": "STIX-math-with-MathJax-for-delimited-equations",
+    "typographyStandard": "Plus-Jakarta-Sans-Source-Serif-4-IBM-Plex-Mono"
   }
 }

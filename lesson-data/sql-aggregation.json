@@ -140,7 +140,20 @@
         "SELECT and ORDER"
       ],
       "caption": "Logical stage order explains why row filters and group filters are not interchangeable.",
-      "afterSection": "grain-logical-order"
+      "afterSection": "grain-logical-order",
+      "grounding": [
+        {
+          "id": "postgres-select",
+          "role": "Primary technical basis"
+        },
+        {
+          "id": "cmu-db",
+          "role": "Secondary technical reference"
+        }
+      ],
+      "sourceMode": "adapted-redraw",
+      "figureClass": "research-grounded",
+      "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
     },
     {
       "type": "compare",
@@ -164,7 +177,20 @@
         ]
       },
       "caption": "Choose count semantics from the metric definition, especially after outer joins.",
-      "afterSection": "aggregate-semantics"
+      "afterSection": "aggregate-semantics",
+      "grounding": [
+        {
+          "id": "cmu-db",
+          "role": "Primary technical basis"
+        },
+        {
+          "id": "postgres-select",
+          "role": "Secondary technical reference"
+        }
+      ],
+      "sourceMode": "adapted-redraw",
+      "figureClass": "research-grounded",
+      "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
     }
   ],
   "lab": {
@@ -174,5 +200,10 @@
     "useIt": "import sqlite3\ncon=sqlite3.connect(':memory:')\ncon.executescript('CREATE TABLE orders(product TEXT, customer TEXT, amount REAL, status TEXT); INSERT INTO orders VALUES (\"a\",\"u1\",10,\"ok\"),(\"a\",\"u2\",NULL,\"failed\"),(\"b\",\"u1\",5,\"ok\");')\nrows=con.execute('SELECT product, COUNT(*) n, COUNT(amount) observed, SUM(CASE WHEN status=\"ok\" THEN amount ELSE 0 END) revenue, 1.0*SUM(status=\"failed\")/NULLIF(COUNT(*),0) fail_rate FROM orders GROUP BY product ORDER BY product').fetchall()",
     "verifyIt": "assert rows == [('a',2,1,10.0,0.5),('b',1,1,5.0,0.0)]\nassert len({row[0] for row in rows}) == len(rows)\nassert sum(row[3] for row in rows) == 15.0\nassert grouped_sum([{'g':'a','x':1},{'g':'a','x':None},{'g':'b','x':2}],'g','x') == {'a':1,'b':2}",
     "shipIt": "Persist versioned grain plus additive numerator/denominator components, reconcile against base data, handle late corrections idempotently, and monitor group cardinality, NULLs, and spill."
+  },
+  "presentation": {
+    "visualStandard": "research-grounded-adapted-redraw",
+    "mathStandard": "STIX-math-with-MathJax-for-delimited-equations",
+    "typographyStandard": "Plus-Jakarta-Sans-Source-Serif-4-IBM-Plex-Mono"
   }
 }

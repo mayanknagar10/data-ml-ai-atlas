@@ -146,7 +146,20 @@
         "Return first true index"
       ],
       "caption": "A half-open boundary invariant handles empty arrays, duplicates, and end insertion uniformly.",
-      "afterSection": "binary-search"
+      "afterSection": "binary-search",
+      "grounding": [
+        {
+          "id": "mit-algorithms",
+          "role": "Primary technical basis"
+        },
+        {
+          "id": "princeton-algorithms",
+          "role": "Secondary technical reference"
+        }
+      ],
+      "sourceMode": "adapted-redraw",
+      "figureClass": "research-grounded",
+      "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
     },
     {
       "type": "compare",
@@ -170,7 +183,20 @@
         ]
       },
       "caption": "Compute only the ordering information the caller actually consumes.",
-      "afterSection": "selection-production"
+      "afterSection": "selection-production",
+      "grounding": [
+        {
+          "id": "princeton-algorithms",
+          "role": "Primary technical basis"
+        },
+        {
+          "id": "mit-algorithms",
+          "role": "Secondary technical reference"
+        }
+      ],
+      "sourceMode": "adapted-redraw",
+      "figureClass": "research-grounded",
+      "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
     }
   ],
   "lab": {
@@ -180,5 +206,10 @@
     "useIt": "from bisect import bisect_left\nfrom heapq import nlargest\nrecords = [('b', 2), ('a', 1), ('c', 2)]\nordered = sorted(records, key=lambda row: row[1])\nfirst_two = bisect_left([1,2,2,4], 2)\ntop = nlargest(2, records, key=lambda row: row[1])",
     "verifyIt": "items=[('first',2),('second',1),('third',2)]\nout=merge_sort(items,key=lambda x:x[1])\nassert [x[1] for x in out] == [1,2,2]\nassert [x[0] for x in out if x[1]==2] == ['first','third']\nfor a in [[],[1],[1,2,2,4]]:\n    for x in [0,1,2,3,5]:\n        i=lower_bound(a,x)\n        assert i == bisect_left(a,x)\n        assert all(v < x for v in a[:i])\n        assert all(v >= x for v in a[i:])\nassert first_two == 1 and len(top) == 2",
     "shipIt": "Version key and tie semantics, test non-finite and duplicate boundaries, measure memory/spill and key cost, add deterministic secondary keys, and select external or distributed execution when inputs exceed one process."
+  },
+  "presentation": {
+    "visualStandard": "research-grounded-adapted-redraw",
+    "mathStandard": "STIX-math-with-MathJax-for-delimited-equations",
+    "typographyStandard": "Plus-Jakarta-Sans-Source-Serif-4-IBM-Plex-Mono"
   }
 }

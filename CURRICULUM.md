@@ -249,28 +249,28 @@ Deep-complete: **10/10** · Visual models: **20/10**
 
 Temporal structure, classical and modern forecasting, uncertainty and operational forecasting.
 
-Deep-complete: **5/20** · Visual models: **18/20**
+Deep-complete: **20/20** · Visual models: **40/20**
 
 - 🔥 **Time-Series Splits & Backtesting** — ✅ deep · 🖼 visual
 - ⬆️ **Stationarity, ACF & PACF** — ✅ deep · 🖼 visual
-- ⬆️ **ARIMA / SARIMA** — ◻ interview-ready · 🖼 visual
-- • **Exponential Smoothing / ETS** — ◻ interview-ready · 🖼 visual
+- ⬆️ **ARIMA / SARIMA** — ✅ deep · 🖼 visual
+- • **Exponential Smoothing / ETS** — ✅ deep · 🖼 visual
 - 🔥 **Forecasting Metrics & Baselines** — ✅ deep · 🖼 visual
-- • **Prophet & Decomposable Forecasting** — ◻ interview-ready
+- • **Prophet & Decomposable Forecasting** — ✅ deep · 🖼 visual
 - 🔥 **Trend, Seasonality, Cycles & Remainder** — ✅ deep · 🖼 visual
-- 🔥 **Lags, Rolling Windows & Leakage** — ◻ interview-ready · 🖼 visual
+- 🔥 **Lags, Rolling Windows & Leakage** — ✅ deep · 🖼 visual
 - 🔥 **Naive, Seasonal-Naive & Drift Baselines** — ✅ deep · 🖼 visual
-- ⬆️ **Classical Decomposition & STL** — ◻ interview-ready · 🖼 visual
-- ⬆️ **Dynamic Regression / ARIMAX** — ◻ interview-ready
-- • **State-Space Models & Kalman Filtering** — ◻ interview-ready · 🖼 visual
-- • **Multiple & Complex Seasonalities** — ◻ interview-ready
-- • **Intermittent Demand Forecasting** — ◻ interview-ready
-- ⬆️ **Hierarchical & Grouped Forecast Reconciliation** — ◻ interview-ready · 🖼 visual
-- 🔥 **Prediction Intervals & Probabilistic Forecasting** — ◻ interview-ready · 🖼 visual
-- ⬆️ **Machine Learning for Forecasting** — ◻ interview-ready
-- • **Neural Forecasting** — ◻ interview-ready
-- ⬆️ **Forecast Monitoring & Retraining** — ◻ interview-ready · 🖼 visual
-- • **Time-Series Foundation Models** — ◻ interview-ready
+- ⬆️ **Classical Decomposition & STL** — ✅ deep · 🖼 visual
+- ⬆️ **Dynamic Regression / ARIMAX** — ✅ deep · 🖼 visual
+- • **State-Space Models & Kalman Filtering** — ✅ deep · 🖼 visual
+- • **Multiple & Complex Seasonalities** — ✅ deep · 🖼 visual
+- • **Intermittent Demand Forecasting** — ✅ deep · 🖼 visual
+- ⬆️ **Hierarchical & Grouped Forecast Reconciliation** — ✅ deep · 🖼 visual
+- 🔥 **Prediction Intervals & Probabilistic Forecasting** — ✅ deep · 🖼 visual
+- ⬆️ **Machine Learning for Forecasting** — ✅ deep · 🖼 visual
+- • **Neural Forecasting** — ✅ deep · 🖼 visual
+- ⬆️ **Forecast Monitoring & Retraining** — ✅ deep · 🖼 visual
+- • **Time-Series Foundation Models** — ✅ deep · 🖼 visual
 
 ## 17. 🚨 Anomaly Detection & Rare Events
 
@@ -315,19 +315,19 @@ Deep-complete: **6/6** · Visual models: **12/6**
 
 Collaborative filtering, matrix factorization, candidate generation, ranking and recommender evaluation.
 
-Deep-complete: **0/11** · Visual models: **5/11**
+Deep-complete: **11/11** · Visual models: **22/11**
 
-- ⬆️ **Recall@K & Ranking Evaluation** — ◻ interview-ready
-- • **Popularity Bias in Recommenders** — ◻ interview-ready · 🖼 visual
-- 🔥 **Recommender Baselines & Problem Formulation** — ◻ interview-ready · 🖼 visual
-- ⬆️ **User–User & Item–Item Collaborative Filtering** — ◻ interview-ready
-- 🔥 **Matrix Factorization for Recommenders** — ◻ interview-ready · 🖼 visual
-- 🔥 **Candidate Generation vs Ranking** — ◻ interview-ready · 🖼 visual
-- ⬆️ **Implicit Feedback & Negative Sampling** — ◻ interview-ready
-- 🔥 **Offline vs Online Recommender Evaluation** — ◻ interview-ready · 🖼 visual
-- • **Diversity, Novelty, Coverage & Fairness in Recommenders** — ◻ interview-ready
-- ⬆️ **Cold Start in Recommender Systems** — ◻ interview-ready
-- ⬆️ **Learning to Rank: Pointwise, Pairwise & Listwise** — ◻ interview-ready
+- ⬆️ **Recall@K & Ranking Evaluation** — ✅ deep · 🖼 visual
+- • **Popularity Bias in Recommenders** — ✅ deep · 🖼 visual
+- 🔥 **Recommender Baselines & Problem Formulation** — ✅ deep · 🖼 visual
+- ⬆️ **User–User & Item–Item Collaborative Filtering** — ✅ deep · 🖼 visual
+- 🔥 **Matrix Factorization for Recommenders** — ✅ deep · 🖼 visual
+- 🔥 **Candidate Generation vs Ranking** — ✅ deep · 🖼 visual
+- ⬆️ **Implicit Feedback & Negative Sampling** — ✅ deep · 🖼 visual
+- 🔥 **Offline vs Online Recommender Evaluation** — ✅ deep · 🖼 visual
+- • **Diversity, Novelty, Coverage & Fairness in Recommenders** — ✅ deep · 🖼 visual
+- ⬆️ **Cold Start in Recommender Systems** — ✅ deep · 🖼 visual
+- ⬆️ **Learning to Rank: Pointwise, Pairwise & Listwise** — ✅ deep · 🖼 visual
 
 ## 21. 🔍 Search & Information Retrieval
 
@@ -348,276 +348,276 @@ Deep-complete: **8/8** · Visual models: **16/8**
 
 Graph representations, message passing, GNNs and link prediction.
 
-Deep-complete: **0/8** · Visual models: **6/8**
+Deep-complete: **8/8** · Visual models: **16/8**
 
-- ⬆️ **Graph ML Fundamentals** — ◻ interview-ready · 🖼 visual
-- ⬆️ **Message Passing in GNNs** — ◻ interview-ready · 🖼 visual
-- 🔥 **GraphSAGE** — ◻ interview-ready · 🖼 visual
-- ⬆️ **Link Prediction** — ◻ interview-ready
-- ⬆️ **Graph Convolutional Networks (GCN)** — ◻ interview-ready · 🖼 visual
-- • **Graph Attention Networks (GAT)** — ◻ interview-ready · 🖼 visual
-- ⬆️ **Heterogeneous Graphs & Relation Types** — ◻ interview-ready · 🖼 visual
-- • **Graph-level Prediction & Pooling** — ◻ interview-ready
+- ⬆️ **Graph ML Fundamentals** — ✅ deep · 🖼 visual
+- ⬆️ **Message Passing in GNNs** — ✅ deep · 🖼 visual
+- 🔥 **GraphSAGE** — ✅ deep · 🖼 visual
+- ⬆️ **Link Prediction** — ✅ deep · 🖼 visual
+- ⬆️ **Graph Convolutional Networks (GCN)** — ✅ deep · 🖼 visual
+- • **Graph Attention Networks (GAT)** — ✅ deep · 🖼 visual
+- ⬆️ **Heterogeneous Graphs & Relation Types** — ✅ deep · 🖼 visual
+- • **Graph-level Prediction & Pooling** — ✅ deep · 🖼 visual
 
 ## 23. ⚡ Deep Learning
 
 Neural-network foundations, optimization, architectures and debugging.
 
-Deep-complete: **0/8** · Visual models: **7/8**
+Deep-complete: **8/8** · Visual models: **16/8**
 
-- 🔥 **Neural Network Fundamentals** — ◻ interview-ready · 🖼 visual
-- 🔥 **Backpropagation** — ◻ interview-ready · 🖼 visual
-- ⬆️ **Activation Functions** — ◻ interview-ready · 🖼 visual
-- 🔥 **SGD, Momentum & Adam** — ◻ interview-ready · 🖼 visual
-- ⬆️ **Dropout, Weight Decay & Early Stopping** — ◻ interview-ready
-- ⬆️ **BatchNorm vs LayerNorm** — ◻ interview-ready · 🖼 visual
-- ⬆️ **Vanishing / Exploding Gradients** — ◻ interview-ready · 🖼 visual
-- 🔥 **Debugging a Model That Will Not Learn** — ◻ interview-ready · 🖼 visual
+- 🔥 **Neural Network Fundamentals** — ✅ deep · 🖼 visual
+- 🔥 **Backpropagation** — ✅ deep · 🖼 visual
+- ⬆️ **Activation Functions** — ✅ deep · 🖼 visual
+- 🔥 **SGD, Momentum & Adam** — ✅ deep · 🖼 visual
+- ⬆️ **Dropout, Weight Decay & Early Stopping** — ✅ deep · 🖼 visual
+- ⬆️ **BatchNorm vs LayerNorm** — ✅ deep · 🖼 visual
+- ⬆️ **Vanishing / Exploding Gradients** — ✅ deep · 🖼 visual
+- 🔥 **Debugging a Model That Will Not Learn** — ✅ deep · 🖼 visual
 
 ## 24. 👁️ Computer Vision
 
 CNNs, ViTs, segmentation, detection, reconstruction and image generation.
 
-Deep-complete: **0/14** · Visual models: **12/14**
+Deep-complete: **14/14** · Visual models: **28/14**
 
-- 🔥 **CNN Fundamentals** — ◻ interview-ready · 🖼 visual
-- ⬆️ **Receptive Field** — ◻ interview-ready · 🖼 visual
-- ⬆️ **Residual Networks** — ◻ interview-ready · 🖼 visual
-- ⬆️ **U-Net & Segmentation** — ◻ interview-ready · 🖼 visual
-- 🔥 **2D vs 3D CNNs** — ◻ interview-ready · 🖼 visual
-- ⬆️ **Vision Transformers** — ◻ interview-ready · 🖼 visual
-- 🔥 **PSNR, SSIM, LPIPS & FID** — ◻ interview-ready · 🖼 visual
-- ⬆️ **Super-resolution & Reconstruction** — ◻ interview-ready
-- 🔥 **Image Preprocessing & Data Augmentation** — ◻ interview-ready · 🖼 visual
-- 🔥 **Transfer Learning & Fine-tuning in Vision** — ◻ interview-ready · 🖼 visual
-- ⬆️ **Object Detection: Boxes, Anchors & Modern Detectors** — ◻ interview-ready · 🖼 visual
-- 🔥 **IoU, NMS & mAP for Detection** — ◻ interview-ready · 🖼 visual
-- ⬆️ **Segmentation Metrics: IoU, Dice & Pixel Accuracy** — ◻ interview-ready · 🖼 visual
-- • **Self-supervised & Contrastive Visual Representation Learning** — ◻ interview-ready
+- 🔥 **CNN Fundamentals** — ✅ deep · 🖼 visual
+- ⬆️ **Receptive Field** — ✅ deep · 🖼 visual
+- ⬆️ **Residual Networks** — ✅ deep · 🖼 visual
+- ⬆️ **U-Net & Segmentation** — ✅ deep · 🖼 visual
+- 🔥 **2D vs 3D CNNs** — ✅ deep · 🖼 visual
+- ⬆️ **Vision Transformers** — ✅ deep · 🖼 visual
+- 🔥 **PSNR, SSIM, LPIPS & FID** — ✅ deep · 🖼 visual
+- ⬆️ **Super-resolution & Reconstruction** — ✅ deep · 🖼 visual
+- 🔥 **Image Preprocessing & Data Augmentation** — ✅ deep · 🖼 visual
+- 🔥 **Transfer Learning & Fine-tuning in Vision** — ✅ deep · 🖼 visual
+- ⬆️ **Object Detection: Boxes, Anchors & Modern Detectors** — ✅ deep · 🖼 visual
+- 🔥 **IoU, NMS & mAP for Detection** — ✅ deep · 🖼 visual
+- ⬆️ **Segmentation Metrics: IoU, Dice & Pixel Accuracy** — ✅ deep · 🖼 visual
+- • **Self-supervised & Contrastive Visual Representation Learning** — ✅ deep · 🖼 visual
 
 ## 25. 📝 NLP Foundations
 
 Text preprocessing, representations, sequence models and language tasks before/alongside transformers.
 
-Deep-complete: **0/12** · Visual models: **4/12**
+Deep-complete: **12/12** · Visual models: **24/12**
 
-- 🔥 **Embeddings** — ◻ interview-ready · 🖼 visual
-- ⬆️ **Tokenization** — ◻ interview-ready · 🖼 visual
-- ⬆️ **Language Modeling & Next-token Prediction** — ◻ interview-ready
-- • **Text Normalization, Stemming & Lemmatization** — ◻ interview-ready
-- ⬆️ **Bag-of-Words, n-grams & TF-IDF** — ◻ interview-ready
-- • **Word2Vec: Skip-gram & CBOW** — ◻ interview-ready
-- • **RNNs, LSTMs & GRUs** — ◻ interview-ready · 🖼 visual
-- • **Seq2Seq & Encoder–Decoder Attention** — ◻ interview-ready · 🖼 visual
-- • **Named Entity Recognition & Sequence Labeling** — ◻ interview-ready
-- ⬆️ **NLP Generation Metrics: BLEU, ROUGE & Beyond** — ◻ interview-ready
-- • **Topic Modeling & LDA** — ◻ interview-ready
-- ⬆️ **Text Classification & Encoder Fine-tuning** — ◻ interview-ready
+- 🔥 **Embeddings** — ✅ deep · 🖼 visual
+- ⬆️ **Tokenization** — ✅ deep · 🖼 visual
+- ⬆️ **Language Modeling & Next-token Prediction** — ✅ deep · 🖼 visual
+- • **Text Normalization, Stemming & Lemmatization** — ✅ deep · 🖼 visual
+- ⬆️ **Bag-of-Words, n-grams & TF-IDF** — ✅ deep · 🖼 visual
+- • **Word2Vec: Skip-gram & CBOW** — ✅ deep · 🖼 visual
+- • **RNNs, LSTMs & GRUs** — ✅ deep · 🖼 visual
+- • **Seq2Seq & Encoder–Decoder Attention** — ✅ deep · 🖼 visual
+- • **Named Entity Recognition & Sequence Labeling** — ✅ deep · 🖼 visual
+- ⬆️ **NLP Generation Metrics: BLEU, ROUGE & Beyond** — ✅ deep · 🖼 visual
+- • **Topic Modeling & LDA** — ✅ deep · 🖼 visual
+- ⬆️ **Text Classification & Encoder Fine-tuning** — ✅ deep · 🖼 visual
 
 ## 26. 🎙️ Speech & Audio
 
 Waveforms, spectrograms, ASR, speech representations and audio modeling.
 
-Deep-complete: **0/6** · Visual models: **2/6**
+Deep-complete: **6/6** · Visual models: **12/6**
 
-- • **Speech & Audio Transformers: Spectrograms and ASR** — ◻ interview-ready
-- ⬆️ **Waveforms, Sampling Rate & Aliasing** — ◻ interview-ready
-- ⬆️ **STFT, Spectrograms & Mel Features** — ◻ interview-ready · 🖼 visual
-- • **Connectionist Temporal Classification (CTC)** — ◻ interview-ready · 🖼 visual
-- ⬆️ **ASR Evaluation: WER & CER** — ◻ interview-ready
-- • **Text-to-Speech Pipeline** — ◻ interview-ready
+- • **Speech & Audio Transformers: Spectrograms and ASR** — ✅ deep · 🖼 visual
+- ⬆️ **Waveforms, Sampling Rate & Aliasing** — ✅ deep · 🖼 visual
+- ⬆️ **STFT, Spectrograms & Mel Features** — ✅ deep · 🖼 visual
+- • **Connectionist Temporal Classification (CTC)** — ✅ deep · 🖼 visual
+- ⬆️ **ASR Evaluation: WER & CER** — ✅ deep · 🖼 visual
+- • **Text-to-Speech Pipeline** — ✅ deep · 🖼 visual
 
 ## 27. 🔀 Transformers
 
 Attention, transformer internals, encoder/decoder families and scaling concepts.
 
-Deep-complete: **0/9** · Visual models: **4/9**
+Deep-complete: **9/9** · Visual models: **18/9**
 
-- 🔥 **Self-Attention: Q, K, V** — ◻ interview-ready · 🖼 visual
-- 🔥 **Transformer Architecture** — ◻ interview-ready · 🖼 visual
-- ⬆️ **BERT vs GPT-style Models** — ◻ interview-ready · 🖼 visual
-- • **Positional Information** — ◻ interview-ready · 🖼 visual
-- ⬆️ **Causal Masks vs Bidirectional Attention** — ◻ interview-ready
-- ⬆️ **Cross-Attention** — ◻ interview-ready
-- • **RoPE & Modern Positional Encoding** — ◻ interview-ready
-- • **Mixture-of-Experts Transformers** — ◻ interview-ready
-- ⬆️ **LLM Training Lifecycle: Pretraining → SFT → Preference Tuning** — ◻ interview-ready
+- 🔥 **Self-Attention: Q, K, V** — ✅ deep · 🖼 visual
+- 🔥 **Transformer Architecture** — ✅ deep · 🖼 visual
+- ⬆️ **BERT vs GPT-style Models** — ✅ deep · 🖼 visual
+- • **Positional Information** — ✅ deep · 🖼 visual
+- ⬆️ **Causal Masks vs Bidirectional Attention** — ✅ deep · 🖼 visual
+- ⬆️ **Cross-Attention** — ✅ deep · 🖼 visual
+- • **RoPE & Modern Positional Encoding** — ✅ deep · 🖼 visual
+- • **Mixture-of-Experts Transformers** — ✅ deep · 🖼 visual
+- ⬆️ **LLM Training Lifecycle: Pretraining → SFT → Preference Tuning** — ✅ deep · 🖼 visual
 
 ## 28. 🎨 Generative AI
 
 VAEs, GANs, diffusion, flow matching, conditioning and generative evaluation.
 
-Deep-complete: **0/10** · Visual models: **10/10**
+Deep-complete: **10/10** · Visual models: **20/10**
 
-- ⬆️ **Autoencoders & VAEs** — ◻ interview-ready · 🖼 visual
-- 🔥 **VQ-VAE / VQGAN & Vector Quantization** — ◻ interview-ready · 🖼 visual
-- 🔥 **GAN Fundamentals** — ◻ interview-ready · 🖼 visual
-- ⬆️ **CycleGAN & Unpaired Translation** — ◻ interview-ready · 🖼 visual
-- 🔥 **Diffusion Models** — ◻ interview-ready · 🖼 visual
-- ⬆️ **Latent Diffusion** — ◻ interview-ready · 🖼 visual
-- 🔥 **Flow Matching** — ◻ interview-ready · 🖼 visual
-- ⬆️ **Conditioning & Classifier-Free Guidance** — ◻ interview-ready · 🖼 visual
-- • **ControlNet** — ◻ interview-ready · 🖼 visual
-- 🔥 **GAN vs Diffusion vs Flow Matching** — ◻ interview-ready · 🖼 visual
+- ⬆️ **Autoencoders & VAEs** — ✅ deep · 🖼 visual
+- 🔥 **VQ-VAE / VQGAN & Vector Quantization** — ✅ deep · 🖼 visual
+- 🔥 **GAN Fundamentals** — ✅ deep · 🖼 visual
+- ⬆️ **CycleGAN & Unpaired Translation** — ✅ deep · 🖼 visual
+- 🔥 **Diffusion Models** — ✅ deep · 🖼 visual
+- ⬆️ **Latent Diffusion** — ✅ deep · 🖼 visual
+- 🔥 **Flow Matching** — ✅ deep · 🖼 visual
+- ⬆️ **Conditioning & Classifier-Free Guidance** — ✅ deep · 🖼 visual
+- • **ControlNet** — ✅ deep · 🖼 visual
+- 🔥 **GAN vs Diffusion vs Flow Matching** — ✅ deep · 🖼 visual
 
 ## 29. 🎮 Reinforcement Learning & Preference Optimization
 
 MDPs, value/policy methods, PPO and preference optimization.
 
-Deep-complete: **0/8** · Visual models: **7/8**
+Deep-complete: **8/8** · Visual models: **16/8**
 
-- ⬆️ **RL Fundamentals: Agent, Environment, State, Action & Reward** — ◻ interview-ready · 🖼 visual
-- ⬆️ **Value Functions & the Bellman Equation** — ◻ interview-ready · 🖼 visual
-- ⬆️ **Exploration vs Exploitation** — ◻ interview-ready · 🖼 visual
-- ⬆️ **Q-learning & Deep Q-Networks** — ◻ interview-ready · 🖼 visual
-- ⬆️ **Policy Gradients** — ◻ interview-ready
-- ⬆️ **Actor-Critic & Advantage Estimation** — ◻ interview-ready · 🖼 visual
-- ⬆️ **PPO & Stable Policy Optimization** — ◻ interview-ready · 🖼 visual
-- ⬆️ **RLHF, Reward Models & Preference Optimization** — ◻ interview-ready · 🖼 visual
+- ⬆️ **RL Fundamentals: Agent, Environment, State, Action & Reward** — ✅ deep · 🖼 visual
+- ⬆️ **Value Functions & the Bellman Equation** — ✅ deep · 🖼 visual
+- ⬆️ **Exploration vs Exploitation** — ✅ deep · 🖼 visual
+- ⬆️ **Q-learning & Deep Q-Networks** — ✅ deep · 🖼 visual
+- ⬆️ **Policy Gradients** — ✅ deep · 🖼 visual
+- ⬆️ **Actor-Critic & Advantage Estimation** — ✅ deep · 🖼 visual
+- ⬆️ **PPO & Stable Policy Optimization** — ✅ deep · 🖼 visual
+- ⬆️ **RLHF, Reward Models & Preference Optimization** — ✅ deep · 🖼 visual
 
 ## 30. 🤖 LLM Engineering & Agents
 
 RAG, tool calling, agents, fine-tuning, evaluation and inference.
 
-Deep-complete: **0/10** · Visual models: **9/10**
+Deep-complete: **10/10** · Visual models: **20/10**
 
-- ⬆️ **Prompt Engineering** — ◻ interview-ready
-- 🔥 **RAG: Retrieval-Augmented Generation** — ◻ interview-ready · 🖼 visual
-- 🔥 **Embedding Search & Vector Databases** — ◻ interview-ready · 🖼 visual
-- 🔥 **RAG Evaluation** — ◻ interview-ready · 🖼 visual
-- 🔥 **Tool / Function Calling** — ◻ interview-ready · 🖼 visual
-- ⬆️ **Agents & LangGraph** — ◻ interview-ready · 🖼 visual
-- • **Model Context Protocol (MCP)** — ◻ interview-ready · 🖼 visual
-- 🔥 **LLM Evaluation** — ◻ interview-ready · 🖼 visual
-- ⬆️ **LLM Inference: Temperature, Top-p, KV Cache** — ◻ interview-ready · 🖼 visual
-- ⬆️ **Fine-tuning, LoRA & Quantization** — ◻ interview-ready · 🖼 visual
+- ⬆️ **Prompt Engineering** — ✅ deep · 🖼 visual
+- 🔥 **RAG: Retrieval-Augmented Generation** — ✅ deep · 🖼 visual
+- 🔥 **Embedding Search & Vector Databases** — ✅ deep · 🖼 visual
+- 🔥 **RAG Evaluation** — ✅ deep · 🖼 visual
+- 🔥 **Tool / Function Calling** — ✅ deep · 🖼 visual
+- ⬆️ **Agents & LangGraph** — ✅ deep · 🖼 visual
+- • **Model Context Protocol (MCP)** — ✅ deep · 🖼 visual
+- 🔥 **LLM Evaluation** — ✅ deep · 🖼 visual
+- ⬆️ **LLM Inference: Temperature, Top-p, KV Cache** — ✅ deep · 🖼 visual
+- ⬆️ **Fine-tuning, LoRA & Quantization** — ✅ deep · 🖼 visual
 
 ## 31. 🖼️ Multimodal AI & Vision-Language Systems
 
 Contrastive learning, VLM architecture, instruction tuning and multimodal evaluation.
 
-Deep-complete: **0/6** · Visual models: **2/6**
+Deep-complete: **6/6** · Visual models: **12/6**
 
-- ⬆️ **Multimodal AI Fundamentals & Fusion** — ◻ interview-ready
-- ⬆️ **CLIP & Contrastive Image–Text Alignment** — ◻ interview-ready · 🖼 visual
-- ⬆️ **Vision-Language Model Architecture: Encoder, Projector & LLM** — ◻ interview-ready · 🖼 visual
-- ⬆️ **Visual Instruction Tuning & LLaVA** — ◻ interview-ready
-- • **Multimodal Tokenization, Patches & Resamplers** — ◻ interview-ready
-- ⬆️ **Multimodal Evaluation & Visual Hallucination** — ◻ interview-ready
+- ⬆️ **Multimodal AI Fundamentals & Fusion** — ✅ deep · 🖼 visual
+- ⬆️ **CLIP & Contrastive Image–Text Alignment** — ✅ deep · 🖼 visual
+- ⬆️ **Vision-Language Model Architecture: Encoder, Projector & LLM** — ✅ deep · 🖼 visual
+- ⬆️ **Visual Instruction Tuning & LLaVA** — ✅ deep · 🖼 visual
+- • **Multimodal Tokenization, Patches & Resamplers** — ✅ deep · 🖼 visual
+- ⬆️ **Multimodal Evaluation & Visual Hallucination** — ✅ deep · 🖼 visual
 
 ## 32. 🌊 Data Engineering & Streaming
 
 ETL/ELT, orchestration, Kafka, Flink, Spark and data quality.
 
-Deep-complete: **0/11** · Visual models: **9/11**
+Deep-complete: **11/11** · Visual models: **22/11**
 
-- 🔥 **ETL vs ELT** — ◻ interview-ready · 🖼 visual
-- 🔥 **Batch vs Streaming** — ◻ interview-ready · 🖼 visual
-- 🔥 **Kafka Fundamentals** — ◻ interview-ready · 🖼 visual
-- ⬆️ **Flink & Stateful Stream Processing** — ◻ interview-ready · 🖼 visual
-- 🔥 **Spark / PySpark** — ◻ interview-ready · 🖼 visual
-- ⬆️ **Workflow Orchestration** — ◻ interview-ready · 🖼 visual
-- ⬆️ **Data Quality & Schema Evolution** — ◻ interview-ready
-- ⬆️ **Change Data Capture (CDC)** — ◻ interview-ready · 🖼 visual
-- 🔥 **Event Time, Processing Time & Watermarks** — ◻ interview-ready · 🖼 visual
-- ⬆️ **CSV vs Parquet vs Avro** — ◻ interview-ready
-- 🔥 **Data Observability: Freshness, Volume, Schema & Distribution** — ◻ interview-ready · 🖼 visual
+- 🔥 **ETL vs ELT** — ✅ deep · 🖼 visual
+- 🔥 **Batch vs Streaming** — ✅ deep · 🖼 visual
+- 🔥 **Kafka Fundamentals** — ✅ deep · 🖼 visual
+- ⬆️ **Flink & Stateful Stream Processing** — ✅ deep · 🖼 visual
+- 🔥 **Spark / PySpark** — ✅ deep · 🖼 visual
+- ⬆️ **Workflow Orchestration** — ✅ deep · 🖼 visual
+- ⬆️ **Data Quality & Schema Evolution** — ✅ deep · 🖼 visual
+- ⬆️ **Change Data Capture (CDC)** — ✅ deep · 🖼 visual
+- 🔥 **Event Time, Processing Time & Watermarks** — ✅ deep · 🖼 visual
+- ⬆️ **CSV vs Parquet vs Avro** — ✅ deep · 🖼 visual
+- 🔥 **Data Observability: Freshness, Volume, Schema & Distribution** — ✅ deep · 🖼 visual
 
 ## 33. 🌐 Distributed Systems & Big Data
 
 Partitioning, replication, consistency, distributed computation and fault tolerance.
 
-Deep-complete: **0/7** · Visual models: **5/7**
+Deep-complete: **7/7** · Visual models: **14/7**
 
-- ⬆️ **Partitioning & Sharding** — ◻ interview-ready · 🖼 visual
-- ⬆️ **Replication & Consistency Models** — ◻ interview-ready · 🖼 visual
-- • **CAP Theorem Without the Myth** — ◻ interview-ready · 🖼 visual
-- • **Consensus & Leader Election** — ◻ interview-ready
-- ⬆️ **MapReduce, Shuffle & Distributed Aggregation** — ◻ interview-ready · 🖼 visual
-- 🔥 **Retries, Idempotency & Exactly-once Semantics** — ◻ interview-ready · 🖼 visual
-- ⬆️ **Spark Shuffles, Partitions & Data Skew** — ◻ interview-ready
+- ⬆️ **Partitioning & Sharding** — ✅ deep · 🖼 visual
+- ⬆️ **Replication & Consistency Models** — ✅ deep · 🖼 visual
+- • **CAP Theorem Without the Myth** — ✅ deep · 🖼 visual
+- • **Consensus & Leader Election** — ✅ deep · 🖼 visual
+- ⬆️ **MapReduce, Shuffle & Distributed Aggregation** — ✅ deep · 🖼 visual
+- 🔥 **Retries, Idempotency & Exactly-once Semantics** — ✅ deep · 🖼 visual
+- ⬆️ **Spark Shuffles, Partitions & Data Skew** — ✅ deep · 🖼 visual
 
 ## 34. 🚀 MLOps & Production ML
 
 Experiment tracking, deployment, monitoring, registries, CI/CD and lifecycle management.
 
-Deep-complete: **0/13** · Visual models: **8/13**
+Deep-complete: **13/13** · Visual models: **26/13**
 
-- 🔥 **Production ML Pipeline** — ◻ interview-ready · 🖼 visual
-- ⬆️ **Experiment Tracking** — ◻ interview-ready
-- ⬆️ **Model Registry & Versioning** — ◻ interview-ready · 🖼 visual
-- 🔥 **Batch vs Online Model Serving** — ◻ interview-ready · 🖼 visual
-- ⬆️ **APIs around ML Models** — ◻ interview-ready
-- 🔥 **Monitoring: System, Data & Model** — ◻ interview-ready · 🖼 visual
-- ⬆️ **Data Drift vs Concept Drift** — ◻ interview-ready · 🖼 visual
-- ⬆️ **Canary, Blue/Green & Shadow Deployment** — ◻ interview-ready · 🖼 visual
-- ⬆️ **CI/CD for ML** — ◻ interview-ready · 🖼 visual
-- ⬆️ **Feature Stores: Offline vs Online** — ◻ interview-ready · 🖼 visual
-- ⬆️ **Training–Serving Skew** — ◻ interview-ready
-- ⬆️ **Data, Model & Experiment Lineage** — ◻ interview-ready
-- ⬆️ **ML Testing & Quality Gates** — ◻ interview-ready
+- 🔥 **Production ML Pipeline** — ✅ deep · 🖼 visual
+- ⬆️ **Experiment Tracking** — ✅ deep · 🖼 visual
+- ⬆️ **Model Registry & Versioning** — ✅ deep · 🖼 visual
+- 🔥 **Batch vs Online Model Serving** — ✅ deep · 🖼 visual
+- ⬆️ **APIs around ML Models** — ✅ deep · 🖼 visual
+- 🔥 **Monitoring: System, Data & Model** — ✅ deep · 🖼 visual
+- ⬆️ **Data Drift vs Concept Drift** — ✅ deep · 🖼 visual
+- ⬆️ **Canary, Blue/Green & Shadow Deployment** — ✅ deep · 🖼 visual
+- ⬆️ **CI/CD for ML** — ✅ deep · 🖼 visual
+- ⬆️ **Feature Stores: Offline vs Online** — ✅ deep · 🖼 visual
+- ⬆️ **Training–Serving Skew** — ✅ deep · 🖼 visual
+- ⬆️ **Data, Model & Experiment Lineage** — ✅ deep · 🖼 visual
+- ⬆️ **ML Testing & Quality Gates** — ✅ deep · 🖼 visual
 
 ## 35. ☁️ Cloud, Docker & Kubernetes
 
 Containers, cloud primitives, orchestration, security and deployment.
 
-Deep-complete: **0/7** · Visual models: **6/7**
+Deep-complete: **7/7** · Visual models: **14/7**
 
-- 🔥 **Docker Images & Containers** — ◻ interview-ready · 🖼 visual
-- 🔥 **Dockerizing an ML Inference Service** — ◻ interview-ready · 🖼 visual
-- ⬆️ **Docker Compose** — ◻ interview-ready · 🖼 visual
-- • **Kubernetes for ML Services** — ◻ interview-ready · 🖼 visual
-- 🔥 **Cloud Primitives for Production ML** — ◻ interview-ready · 🖼 visual
-- ⬆️ **Cross-Cloud Mapping: AWS, Azure & GCP** — ◻ interview-ready · 🖼 visual
-- ⬆️ **IAM, Secrets & Least Privilege** — ◻ interview-ready
+- 🔥 **Docker Images & Containers** — ✅ deep · 🖼 visual
+- 🔥 **Dockerizing an ML Inference Service** — ✅ deep · 🖼 visual
+- ⬆️ **Docker Compose** — ✅ deep · 🖼 visual
+- • **Kubernetes for ML Services** — ✅ deep · 🖼 visual
+- 🔥 **Cloud Primitives for Production ML** — ✅ deep · 🖼 visual
+- ⬆️ **Cross-Cloud Mapping: AWS, Azure & GCP** — ✅ deep · 🖼 visual
+- ⬆️ **IAM, Secrets & Least Privilege** — ✅ deep · 🖼 visual
 
 ## 36. 🏎️ AI / ML Performance & Scaling
 
 Profiling, mixed precision, quantization, distributed training and inference optimization.
 
-Deep-complete: **0/8** · Visual models: **5/8**
+Deep-complete: **8/8** · Visual models: **16/8**
 
-- 🔥 **Profiling & Benchmarking ML Systems** — ◻ interview-ready · 🖼 visual
-- ⬆️ **Mixed Precision: FP32, FP16 & BF16** — ◻ interview-ready · 🖼 visual
-- 🔥 **Quantization for Inference** — ◻ interview-ready · 🖼 visual
-- • **Pruning & Knowledge Distillation** — ◻ interview-ready
-- 🔥 **Batching, Queueing & Throughput** — ◻ interview-ready · 🖼 visual
-- ⬆️ **Distributed Training: Data & Model Parallelism** — ◻ interview-ready
-- • **Model Compilation: torch.compile, ONNX & TensorRT** — ◻ interview-ready
-- ⬆️ **GPU Memory: Parameters, Activations & KV Cache** — ◻ interview-ready · 🖼 visual
+- 🔥 **Profiling & Benchmarking ML Systems** — ✅ deep · 🖼 visual
+- ⬆️ **Mixed Precision: FP32, FP16 & BF16** — ✅ deep · 🖼 visual
+- 🔥 **Quantization for Inference** — ✅ deep · 🖼 visual
+- • **Pruning & Knowledge Distillation** — ✅ deep · 🖼 visual
+- 🔥 **Batching, Queueing & Throughput** — ✅ deep · 🖼 visual
+- ⬆️ **Distributed Training: Data & Model Parallelism** — ✅ deep · 🖼 visual
+- • **Model Compilation: torch.compile, ONNX & TensorRT** — ✅ deep · 🖼 visual
+- ⬆️ **GPU Memory: Parameters, Activations & KV Cache** — ✅ deep · 🖼 visual
 
 ## 37. 🏛️ Data / ML / AI System Design
 
 End-to-end system design for analytics, ML, recommendation, retrieval and GenAI systems.
 
-Deep-complete: **0/10** · Visual models: **8/10**
+Deep-complete: **10/10** · Visual models: **20/10**
 
-- 🔥 **ML System Design Interview Framework** — ◻ interview-ready · 🖼 visual
-- ⬆️ **Design a Recommendation System** — ◻ interview-ready · 🖼 visual
-- 🔥 **Design an Internal RAG Assistant** — ◻ interview-ready · 🖼 visual
-- ⬆️ **Design an Image Reconstruction Service** — ◻ interview-ready · 🖼 visual
-- ⬆️ **Design a Rare-event Detection System** — ◻ interview-ready · 🖼 visual
-- 🔥 **Latency, Throughput & Cost Trade-offs** — ◻ interview-ready · 🖼 visual
-- ⬆️ **Failure Modes & Graceful Degradation** — ◻ interview-ready
-- ⬆️ **Design an Experimentation Platform** — ◻ interview-ready
-- ⬆️ **Design a Forecasting Platform** — ◻ interview-ready · 🖼 visual
-- ⬆️ **Design a Search / Retrieval System** — ◻ interview-ready · 🖼 visual
+- 🔥 **ML System Design Interview Framework** — ✅ deep · 🖼 visual
+- ⬆️ **Design a Recommendation System** — ✅ deep · 🖼 visual
+- 🔥 **Design an Internal RAG Assistant** — ✅ deep · 🖼 visual
+- ⬆️ **Design an Image Reconstruction Service** — ✅ deep · 🖼 visual
+- ⬆️ **Design a Rare-event Detection System** — ✅ deep · 🖼 visual
+- 🔥 **Latency, Throughput & Cost Trade-offs** — ✅ deep · 🖼 visual
+- ⬆️ **Failure Modes & Graceful Degradation** — ✅ deep · 🖼 visual
+- ⬆️ **Design an Experimentation Platform** — ✅ deep · 🖼 visual
+- ⬆️ **Design a Forecasting Platform** — ✅ deep · 🖼 visual
+- ⬆️ **Design a Search / Retrieval System** — ✅ deep · 🖼 visual
 
 ## 38. 🛡️ Safety, Security, Privacy & Governance
 
 Threats, privacy, fairness, governance and operational safety across data and AI systems.
 
-Deep-complete: **0/9** · Visual models: **4/9**
+Deep-complete: **9/9** · Visual models: **18/9**
 
-- ⬆️ **Responsible AI: Risk, Impact & Governance** — ◻ interview-ready
-- ⬆️ **Bias & Fairness in ML** — ◻ interview-ready
-- 🔥 **Privacy, PII & Data Minimization** — ◻ interview-ready · 🖼 visual
-- 🔥 **Prompt Injection & Tool Abuse** — ◻ interview-ready · 🖼 visual
-- ⬆️ **RAG Security & Access Control** — ◻ interview-ready · 🖼 visual
-- • **Model & Dependency Supply-Chain Security** — ◻ interview-ready
-- • **AI Red Teaming & Adversarial Testing** — ◻ interview-ready
-- ⬆️ **Guardrails, Policy Checks & AI Observability** — ◻ interview-ready
-- • **Human-in-the-Loop & Safe Fallbacks** — ◻ interview-ready · 🖼 visual
+- ⬆️ **Responsible AI: Risk, Impact & Governance** — ✅ deep · 🖼 visual
+- ⬆️ **Bias & Fairness in ML** — ✅ deep · 🖼 visual
+- 🔥 **Privacy, PII & Data Minimization** — ✅ deep · 🖼 visual
+- 🔥 **Prompt Injection & Tool Abuse** — ✅ deep · 🖼 visual
+- ⬆️ **RAG Security & Access Control** — ✅ deep · 🖼 visual
+- • **Model & Dependency Supply-Chain Security** — ✅ deep · 🖼 visual
+- • **AI Red Teaming & Adversarial Testing** — ✅ deep · 🖼 visual
+- ⬆️ **Guardrails, Policy Checks & AI Observability** — ✅ deep · 🖼 visual
+- • **Human-in-the-Loop & Safe Fallbacks** — ✅ deep · 🖼 visual
 
 ## 39. 🧰 End-to-End Case Studies & Project Communication
 
@@ -658,17 +658,17 @@ Deep-complete: **6/6** · Visual models: **12/6**
 
 Gaussian processes, graphical models, latent-state models, approximate inference and calibrated uncertainty.
 
-Deep-complete: **0/9** · Visual models: **2/9**
+Deep-complete: **9/9** · Visual models: **18/9**
 
-- ⬆️ **Gaussian Processes** — ◻ interview-ready
-- ⬆️ **Bayesian Networks & d-Separation** — ◻ interview-ready · 🖼 visual
-- • **Markov Random Fields & Factor Graphs** — ◻ interview-ready
-- ⬆️ **Hidden Markov Models** — ◻ interview-ready · 🖼 visual
-- ⬆️ **Variational Inference** — ◻ interview-ready
-- ⬆️ **Aleatoric vs Epistemic Uncertainty** — ◻ interview-ready
-- ⬆️ **Proper Scoring Rules: Log Loss & Brier Score** — ◻ interview-ready
-- ⬆️ **Conformal Prediction** — ◻ interview-ready
-- • **Selective Prediction & Abstention** — ◻ interview-ready
+- ⬆️ **Gaussian Processes** — ✅ deep · 🖼 visual
+- ⬆️ **Bayesian Networks & d-Separation** — ✅ deep · 🖼 visual
+- • **Markov Random Fields & Factor Graphs** — ✅ deep · 🖼 visual
+- ⬆️ **Hidden Markov Models** — ✅ deep · 🖼 visual
+- ⬆️ **Variational Inference** — ✅ deep · 🖼 visual
+- ⬆️ **Aleatoric vs Epistemic Uncertainty** — ✅ deep · 🖼 visual
+- ⬆️ **Proper Scoring Rules: Log Loss & Brier Score** — ✅ deep · 🖼 visual
+- ⬆️ **Conformal Prediction** — ✅ deep · 🖼 visual
+- • **Selective Prediction & Abstention** — ✅ deep · 🖼 visual
 
 ## 43. 📐 Learning Theory & Generalization
 

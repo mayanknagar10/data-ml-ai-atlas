@@ -1,3 +1,3 @@
 # Ship it
 
-For retrieval, evaluate recall@K across slices and monitor embedding drift when encoders, prompts or preprocessing change.
+Package the CLIP & Contrastive Image–Text Alignment lab as a tested, versioned component with monitoring and rollback.

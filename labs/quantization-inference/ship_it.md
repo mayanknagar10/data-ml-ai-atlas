@@ -1,3 +1,3 @@
 # Ship it
 
-Choose quantization by measured memory/latency/quality on target hardware; keep a higher-precision fallback for critical workloads.
+Package the Quantization for Inference lab as a tested, versioned component with monitoring and rollback.

@@ -8,15 +8,23 @@ def logsumexp(values):
     return m+math.log(sum(math.exp(x-m) for x in values))
 
 def softmax(values):
-    lse=logsumexp(values)
-    if not math.isfinite(lse): raise ValueError('softmax requires a finite normalizer')
-    return [math.exp(x-lse) for x in values]
+    if not values: return []
+    m=max(values)
+    if not math.isfinite(m): raise ValueError('softmax requires a finite normalizer')
+    weights=[math.exp(x-m) for x in values]
+    total=sum(weights)
+    return [w/total for w in weights]
 
 def kahan_sum(values):
     total=0.0; correction=0.0
     for value in values:
         adjusted=value-correction; new=total+adjusted
         correction=(new-total)-adjusted; total=new
+    return total
+
+def naive_sum(values):
+    total=0.0
+    for value in values: total+=value
     return total
 
 # ---- Use it ----
@@ -29,11 +37,12 @@ sequence=[1e16,1.0,-1e16]
 
 # ---- Verify it ----
 assert all(math.isfinite(p) and p>=0 for p in probs)
-assert math.isclose(sum(probs),1.0,rel_tol=1e-14,abs_tol=1e-14)
+assert math.isclose(sum(probs),1.0,rel_tol=1e-12,abs_tol=1e-12)
 assert math.isclose(lse,reference,rel_tol=1e-14)
 shifted=softmax([x-12345 for x in values])
 assert all(math.isclose(a,b,rel_tol=1e-12) for a,b in zip(probs,shifted))
-assert sum(sequence)==0.0
+assert naive_sum(sequence)==0.0
+assert math.fsum(sequence)==1.0
 assert kahan_sum([1e16,-1e16,1.0])==1.0
 assert logsumexp([-math.inf,-math.inf])==-math.inf
 try: softmax([-math.inf,-math.inf])

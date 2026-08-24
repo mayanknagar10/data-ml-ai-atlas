@@ -154,7 +154,20 @@
         ]
       },
       "caption": "The CDF unifies both by recording accumulated probability up to a threshold.",
-      "afterSection": "mass-density-cdf"
+      "afterSection": "mass-density-cdf",
+      "grounding": [
+        {
+          "id": "harvard-stat110",
+          "role": "Primary technical basis"
+        },
+        {
+          "id": "scipy-stats",
+          "role": "Secondary technical reference"
+        }
+      ],
+      "sourceMode": "adapted-redraw",
+      "figureClass": "research-grounded",
+      "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
     },
     {
       "type": "flow",
@@ -169,7 +182,20 @@
         "Monitor drift"
       ],
       "caption": "A family earns its use through assumptions and predictive checks, not visual familiarity.",
-      "afterSection": "fit-check-operate"
+      "afterSection": "fit-check-operate",
+      "grounding": [
+        {
+          "id": "scipy-stats",
+          "role": "Primary technical basis"
+        },
+        {
+          "id": "harvard-stat110",
+          "role": "Secondary technical reference"
+        }
+      ],
+      "sourceMode": "adapted-redraw",
+      "figureClass": "research-grounded",
+      "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
     }
   ],
   "lab": {
@@ -179,5 +205,10 @@
     "useIt": "import numpy as np\nfrom scipy.stats import binom\nn=20; p=.1; values=list(range(n+1)); probs=[binomial_pmf(k,n,p) for k in values]\nmean,variance=moments(values,probs)\nrng=np.random.default_rng(20260821); samples=rng.binomial(n,p,size=100000)",
     "verifyIt": "assert math.isclose(sum(probs),1.0,rel_tol=1e-12)\nassert math.isclose(mean,n*p,rel_tol=1e-12)\nassert math.isclose(variance,n*p*(1-p),rel_tol=1e-12)\nassert np.allclose(probs,binom.pmf(values,n,p))\nassert abs(samples.mean()-n*p)<.02\nassert abs(samples.var()-n*p*(1-p))<.04\nassert all(0<=x<=n for x in samples)",
     "shipIt": "Use verified SciPy distribution/log-tail APIs and independent NumPy Generator streams, version parameter conventions and seeds, monitor tail/dispersion/support drift and keep a validated fallback model."
+  },
+  "presentation": {
+    "visualStandard": "research-grounded-adapted-redraw",
+    "mathStandard": "STIX-math-with-MathJax-for-delimited-equations",
+    "typographyStandard": "Plus-Jakarta-Sans-Source-Serif-4-IBM-Plex-Mono"
   }
 }

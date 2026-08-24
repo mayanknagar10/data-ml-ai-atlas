@@ -145,7 +145,20 @@
         "Window result without row collapse"
       ],
       "caption": "Partition, ordering, and frame answer different questions and must be reasoned about separately.",
-      "afterSection": "window-anatomy"
+      "afterSection": "window-anatomy",
+      "grounding": [
+        {
+          "id": "postgres-window",
+          "role": "Primary technical basis"
+        },
+        {
+          "id": "postgres-select",
+          "role": "Secondary technical reference"
+        }
+      ],
+      "sourceMode": "adapted-redraw",
+      "figureClass": "research-grounded",
+      "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
     },
     {
       "type": "compare",
@@ -169,7 +182,20 @@
         ]
       },
       "caption": "Tie semantics determine which ranking function matches the business rule.",
-      "afterSection": "ranking-offsets"
+      "afterSection": "ranking-offsets",
+      "grounding": [
+        {
+          "id": "postgres-select",
+          "role": "Primary technical basis"
+        },
+        {
+          "id": "postgres-window",
+          "role": "Secondary technical reference"
+        }
+      ],
+      "sourceMode": "adapted-redraw",
+      "figureClass": "research-grounded",
+      "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
     }
   ],
   "lab": {
@@ -179,5 +205,10 @@
     "useIt": "import sqlite3\ncon=sqlite3.connect(':memory:')\ncon.executescript('CREATE TABLE events(entity TEXT, ts INTEGER, seq INTEGER, value INTEGER); INSERT INTO events VALUES (\"a\",10,1,5),(\"a\",10,2,7),(\"a\",20,1,3),(\"b\",5,1,4);')\nrows=con.execute('SELECT entity,ts,seq,value, ROW_NUMBER() OVER(PARTITION BY entity ORDER BY ts DESC,seq DESC) rn, SUM(value) OVER(PARTITION BY entity ORDER BY ts,seq ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) running FROM events ORDER BY entity,ts,seq').fetchall()",
     "verifyIt": "assert len(rows)==4\nlatest=[row for row in rows if row[4]==1]\nassert {(r[0],r[1],r[2]) for r in latest} == {('a',20,1),('b',5,1)}\na=[r for r in rows if r[0]=='a']\nassert [r[5] for r in a] == [5,12,15]\nassert len({(r[0],r[4]) for r in rows})==len(rows)",
     "shipIt": "Add deterministic IDs, explicit frame and NULL semantics, cutoff tests, plan/spill monitoring, partition limits, and correction-window recomputation for late data."
+  },
+  "presentation": {
+    "visualStandard": "research-grounded-adapted-redraw",
+    "mathStandard": "STIX-math-with-MathJax-for-delimited-equations",
+    "typographyStandard": "Plus-Jakarta-Sans-Source-Serif-4-IBM-Plex-Mono"
   }
 }

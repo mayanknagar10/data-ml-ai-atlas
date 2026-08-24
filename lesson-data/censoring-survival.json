@@ -140,7 +140,20 @@
         "Supported prediction horizon"
       ],
       "caption": "Censoring ends observation without declaring an event; delayed entry changes when a subject joins the risk set.",
-      "afterSection": "censoring-and-truncation"
+      "afterSection": "censoring-and-truncation",
+      "grounding": [
+        {
+          "id": "kaplan-meier-paper",
+          "role": "Primary technical basis"
+        },
+        {
+          "id": "statsmodels-survival",
+          "role": "Secondary technical reference"
+        }
+      ],
+      "sourceMode": "adapted-redraw",
+      "figureClass": "research-grounded",
+      "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
     },
     {
       "type": "compare",
@@ -164,7 +177,20 @@
         ]
       },
       "caption": "The functions are mathematically linked but should not be interpreted as interchangeable probabilities.",
-      "afterSection": "event-time-functions"
+      "afterSection": "event-time-functions",
+      "grounding": [
+        {
+          "id": "statsmodels-survival",
+          "role": "Primary technical basis"
+        },
+        {
+          "id": "kaplan-meier-paper",
+          "role": "Secondary technical reference"
+        }
+      ],
+      "sourceMode": "adapted-redraw",
+      "figureClass": "research-grounded",
+      "adaptationNote": "Atlas redraw: the structure and claims are grounded in the cited source material; the artwork is newly drawn for teaching rather than copied verbatim from a paper or website."
     }
   ],
   "sourceNotes": [
@@ -180,5 +206,10 @@
       "resource": "statsmodels-survival",
       "contribution": "Provides an independent official reference for survival functions and proportional-hazard tooling."
     }
-  ]
+  ],
+  "presentation": {
+    "visualStandard": "research-grounded-adapted-redraw",
+    "mathStandard": "STIX-math-with-MathJax-for-delimited-equations",
+    "typographyStandard": "Plus-Jakarta-Sans-Source-Serif-4-IBM-Plex-Mono"
+  }
 }

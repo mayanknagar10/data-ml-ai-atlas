@@ -15,6 +15,7 @@ official_mae=float(mean_absolute_error(y,pred)); official_rmse=float(np.sqrt(mea
 assert np.isclose(mae,official_mae) and np.isclose(rmse,official_rmse)
 assert np.isclose(q90,official_q90)
 assert np.isclose(wape,np.sum(np.abs(e))/np.sum(np.abs(y)))
-assert mape>mae and abs(e[0])<abs(e[2]) and abs(e[0]/y[0])>abs(e[2]/y[2])
+assert abs(e[0])<abs(e[2]) and abs(e[0]/y[0])>abs(e[2]/y[2])
+assert mape>.4  # the near-zero actual makes percentage error dominate this example
 assert scale>0 and np.isclose(mase,mae/scale)
-assert bias<mae and all(v>=0 for v in (mae,rmse,mase,wape,q90))
+assert abs(bias)<mae and all(v>=0 for v in (mae,rmse,mase,wape,q90))

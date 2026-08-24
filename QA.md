@@ -8,6 +8,7 @@ The current repository is checked with:
 python scripts/build.py
 python validate.py
 python scripts/check_labs.py
+python scripts/check_all_labs_runtime.py
 python scripts/check_site.py
 python -m unittest discover -s tests -v
 node --check app.js
@@ -27,6 +28,7 @@ The checks cover:
 - prerequisite references and dependency cycles
 - answered follow-ups, solved exercises and annotated sources
 - meaningful lab verification rather than print-only output
+- real execution of every generated `verify_it.py` lab with per-lab timeouts
 - split lesson payload generation and lazy-loader behavior
 - resource schema and HTTPS URLs
 - runnable lab generation and Python syntax
@@ -68,11 +70,13 @@ Mobile QA was run at a 390px viewport. A horizontal-overflow issue caused by gri
 
 ## Current migration baseline
 
-- 394 lessons total; editorial completeness is reported from explicit per-lesson status
-- 45 modules
-- 58 runnable labs
-- 222 original lesson visuals
-- 120 curated external resources
+- 394 / 394 lessons at strict `verified` full-chapter depth
+- 45 / 45 modules fully complete
+- 394 runnable Python labs; all 394 runtime smoke tests pass
+- 788 original lesson visuals; at least two per lesson
+- 312 curated external resources
+- minimum explanatory chapter depth: 1,641 words; average: 2,245 words
+- split-loading index: `data.js` is 1,812,270 bytes and full chapter bodies live in 394 `lesson-data/*.json` files
 
 The earlier release treated the presence of legacy summary fields as “deep complete.” The new contract does not. A lesson is counted as complete only when its structured chapter passes validation, and `verified` additionally records a review date and source annotations.
 
